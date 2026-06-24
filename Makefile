@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 ROOT  := $(shell pwd)
 
-.PHONY: help run test render render-all
+.PHONY: help run test render render-all new-lib new-project
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  %-22s %s\n", $$1, $$2}'
@@ -26,3 +26,12 @@ render-all: ## Render every project
 	  p="$$(basename "$$d")"; \
 	  scripts/render.sh "$$p" || exit 1; \
 	done
+
+new-lib: ## Scaffold a library: make new-lib NAME=<x>
+	@test -n "$(NAME)" || { echo "Usage: make new-lib NAME=<x>"; exit 1; }
+	@scripts/new-lib.sh "$(NAME)"
+
+new-project: ## Scaffold a project: make new-project NAME=<x> [MULTIPART=1]
+	@test -n "$(NAME)" || { echo "Usage: make new-project NAME=<x> [MULTIPART=1]"; exit 1; }
+	@if [ -n "$(MULTIPART)" ]; then scripts/new-project.sh "$(NAME)" --multipart; \
+	 else scripts/new-project.sh "$(NAME)"; fi
