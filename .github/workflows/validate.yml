@@ -1,0 +1,18 @@
+name: validate
+on:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install OpenSCAD + jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad jq
+      - name: Run conventions + compile check
+        run: |
+          export OPENSCADPATH="$GITHUB_WORKSPACE/libraries"
+          xvfb-run -a make check
+      - name: Run tooling tests
+        run: make test
