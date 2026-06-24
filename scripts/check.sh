@@ -35,8 +35,10 @@ for d in projects/*/; do
 done
 
 # Compile every .scad headless (templates excluded; they hold placeholders).
+# Use --export-format echo so OpenSCAD accepts /dev/null as the output path
+# regardless of extension.  The test stub ignores --export-format and still works.
 while IFS= read -r -d '' f; do
-  if ! "$ROOT/scripts/openscad.sh" -o /dev/null "$f" >/dev/null 2>&1; then
+  if ! "$ROOT/scripts/openscad.sh" --export-format echo -o /dev/null "$f" >/dev/null 2>&1; then
     err "compile failed: $f"
   fi
 done < <(find libraries projects -name '*.scad' -print0 2>/dev/null)
