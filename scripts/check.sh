@@ -12,7 +12,7 @@ for d in libraries/*/; do
   name="$(basename "$d")"
   [ -f "$d/README.md" ] || err "$name: missing README.md"
   if [ -f "$d/lib.json" ]; then
-    jq -e '.name and .description and .version and (.sources|type=="array")' "$d/lib.json" >/dev/null 2>&1 \
+    jq -e '(.name|type=="string" and (.|length>0)) and (.description|type=="string" and (.|length>0)) and (.version|type=="string" and (.|length>0)) and (.sources|type=="array")' "$d/lib.json" >/dev/null 2>&1 \
       || err "$name: lib.json missing required fields (name, description, version, sources[])"
   else
     err "$name: missing lib.json"

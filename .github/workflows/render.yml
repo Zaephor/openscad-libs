@@ -12,7 +12,7 @@ jobs:
       - name: Install OpenSCAD
         run: |
           sudo apt-get update
-          sudo apt-get install -y openscad
+          sudo apt-get install -y openscad xvfb
       - name: Render all projects
         run: xvfb-run -a make render-all
       - name: Commit changed renders

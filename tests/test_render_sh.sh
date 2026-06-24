@@ -4,6 +4,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Real openscad is slow/needs a display abstraction; stub it to just write the -o file.
 tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
 cat > "$tmp/openscad" <<'EOF'
 #!/usr/bin/env bash
 out=""

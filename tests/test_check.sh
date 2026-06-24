@@ -5,6 +5,7 @@ cd "$root" || exit 1
 
 # Stub openscad so compile-checks succeed without the real renderer.
 tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
 cat > "$tmp/openscad" <<'EOF'
 #!/usr/bin/env bash
 out=""; prev=""

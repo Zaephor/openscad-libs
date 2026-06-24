@@ -9,7 +9,7 @@ jobs:
       - name: Install OpenSCAD + jq
         run: |
           sudo apt-get update
-          sudo apt-get install -y openscad jq
+          sudo apt-get install -y openscad jq xvfb
       - name: Run conventions + compile check
         run: |
           export OPENSCADPATH="$GITHUB_WORKSPACE/libraries"

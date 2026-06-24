@@ -1,5 +1,4 @@
 SHELL := /usr/bin/env bash
-ROOT  := $(shell pwd)
 
 .PHONY: help run test render render-all new-lib new-project check list
 help: ## Show available targets

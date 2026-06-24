@@ -5,6 +5,7 @@ sh="$root/scripts/openscad.sh"
 
 # Stub openscad so we test our wrapper, not the renderer.
 tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
 cat > "$tmp/openscad" <<'EOF'
 #!/usr/bin/env bash
 echo "OPENSCADPATH=$OPENSCADPATH"
