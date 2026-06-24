@@ -40,5 +40,5 @@ check: ## Lint conventions and compile-check all .scad
 	@scripts/check.sh
 
 list: ## List libraries and projects
-	@echo "Libraries:"; for d in libraries/*/; do [ -d "$$d" ] && echo "  $$(basename "$$d")"; done
-	@echo "Projects:";  for d in projects/*/;  do [ -d "$$d" ] && echo "  $$(basename "$$d")"; done
+	@echo "Libraries:"; for d in libraries/*/; do [ -d "$$d" ] || continue; echo "  $$(basename "$$d")"; done
+	@echo "Projects:";  for d in projects/*/;  do [ -d "$$d" ] || continue; echo "  $$(basename "$$d")"; done
