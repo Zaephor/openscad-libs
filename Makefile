@@ -1,7 +1,7 @@
 SHELL := /usr/bin/env bash
 ROOT  := $(shell pwd)
 
-.PHONY: help run test render render-all new-lib new-project
+.PHONY: help run test render render-all new-lib new-project check list
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  %-22s %s\n", $$1, $$2}'
@@ -35,3 +35,10 @@ new-project: ## Scaffold a project: make new-project NAME=<x> [MULTIPART=1]
 	@test -n "$(NAME)" || { echo "Usage: make new-project NAME=<x> [MULTIPART=1]"; exit 1; }
 	@if [ -n "$(MULTIPART)" ]; then scripts/new-project.sh "$(NAME)" --multipart; \
 	 else scripts/new-project.sh "$(NAME)"; fi
+
+check: ## Lint conventions and compile-check all .scad
+	@scripts/check.sh
+
+list: ## List libraries and projects
+	@echo "Libraries:"; for d in libraries/*/; do [ -d "$$d" ] && echo "  $$(basename "$$d")"; done
+	@echo "Projects:";  for d in projects/*/;  do [ -d "$$d" ] && echo "  $$(basename "$$d")"; done
