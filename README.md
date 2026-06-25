@@ -1,6 +1,6 @@
 # openscad-libs
 
-An OpenSCAD monorepo of reusable **libraries** (real-world measurements/data) and printable **projects**.
+An OpenSCAD monorepo of reusable **libraries** (real-world data + component helpers) and printable **projects**.
 
 ## Quick start
 
