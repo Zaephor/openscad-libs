@@ -9,6 +9,8 @@ cleanup
 bash scripts/new-lib.sh _tlib || { echo "new-lib failed"; cleanup; exit 1; }
 test -f libraries/_tlib/_tlib.scad || { echo "lib scad not renamed"; cleanup; exit 1; }
 grep -q '__NAME__' -r libraries/_tlib && { echo "placeholder left in lib"; cleanup; exit 1; }
+grep -q 'module _tlib_placeholder' libraries/_tlib/_tlib.scad || { echo "missing placeholder role"; cleanup; exit 1; }
+grep -q 'module _tlib_holes' libraries/_tlib/_tlib.scad || { echo "missing holes role"; cleanup; exit 1; }
 jq -e '.name=="_tlib"' libraries/_tlib/lib.json >/dev/null || { echo "lib.json name not substituted"; cleanup; exit 1; }
 
 # Refuses to overwrite.
