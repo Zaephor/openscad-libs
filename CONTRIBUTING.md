@@ -10,6 +10,7 @@
   3. **Hole-stamp** — `<name>_holes()`: mounting holes for use inside a consumer `difference()`.
   Conventions: centered origin X/Y, bottom face on `Z=0`; clearances only from named constants; mm; central `$fn`. Pure-data libs (e.g. `hardware`) keep only role 1.
 - Create with `make new-lib NAME=<name>`.
+- Hardware-reference libraries (dimensions sourced from vendors/standards) MUST follow [docs/LIBRARY-AUTHORING.md](docs/LIBRARY-AUTHORING.md) — per-value provenance tags (`[A]`/`[B]`/`[C]`), `//VERIFY` for weak sourcing, and a Sources table in the README.
 
 ## Projects (`projects/<name>/`)
 - Required: `README.md` (embeds >=1 image from `renders/`), `PRINTING.md`.
