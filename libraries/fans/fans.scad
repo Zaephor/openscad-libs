@@ -10,7 +10,7 @@ $fn = 64;
 // Rows: [size_mm, hole_spacing_cc_mm, default_thickness_mm].
 // All spacing values tier [B]: https://en.wikipedia.org/wiki/Computer_fan
 // (mounting-hole center-to-center), corroborated by retailer references.
-// Default thickness from common depths (10/15/25/38mm); 25mm standard for 60-140mm.
+// Default thickness from common depths (10/15/25/38mm); 25mm standard for 60-140mm. [B]
 function fan_table() = [
     [ 40,  32,   10],
     [ 50,  40,   10],
@@ -27,7 +27,7 @@ function fan_table() = [
 // Nominal case screw: M5 self-tapping. //VERIFY [B] retailer (graphicscardhub.com) — confirm vs vendor datasheet.
 function fan_screw_case() = 5;
 // Generous default clearance for the hole a case screw passes/threads into (loose by default; tunable).
-function fan_hole_clearance() = 4.5;
+function fan_hole_clearance() = 4.5; // (design default, not sourced)
 // Fan's own mounting-hole diameter: 4.3 for >=70mm [B].
 // //VERIFY 40-60mm varies ~3.2-4.3 by model; defaulting 4.3.
 function fan_mount_hole_dia(size) = 4.3;
