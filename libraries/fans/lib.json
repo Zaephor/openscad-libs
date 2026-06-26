@@ -1,0 +1,9 @@
+{
+  "name": "fans",
+  "description": "PC fan mechanical mounting reference: frame sizes, hole spacing, parametric thickness.",
+  "version": "0.1.0",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Computer_fan",
+    "https://graphicscardhub.com/pc-fan-screw-size/"
+  ]
+}
