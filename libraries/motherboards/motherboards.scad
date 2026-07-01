@@ -119,6 +119,8 @@ module mobo_standoffs(ff, height, dia = -1, bore = -1) {
 }
 
 // Rear I/O window as a subtraction solid at the Y=0 edge.
+// All three ff derive x_off as (width - 158.75), i.e. the window is right-justified
+// against the +X edge (//VERIFY [C] — confirm justification vs a real board).
 module mobo_io_cutout_stamp(ff, depth = 20) {
     io = mobo_io_cutout(ff); // [x_off, width, height]
     translate([io[0], -1, 0]) cube([io[1], depth + 2, io[2]]);
@@ -129,7 +131,7 @@ module mobo_pcie_cutout(ff, slots, depth = 20) {
     o = mobo_pcie_first_xy(ff);
     for (i = [0 : slots - 1])
         translate([o[0] + i * mobo_pcie_pitch(), o[1], -1])
-            cube([12, depth + 2, 12], center = false); // slot opening footprint //VERIFY
+            cube([12, depth + 2, 12], center = false); // slot opening footprint //VERIFY [C] ~nominal, unsourced
 }
 
 // Visual self-check when opened directly.
