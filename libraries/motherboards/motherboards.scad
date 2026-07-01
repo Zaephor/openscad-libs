@@ -65,7 +65,8 @@ function _mobo_table() = [
           [16.51, 227.33],   // L   [A] L-col, front row
           [140.97, 227.33],  // M   [A] m2-col, front row
           [298.45, 227.33],  // K   [A] R-col, front row
-          [298.45, 29.21] ], // F   [A] R-col, rear+0.900 (required since ATX 2.01)
+          [298.45, 29.21] ], // F   X-col [A]-closed (R=298.45); Y row-inset //VERIFY [C]/unclosed
+                             //     (0.900" rear+inset asserted, not proven by chain; mirrors matx F)
         [146.05, 158.75, 44.45], // io  [A] window 6.250"[158.75] x 44.45; //VERIFY [C] x_off
         [190.5, 227.33],         // pcie first [x,y]  //VERIFY [C]
         7],
