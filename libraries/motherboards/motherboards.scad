@@ -99,5 +99,38 @@ module mobo_placeholder(ff) {
     }
 }
 
+/* [Hole-stamp / cutout] */
+// Standoff clearance holes; use inside a consumer difference().
+module mobo_standoff_holes(ff, depth = 20, dia = -1) {
+    d = dia < 0 ? mobo_hole_dia() : dia;
+    for (p = mobo_standoff_xy(ff))
+        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = d);
+}
+
+// Positive standoff posts (print a tray directly). Pilot bore subtracted.
+module mobo_standoffs(ff, height, dia = -1, bore = -1) {
+    od = dia  < 0 ? 6.0 : dia;   // post OD default //VERIFY vs hardware standoff
+    bd = bore < 0 ? 2.5 : bore;  // pilot for self-tapping screw //VERIFY
+    for (p = mobo_standoff_xy(ff))
+        translate([p[0], p[1], 0]) difference() {
+            cylinder(h = height, d = od);
+            translate([0, 0, -1]) cylinder(h = height + 2, d = bd);
+        }
+}
+
+// Rear I/O window as a subtraction solid at the Y=0 edge.
+module mobo_io_cutout_stamp(ff, depth = 20) {
+    io = mobo_io_cutout(ff); // [x_off, width, height]
+    translate([io[0], -1, 0]) cube([io[1], depth + 2, io[2]]);
+}
+
+// PCIe slot openings along the rear edge, stepped by pitch.
+module mobo_pcie_cutout(ff, slots, depth = 20) {
+    o = mobo_pcie_first_xy(ff);
+    for (i = [0 : slots - 1])
+        translate([o[0] + i * mobo_pcie_pitch(), o[1], -1])
+            cube([12, depth + 2, 12], center = false); // slot opening footprint //VERIFY
+}
+
 // Visual self-check when opened directly.
 mobo_placeholder("atx");
