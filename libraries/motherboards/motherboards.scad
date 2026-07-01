@@ -86,6 +86,18 @@ function mobo_pcie_first_xy(ff) =
 function mobo_pcie_count(ff) =
     let (r = _mobo_row(ff)) assert(!is_undef(r), _mobo_unknown(ff)) r[5];
 
-// Visual self-check when opened directly. Role-2/3 modules (placeholder / hole-stamps)
-// arrive in later tasks; render nothing for now so this data-only file compiles standalone.
-union() {}
+/* [Placeholder] */
+// PCB envelope solid with standoff holes as keep-outs (fit checks).
+// Corner datum: board in +X/+Y, bottom on Z=0.
+module mobo_placeholder(ff) {
+    sz = mobo_size(ff);
+    t = mobo_thickness();
+    difference() {
+        cube([sz[0], sz[1], t]);
+        for (p = mobo_standoff_xy(ff))
+            translate([p[0], p[1], -1]) cylinder(h = t + 2, d = mobo_hole_dia());
+    }
+}
+
+// Visual self-check when opened directly.
+mobo_placeholder("atx");
