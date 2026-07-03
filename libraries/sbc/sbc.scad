@@ -14,7 +14,8 @@
 //   3. Hole-stamp / cutout — sbc_mount_holes(b), sbc_standoffs(b), sbc_port_cutout(b,
 //                    name), sbc_faceplate_cutouts(b, edge): mounting holes + connector
 //                    opening stamps for a consumer difference()
-// Provenance: [A] raspberrypi.com official mechanical drawing/STEP, [B] multi-peer
+// Provenance: [A] vendor official mechanical drawing/STEP/DXF (raspberrypi.com,
+// docs.banana-pi.org, ...), [B] multi-peer
 // community corroboration, [C] single community STL/reverse-engineered. //VERIFY
 // marks weak/unconfirmed values. See RESEARCH.md for full source list + notes.
 // Units: millimeters.
