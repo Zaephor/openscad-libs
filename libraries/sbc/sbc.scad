@@ -152,11 +152,34 @@ function _sbc_table() = [
     // not reused from those rows). 16 mounting holes, [A] DXF PG_ASSEMBLY_HOLE_DIAM
     // layer exact circle centers (14 at 3.0mm dia, 2 at ~3.3mm dia — see RESEARCH.md);
     // pattern is asymmetric/component-driven, not a simple corner rectangle.
+    // Connectors: NO refdes/component-name TEXT exists anywhere in the vendor DXF (checked
+    // all layers) — every position below comes from pixel-measuring the vendor assembly
+    // drawing (bpir4_assembly_p1_600.png, rendered at exactly 600dpi = 23.622px/mm,
+    // calibrated against the DXF's own 148.0x100.5 outline: px x=[60,3556]->mm 0..148,
+    // px y=[120,2494]->mm 100.5..0 top-to-bottom) plus component datasheets in DS/ for
+    // heights not visible in a top-view drawing. Full per-connector tier + which assembly
+    // refdes (CN1/CN4/CN5/CN7-CN11/CN20/CN21) backs each box are in RESEARCH.md. All
+    // front-panel connectors (usb, 2xSFP, WAN rj45, 3xLAN rj45, DC jack, USB-C PD) share
+    // one edge, ymin (y=0) — confirmed directly off the assembly drawing.
     ["bpir4",    [148.0, 100.5], 2.0, 1.6,
         [ [129.54, 15.25], [3.50, 23.50], [144.50, 23.50], [75.85, 27.21],
           [56.25, 31.59], [113.54, 31.59], [129.54, 35.25], [129.54, 53.25],
           [129.54, 65.25], [117.75, 69.11], [47.60, 75.69], [57.60, 75.69],
-          [56.25, 88.30], [113.54, 88.30], [3.50, 97.00], [144.50, 97.00] ], [] ],
+          [56.25, 88.30], [113.54, 88.30], [3.50, 97.00], [144.50, 97.00] ],
+        [ // Front panel, left to right, all edge="ymin" (y=0), z=1.6:
+          ["usb_1",       [7.41,   0, 1.6], [8.89,  23.16, 13.5], "ymin"], // CN11. [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3); //VERIFY width narrow vs typical USB-A 13.6mm body — see RESEARCH.md
+          ["sfp_1",       [16.3,   0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent)
+          ["sfp_2",       [34.08,  0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN9+CN20+CN10. [B] width; //VERIFY depth carried over from sfp_1 (own detector pass on this cage returned no hit — symmetric-layout assumption)
+          ["rj45_1",      [60.0,   0, 1.6], [8.0,   20.0,  13.5], "ymin"], // CN1 "WAN X1". [C] //VERIFY — right edge pixel-detected (62.6-63.1), left/top read visually off gridded crop; an internal line at y~10 (pin1/polarity mark, not full box border) creates residual ambiguity — see RESEARCH.md
+          ["rj45_2",      [68.0,      0, 1.6], [18.2567, 19.05, 13.5], "ymin"], // CN21 "LAN X3" port 1 of 3, even trisection of the measured 54.77mm envelope. [B] envelope (both edges pixel-detected, shared with rj45_1/dc_power_1 boundaries) / [C] per-port split //VERIFY (no internal divider dimensioned)
+          ["rj45_3",      [86.2567,   0, 1.6], [18.2567, 19.05, 13.5], "ymin"], // CN21 port 2 of 3 — see rj45_2
+          ["rj45_4",      [104.5133,  0, 1.6], [18.2567, 19.05, 13.5], "ymin"], // CN21 port 3 of 3 — see rj45_2
+          ["dc_power_1",  [124.59,  0, 1.6], [10.03,  10.71, 10.0], "ymin"], // CN4 "DC12V" barrel jack. [B] x/y envelope pixel-detected (edges shared with rj45_4/usbc_pwr_1 boundaries); [C] //VERIFY height (no top-view Z dimension; generic barrel-jack estimate)
+          ["usbc_pwr_1",  [134.62,  0, 1.6], [8.94,   9.95,  3.2], "ymin"], // CN5 "PD20V" USB-C PD input. [B] left edge + top edge pixel-detected; [C] //VERIFY width (generic USB-C receptacle datasheet figure, own right-edge detector pass inconclusive — see RESEARCH.md re: CN6 proximity)
+          // Non-front-panel:
+          ["uart_1",      [8.0,    10.0, 1.6], [5.0,   10.0,  6.0], "top"], // CON1 console/UART header ("G RX TX" silkscreen labels), does not touch a lateral edge. [C] //VERIFY position (visual crop read only, not pixel-detector-confirmed — search window overlapped CN11's own edges); h=6.0 [B] from Header_PIN 2.54mm.pdf body height
+          ["gpio",        [95.0,   78.0, 1.6], [51.0,  5.0,   8.5], "top"], // 40-pin Pi-style GPIO header (per brief). [C] //VERIFY — DXF PIN_TOP circle search found NO 2x20/2.54mm-pitch THT grid anywhere (only tight-pitch SoC BGA/QFN pads); position is a placeholder in open board area clear of mounting holes + other connectors, dimensions reused from the Pi family's _sbc_gpio() convention for compatibility. Real header location NOT confirmed — weakest entry in this table, see RESEARCH.md
+        ] ],
 ];
 
 function _sbc_row(b) =
