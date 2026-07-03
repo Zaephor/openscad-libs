@@ -137,5 +137,23 @@ function sbc_connector(b, name) =
     let (cs = [for (c = sbc_connectors(b)) if (c[0] == name) c])
     assert(len(cs) > 0, str("sbc: board ", b, " has no connector ", name)) cs[0];
 
-// Self-check: render nothing until Role-2 arrives (Task 5).
-union() {}
+/* [Placeholder] */
+// PCB slab (rounded corners) + connector bodies; mounting holes as keep-outs.
+// Corner datum: board in +X/+Y, bottom on Z=0.
+module sbc_placeholder(b) {
+    sz = sbc_size(b); r = sbc_corner_radius(b); t = sbc_thickness(b);
+    difference() {
+        union() {
+            // Rounded-rect PCB via a minkowski-free hull of 4 corner cylinders.
+            hull() for (x = [r, sz[0]-r], y = [r, sz[1]-r])
+                translate([x, y, 0]) cylinder(h = t, r = r);
+            // Connector bodies.
+            for (c = sbc_connectors(b)) translate(c[1]) cube(c[2]);
+        }
+        for (p = sbc_holes_xy(b))
+            translate([p[0], p[1], -1]) cylinder(h = t + 2, d = sbc_hole_dia());
+    }
+}
+
+// Visual self-check when opened directly.
+sbc_placeholder("pi4b");
