@@ -2,8 +2,8 @@
 
 Single-board-computer mechanical reference: board outline, corner radius, PCB
 thickness, mounting-hole coordinates, and connector footprints, for the
-Raspberry Pi "Model B" family. Mechanical mounting/clearance geometry only (no
-electrical/signal data). Units: **mm**.
+Raspberry Pi "Model B" family plus the BananaPi BPI-R4. Mechanical
+mounting/clearance geometry only (no electrical/signal data). Units: **mm**.
 
 Datum: **bottom-left PCB corner** at the origin, component/top side up, PCB
 bottom on `Z=0`. `+X` = board **long** edge, `+Y` = board **short** edge.
@@ -37,6 +37,17 @@ import top-level variables).
 x∈{3.5, 61.5}, y∈{3.5, 52.5} — inset 3.5mm from the xmin/ymin edges and the ymax
 edge, but **not centered in X**: the far column is 85.6−61.5 = 24.1mm from the
 xmax edge. (Design off `sbc_holes_xy(b)`, not a symmetric inset.)
+
+`"bpir4"` — the **BananaPi BPI-R4**, specifically the **2×SFP + 4×RJ45**
+variant (MediaTek MT7988A Filogic 880; `SFP1 WAN` + `SFP2 LAN` cages, `WAN
+X1` + `LAN X3` = 4 RJ45 ports). 148.0 × 100.5mm outline, 16 mounting holes
+(an asymmetric, component-driven layout — not a simple 4-corner rectangle).
+All front-panel connectors (USB, 2×SFP, WAN RJ45, 3×LAN RJ45, DC-in, USB-C
+PD) sit on the **`ymin`** edge. Other BPI-R4 configurations — `lite`/`pro`/
+1×SFP+/5×RJ45 variants — remain **deferred** (not this key); the 4G/8G RAM
+option is electrical-only and mechanically irrelevant either way.
+
+![BPI-R4 placeholder render](renders/bpir4-placeholder.png)
 
 ## Reference
 
@@ -83,6 +94,23 @@ opening above the header instead of a side-wall opening:
 sbc_faceplate_cutouts("pi4b", "top", depth = 10); // GPIO header clearance through a lid
 ```
 
+The same call handles a much busier edge without change: BPI-R4's entire
+router front panel — 2×SFP cages, 4×RJ45, USB, DC-in, and USB-C PD — in one
+`ymin` cutout call:
+
+```scad
+use <sbc/sbc.scad>;
+
+module bpir4_case_wall() {
+    difference() {
+        translate([-5, -2, -2]) cube([148.0 + 10, 2, 16]); // enclosure front wall stock
+        sbc_faceplate_cutouts("bpir4", "ymin", depth = 10); // 2xSFP + 4xRJ45 + USB/DC/USB-C-PD openings
+    }
+}
+```
+
+See `renders/bpir4-faceplate-front.png` for the rendered result.
+
 ## Sources
 
 | Source | Tier | Backs |
@@ -91,6 +119,16 @@ sbc_faceplate_cutouts("pi4b", "top", depth = 10); // GPIO header clearance throu
 | [Pi 3 Model B+ mechanical drawing](https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-plus-mechanical-drawing.pdf) | A | pi3bplus outline, holes, corner radius, hole dia, connector map |
 | [Pi 4 Model B mechanical drawing](https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-mechanical-drawing.pdf) | A | pi4b outline, holes, corner radius, hole dia, connector map |
 | [Pi 5 mechanical drawing](https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-mechanical-drawing.pdf) | A | pi5 outline, holes, hole dia, connector map (corner radius NOT labelled on this sheet — see below) |
+| [BananaPi BPI-R4 docs page](https://docs.banana-pi.org/en/BPI-R4/BananaPi_BPI-R4) | — | links to the mechanical DXF + assembly drawing below |
+| [BPI-R4-Main-V11 mechanical DXF](https://drive.google.com/file/d/1FMqHSZnug-IebvTIhkSwmWhDAPyWxr6A/view) (TOP+BOT, vendor CAD export) | A | bpir4 outline, all 16 hole coords/diameters, corner chamfer geometry |
+| [BPI-R4 product page](https://www.banana-pi.org/en/bananapi-router/155.html) | B | bpir4 outline corroboration ("100.5x148mm" text) |
+
+BPI-R4 connector **positions** (SFP/RJ45/USB/power on the `ymin` edge) are
+tier **[B]/[C]**, not the DXF: the DXF has no refdes/component-name text at
+all, so every connector box was pixel-measured off the vendor's separate
+assembly drawing (rendered PNG, calibrated against the DXF's own outline)
+rather than read off a dimensioned CAD source — see `RESEARCH.md` for the
+per-connector breakdown and detection method.
 
 Provenance tiers (also tagged inline in `sbc.scad` / `RESEARCH.md`): **[A]**
 raspberrypi.com official mechanical drawing/STEP, **[B]** multi-peer
@@ -101,11 +139,11 @@ reconstruction: `RESEARCH.md`.
 ## Coverage & verification notes
 
 **Boards covered now**: the Model-B family (`pi3b`, `pi3bplus`, `pi4b`,
-`pi5`) only. **Deferred to later plans** — not in this library yet:
+`pi5`) plus the BananaPi **`bpir4`** (2×SFP + 4×RJ45 variant). **Deferred to
+later plans** — not in this library yet:
 
-- BananaPi BPI-R4 (2×SFP+ / 4×RJ45) — the driving need for this library,
-  scheduled for **Plan 2**.
-- Other BPI-R4 variants (lite / pro / 1×SFP+ / 5×RJ45 configs) — later.
+- Other BPI-R4 variants — `lite` / `pro` / 1×SFP+ / 5×RJ45 configs — different
+  boards, not covered by the `bpir4` key.
 - Raspberry Pi Zero family — **Plan 3**.
 - Pi A+/3A+, Compute Module carrier boards, Pi 400 — not yet scheduled.
 
@@ -133,6 +171,45 @@ reconstruction: `RESEARCH.md`.
   callout captured for this connector.
 - **pi4b `av_jack` X position** — `[C]`, assigned by analogy to pi3b's mounting
   -hole offset; not independently isolated on the pi4b drawing.
+
+**BPI-R4-specific `//VERIFY` items** — this board's provenance is generally
+lower-fidelity than the Pi family (no official mechanical drawing was found,
+only a vendor DXF + a separate assembly PNG):
+
+- **Corner radius (2.0mm) — [C] //VERIFY**. The DXF outline is actually an
+  8-point polygon with **2×2mm 45° chamfers**, not a radiused fillet;
+  `sbc_corner_radius()`'s fillet-only geometry can't express a chamfer, so
+  `2.0` is the closest visual approximation the shared row schema supports —
+  not a faithful reproduction of the real corner profile.
+- **Thickness (1.6mm) — [C] //VERIFY**, unsourced. No dimension exists in the
+  DXF, the product page, or the docs page; `1.6` is a generic multilayer-PCB
+  estimate (deliberately not reused from the RPi family's 1.4mm — a heavier,
+  denser router board is a different weight class).
+- **Mounting holes — [A]** from the DXF (`PG_ASSEMBLY_HOLE_DIAM` layer, all
+  16 centers exact), but 14 measure **~3.0mm** dia and 2 measure **~3.3mm**
+  — a real design difference the shared `sbc_holes_xy(b)`/`sbc_hole_dia()`
+  schema can't encode (one global diameter, no per-hole field). All 16 are
+  clearance-drilled uniformly by `sbc_mount_holes()`/`sbc_standoffs()` at the
+  single `sbc_hole_dia()` value; noted here rather than silently dropped.
+- **Connector positions — `[B]`/`[C]` //VERIFY across the board**. The DXF
+  has **no connector refdes text at all** (only a handful of silkscreen
+  labels), so every SFP/RJ45/USB/power box was read from the DXF footprint
+  geometry plus the separate vendor assembly-drawing silhouette (pixel-
+  measured off a calibrated render), not from dimensioned CAD text. Body
+  depths/heights are frequently estimated from generic connector datasheets.
+  The **3-gang LAN RJ45 (CN21)** is split into 3 **equal** ports (`rj45_2`/
+  `rj45_3`/`rj45_4`) — the overall envelope is `[B]` pixel-detected, but no
+  internal divider is dimensioned anywhere, so the even trisection itself is
+  `[C]` //VERIFY.
+- **No Pi-style `"gpio"` header is modeled for `bpir4`.** The DXF's
+  `PIN_TOP` layer shows no 2×20/2.54mm THT grid anywhere on the board — any
+  GPIO/pin header is undimensioned in available sources, and is a
+  documented gap (omitted rather than invented). The "exactly one gpio"
+  invariant in the test suite is scoped to the Pi Model-B boards only —
+  BPI-R4 is exempt.
+- **M.2 sockets (CN12/14/16/18, BOT side) are omitted** — a documented gap,
+  not front-panel-relevant, and several sit on the PCB underside
+  (incompatible with this library's top-face-only connector convention).
 
 **General connector caveat**: many connector Y-position / edge assignments
 are `[A]` read directly off each drawing's own dimension chain, but body
