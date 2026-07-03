@@ -31,8 +31,10 @@ import top-level variables).
 
 `"pi3b"`, `"pi3bplus"`, `"pi4b"`, `"pi5"` (string keys — see
 `sbc_known_boards()`). All four share the Raspberry Pi Model-B footprint:
-85.6 × 56mm outline, 58 × 49mm 4-hole mounting rectangle inset 3.5mm from each
-edge.
+85.6 × 56mm outline, 58 × 49mm 4-hole mounting rectangle. Holes sit at
+x∈{3.5, 61.5}, y∈{3.5, 52.5} — inset 3.5mm from the xmin/ymin edges and the ymax
+edge, but **not centered in X**: the far column is 85.6−61.5 = 24.1mm from the
+xmax edge. (Design off `sbc_holes_xy(b)`, not a symmetric inset.)
 
 ## Reference
 
