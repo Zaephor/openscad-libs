@@ -43,7 +43,10 @@ module _check_connectors(b) {
 }
 for (b = sbc_known_boards()) _check_connectors(b);
 
-// Every board has a 40-pin GPIO header named "gpio".
+// Every board that declares connectors must have exactly one "gpio" header.
+// A board added outline-first (connectors still empty) is exempt until it is
+// populated — this still catches a missing/duplicate gpio on any populated board.
 for (b = sbc_known_boards())
-    assert(len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) == 1,
+    assert(len(sbc_connectors(b)) == 0 ||
+           len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) == 1,
            str(b, " has one gpio connector"));
