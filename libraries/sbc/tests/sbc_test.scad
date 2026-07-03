@@ -43,10 +43,14 @@ module _check_connectors(b) {
 }
 for (b = sbc_known_boards()) _check_connectors(b);
 
-// Every board that declares connectors must have exactly one "gpio" header.
-// A board added outline-first (connectors still empty) is exempt until it is
-// populated — this still catches a missing/duplicate gpio on any populated board.
-for (b = sbc_known_boards())
-    assert(len(sbc_connectors(b)) == 0 ||
-           len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) == 1,
+// The Raspberry Pi Model-B boards each expose exactly one 40-pin "gpio" header.
+// This is a Pi-family spec feature, NOT a universal SBC invariant: e.g. bpir4
+// (a router board) has no Pi-style header dimensioned in any available source,
+// so it is (correctly) omitted rather than invented to satisfy a test.
+for (b = ["pi3b", "pi3bplus", "pi4b", "pi5"])
+    assert(len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) == 1,
            str(b, " has one gpio connector"));
+// No board (Pi or otherwise) may declare a DUPLICATE gpio.
+for (b = sbc_known_boards())
+    assert(len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) <= 1,
+           str(b, " has at most one gpio connector"));

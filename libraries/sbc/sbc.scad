@@ -178,7 +178,10 @@ function _sbc_table() = [
           ["usbc_pwr_1",  [134.62,  0, 1.6], [8.94,   9.95,  3.2], "ymin"], // CN5 "PD20V" USB-C PD input. [B] left edge + top edge pixel-detected; [C] //VERIFY width (generic USB-C receptacle datasheet figure, own right-edge detector pass inconclusive — see RESEARCH.md re: CN6 proximity)
           // Non-front-panel:
           ["uart_1",      [8.0,    10.0, 1.6], [5.0,   10.0,  6.0], "top"], // CON1 console/UART header ("G RX TX" silkscreen labels), does not touch a lateral edge. [C] //VERIFY position (visual crop read only, not pixel-detector-confirmed — search window overlapped CN11's own edges); h=6.0 [B] from Header_PIN 2.54mm.pdf body height
-          ["gpio",        [95.0,   78.0, 1.6], [51.0,  5.0,   8.5], "top"], // 40-pin Pi-style GPIO header (per brief). [C] //VERIFY — DXF PIN_TOP circle search found NO 2x20/2.54mm-pitch THT grid anywhere (only tight-pitch SoC BGA/QFN pads); position is a placeholder in open board area clear of mounting holes + other connectors, dimensions reused from the Pi family's _sbc_gpio() convention for compatibility. Real header location NOT confirmed — weakest entry in this table, see RESEARCH.md
+          // NOTE: no Pi-style 40-pin "gpio" header is modeled for bpir4 — the DXF
+          // PIN_TOP layer shows NO 2x20/2.54mm THT grid anywhere, so any GPIO/pin
+          // header on this board is undimensioned in available sources. Omitted
+          // rather than invented (verified-research-over-guesswork). See RESEARCH.md.
         ] ],
 ];
 
