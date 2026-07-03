@@ -6,14 +6,16 @@ Raspberry Pi "Model B" family. Mechanical mounting/clearance geometry only (no
 electrical/signal data). Units: **mm**.
 
 Datum: **bottom-left PCB corner** at the origin, component/top side up, PCB
-bottom on `Z=0`. `+X` = board **long** edge, `+Y` = board **short** edge. Board
-exit edges are named `"xmin"` / `"xmax"` / `"ymin"` / `"ymax"` (the board edge
-a connector's opening faces).
+bottom on `Z=0`. `+X` = board **long** edge, `+Y` = board **short** edge.
+Connector exit edges are named `"xmin"` / `"xmax"` / `"ymin"` / `"ymax"`
+(**lateral** — the opening faces out that board edge) or `"top"` (the
+opening faces `+Z`, up off the PCB's top face, with no lateral edge touched
+— e.g. the GPIO header).
 
 A **connector record** is `[name, [x,y,z], [w,d,h], edge]`:
 `[x,y,z]` is the box's **minimum** corner, `[w,d,h]` are its extents along
 X/Y/Z (`z` is always the board's `sbc_thickness()`, since every connector sits
-on the PCB top face), and `edge` is one of the four exit edges above.
+on the PCB top face), and `edge` is one of the five exit values above.
 
 ![Pi 4B placeholder render](renders/pi4b-placeholder.png)
 
@@ -71,6 +73,14 @@ module pi4b_case_wall() {
         sbc_faceplate_cutouts("pi4b", "xmax", depth = 10); // right-edge USB2/USB3/RJ45 openings
     }
 }
+```
+
+`sbc_faceplate_cutouts(b, "top", depth)` works the same way for every
+up-facing connector (currently just `gpio`) — cuts a lid/standoff-tray
+opening above the header instead of a side-wall opening:
+
+```scad
+sbc_faceplate_cutouts("pi4b", "top", depth = 10); // GPIO header clearance through a lid
 ```
 
 ## Sources
@@ -132,3 +142,12 @@ fine for faceplate/cutout openings (`sbc_port_cutout`,
 `sbc_faceplate_cutouts`), which only need position + opening size — confirm
 the specific connector's tier in `sbc.scad`/`RESEARCH.md` before relying on
 it for tight internal clearance.
+
+**Placeholder bodies stop at the PCB edge**: every lateral connector's box in
+`sbc_placeholder(b)` is modeled with its outer face flush with the board edge
+(box max = board edge) — it does **not** model the real outboard overhang of
+shells like USB-A or RJ45, which typically protrude **~2mm past** the bare
+PCB edge in real hardware. This is fine for faceplate/panel cutouts (position
++ opening size are unaffected), but if you're checking tight clearance
+against an enclosure wall or neighboring part, add ~2mm of your own margin
+past the PCB edge rather than trusting the placeholder's outer face.

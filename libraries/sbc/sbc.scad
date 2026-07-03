@@ -1,12 +1,19 @@
-// sbc — single-board-computer mechanical reference (Raspberry Pi Model-B family
-// this task; connectors/placeholder/stamps arrive in later tasks).
+// sbc — single-board-computer mechanical reference (Raspberry Pi Model-B family:
+// pi3b, pi3bplus, pi4b, pi5). Board outline, mounting holes, connector footprints,
+// the placeholder envelope, and the hole/cutout stamp modules all ship below.
 // Datum: bottom-left PCB corner at the origin, component/top side up.
 // +X = board LONG edge, +Y = board SHORT edge, PCB bottom on Z=0.
+// Connector exit edges: "xmin"/"xmax"/"ymin"/"ymax" (lateral — the opening faces
+// out a board edge) or "top" (the opening faces +Z, up off the PCB's top face —
+// e.g. the GPIO header; no lateral edge is touched). sbc_faceplate_cutouts(b,
+// "top") cuts every up-facing connector in one call, same as any lateral edge.
 // Roles (see docs/LIBRARY-AUTHORING.md):
 //   1. Data        — functions returning constants / table lookups
 //                    (expose as functions: OpenSCAD `use` does not import variables)
-//   2. Placeholder — <board>_placeholder(): envelope solid for fit checks   (Task 5)
-//   3. Hole-stamp  — <board>_holes(): mounting holes for a consumer difference() (Task 6)
+//   2. Placeholder — sbc_placeholder(b): envelope solid for fit checks
+//   3. Hole-stamp / cutout — sbc_mount_holes(b), sbc_standoffs(b), sbc_port_cutout(b,
+//                    name), sbc_faceplate_cutouts(b, edge): mounting holes + connector
+//                    opening stamps for a consumer difference()
 // Provenance: [A] raspberrypi.com official mechanical drawing/STEP, [B] multi-peer
 // community corroboration, [C] single community STL/reverse-engineered. //VERIFY
 // marks weak/unconfirmed values. See RESEARCH.md for full source list + notes.
@@ -22,7 +29,7 @@ function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings labe
     // feature, 0.05mm drilling-tolerance difference from the Pi4/Pi5 label) — see RESEARCH.md.
 
 // Row: [key, [x,y], corner_r, thickness, [[hx,hy],...holes], [connectors...]]
-// Connectors are [name, [x,y,z], [w,d,h], edge]; added in a later task (empty for now).
+// Connectors are [name, [x,y,z], [w,d,h], edge].
 // All four boards share the 58x49mm 4-hole rectangle inset 3.5mm and the outline below —
 // confirmed directly against each board's own raspberrypi.com mechanical drawing (identical
 // "85 / 58 / 29 / 3.5 / 49 / 56" dimension chain on all four; hole coords + Y outline are
@@ -30,19 +37,27 @@ function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings labe
 // 85.6 is the widely multi-peer-corroborated precise classic figure — [B], not read directly
 // off the drawing. See RESEARCH.md for the full per-value tier breakdown + sources.
 // Connectors: [name, [x,y,z], [w,d,h], edge] — [x,y,z] is the box MINIMUM corner,
-// [w,d,h] are extents along X/Y/Z, edge is the board edge the opening faces.
+// [w,d,h] are extents along X/Y/Z, edge is "xmin"/"xmax"/"ymin"/"ymax" (the board
+// edge the opening faces, lateral) or "top" (the opening faces +Z, no board edge).
 // z is always sbc_thickness(b) (connectors sit on the PCB top face). h is read
 // directly off each drawing's own "Z-Height=" / "Z=" callout where present — [A],
 // very reliable, independent of the X/Y position tiering. Full per-connector
 // source/tier notes (which offsets are [A] read-off-drawing vs [B] standard-body
 // estimate vs [C]//VERIFY) are in RESEARCH.md; only a short tag is given inline
-// here. GPIO header X/Y is read directly off the pi3b drawing ([A]: x=1.5 from its
-// own left-edge dimension chain, y forced to the ymax edge per the box convention,
+// here. GPIO header X/Y/edge is read directly off the pi3b drawing ([A]: header
+// box left edge pixel-measured at x=7.1 against the drawing's own left-edge/hole-
+// centerline dimension chain — corrected in final review; an earlier pass had
+// misread "x=1.5", which is actually the AERIAL antenna connector's centerline,
+// a different feature entirely. x=7.1 also matches the well-known Raspberry Pi
+// HAT-spec header inset figure. y/d are read off the header box's own top/bottom
+// edges relative to the board's top edge line: box spans y=50.0..55.0, i.e. inset
+// 1.0mm from the board's top (ymax) edge — the header opens upward (+Z) off the
+// board's top face, not out a lateral edge, so edge="top" (see header comment).
 // h=8.5 from the "Z-Height=8.5"/"Z=8.5" callout printed on pi3b/pi3bplus/pi4b) and
 // carried forward byte-for-byte onto pi3bplus/pi5 [B] — the 40-pin header position
 // is fixed across the whole family by the Raspberry Pi HAT mechanical spec, so reuse
 // here is a compatibility requirement, not a guess.
-function _sbc_gpio() = ["gpio", [1.5, 51.0, 1.4], [51.0, 5.0, 8.5], "ymax"];
+function _sbc_gpio() = ["gpio", [7.1, 50.0, 1.4], [51.0, 5.0, 8.5], "top"];
 
 function _sbc_table() = [
     // [A] https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-mechanical-drawing.pdf
@@ -184,6 +199,7 @@ module sbc_port_cutout(b, name, depth = 20) {
     else if (e == "xmin") translate([p[0]-depth,  p[1], p[2]]) cube([depth+o, s[1], s[2]]);
     else if (e == "ymax") translate([p[0], p[1]+s[1]-o, p[2]]) cube([s[0], depth+o, s[2]]);
     else if (e == "ymin") translate([p[0], p[1]-depth,  p[2]]) cube([s[0], depth+o, s[2]]);
+    else if (e == "top")  translate([p[0], p[1], p[2]+s[2]-o]) cube([s[0], s[1], depth+o]);
     else assert(false, str("sbc: connector ", name, " has bad edge ", e));
 }
 

@@ -22,4 +22,13 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch a wrong assert:"; echo "$out"; exit 1
 fi
 
+cat > "$tmp/bad_board.scad" <<'EOF'
+use <sbc/sbc.scad>;
+x = sbc_size("bogus");
+EOF
+out="$(run "$tmp/bad_board.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unknown board:"; echo "$out"; exit 1
+fi
+
 echo ok
