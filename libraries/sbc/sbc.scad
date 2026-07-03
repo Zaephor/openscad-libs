@@ -22,7 +22,7 @@
 $fn = 48;
 
 /* [Data] */
-function sbc_known_boards() = ["pi3b", "pi3bplus", "pi4b", "pi5"];
+function sbc_known_boards() = ["pi3b", "pi3bplus", "pi4b", "pi5", "bpir4"];
 
 function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings label "Ø2.7";
     // Pi3B drawing calls out "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/-0.05mm" (same
@@ -136,6 +136,26 @@ function _sbc_table() = [
           ["csi_dsi_1", [0, 42.7, 1.4], [2.5, 6, 5.5], "xmin"], // [A] pos / [C] extent //VERIFY
           ["csi_dsi_2", [0, 31.6, 1.4], [2.5, 6, 5.5], "xmin"], // [A] pos / [C] extent //VERIFY
         ] ],
+    // BananaPi BPI-R4 (standard variant: 2x SFP + 4x RJ45, MTK MT7988A, 4G/8G RAM —
+    // RAM size doesn't change the PCB). [A] vendor mechanical DXF, "BPI-R4-Main-V11"
+    // (BPI-R4-Main-V11-DXF/BPI-R4-Main-V11_TOP.dxf), via docs.banana-pi.org's
+    // Google-Drive-hosted "BPI-R4 DXF file" link — see RESEARCH.md. Outline read
+    // directly off the DXF's BG_DESIGN_OUTLINE polyline: bbox 148.0 x 100.5mm exactly
+    // (the brief's ~148.5 figure is NOT what the drawing shows; using the confirmed
+    // 148.0). Real corners are a 2x2mm 45-degree CHAMFER (an 8-point polygon), not a
+    // fillet — corner_r=2.0 below is the closest approximation the shared hull()
+    // rounded-rect placeholder geometry supports, //VERIFY visual-only, not a true
+    // chamfer. thickness: no dimension found anywhere (DXF, docs, product page) —
+    // [C] 1.6mm nominal //VERIFY (standard multilayer-PCB thickness assumption; this
+    // board is a heavier router design than the RPi family's carried-forward 1.4mm,
+    // not reused from those rows). 16 mounting holes, [A] DXF PG_ASSEMBLY_HOLE_DIAM
+    // layer exact circle centers (14 at 3.0mm dia, 2 at ~3.3mm dia — see RESEARCH.md);
+    // pattern is asymmetric/component-driven, not a simple corner rectangle.
+    ["bpir4",    [148.0, 100.5], 2.0, 1.6,
+        [ [129.54, 15.25], [3.50, 23.50], [144.50, 23.50], [75.85, 27.21],
+          [56.25, 31.59], [113.54, 31.59], [129.54, 35.25], [129.54, 53.25],
+          [129.54, 65.25], [117.75, 69.11], [47.60, 75.69], [57.60, 75.69],
+          [56.25, 88.30], [113.54, 88.30], [3.50, 97.00], [144.50, 97.00] ], [] ],
 ];
 
 function _sbc_row(b) =
