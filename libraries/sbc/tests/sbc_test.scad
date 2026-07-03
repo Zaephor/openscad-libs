@@ -54,3 +54,12 @@ for (b = ["pi3b", "pi3bplus", "pi4b", "pi5"])
 for (b = sbc_known_boards())
     assert(len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) <= 1,
            str(b, " has at most one gpio connector"));
+
+// String prefix helper for connector name checks.
+function _starts(s, p) = len(s) >= len(p) && [for (i=[0:len(p)-1]) s[i]] == [for (i=[0:len(p)-1]) p[i]];
+
+// --- BPI-R4 ---
+assert(sbc_size("bpir4") == [148.0, 100.5], "bpir4 size");
+// The 2xSFP + 4xRJ45 variant: exactly 2 sfp_* and 4 rj45_* connectors.
+assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "sfp"))  1]) == 2, "bpir4 has 2 sfp");
+assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) 1]) == 4, "bpir4 has 4 rj45");
