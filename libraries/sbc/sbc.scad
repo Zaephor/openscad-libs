@@ -35,7 +35,7 @@ function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings labe
 // directly off each drawing's own "Z-Height=" / "Z=" callout where present — [A],
 // very reliable, independent of the X/Y position tiering. Full per-connector
 // source/tier notes (which offsets are [A] read-off-drawing vs [B] standard-body
-// estimate vs [C]/�VERIFY) are in RESEARCH.md; only a short tag is given inline
+// estimate vs [C]//VERIFY) are in RESEARCH.md; only a short tag is given inline
 // here. GPIO header X/Y is read directly off the pi3b drawing ([A]: x=1.5 from its
 // own left-edge dimension chain, y forced to the ymax edge per the box convention,
 // h=8.5 from the "Z-Height=8.5"/"Z=8.5" callout printed on pi3b/pi3bplus/pi4b) and
@@ -103,8 +103,8 @@ function _sbc_table() = [
           // part). Y-spans [A] off the drawing's own "10.2/29.1/47/56" chain; rj45
           // and usb2 intentionally share the same box — see RESEARCH.md.
           ["usb3",     [68.6, 29.1, 1.4], [17, 17.9, 16.0], "xmax"], // [A]/[B]
-          ["rj45",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A]/[B] shared combo footprint
-          ["usb2",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A]/[B] shared combo footprint
+          ["rj45",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A] pos /[C] extent //VERIFY rj45+usb2 combo, undimensioned split
+          ["usb2",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A] pos /[C] extent //VERIFY rj45+usb2 combo, undimensioned split
           // bottom edge (ymin): X centrelines [A] off the drawing's own explicit
           // "11.2 / 25.8 / 39.2" dimensions (Pi5 prints these directly, unlike the
           // chained values on pi3b/pi4b).
