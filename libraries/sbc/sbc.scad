@@ -155,5 +155,42 @@ module sbc_placeholder(b) {
     }
 }
 
+/* [Hole-stamp / cutout] */
+SBC_OVERLAP = 0.5; // mm back-overlap so cutouts meet the board cleanly.
+
+// Mount clearance holes; use inside a consumer difference().
+module sbc_mount_holes(b, depth = 20, dia = -1) {
+    d = dia < 0 ? sbc_hole_dia() : dia;
+    for (p = sbc_holes_xy(b))
+        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = d);
+}
+
+// Positive standoff posts (print a tray directly). Pilot bore subtracted.
+module sbc_standoffs(b, height, dia = -1, bore = -1) {
+    od = dia  < 0 ? 6.0 : dia;   // post OD default //VERIFY [C] vs hardware standoff
+    bd = bore < 0 ? 2.2 : bore;  // pilot for M2.5 self-tap //VERIFY [C]
+    for (p = sbc_holes_xy(b))
+        translate([p[0], p[1], 0]) difference() {
+            cylinder(h = height, d = od);
+            translate([0, 0, -1]) cylinder(h = height + 2, d = bd);
+        }
+}
+
+// One connector's panel opening, extruded outward along its exit edge.
+module sbc_port_cutout(b, name, depth = 20) {
+    c = sbc_connector(b, name); p = c[1]; s = c[2]; e = c[3];
+    o = SBC_OVERLAP;
+    if      (e == "xmax") translate([p[0]+s[0]-o, p[1], p[2]]) cube([depth+o, s[1], s[2]]);
+    else if (e == "xmin") translate([p[0]-depth,  p[1], p[2]]) cube([depth+o, s[1], s[2]]);
+    else if (e == "ymax") translate([p[0], p[1]+s[1]-o, p[2]]) cube([s[0], depth+o, s[2]]);
+    else if (e == "ymin") translate([p[0], p[1]-depth,  p[2]]) cube([s[0], depth+o, s[2]]);
+    else assert(false, str("sbc: connector ", name, " has bad edge ", e));
+}
+
+// All connectors on an edge → the full panel for that edge (e.g. a router faceplate).
+module sbc_faceplate_cutouts(b, edge, depth = 20) {
+    for (c = sbc_connectors(b)) if (c[3] == edge) sbc_port_cutout(b, c[0], depth);
+}
+
 // Visual self-check when opened directly.
 sbc_placeholder("pi4b");
