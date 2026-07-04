@@ -2,8 +2,9 @@
 
 Single-board-computer mechanical reference: board outline, corner radius, PCB
 thickness, mounting-hole coordinates, and connector footprints, for the
-Raspberry Pi "Model B" family plus the BananaPi BPI-R4. Mechanical
-mounting/clearance geometry only (no electrical/signal data). Units: **mm**.
+Raspberry Pi "Model B" family, the Raspberry Pi Zero family, and the
+BananaPi BPI-R4. Mechanical mounting/clearance geometry only (no
+electrical/signal data). Units: **mm**.
 
 Datum: **bottom-left PCB corner** at the origin, component/top side up, PCB
 bottom on `Z=0`. `+X` = board **long** edge, `+Y` = board **short** edge.
@@ -48,6 +49,19 @@ PD) sit on the **`ymin`** edge. Other BPI-R4 configurations — `lite`/`pro`/
 option is electrical-only and mechanically irrelevant either way.
 
 ![BPI-R4 placeholder render](renders/bpir4-placeholder.png)
+
+`"pizero"` (Raspberry Pi Zero / Zero W / Zero WH — one shared mechanical
+design per Raspberry Pi Ltd) and `"pizero2w"` (Zero 2 W) — both 65 × 30mm
+outline, 58 × 23mm 4-hole mounting rectangle, holes at x∈{3.5, 61.5},
+y∈{3.5, 26.5} (inset 3.5mm from **all four** edges). The front connector
+cluster — mini-HDMI + 2 micro-USB (data, then power nearest the corner) —
+sits on the **`ymin`** edge on both boards. Both also carry the 40-pin GPIO
+header footprint (`"top"` edge; unpopulated pin slot on the base `pizero`,
+Pi-HAT-compatible either way). `pizero2w` additionally has a CSI camera FPC
+cutout on the **`xmax`** edge (added in HW rev 1.3, after `pizero`'s v1.2
+drawing was drawn — genuinely absent on that board, not an omission).
+
+![Pi Zero placeholder render](renders/pizero-placeholder.png)
 
 ## Reference
 
@@ -111,6 +125,22 @@ module bpir4_case_wall() {
 
 See `renders/bpir4-faceplate-front.png` for the rendered result.
 
+The same call also handles the Pi Zero's compact front edge — mini-HDMI +
+2× micro-USB in one `ymin` cutout call:
+
+```scad
+use <sbc/sbc.scad>;
+
+module pizero_case_wall() {
+    difference() {
+        translate([-5, -2, -2]) cube([65 + 10, 2, 8]); // enclosure front wall stock
+        sbc_faceplate_cutouts("pizero", "ymin", depth = 10); // mini-HDMI + 2x micro-USB openings
+    }
+}
+```
+
+See `renders/pizero-faceplate-front.png` for the rendered result.
+
 ## Sources
 
 | Source | Tier | Backs |
@@ -122,6 +152,18 @@ See `renders/bpir4-faceplate-front.png` for the rendered result.
 | [BananaPi BPI-R4 docs page](https://docs.banana-pi.org/en/BPI-R4/BananaPi_BPI-R4) | — | links to the mechanical DXF + assembly drawing below |
 | [BPI-R4-Main-V11 mechanical DXF](https://drive.google.com/file/d/1FMqHSZnug-IebvTIhkSwmWhDAPyWxr6A/view) (TOP+BOT, vendor CAD export) | A | bpir4 outline, all 16 hole coords/diameters, corner chamfer geometry |
 | [BPI-R4 product page](https://www.banana-pi.org/en/bananapi-router/155.html) | B | bpir4 outline corroboration ("100.5x148mm" text) |
+| [Pi Zero mechanical drawing](https://datasheets.raspberrypi.com/rpizero/raspberry-pi-zero-mechanical-drawing.pdf) (RPI-ZERO-V1_2, 23/09/2015) | A | pizero outline, holes, corner radius, hole dia |
+| [Pi Zero 2 W mechanical drawing](https://datasheets.raspberrypi.com/rpizero2/raspberry-pi-zero-2-w-mechanical-drawing.pdf) ("Zero 2 Mechanical drawing", 2021-10-28) | A | pizero2w outline, holes |
+
+Note on the Zero 2 W URL: the intuitively-named `rpizero2w/` path **404s**;
+the working path is `rpizero2/` (it resolves through to
+`pip.raspberrypi.com/documents/RP-008358-DS-raspberry-pi-zero-2-w-mechanical-drawing.pdf`).
+Both Pi Zero connector clusters (mini-HDMI + 2× micro-USB, and `pizero2w`'s
+CSI notch) are tier **[B]/[C]**, same treatment as BPI-R4 below: neither
+drawing prints per-connector dimension text or a Z-height/thickness
+callout, so positions are pixel-measured off each board's own hole-grid-
+calibrated render and heights are generic-part estimates — see
+`RESEARCH.md` for the full method.
 
 BPI-R4 connector **positions** (SFP/RJ45/USB/power on the `ymin` edge) are
 tier **[B]/[C]**, not the DXF: the DXF has no refdes/component-name text at
@@ -139,12 +181,12 @@ reconstruction: `RESEARCH.md`.
 ## Coverage & verification notes
 
 **Boards covered now**: the Model-B family (`pi3b`, `pi3bplus`, `pi4b`,
-`pi5`) plus the BananaPi **`bpir4`** (2×SFP + 4×RJ45 variant). **Deferred to
-later plans** — not in this library yet:
+`pi5`), the BananaPi **`bpir4`** (2×SFP + 4×RJ45 variant), and the
+Raspberry Pi Zero family (`pizero`, `pizero2w`). **Deferred to later
+plans** — not in this library yet:
 
 - Other BPI-R4 variants — `lite` / `pro` / 1×SFP+ / 5×RJ45 configs — different
   boards, not covered by the `bpir4` key.
-- Raspberry Pi Zero family — **Plan 3**.
 - Pi A+/3A+, Compute Module carrier boards, Pi 400 — not yet scheduled.
 
 **Carried `//VERIFY` items** — confirm before a tight-tolerance print:
@@ -171,6 +213,39 @@ later plans** — not in this library yet:
   callout captured for this connector.
 - **pi4b `av_jack` X position** — `[C]`, assigned by analogy to pi3b's mounting
   -hole offset; not independently isolated on the pi4b drawing.
+
+**Pi Zero-specific `//VERIFY` items**:
+
+- **Corner radius (3.0mm) — [A] on `pizero`, [B] //VERIFY carried-forward on
+  `pizero2w`**. The `pizero` sheet has an explicit "CORNER RADIUS = 3.0mm"
+  callout; the `pizero2w` sheet has no equivalent label anywhere on the
+  page, so its value is the family figure carried forward, not independently
+  read.
+- **Thickness (1.4mm, both boards) — [C] //VERIFY**, unsourced. Neither Pi
+  Zero drawing has a side view or any thickness dimension; `1.4` reuses the
+  same generic estimate as the Model-B family.
+- **Connector positions (minihdmi/microusb_data/microusb_pwr, both boards)
+  — [B]**, not drawing-dimensioned: neither sheet prints per-connector
+  dimension text, so every box was pixel-measured off the board's own
+  hole-grid-calibrated render. **Connector heights are [C] //VERIFY**
+  generic-part figures (no Z-height text on either sheet) — same lower-tier
+  caveat as the general connector note below.
+- **`gpio` (2×20 THT footprint, both boards) — [B]**, pixel-measured but
+  genuinely present: cross-validated against the Model-B family's
+  independently-sourced `_sbc_gpio()` figures (close agreement), unlike
+  `bpir4`, which has no GPIO header at all.
+- **`microsd` is omitted on both boards** — a documented gap, not a guess:
+  the real slot is underside-mounted (opposite face from the header/SoC),
+  and both drawings are single top-view sheets with no bottom view to
+  position it from.
+- **`pizero2w` `csi` — [B]/[C] //VERIFY, the weakest-sourced record in
+  either Pi Zero row**. Position/shape are pixel-measured off a real notch
+  cut into the board outline (absent on `pizero`'s earlier v1.2 sheet), but
+  neither drawing has a refdes or label confirming the notch is the CSI
+  connector rather than some other mechanical/antenna keep-out feature;
+  included per its strong positional/shape match to the known family CSI
+  location, not a refdes-confirmed reading. `h=1.5` is a generic low-profile
+  FPC estimate `[C]`.
 
 **BPI-R4-specific `//VERIFY` items** — this board's provenance is generally
 lower-fidelity than the Pi family (no official mechanical drawing was found,
