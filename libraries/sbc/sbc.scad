@@ -1,6 +1,7 @@
 // sbc — single-board-computer mechanical reference (Raspberry Pi Model-B family:
-// pi3b, pi3bplus, pi4b, pi5). Board outline, mounting holes, connector footprints,
-// the placeholder envelope, and the hole/cutout stamp modules all ship below.
+// pi3b, pi3bplus, pi4b, pi5; Raspberry Pi Zero family: pizero, pizero2w; BananaPi
+// bpir4). Board outline, mounting holes, connector footprints, the placeholder
+// envelope, and the hole/cutout stamp modules all ship below.
 // Datum: bottom-left PCB corner at the origin, component/top side up.
 // +X = board LONG edge, +Y = board SHORT edge, PCB bottom on Z=0.
 // Connector exit edges: "xmin"/"xmax"/"ymin"/"ymax" (lateral — the opening faces
@@ -23,7 +24,7 @@
 $fn = 48;
 
 /* [Data] */
-function sbc_known_boards() = ["pi3b", "pi3bplus", "pi4b", "pi5", "bpir4"];
+function sbc_known_boards() = ["pi3b", "pi3bplus", "pi4b", "pi5", "bpir4", "pizero", "pizero2w"];
 
 function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings label "Ø2.7";
     // Pi3B drawing calls out "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/-0.05mm" (same
@@ -183,6 +184,36 @@ function _sbc_table() = [
           // header on this board is undimensioned in available sources. Omitted
           // rather than invented (verified-research-over-guesswork). See RESEARCH.md.
         ] ],
+    // Raspberry Pi Zero family (pizero = Zero / Zero W / Zero WH, same mechanicals;
+    // pizero2w = Zero 2 W). Connectors are out of scope for this task — [] below;
+    // a later task fills them in. [A] vendor mechanical drawings, both confirmed
+    // directly (not carried across boards blind): outline 65x30, corner radius
+    // 3.0mm, and the 58x23mm 4-hole rectangle inset 3.5mm from ALL FOUR edges
+    // (not just two — verified via the drawings' own dimension chains: X chain
+    // "65 / 58 / 29" and the connector-position chain "3.5 / 12.4 / 41.4 / 54"
+    // both read off the LEFT edge put the hole columns at x={3.5,61.5}, i.e.
+    // 65-61.5=3.5 on the right too; Y chain "30 / 23 / 3.5" (top) + the mirrored
+    // "3.5" (bottom) put the hole rows at y={3.5,26.5}, i.e. 30-26.5=3.5 on the
+    // bottom too). thickness: neither drawing dimensions bare-PCB thickness (no
+    // side view on either sheet) — [C] 1.4mm nominal //VERIFY, same treatment as
+    // the Model-B family. See RESEARCH.md for the full per-value tier breakdown.
+    // [A] https://datasheets.raspberrypi.com/rpizero/raspberry-pi-zero-mechanical-drawing.pdf
+    // ("RASPBERRY PI ZERO", ref RPI-ZERO-V1_2, dated 23/09/2015). Corner radius:
+    // [A] drawing text "CORNER RADIUS = 3.0mm". Hole dia callout on this sheet:
+    // "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/- 0.05mm" (same feature as the
+    // Model-B rows' sbc_hole_dia(), not stored per-row).
+    ["pizero",   [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]], []],
+    // [A] https://datasheets.raspberrypi.com/rpizero2w/raspberry-pi-zero-2-w-mechanical-drawing.pdf
+    // (resolves via 301/302 to pip.raspberrypi.com/documents/RP-008358-DS-raspberry-
+    // -pi-zero-2-w-mechanical-drawing.pdf; "Zero 2 Mechanical drawing", 2021-10-28).
+    // Outline + hole rectangle independently confirmed on THIS drawing's own dimension
+    // chain (identical "65 / 29 / 23 / 3.5 x4 / 12.4 / 41.4 / 54" figures to pizero,
+    // not blind-copied) — see RESEARCH.md. Corner radius: this sheet has NO
+    // "CORNER RADIUS" callout anywhere (checked the full page, unlike the pizero
+    // sheet) — same gap as the pi5 row above; value carried forward from pizero's
+    // [A] 3.0mm, tier [B] //VERIFY here. Sheet also omits the mounting-hole-diameter
+    // callout and any title block (single-view page, no logo/date/ref box).
+    ["pizero2w", [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]], []],
 ];
 
 function _sbc_row(b) =
