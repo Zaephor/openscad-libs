@@ -185,8 +185,14 @@ function _sbc_table() = [
           // rather than invented (verified-research-over-guesswork). See RESEARCH.md.
         ] ],
     // Raspberry Pi Zero family (pizero = Zero / Zero W / Zero WH, same mechanicals;
-    // pizero2w = Zero 2 W). Connectors are out of scope for this task — [] below;
-    // a later task fills them in. [A] vendor mechanical drawings, both confirmed
+    // pizero2w = Zero 2 W). Connector maps below are pixel-measured off each board's
+    // own drawing, calibrated against that drawing's own [A] 58x23mm hole rectangle
+    // (Hough-circle-detected hole centers -> exact affine mm<->px transform), so every
+    // position/extent is tier [B] (precise, corroborated methodology) even though
+    // NEITHER sheet prints per-connector dimension text or Z-height callouts (unlike
+    // the Model-B family drawings) — heights are therefore [C] //VERIFY generic
+    // connector-body figures. Full method + per-connector notes in RESEARCH.md.
+    // [A] vendor mechanical drawings, both confirmed
     // directly (not carried across boards blind): outline 65x30, corner radius
     // 3.0mm, and the 58x23mm 4-hole rectangle inset 3.5mm from ALL FOUR edges
     // (not just two — verified via the drawings' own dimension chains: X chain
@@ -202,7 +208,35 @@ function _sbc_table() = [
     // [A] drawing text "CORNER RADIUS = 3.0mm". Hole dia callout on this sheet:
     // "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/- 0.05mm" (same feature as the
     // Model-B rows' sbc_hole_dia(), not stored per-row).
-    ["pizero",   [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]], []],
+    // Connectors, all pixel-measured [B] against this sheet's own hole grid (see
+    // header note above for method); no Z-height text exists anywhere on this sheet
+    // (checked the full page, incl. title block) so every h is a generic connector-
+    // body estimate [C] //VERIFY. This is the RPI-ZERO-V1_2 (23/09/2015) drawing —
+    // it PRE-DATES the physical CSI camera connector added in HW rev 1.3 (mid-2016);
+    // the board's right edge (xmin..xmax between the two right holes) reads as a
+    // plain straight line on this sheet, no connector or notch present — so "csi" is
+    // deliberately omitted for this row (verified absent, not merely unsearched; see
+    // RESEARCH.md). The microSD card slot is likewise omitted: real Pi Zero boards
+    // mount it on the PCB's UNDERSIDE (opposite face from the header/SoC), but this
+    // sheet is a single "TOP ASSEMBLY" view with no bottom view anywhere on the page
+    // — there is no drawing evidence to position it from, so it's a documented gap,
+    // not a guess (see RESEARCH.md).
+    ["pizero",   [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]],
+        [ // GPIO header footprint (unpopulated on base Zero, Pi-HAT-compatible 2x20/
+          // 2.54mm through-hole grid) — [B] pos/extent pixel-measured (elongated slot
+          // between the two ymax-side holes, inset 1.1mm from the top/ymax edge);
+          // closely matches (not blind-copied from) the Model-B family's independently
+          // -sourced _sbc_gpio() figures, cross-validating both readings. h=8.5 [B]
+          // carried forward from the Model-B family — same physical HAT header part,
+          // no Z-height text on this sheet to read directly.
+          ["gpio",          [7.1,  23.9, 1.4], [51.0, 5.0, 8.5], "top"], // [B]/[B] h
+          // Bottom edge (ymin), left-to-right real layout: mini-HDMI, then the two
+          // micro-USB ports nearest the right corner — [B] pos+extent pixel-measured,
+          // all three boxes' bottom edges sit right on the y=0 line (snapped to 0).
+          ["minihdmi",      [6.9,  0,    1.4], [10.9, 7.0, 3.4], "ymin"], // [B] pos+extent / [C] h //VERIFY generic mini-HDMI (Type C) shell height
+          ["microusb_data", [37.7, 0,    1.4], [7.5,  4.7, 2.8], "ymin"], // [B] pos+extent (silkscreen "USB", left of the pair) / [C] h reused from pi3b's microUSB-B figure
+          ["microusb_pwr",  [50.3, 0,    1.4], [7.6,  4.7, 2.8], "ymin"], // [B] pos+extent (silkscreen "PWR IN", right of the pair, nearest the corner hole) / [C] h as above
+        ] ],
     // [A] https://datasheets.raspberrypi.com/rpizero2/raspberry-pi-zero-2-w-mechanical-drawing.pdf
     // (the rpizero2w/ path 404s; the working path is rpizero2/ — resolves to
     // pip.raspberrypi.com/documents/RP-008358-DS-raspberry-pi-zero-2-w-mechanical-drawing.pdf;
@@ -214,7 +248,35 @@ function _sbc_table() = [
     // sheet) — same gap as the pi5 row above; value carried forward from pizero's
     // [A] 3.0mm, tier [B] //VERIFY here. Sheet also omits the mounting-hole-diameter
     // callout and any title block (single-view page, no logo/date/ref box).
-    ["pizero2w", [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]], []],
+    // Connectors, own-drawing pixel-measurement (rendered at 2x source scale via
+    // pdftoppm -r 600 for a cleaner pixel read; same hole-grid-calibrated method as
+    // pizero above, independently re-run on this sheet's own hole centers, not
+    // copied from the pizero row) — layout confirmed to match pizero closely
+    // (mini-HDMI/microUSB pair boxes agree with pizero's to within ~0.3mm) but
+    // verified on its own terms per the brief, not blind-copied. Same no-Z-height-
+    // text gap as pizero, so every h below is [C] //VERIFY.
+    ["pizero2w", [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]],
+        [ // GPIO header — this sheet actually renders the 2x20 pin circles (unlike
+          // pizero's plain unpopulated-slot outline), but position/extent match
+          // pizero's own reading closely ([B] pixel-measured independently here).
+          ["gpio",          [7.2,  23.9, 1.4], [50.6, 4.9, 8.5], "top"], // [B]/[B] h carried forward, see pizero row
+          // Bottom edge (ymin): same three-connector cluster as pizero, independently
+          // measured on this sheet — mini-HDMI then the two micro-USB ports.
+          ["minihdmi",      [7.1,  0,    1.4], [10.8, 6.8, 3.4], "ymin"], // [B] pos+extent / [C] h //VERIFY, see pizero row
+          ["microusb_data", [37.7, 0,    1.4], [7.4,  4.6, 2.8], "ymin"], // [B] pos+extent (silkscreen "USB") / [C] h
+          ["microusb_pwr",  [50.3, 0,    1.4], [7.4,  4.6, 2.8], "ymin"], // [B] pos+extent (silkscreen "PWR IN") / [C] h
+          // CSI camera FPC connector: right edge (xmax), a distinct notch cut into
+          // the board outline itself between the two right-side mounting holes
+          // (stepped/tabbed channel, clearly deliberate — not present on pizero's
+          // v1.2 sheet, consistent with CSI being added in HW rev 1.3). Position
+          // [B] pixel-measured directly off this notch. //VERIFY: this drawing gives
+          // no refdes/label confirming the notch IS the CSI connector rather than a
+          // mechanical/antenna keep-out channel — flagged as the weakest-sourced
+          // record in this file's Pi Zero rows (see RESEARCH.md); included per the
+          // brief's allowance to map CSI "if the drawing shows it" rather than omit,
+          // since position + shape strongly match the known family CSI location.
+          ["csi",           [61.7, 6.9,  1.4], [3.3, 16.0, 1.5], "xmax"], // [B] pos+extent (notch) / [C] h //VERIFY generic low-profile FPC connector height
+        ] ],
 ];
 
 function _sbc_row(b) =
