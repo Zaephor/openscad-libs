@@ -188,10 +188,14 @@ function _sbc_table() = [
     // pizero2w = Zero 2 W). Connector maps below are pixel-measured off each board's
     // own drawing, calibrated against that drawing's own [A] 58x23mm hole rectangle
     // (Hough-circle-detected hole centers -> exact affine mm<->px transform), so every
-    // position/extent is tier [B] (precise, corroborated methodology) even though
-    // NEITHER sheet prints per-connector dimension text or Z-height callouts (unlike
-    // the Model-B family drawings) — heights are therefore [C] //VERIFY generic
-    // connector-body figures. Full method + per-connector notes in RESEARCH.md.
+    // position/extent is tier [B] (precise, corroborated methodology). Note: the three
+    // ymin connectors' X-CENTRES are effectively drawing-dimensioned after all — both
+    // sheets' own "3.5 / 12.4 / 41.4 / 54" chain lands within ~0.1mm of the shipped
+    // minihdmi/microusb_data/microusb_pwr centres — but neither sheet dimensions
+    // connector body widths/depths or prints any Z-height callout (unlike the Model-B
+    // family drawings), so those extents remain pixel-measured/standard-body [B]/[C]
+    // and every h below is [C] //VERIFY generic connector-body figures. Full method +
+    // per-connector notes in RESEARCH.md.
     // [A] vendor mechanical drawings, both confirmed
     // directly (not carried across boards blind): outline 65x30, corner radius
     // 3.0mm, and the 58x23mm 4-hole rectangle inset 3.5mm from ALL FOUR edges
@@ -216,11 +220,14 @@ function _sbc_table() = [
     // the board's right edge (xmin..xmax between the two right holes) reads as a
     // plain straight line on this sheet, no connector or notch present — so "csi" is
     // deliberately omitted for this row (verified absent, not merely unsearched; see
-    // RESEARCH.md). The microSD card slot is likewise omitted: real Pi Zero boards
-    // mount it on the PCB's UNDERSIDE (opposite face from the header/SoC), but this
-    // sheet is a single "TOP ASSEMBLY" view with no bottom view anywhere on the page
-    // — there is no drawing evidence to position it from, so it's a documented gap,
-    // not a guess (see RESEARCH.md).
+    // RESEARCH.md). The microSD card slot is likewise omitted, but not for lack of
+    // drawing evidence: this sheet DOES dimension the microSD opening, on the xmin
+    // (left) edge — a box protrudes ~2mm past the outline there, with Y-dimensions
+    // "16.9"/"6" printed on the left margin. It's omitted because the card HOLDER
+    // BODY sits on the PCB's UNDERSIDE (z<0, opposite face from the header/SoC),
+    // which this top-side connector model (every connector at z=thickness) can't
+    // cleanly represent, and its Z extent isn't derivable from a top-view sheet —
+    // a documented scope gap, not a missing-evidence one (see RESEARCH.md).
     ["pizero",   [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]],
         [ // GPIO header footprint (unpopulated on base Zero, Pi-HAT-compatible 2x20/
           // 2.54mm through-hole grid) — [B] pos/extent pixel-measured (elongated slot

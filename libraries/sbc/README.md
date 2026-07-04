@@ -159,11 +159,14 @@ Note on the Zero 2 W URL: the intuitively-named `rpizero2w/` path **404s**;
 the working path is `rpizero2/` (it resolves through to
 `pip.raspberrypi.com/documents/RP-008358-DS-raspberry-pi-zero-2-w-mechanical-drawing.pdf`).
 Both Pi Zero connector clusters (mini-HDMI + 2× micro-USB, and `pizero2w`'s
-CSI notch) are tier **[B]/[C]**, same treatment as BPI-R4 below: neither
-drawing prints per-connector dimension text or a Z-height/thickness
-callout, so positions are pixel-measured off each board's own hole-grid-
-calibrated render and heights are generic-part estimates — see
-`RESEARCH.md` for the full method.
+CSI notch) are tier **[B]/[C]**, similar treatment to BPI-R4 below: the
+three bottom-edge (`ymin`) connectors' X-centres are effectively drawing-
+dimensioned (both sheets print a "3.5 / 12.4 / 41.4 / 54" chain that lands
+within ~0.1mm of the shipped centres), but neither drawing dimensions
+connector body widths/depths or prints a Z-height/thickness callout, so
+those extents are pixel-measured off each board's own hole-grid-calibrated
+render and heights are generic-part estimates — see `RESEARCH.md` for the
+full method.
 
 BPI-R4 connector **positions** (SFP/RJ45/USB/power on the `ymin` edge) are
 tier **[B]/[C]**, not the DXF: the DXF has no refdes/component-name text at
@@ -225,8 +228,10 @@ plans** — not in this library yet:
   Zero drawing has a side view or any thickness dimension; `1.4` reuses the
   same generic estimate as the Model-B family.
 - **Connector positions (minihdmi/microusb_data/microusb_pwr, both boards)
-  — [B]**, not drawing-dimensioned: neither sheet prints per-connector
-  dimension text, so every box was pixel-measured off the board's own
+  — [B]**: the X-centres are effectively drawing-dimensioned (both sheets'
+  own "3.5 / 12.4 / 41.4 / 54" chain lands within ~0.1mm of the shipped
+  values), but body widths/depths (and the exact Y positions) are not
+  text-dimensioned, so every box was pixel-measured off the board's own
   hole-grid-calibrated render. **Connector heights are [C] //VERIFY**
   generic-part figures (no Z-height text on either sheet) — same lower-tier
   caveat as the general connector note below.
@@ -235,9 +240,13 @@ plans** — not in this library yet:
   independently-sourced `_sbc_gpio()` figures (close agreement), unlike
   `bpir4`, which has no GPIO header at all.
 - **`microsd` is omitted on both boards** — a documented gap, not a guess:
-  the real slot is underside-mounted (opposite face from the header/SoC),
-  and both drawings are single top-view sheets with no bottom view to
-  position it from.
+  the `pizero` sheet actually DOES dimension the microSD opening (a box
+  protruding ~2mm past the xmin/left edge, with Y-dims "16.9"/"6" on the
+  left margin), but the card **holder body** is underside-mounted
+  (opposite face from the header/SoC, z<0 in this file's datum), which is
+  out of scope for a top-side-only connector model, and its Z extent
+  isn't derivable from either top-view sheet. `pizero2w`'s own sheet shows
+  no equivalent dimensioned protrusion at all.
 - **`pizero2w` `csi` — [B]/[C] //VERIFY, the weakest-sourced record in
   either Pi Zero row**. Position/shape are pixel-measured off a real notch
   cut into the board outline (absent on `pizero`'s earlier v1.2 sheet), but
