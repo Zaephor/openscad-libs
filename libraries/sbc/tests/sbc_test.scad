@@ -8,6 +8,10 @@ assert(sbc_size("pi5")  == [85.6, 56], "pi5 size");
 assert(sbc_holes_xy("pi4b") == sbc_holes_xy("pi5"),  "pi4b/pi5 holes match");
 assert(sbc_holes_xy("pi3b") == sbc_holes_xy("pi4b"), "pi3b/pi4b holes match");
 
+// --- Pi Zero family ---
+assert(sbc_size("pizero")   == [65, 30], "pizero size");
+assert(sbc_size("pizero2w") == [65, 30], "pizero2w size");
+
 // Every mounting hole within envelope.
 module _check_holes(b) {
     sz = sbc_size(b);
@@ -47,7 +51,7 @@ for (b = sbc_known_boards()) _check_connectors(b);
 // This is a Pi-family spec feature, NOT a universal SBC invariant: e.g. bpir4
 // (a router board) has no Pi-style header dimensioned in any available source,
 // so it is (correctly) omitted rather than invented to satisfy a test.
-for (b = ["pi3b", "pi3bplus", "pi4b", "pi5"])
+for (b = ["pi3b", "pi3bplus", "pi4b", "pi5", "pizero", "pizero2w"])
     assert(len([for (c = sbc_connectors(b)) if (c[0] == "gpio") 1]) == 1,
            str(b, " has one gpio connector"));
 // No board (Pi or otherwise) may declare a DUPLICATE gpio.
