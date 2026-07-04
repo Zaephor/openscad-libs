@@ -203,9 +203,10 @@ function _sbc_table() = [
     // "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/- 0.05mm" (same feature as the
     // Model-B rows' sbc_hole_dia(), not stored per-row).
     ["pizero",   [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]], []],
-    // [A] https://datasheets.raspberrypi.com/rpizero2w/raspberry-pi-zero-2-w-mechanical-drawing.pdf
-    // (resolves via 301/302 to pip.raspberrypi.com/documents/RP-008358-DS-raspberry-
-    // -pi-zero-2-w-mechanical-drawing.pdf; "Zero 2 Mechanical drawing", 2021-10-28).
+    // [A] https://datasheets.raspberrypi.com/rpizero2/raspberry-pi-zero-2-w-mechanical-drawing.pdf
+    // (the rpizero2w/ path 404s; the working path is rpizero2/ — resolves to
+    // pip.raspberrypi.com/documents/RP-008358-DS-raspberry-pi-zero-2-w-mechanical-drawing.pdf;
+    // "Zero 2 Mechanical drawing", 2021-10-28). Matches lib.json + RESEARCH.md.
     // Outline + hole rectangle independently confirmed on THIS drawing's own dimension
     // chain (identical "65 / 29 / 23 / 3.5 x4 / 12.4 / 41.4 / 54" figures to pizero,
     // not blind-copied) — see RESEARCH.md. Corner radius: this sheet has NO
