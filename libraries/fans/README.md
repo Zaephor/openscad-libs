@@ -17,6 +17,15 @@ difference() {
 }
 ```
 
+## Renders
+
+`fan_placeholder(size)` envelopes (square frame + airflow bore + 4 mounting
+holes) — supplementary reference (headless `verify-scad-geometry` output):
+
+| 120mm | 80mm |
+|---|---|
+| ![120mm fan](renders/fan-120-placeholder.png) | ![80mm fan](renders/fan-80-placeholder.png) |
+
 ## Data (functions)
 
 `fan_hole_spacing(size)`, `fan_default_thickness(size)`, `fan_holes_xy(size)`,
