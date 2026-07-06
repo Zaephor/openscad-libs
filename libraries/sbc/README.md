@@ -39,6 +39,15 @@ x∈{3.5, 61.5}, y∈{3.5, 52.5} — inset 3.5mm from the xmin/ymin edges and th
 edge, but **not centered in X**: the far column is 85.6−61.5 = 24.1mm from the
 xmax edge. (Design off `sbc_holes_xy(b)`, not a symmetric inset.)
 
+**Connector layout is NOT shared across the family** — only the outline + hole
+pattern are. Notably the `xmax`-edge port stack differs between generations: on
+`pi4b` the RJ45 Ethernet jack is at the **GPIO-corner end** (near `y≈46`) with
+the USB stack below it, whereas `pi5` **swaps** them — Ethernet moves to the
+**power-corner end** (near `y≈10`) and the USB stack moves up. `pi3b`/`pi3bplus`
+differ again (USB2 stack over Ethernet, plus a `ymin` HDMI/AV cluster). Always
+read `sbc_connectors(b)` for the specific board rather than assuming Pi-family
+uniformity.
+
 `"bpir4"` — the **BananaPi BPI-R4**, specifically the **2×SFP + 4×RJ45**
 variant (MediaTek MT7988A Filogic 880; `SFP1 WAN` + `SFP2 LAN` cages, `WAN
 X1` + `LAN X3` = 4 RJ45 ports). 148.0 × 100.5mm outline, 16 mounting holes
