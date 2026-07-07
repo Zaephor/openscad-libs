@@ -29,3 +29,7 @@ assert(len(rack19_known_depths()) >= 1, "at least one depth preset");
 assert(rack19_depth_preset(rack19_known_depths()[0]) > 0, "preset resolves > 0");
 // flange envelope present
 assert(rack19_flange_width() > 0 && rack19_flange_thickness() > 0, "flange dims");
+
+// --- panel blank differences cleanly with the hole stamp ---
+// (compile-only reachability: exercised in the render step; assert the height math)
+assert(2 * rack19_u() == 88.9, "2U height");

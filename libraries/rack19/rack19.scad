@@ -130,4 +130,10 @@ module rack19_placeholder(u, depth_ftf, hole_type = "square") {
         cube([rack19_opening_width(), depth_ftf, h]);
 }
 
-// Task 6 adds the remaining real module (panel helper).
+/* [Panel helper] */
+// Faceplate blank: full 19in panel width x (u*pitch) tall x `thickness`, front
+// face on Y=0 (grows -Y). Consumer subtracts rack19_holes() for mounting holes.
+module rack19_panel(u, thickness = 3) {
+    translate([-rack19_panel_width()/2, -thickness, 0])
+        cube([rack19_panel_width(), thickness, u * rack19_u()]);
+}
