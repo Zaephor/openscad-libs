@@ -5,6 +5,8 @@
   "sources": [
     "https://en.wikipedia.org/wiki/19-inch_rack",
     "https://en.wikipedia.org/wiki/Cage_nut",
-    "https://www.ibm.com/docs/en/n-series?topic=specifications-requirements"
+    "https://www.ibm.com/docs/en/n-series?topic=specifications-requirements",
+    "ISO 273 (metric clearance holes, close fit) — named standard, not fetched; backs M6 screw clearance",
+    "ANSI B18.2 (machine-screw close-fit clearance drill) — named standard, not fetched; backs 10-32 / 12-24 screw clearance //VERIFY"
   ]
 }

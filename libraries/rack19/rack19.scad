@@ -14,13 +14,12 @@
 //       paywalled; not directly fetched this pass, see RESEARCH.md).
 //   [B] corroborated across multiple independent peers (Wikipedia + vendor
 //       install specs, etc.) — most values in this library are [B].
-//   [C] reverse-engineered from a public STL/SCAD artifact (cite the URL).
+//   [C] single-sourced / reverse-engineered from a public STL/SCAD artifact
+//       (cite the URL) / OR a named standard cited but not fetched this pass.
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
-// Data functions below are real EIA-310-D core dimensions (Task 2), sourced
-// from RESEARCH.md. The generator-stub Placeholder/Hole-stamp modules below
-// referenced placeholder stub data fns (rack19_width() etc.) that Task 2
-// replaced with the real EIA-310-D fns, so they no longer compile — they are
-// commented out below pending Tasks 4-6, which add the real modules.
+// Data functions below are real EIA-310-D core dimensions, sourced from
+// RESEARCH.md. The Data / Hole-stamp / Placeholder / Panel-helper sections
+// below are all fully implemented and live (nothing commented out).
 
 $fn = 48;
 
@@ -126,6 +125,10 @@ module rack19_placeholder(u, depth_ftf, hole_type = "square") {
     fw = rack19_flange_width();
     ft = rack19_flange_thickness();
     // four vertical rail flanges (front + rear, L + R)
+    // NOTE: flanges are centered on the hole column (x +/- fw/2), not the true
+    // EIA post centerline (holes sit ~0.8mm inboard of post center on real
+    // racks) — a reference-envelope simplification, not post-accurate; fine
+    // for this placeholder's stated non-print-ready fit-check role.
     for (x = rack19_hole_h_centers())
         for (y = [0, depth_ftf - ft])
             difference() {
