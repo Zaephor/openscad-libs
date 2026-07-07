@@ -51,9 +51,10 @@ function rack19_square_size()   = 9.5;  // 0.375in
 function rack19_known_threads() = ["10-32", "12-24", "M6"];
 // Panel screw-clearance dia per rail thread (equipment-side hole into a
 // cage nut / tapped rail hole), mm. Tiers/derivations in RESEARCH.md:
-//   10-32, 12-24: [C] //VERIFY derived — major diameter rounded up to the
-//     next standard metric clearance drill size (no imperial fastener-
-//     clearance table could be fetched this pass; see RESEARCH.md attempts).
+//   10-32, 12-24: [C] //VERIFY — ANSI B18.2 close-fit clearance-drill
+//     (#10≈0.199in=5.05mm→5.0mm; #12≈0.221in=5.61mm→5.6mm); named
+//     standard, not fetched this pass (paywalled/bot-gated, see
+//     RESEARCH.md fetch-attempt table).
 //   M6: [B] ISO 273 close-fit, per this repo's hardware lib precedent
 //     (libraries/hardware/hardware.scad: M3->3.4, M4->4.5, M5->5.5).
 function rack19_screw_clearance(thread) =
@@ -68,6 +69,8 @@ function rack19_screw_clearance(thread) =
 // thread string in `dia`, resolved via rack19_screw_clearance), "round" (pass
 // numeric clearance dia directly in `dia`). depth spans front..rear + slop.
 module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
+    assert(hole_type == "square" || hole_type == "tapped" || hole_type == "round",
+        str("rack19_holes: unknown hole_type '", hole_type, "'"));
     d = depth > 0 ? depth : 40;
     for (x = rack19_hole_h_centers())
         for (z = rack19_hole_z(u))
