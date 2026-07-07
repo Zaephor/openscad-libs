@@ -33,6 +33,18 @@ function rack19_hole_h_span()   = 465.1;    // [B] //VERIFY 465.1 nominal vs IBM
 function rack19_hole_h_centers() =
     [-rack19_hole_h_span()/2, rack19_hole_h_span()/2];  // rail X, datum X-centered
 
+// Three hole centers within one U, Z measured up from that U's lower edge.
+// Gaps 15.875/15.875/12.7 (0.625/0.625/0.5in) sum to one U.
+function rack19_u_hole_offsets() = [6.35, 22.225, 38.1]; // //VERIFY first-hole offset from U lower edge — Wikipedia prose only, not read off a to-scale drawing; gaps [B] Wikipedia+IBM
+// Every hole-center Z for a stack of `u` units, ascending.
+// round(...*1e6)/1e6 below is NOT a data decision — it only strips ~1e-14mm
+// binary floating-point summation noise (verified: 1*rack19_u()+6.35 !=
+// 50.8 by ~7e-15 in OpenSCAD's double arithmetic) so the exact decimal
+// values (all defined to <=3 decimal mm places) compare equal with `==`.
+function rack19_hole_z(u) =
+    [for (i = [0:u-1]) for (o = rack19_u_hole_offsets())
+        round((i*rack19_u() + o)*1e6)/1e6];
+
 // Tasks 4-6 add the real modules (Placeholder / Hole-stamp / panel helper).
 // Stub geometry below is disabled (referenced now-removed placeholder data
 // fns) and kept only for reference until those tasks land.
