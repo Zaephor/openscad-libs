@@ -16,37 +16,44 @@
 //       install specs, etc.) — most values in this library are [B].
 //   [C] reverse-engineered from a public STL/SCAD artifact (cite the URL).
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
-// Data functions/modules below are still the generator's placeholder stub —
-// real EIA-310-D data lands in Tasks 2+, sourced from RESEARCH.md.
+// Data functions below are real EIA-310-D core dimensions (Task 2), sourced
+// from RESEARCH.md. The generator-stub Placeholder/Hole-stamp modules below
+// referenced placeholder stub data fns (rack19_width() etc.) that Task 2
+// replaced with the real EIA-310-D fns, so they no longer compile — they are
+// commented out below pending Tasks 4-6, which add the real modules.
 
 $fn = 48;
 
-/* [Data] */
-function rack19_width()  = 40;   // mm, X envelope   // [tier] <source>
-function rack19_depth()  = 40;   // mm, Y envelope   // [tier] <source>
-function rack19_height() = 10;   // mm, Z envelope   // [tier] <source>
-// Mounting-hole coordinates [x, y], relative to the centered origin.
-function rack19_holes_xy() = [[-15, -15], [15, -15], [15, 15], [-15, 15]];
-function rack19_hole_dia() = 3.4; // mm, clearance hole   // [tier] <source>
+/* [Data] — EIA-310-D. Tiers per docs/LIBRARY-AUTHORING.md; see RESEARCH.md. */
+function rack19_u()             = 44.45;    // [B] Wikipedia + IBM; 1U = 1.75in
+function rack19_panel_width()   = 482.6;    // [B] Wikipedia (closure-checked)
+function rack19_opening_width() = 450.85;   // [B] Wikipedia + IBM
+function rack19_hole_h_span()   = 465.1;    // [B] //VERIFY 465.1 nominal vs IBM 464.2-465.8mm band — no discrete point-value source
+// Rail hole X centers (datum X-centered), derived from the span above.
+function rack19_hole_h_centers() =
+    [-rack19_hole_h_span()/2, rack19_hole_h_span()/2];  // rail X, datum X-centered
 
-/* [Placeholder] */
-// Envelope solid for dropping into an assembly to check fit.
-module rack19_placeholder() {
-    translate([0, 0, rack19_height() / 2])
-        cube([rack19_width(), rack19_depth(), rack19_height()], center = true);
-}
-
-/* [Hole-stamp] */
-// Mounting holes; use inside a consumer difference().
-module rack19_holes(depth = -1) {
-    h = depth < 0 ? rack19_height() + 2 : depth;
-    for (p = rack19_holes_xy())
-        translate([p[0], p[1], -1])
-            cylinder(h = h, d = rack19_hole_dia());
-}
-
-// Visual self-check when opened directly.
-difference() {
-    rack19_placeholder();
-    rack19_holes();
-}
+// Tasks 4-6 add the real modules (Placeholder / Hole-stamp / panel helper).
+// Stub geometry below is disabled (referenced now-removed placeholder data
+// fns) and kept only for reference until those tasks land.
+// /* [Placeholder] */
+// // Envelope solid for dropping into an assembly to check fit.
+// module rack19_placeholder() {
+//     translate([0, 0, rack19_height() / 2])
+//         cube([rack19_width(), rack19_depth(), rack19_height()], center = true);
+// }
+//
+// /* [Hole-stamp] */
+// // Mounting holes; use inside a consumer difference().
+// module rack19_holes(depth = -1) {
+//     h = depth < 0 ? rack19_height() + 2 : depth;
+//     for (p = rack19_holes_xy())
+//         translate([p[0], p[1], -1])
+//             cylinder(h = h, d = rack19_hole_dia());
+// }
+//
+// // Visual self-check when opened directly.
+// difference() {
+//     rack19_placeholder();
+//     rack19_holes();
+// }
