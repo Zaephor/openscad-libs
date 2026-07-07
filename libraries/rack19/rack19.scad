@@ -45,7 +45,44 @@ function rack19_hole_z(u) =
     [for (i = [0:u-1]) for (o = rack19_u_hole_offsets())
         round((i*rack19_u() + o)*1e6)/1e6];
 
-// Tasks 4-6 add the real modules (Placeholder / Hole-stamp / panel helper).
+// Cage-nut square hole side. [B] Wikipedia (Cage nut), single-source this
+// pass — //VERIFY second vendor cage-nut datasheet, see RESEARCH.md.
+function rack19_square_size()   = 9.5;  // 0.375in
+function rack19_known_threads() = ["10-32", "12-24", "M6"];
+// Panel screw-clearance dia per rail thread (equipment-side hole into a
+// cage nut / tapped rail hole), mm. Tiers/derivations in RESEARCH.md:
+//   10-32, 12-24: [C] //VERIFY derived — major diameter rounded up to the
+//     next standard metric clearance drill size (no imperial fastener-
+//     clearance table could be fetched this pass; see RESEARCH.md attempts).
+//   M6: [B] ISO 273 close-fit, per this repo's hardware lib precedent
+//     (libraries/hardware/hardware.scad: M3->3.4, M4->4.5, M5->5.5).
+function rack19_screw_clearance(thread) =
+    thread == "10-32" ? 5.0 :
+    thread == "12-24" ? 5.6 :
+    thread == "M6"    ? 6.6 :
+    assert(false, str("rack19: unknown thread '", thread, "'"));
+
+/* [Hole-stamp] */
+// EIA hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
+// hole_type: "square" (cage-nut square, rack19_square_size()), "tapped" (pass
+// thread string in `dia`, resolved via rack19_screw_clearance), "round" (pass
+// numeric clearance dia directly in `dia`). depth spans front..rear + slop.
+module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
+    d = depth > 0 ? depth : 40;
+    for (x = rack19_hole_h_centers())
+        for (z = rack19_hole_z(u))
+            translate([x, -1, z]) rotate([-90, 0, 0]) {
+                if (hole_type == "square")
+                    linear_extrude(d)
+                        square(rack19_square_size(), center = true);
+                else {
+                    dd = hole_type == "tapped" ? rack19_screw_clearance(dia) : dia;
+                    cylinder(h = d, d = dd);
+                }
+            }
+}
+
+// Tasks 5-6 add the remaining real modules (Placeholder / panel helper).
 // Stub geometry below is disabled (referenced now-removed placeholder data
 // fns) and kept only for reference until those tasks land.
 // /* [Placeholder] */

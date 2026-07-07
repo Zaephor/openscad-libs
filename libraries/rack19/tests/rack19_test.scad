@@ -15,3 +15,11 @@ assert(rack19_hole_z(2) ==
     [6.35, 22.225, 38.1, 50.8, 66.675, 82.55], "hole_z u=2");
 // count == 3*u
 assert(len(rack19_hole_z(5)) == 15, "hole_z count u=5");
+
+// --- hole shapes ---
+assert(rack19_square_size() == 9.5, "cage-nut square side");
+assert(rack19_screw_clearance("10-32") == 5.0, "10-32 clearance");
+assert(rack19_screw_clearance("12-24") == 5.6, "12-24 clearance");
+assert(rack19_screw_clearance("M6")    == 6.6, "M6 clearance");
+// (unknown-thread assertion is exercised by the bash negative control in Task 7 —
+// OpenSCAD cannot catch its own assert() inside the same file.)
