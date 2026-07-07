@@ -23,3 +23,9 @@ assert(rack19_screw_clearance("12-24") == 5.6, "12-24 clearance");
 assert(rack19_screw_clearance("M6")    == 6.6, "M6 clearance");
 // (unknown-thread assertion is exercised by the bash negative control in Task 7 —
 // OpenSCAD cannot catch its own assert() inside the same file.)
+
+// --- depth presets ---
+assert(len(rack19_known_depths()) >= 1, "at least one depth preset");
+assert(rack19_depth_preset(rack19_known_depths()[0]) > 0, "preset resolves > 0");
+// flange envelope present
+assert(rack19_flange_width() > 0 && rack19_flange_thickness() > 0, "flange dims");

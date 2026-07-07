@@ -63,6 +63,26 @@ function rack19_screw_clearance(thread) =
     thread == "M6"    ? 6.6 :
     assert(false, str("rack19: unknown thread '", thread, "'"));
 
+// Rail post/flange width. [B] Wikipedia only this pass —
+// //VERIFY second source for 15.875mm post width. Used for the panel-width
+// closure check (see RESEARCH.md) and the placeholder envelope below.
+function rack19_flange_width() = 15.875; // 0.625in
+// Rail flange (sheet-metal) thickness — informational only, NOT an
+// EIA-310-D value (rail gauge is a fabricator's choice, not spec-fixed).
+// [C] //VERIFY typical 2-3mm cold-rolled steel, vendor-dependent
+function rack19_flange_thickness() = 2.0;
+
+// Common front-to-rear post face-to-face MOUNTING depths (mm) — illustrative
+// vendor presets, NOT EIA-310-D-fixed values (EIA-310-D governs the front
+// panel/hole pattern only, not cabinet depth). [B] //VERIFY common 19in
+// mounting depths, vendor-dependent.
+function rack19_known_depths() = ["short-400", "std-600", "std-800"];
+function rack19_depth_preset(name) =
+    name == "short-400" ? 400 :
+    name == "std-600"   ? 600 :
+    name == "std-800"   ? 800 :
+    assert(false, str("rack19: unknown depth preset '", name, "'"));
+
 /* [Hole-stamp] */
 // EIA hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "square" (cage-nut square, rack19_square_size()), "tapped" (pass
@@ -85,27 +105,29 @@ module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
             }
 }
 
-// Tasks 5-6 add the remaining real modules (Placeholder / panel helper).
-// Stub geometry below is disabled (referenced now-removed placeholder data
-// fns) and kept only for reference until those tasks land.
-// /* [Placeholder] */
-// // Envelope solid for dropping into an assembly to check fit.
-// module rack19_placeholder() {
-//     translate([0, 0, rack19_height() / 2])
-//         cube([rack19_width(), rack19_depth(), rack19_height()], center = true);
-// }
-//
-// /* [Hole-stamp] */
-// // Mounting holes; use inside a consumer difference().
-// module rack19_holes(depth = -1) {
-//     h = depth < 0 ? rack19_height() + 2 : depth;
-//     for (p = rack19_holes_xy())
-//         translate([p[0], p[1], -1])
-//             cylinder(h = h, d = rack19_hole_dia());
-// }
-//
-// // Visual self-check when opened directly.
-// difference() {
-//     rack19_placeholder();
-//     rack19_holes();
-// }
+/* [Placeholder] */
+// Reference envelope: four vertical rail flanges (front + rear, L + R) as
+// solids over `u` units, carrying the hole strip on the FRONT flanges only.
+// Front flange faces sit at Y=0; rear flange faces sit at
+// depth_ftf - flange_thickness. The usable-equipment keep-out (opening_width
+// wide, depth_ftf deep, u*pitch tall) is shown with the `%` background
+// modifier for a visual fit-check, not part of the solid envelope.
+module rack19_placeholder(u, depth_ftf, hole_type = "square") {
+    h  = u * rack19_u();
+    fw = rack19_flange_width();
+    ft = rack19_flange_thickness();
+    // four vertical rail flanges (front + rear, L + R)
+    for (x = rack19_hole_h_centers())
+        for (y = [0, depth_ftf - ft])
+            difference() {
+                translate([x - fw/2, y, 0]) cube([fw, ft, h]);
+                if (y == 0)  // stamp holes only through the front flanges
+                    rack19_holes(u, hole_type,
+                        hole_type == "round" ? 5 : hole_type == "tapped" ? "M6" : 0);
+            }
+    // usable equipment volume marker (between rails, front to rear)
+    %translate([-rack19_opening_width()/2, 0, 0])
+        cube([rack19_opening_width(), depth_ftf, h]);
+}
+
+// Task 6 adds the remaining real module (panel helper).
