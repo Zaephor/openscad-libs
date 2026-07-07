@@ -1,0 +1,10 @@
+{
+  "name": "rack19",
+  "description": "19-inch EIA-310-D rack mechanical reference: panel/opening widths, per-U hole pattern, cage-nut hole size.",
+  "version": "0.1.0",
+  "sources": [
+    "https://en.wikipedia.org/wiki/19-inch_rack",
+    "https://en.wikipedia.org/wiki/Cage_nut",
+    "https://www.ibm.com/docs/en/n-series?topic=specifications-requirements"
+  ]
+}
