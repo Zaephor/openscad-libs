@@ -87,14 +87,19 @@ function rack19_depth_preset(name) =
 // EIA hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "square" (cage-nut square, rack19_square_size()), "tapped" (pass
 // thread string in `dia`, resolved via rack19_screw_clearance), "round" (pass
-// numeric clearance dia directly in `dia`). depth spans front..rear + slop.
+// numeric clearance dia directly in `dia`). The cutter is CENTERED on the
+// front-post plane (Y=0), spanning y in [-d/2, +d/2], so a single stamp cuts
+// in both +/-Y directions: panels (which grow into -Y from Y=0) and rail
+// flanges (which grow into +Y from Y=0). depth (`d`) sizes that span; default
+// 40 gives -20..+20, deep enough to fully penetrate any realistic panel or
+// flange thickness.
 module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
     assert(hole_type == "square" || hole_type == "tapped" || hole_type == "round",
         str("rack19_holes: unknown hole_type '", hole_type, "'"));
     d = depth > 0 ? depth : 40;
     for (x = rack19_hole_h_centers())
         for (z = rack19_hole_z(u))
-            translate([x, -1, z]) rotate([-90, 0, 0]) {
+            translate([x, -d/2, z]) rotate([-90, 0, 0]) {
                 if (hole_type == "square")
                     linear_extrude(d)
                         square(rack19_square_size(), center = true);
