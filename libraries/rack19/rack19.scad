@@ -74,8 +74,9 @@ function rack19_flange_thickness() = 2.0;
 
 // Common front-to-rear post face-to-face MOUNTING depths (mm) — illustrative
 // vendor presets, NOT EIA-310-D-fixed values (EIA-310-D governs the front
-// panel/hole pattern only, not cabinet depth). [B] //VERIFY common 19in
-// mounting depths, vendor-dependent.
+// panel/hole pattern only, not cabinet depth). [C] //VERIFY illustrative
+// common 19in mounting depths, vendor-dependent — not EIA-fixed, not
+// independently corroborated (see RESEARCH.md "Depth presets").
 function rack19_known_depths() = ["short-400", "std-600", "std-800"];
 function rack19_depth_preset(name) =
     name == "short-400" ? 400 :
@@ -92,7 +93,10 @@ function rack19_depth_preset(name) =
 // in both +/-Y directions: panels (which grow into -Y from Y=0) and rail
 // flanges (which grow into +Y from Y=0). depth (`d`) sizes that span; default
 // 40 gives -20..+20, deep enough to fully penetrate any realistic panel or
-// flange thickness.
+// flange thickness. `depth` MUST exceed the target's thickness/flange-depth
+// or the cut falls short of a through-hole; the default 40 covers realistic
+// panels (<=~20mm) and rails, but a smaller caller-supplied value can
+// under-cut a thicker target.
 module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
     assert(hole_type == "square" || hole_type == "tapped" || hole_type == "round",
         str("rack19_holes: unknown hole_type '", hole_type, "'"));
@@ -128,6 +132,9 @@ module rack19_placeholder(u, depth_ftf, hole_type = "square") {
                 translate([x - fw/2, y, 0]) cube([fw, ft, h]);
                 if (y == 0)  // stamp holes only through the front flanges
                     rack19_holes(u, hole_type,
+                        // 5mm: illustrative default round-hole clearance dia for this
+                        // preview only, NOT a sourced value — a consumer wanting a real
+                        // round-hole size should call rack19_holes() directly with dia set.
                         hole_type == "round" ? 5 : hole_type == "tapped" ? "M6" : 0);
             }
     // usable equipment volume marker (between rails, front to rear)
