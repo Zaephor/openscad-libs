@@ -37,4 +37,8 @@ module _check_dims(t) {
 }
 for (t = connector_known_types()) _check_dims(t);
 
+// --- cutout: opening axes drive which face is cut (verified by render step) ---
+assert(connector_opening("usb_a") == "+Y" && connector_opening("pcie_x16") == "+Z",
+       "cutout axis source");
+
 echo("connectors_test OK");

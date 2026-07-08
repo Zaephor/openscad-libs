@@ -63,3 +63,20 @@ module connector_body(type) {
     s = connector_size(type);
     translate([-s[0]/2, 0, 0]) cube(s);
 }
+
+/* [Cutout] */
+// Faceplate opening for a consumer difference(). The opening-face cross-section
+// (grown by `clearance` per side) extruded along the type's opening axis by
+// `depth` (default 20, a generous through-cut). "+Y": a W x H window (X x Z)
+// extruded along Y. "+Z": a W x D window (X x Y) extruded along Z.
+module connector_cutout(type, clearance = 0.5, depth = 0) {
+    s = connector_size(type);
+    o = connector_opening(type);
+    dd = depth > 0 ? depth : 20;
+    if (o == "+Y")
+        translate([-(s[0]/2 + clearance), -1, -clearance])
+            cube([s[0] + 2*clearance, dd, s[2] + 2*clearance]);
+    else // "+Z"
+        translate([-(s[0]/2 + clearance), -clearance, -1])
+            cube([s[0] + 2*clearance, s[1] + 2*clearance, dd]);
+}
