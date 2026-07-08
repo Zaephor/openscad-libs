@@ -18,13 +18,13 @@
 //       this pass (marked //VERIFY (cited-not-fetched)).
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
 //
-// Task 2 status (this commit): type table + accessor functions
-// (`connector_known_types()`, `connector_size()`, `connector_opening()`)
-// implemented below, values per RESEARCH.md. The `connector_body()` /
-// `connector_cutout()` modules are Task 3+ (see
-//  for the exact API
-// and  for the
-// design rationale).
+// All three roles implemented: (1) data table + accessor functions
+// (`connector_known_types()`, `connector_size()`, `connector_opening()`),
+// (2) connector_body() placeholder module for fit-check envelope, and
+// (3) connector_cutout() hole-stamp module for panel/board openings.
+// Values per RESEARCH.md; see 
+// for API and 
+// for design rationale.
 
 $fn = 48;
 

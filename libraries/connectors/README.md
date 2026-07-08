@@ -79,9 +79,9 @@ along Z for `"+Z"` types.
 Left to right: `usb_a`, `rj45`, `hdmi`, `pcie_x16` (the long ~89mm bar),
 `gpio_2x20` (the other long, thinner ~50.8mm bar) — `pcie_x16`'s bar is
 placed close enough to `hdmi` in this render's chosen spacing that their
-footprints touch at one edge in the top view; both are still independently
-correct, distinct volumes (no boolean union), just tightly spaced for the
-row layout.
+footprints touch at one edge in the top view. Both bodies are distinct,
+independently-sized volumes; the ~1.75mm edge-touch is purely a layout-spacing
+choice in the example script, not a modeled union or geometry defect.
 
 ## Reference
 
