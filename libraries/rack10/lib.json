@@ -1,0 +1,14 @@
+{
+  "name": "rack10",
+  "description": "10-inch LabRax mini-rack mechanical reference (v1: LabRax geometry only): 1U pitch, hole center-to-center span, usable/panel widths, per-U hole pattern. No governing standard exists for 10in racks; all values corroborated across the designer's own article and an independent to-scale diagram.",
+  "version": "0.1.0",
+  "sources": [
+    "https://the-diy-life.com/introducing-lab-rax-a-3d-printable-modular-10-rack-system/",
+    "https://makerworld.com/en/models/1294480-lab-rax-10-server-rack-5u",
+    "https://makerworld.com/en/models/1464819-lab-rax-10-server-rack-bolted-version-5u",
+    "https://commons.wikimedia.org/wiki/File:19_inch_vs_10_inch_rack_dimensions.svg",
+    "ISO 273 (metric clearance holes, close fit) — named standard, not fetched; backs M6 screw clearance, repo hardware/rack19 precedent",
+    "ANSI B18.2 (machine-screw close-fit clearance drill) — named standard, not fetched; backs #10-32 screw clearance //VERIFY, repo rack19 precedent",
+    "https://en.wikipedia.org/wiki/Cage_nut — repo rack19 precedent; cage-nut square hole size, not used by LabRax, carried for future vendors"
+  ]
+}
