@@ -22,9 +22,7 @@
 // (`connector_known_types()`, `connector_size()`, `connector_opening()`),
 // (2) connector_body() placeholder module for fit-check envelope, and
 // (3) connector_cutout() hole-stamp module for panel/board openings.
-// Values per RESEARCH.md; see 
-// for API and 
-// for design rationale.
+// Values per RESEARCH.md.
 
 $fn = 48;
 

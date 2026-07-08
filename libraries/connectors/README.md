@@ -154,8 +154,8 @@ fetch-attempt log behind each):
   pass.
 - **`mini_hdmi`** (`[10.4, 7.5, 3.2]`) — no independent vendor drawing
   found/reachable this pass (Same Sky/CUI's HDMI catalog has no mini/micro
-  variant; other vendors Cloudflare-gated). Seed value retained, `[C]
-  //VERIFY (cited-not-fetched)`.
+  variant; other vendors' sites could not be machine-fetched this pass).
+  Seed value retained, `[C] //VERIFY (cited-not-fetched)`.
 - **`micro_hdmi`** (`[7.5, 4.5, 3.0]`) — same fetch gap as `mini_hdmi`.
   Width/height match the seed; depth (4.5mm) was pulled from `sbc.scad`'s
   own Pi 4B/5 `[A]`-tagged board measurement in preference to the seed's
@@ -164,8 +164,8 @@ fetch-attempt log behind each):
   Tier `[C] //VERIFY (cited-not-fetched)`.
 - **`pcie_x1`/`pcie_x4`/`pcie_x8`/`pcie_x16`** (widths 25.0/39.0/56.0/89.0,
   height 11.25, depth 7.5) — Molex 87715 series / PCI-SIG CEM spec named
-  but **not fetched** this pass (Molex's product pages are a JS SPA even
-  past the TLS fingerprint block; the CEM spec is member-paywalled). Tier
+  but **not fetched** this pass (Molex's product pages are a JS SPA that
+  couldn't be scraped; the CEM spec is member-paywalled). Tier
   `[C] //VERIFY (cited-not-fetched)` for all four — explicitly **NOT**
   `[A]`, see the motherboards flag below.
 - **`gpio_2x20` height (8.5mm)** — width/depth (`50.8`/`5.08`) are solid

@@ -52,7 +52,7 @@ function rack19_known_threads() = ["10-32", "12-24", "M6"];
 // cage nut / tapped rail hole), mm. Tiers/derivations in RESEARCH.md:
 //   10-32, 12-24: [C] //VERIFY — ANSI B18.2 close-fit clearance-drill
 //     (#10≈0.199in=5.05mm→5.0mm; #12≈0.221in=5.61mm→5.6mm); named
-//     standard, not fetched this pass (paywalled/bot-gated, see
+//     standard, not fetched this pass (paywalled, see
 //     RESEARCH.md fetch-attempt table).
 //   M6: [B] ISO 273 close-fit, per this repo's hardware lib precedent
 //     (libraries/hardware/hardware.scad: M3->3.4, M4->4.5, M5->5.5).
