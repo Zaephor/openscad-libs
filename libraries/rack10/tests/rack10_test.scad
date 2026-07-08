@@ -16,3 +16,11 @@ assert(rack10_hole_z(1) == [6.35, 22.225, 38.1], "hole_z u=1");
 assert(rack10_hole_z(2) ==
     [6.35, 22.225, 38.1, 50.8, 66.675, 82.55], "hole_z u=2");
 assert(len(rack10_hole_z(3)) == 9, "hole_z count u=3");
+
+// --- hole shapes ---
+assert(rack10_square_size() == 9.5, "cage-nut square side");
+assert(rack10_known_hole_types() == ["round", "m6", "10-32", "square"], "hole types");
+assert(rack10_screw_clearance("m6") == 6.6, "m6 clearance");
+assert(rack10_screw_clearance("10-32") == 5.0, "10-32 clearance");
+// (unknown-standard + unknown-hole_type asserts are exercised by the bash
+// negative controls in Task 7 — OpenSCAD cannot catch its own assert in-file.)

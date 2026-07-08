@@ -75,7 +75,45 @@ function rack10_hole_z(u) =
     [for (i = [0:u-1]) for (o = rack10_u_hole_offsets())
         round((i*rack10_u() + o)*1e6)/1e6];
 
-// Tasks 4-6 add the real modules (Hole-stamp / Placeholder / panel helper).
+// Cage-nut square side (carried for future square-hole vendors e.g. DeskPi/
+// TecMojo; LabRax itself uses round/M6/#10-32). [B] //VERIFY (rack19 precedent).
+function rack10_square_size() = 9.5;
+function rack10_known_hole_types() = ["round", "m6", "10-32", "square"];
+// Screw-clearance dia per fastener, mm (values + provenance carried from rack19,
+// re-implemented locally — no cross-lib coupling). See RESEARCH.md.
+//   m6:    [B] ISO 273 close-fit (repo hardware lib series 3.4/4.5/5.5).
+//   10-32: [C] //VERIFY ANSI B18.2 close-fit (#10 ~0.199in=5.05->5.0mm), named
+//          standard cited from memory, not fetched.
+function rack10_screw_clearance(fastener) =
+    fastener == "m6"    ? 6.6 :
+    fastener == "10-32" ? 5.0 :
+    assert(false, str("rack10: unknown fastener '", fastener, "'"));
+
+/* [Hole-stamp] */
+// 10in hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
+// hole_type: "round" (numeric clearance dia in `dia`), "m6"/"10-32" (dia from
+// rack10_screw_clearance), "square" (rack10_square_size). Cutter CENTERED on the
+// front-post plane Y=0 (spans y in [-d/2,+d/2]) so one stamp cuts panels (grow
+// -Y) and rail flanges (grow +Y). depth (`d`) sizes that span; default 40 =
+// -20..+20, enough for realistic panels/rails; a smaller value can under-cut.
+module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0) {
+    assert(hole_type == "round" || hole_type == "m6" || hole_type == "10-32"
+        || hole_type == "square",
+        str("rack10_holes: unknown hole_type '", hole_type, "'"));
+    d = depth > 0 ? depth : 40;
+    for (x = rack10_hole_h_centers(standard))   // also asserts on unknown standard
+        for (z = rack10_hole_z(u))
+            translate([x, -d/2, z]) rotate([-90, 0, 0]) {
+                if (hole_type == "square")
+                    linear_extrude(d) square(rack10_square_size(), center = true);
+                else {
+                    dd = hole_type == "round" ? dia : rack10_screw_clearance(hole_type);
+                    cylinder(h = d, d = dd);
+                }
+            }
+}
+
+// Tasks 5-6 add the remaining real modules (Placeholder / panel helper).
 // Stub geometry below is disabled (referenced now-removed placeholder data
 // fns) and kept only for reference until those tasks land.
 // /* [Placeholder] */
