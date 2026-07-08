@@ -113,15 +113,9 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0) {
             }
 }
 
-// Tasks 5-6 add the remaining real modules (Placeholder / panel helper).
-// Stub geometry below is disabled (referenced now-removed placeholder data
-// fns) and kept only for reference until those tasks land.
-// /* [Placeholder] */
-// // Envelope solid for dropping into an assembly to check fit.
-// module rack10_placeholder() {
-//     translate([0, 0, rack10_height() / 2])
-//         cube([rack10_width(), rack10_depth(), rack10_height()], center = true);
-// }
+// Task 6 adds the remaining real module (panel helper). Stub geometry below
+// is disabled (referenced now-removed placeholder data fns) and kept only
+// for reference until that task lands.
 //
 // /* [Hole-stamp] */
 // // Mounting holes; use inside a consumer difference().
@@ -137,3 +131,36 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0) {
 //     rack10_placeholder();
 //     rack10_holes();
 // }
+
+// Rail/post envelope — informational placeholder ONLY, NOT measured (LabRax
+// STL unreachable, see RESEARCH.md "Rail flange width/thickness"). LabRax
+// posts are printed plastic, not sheet metal, so there is no rolled-flange
+// spec to source in the first place. These are illustrative defaults for the
+// reference envelope, not a sourced dimension — no tier tag applies; there is
+// literally zero numeric evidence behind either number this pass.
+function rack10_flange_width()     = 10; // illustrative default, not measured
+function rack10_flange_thickness() = 3;  // illustrative default, not measured
+
+/* [Placeholder] */
+// Reference envelope: four vertical rail flanges (front+rear, L+R) over `u`
+// units at the vendor's hole-cc, carrying the hole strip on the FRONT flanges.
+// Front faces at Y=0; rear faces at depth_ftf - flange_thickness. Usable-
+// equipment keep-out (clear_width wide × depth_ftf deep × u*pitch tall) shown
+// with `%`. Flanges centered on the hole column (reference-envelope
+// simplification, not post-accurate) — non-print-ready fit-check role.
+module rack10_placeholder(standard, u, depth_ftf, hole_type = "round") {
+    h  = u * rack10_u();
+    fw = rack10_flange_width();
+    ft = rack10_flange_thickness();
+    for (x = rack10_hole_h_centers(standard))
+        for (y = [0, depth_ftf - ft])
+            difference() {
+                translate([x - fw/2, y, 0]) cube([fw, ft, h]);
+                if (y == 0)  // holes on front flanges only
+                    rack10_holes(standard, u, hole_type,
+                        // 5mm: illustrative preview clearance for "round" only, NOT sourced.
+                        hole_type == "round" ? 5 : 0);
+            }
+    %translate([-rack10_clear_width(standard)/2, 0, 0])
+        cube([rack10_clear_width(standard), depth_ftf, h]);
+}

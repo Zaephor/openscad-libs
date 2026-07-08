@@ -24,3 +24,6 @@ assert(rack10_screw_clearance("m6") == 6.6, "m6 clearance");
 assert(rack10_screw_clearance("10-32") == 5.0, "10-32 clearance");
 // (unknown-standard + unknown-hole_type asserts are exercised by the bash
 // negative controls in Task 7 — OpenSCAD cannot catch its own assert in-file.)
+
+// --- flange envelope present ---
+assert(rack10_flange_width() > 0 && rack10_flange_thickness() > 0, "flange dims");
