@@ -113,6 +113,14 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0) {
             }
 }
 
+/* [Panel helper] */
+// Faceplate blank: vendor panel width × (u*pitch) tall × `thickness`, front
+// face on Y=0 (grows -Y). Consumer subtracts rack10_holes() for mounting holes.
+module rack10_panel(standard, u, thickness = 3) {
+    translate([-rack10_panel_width(standard)/2, -thickness, 0])
+        cube([rack10_panel_width(standard), thickness, u * rack10_u()]);
+}
+
 // Task 6 adds the remaining real module (panel helper). Stub geometry below
 // is disabled (referenced now-removed placeholder data fns) and kept only
 // for reference until that task lands.

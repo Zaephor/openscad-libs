@@ -27,3 +27,6 @@ assert(rack10_screw_clearance("10-32") == 5.0, "10-32 clearance");
 
 // --- flange envelope present ---
 assert(rack10_flange_width() > 0 && rack10_flange_thickness() > 0, "flange dims");
+
+// --- panel height math (geometry verified by the render step) ---
+assert(2 * rack10_u() == 88.9, "2U height");
