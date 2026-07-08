@@ -66,6 +66,15 @@ function rack10_depth_preset(standard) = _rack10_geom(standard)[3];
 function rack10_hole_h_centers(standard) =
     [-rack10_hole_h_span(standard)/2, rack10_hole_h_span(standard)/2];
 
+// Three hole centers within one U, Z from that U's lower edge. Gaps
+// 15.875/15.875/12.7 sum to one U. LabRax targets EIA hole compatibility.
+function rack10_u_hole_offsets() = [6.35, 22.225, 38.1]; // //VERIFY 10in uses the 3-hole EIA sub-pattern — confirm in RESEARCH.md; gaps [B]
+// Every hole-center Z for a `u`-unit stack, ascending. round(...*1e6)/1e6
+// strips ~1e-14mm float summation noise so exact decimals compare with ==.
+function rack10_hole_z(u) =
+    [for (i = [0:u-1]) for (o = rack10_u_hole_offsets())
+        round((i*rack10_u() + o)*1e6)/1e6];
+
 // Tasks 4-6 add the real modules (Hole-stamp / Placeholder / panel helper).
 // Stub geometry below is disabled (referenced now-removed placeholder data
 // fns) and kept only for reference until those tasks land.
