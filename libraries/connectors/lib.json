@@ -1,0 +1,17 @@
+{
+  "name": "connectors",
+  "description": "Connector body (housing/shell) envelope dimensions for common PC/SBC panel and slot connectors — USB-A/C/micro, RJ45, HDMI (A/mini/micro), PCIe card-edge slot, 2.54mm GPIO header. See RESEARCH.md for per-type evidence and tiering.",
+  "version": "0.1.0",
+  "sources": [
+    "https://www.cuidevices.com/product/resource/uj2-ah-4-th.pdf",
+    "https://www.cuidevices.com/product/resource/ujc-h-g-smt-p6-tr.pdf",
+    "https://www.cuidevices.com/product/resource/uj2-mbh-smt.pdf",
+    "https://www.cuidevices.com/product/resource/hd05-19-th-tr.pdf",
+    "https://www.cuidevices.com/product/resource/ssk01-mph-254.pdf",
+    "https://www.belfuse.com/Data/Datasheets/0813-1X1T-43-F.pdf",
+    "https://www.belfuse.com/Data/Datasheets/0810-2H4R-BG-F.pdf",
+    "Molex 87715 series (PCIe x16 card-edge socket) — named part, not fetched this pass (Molex product pages are a JS SPA); backs pcie_x16 //VERIFY",
+    "PCI-SIG PCI Express Card Electromechanical (CEM) Spec — named standard, not fetched (member-paywalled); backs pcie_x1/x4/x8 //VERIFY",
+    "USB Implementers Forum (usb.org) USB 2.0 + Type-C mechanical specs — named standard, not fetched (login/EULA-gated this pass)"
+  ]
+}
