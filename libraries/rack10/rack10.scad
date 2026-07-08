@@ -27,11 +27,9 @@
 //       or a third-party (non-designer) corroboration only (cite the URL) /
 //       OR a named standard cited but not fetched this pass.
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
-// Data functions below are real LabRax core dimensions (Task 2), sourced
-// from RESEARCH.md. The generator-stub Placeholder/Hole-stamp modules below
-// referenced placeholder stub data fns (rack10_width() etc.) that Task 2
-// replaced with the real vendor-keyed fns, so they no longer compile — they
-// are commented out below pending Tasks 4-6, which add the real modules.
+// Data functions below are real LabRax core dimensions, sourced from
+// RESEARCH.md. The Data / Hole-stamp / Placeholder / Panel-helper sections
+// below are all fully implemented and live (nothing commented out).
 
 $fn = 48;
 
@@ -120,25 +118,6 @@ module rack10_panel(standard, u, thickness = 3) {
     translate([-rack10_panel_width(standard)/2, -thickness, 0])
         cube([rack10_panel_width(standard), thickness, u * rack10_u()]);
 }
-
-// Task 6 adds the remaining real module (panel helper). Stub geometry below
-// is disabled (referenced now-removed placeholder data fns) and kept only
-// for reference until that task lands.
-//
-// /* [Hole-stamp] */
-// // Mounting holes; use inside a consumer difference().
-// module rack10_holes(depth = -1) {
-//     h = depth < 0 ? rack10_height() + 2 : depth;
-//     for (p = rack10_holes_xy())
-//         translate([p[0], p[1], -1])
-//             cylinder(h = h, d = rack10_hole_dia());
-// }
-//
-// // Visual self-check when opened directly.
-// difference() {
-//     rack10_placeholder();
-//     rack10_holes();
-// }
 
 // Rail/post envelope — informational placeholder ONLY, NOT measured (LabRax
 // STL unreachable, see RESEARCH.md "Rail flange width/thickness"). LabRax
