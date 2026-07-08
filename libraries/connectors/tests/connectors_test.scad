@@ -15,9 +15,14 @@ assert(connector_opening("micro_hdmi") == "+Y", "micro_hdmi opening");
 assert(connector_opening("pcie_x16") == "+Z", "pcie opening");
 assert(connector_opening("gpio_2x20")== "+Z", "gpio opening");
 
-// strongest-sourced dims (RESEARCH.md confirmed, tier [A])
+// strongest-sourced / representative dims (see per-line tiers)
 assert(connector_size("pcie_x16") == [89, 7.5, 11.25], "pcie_x16 body");     // [C] //VERIFY cited-not-fetched
 assert(connector_size("gpio_2x20") == [50.8, 5.08, 8.5], "gpio_2x20 body");  // w/d [A], h [C] //VERIFY
+
+// --- body renders + arithmetic guard (geometry verified by render step) ---
+// pcie_x16 body volume = 89*7.5*11.25 = 7509.375 mm^3
+assert(connector_size("pcie_x16")[0] * connector_size("pcie_x16")[1]
+     * connector_size("pcie_x16")[2] == 7509.375, "pcie_x16 volume");
 
 // fully-[A] fetched rows — locked exact values (RESEARCH.md)
 assert(connector_size("usb_a") == [13.66, 14.6, 6.94], "usb_a body");

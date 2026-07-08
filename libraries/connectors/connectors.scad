@@ -54,3 +54,12 @@ function _connector_row(type) =
     : assert(false, str("connectors: unknown type '", type, "'"));
 function connector_size(type)    = _connector_row(type)[1];
 function connector_opening(type) = _connector_row(type)[2];
+
+/* [Body] */
+// Envelope solid in the canonical frame: mounting face on Z=0, centered in X,
+// body growing +Y (depth) and +Z (height). For placement/fit-check in a
+// consumer assembly (the consumer rotates/translates to its board edge).
+module connector_body(type) {
+    s = connector_size(type);
+    translate([-s[0]/2, 0, 0]) cube(s);
+}
