@@ -40,4 +40,10 @@ assert(len(e)==3 && (e[2]=="b"||e[2]=="m"||e[2]=="bm"), "m2 edge key");
 assert(drive_size("hdd35")[0]*drive_size("hdd35")[1]*drive_size("hdd35")[2] > 0, "hdd35 vol");
 
 // wrong-family + unknown asserts are covered by the bash negative controls (Task 7).
+
+// hole counts drive the stamp; assert the source lists are non-empty where expected.
+assert(len(drive_bottom_holes("hdd35")) >= 4, "hdd35 >=4 bottom holes");
+assert(len(drive_side_holes("hdd35"))  >= 2, "hdd35 side holes present");
+assert(len(drive_card_hole("m2_2280")) == 2, "m2 single mount hole");
+
 echo("drives_test OK");

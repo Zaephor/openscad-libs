@@ -36,13 +36,24 @@ function BOTTOM_35() = [
     [76.20,  3.18], [76.20, 95.25], // optional row (A13, direct)
 ]; // [A]
 
-// 3.5" side mount holes: X positions are known (A8=28.50 near, A8+A9=130.10
-// far, both [A]) but the Z-height is NOT dimensioned anywhere in SFF-8301
-// Figure 3-1 (checked again this pass) and SFF-8482/SFF-8323 (also checked
-// this pass) don't cover the 3.5" mechanical envelope either — genuine gap,
-// not fabricated. Shipped empty rather than guessing a Z that would pass
-// the closure check but be wrong. X refs, for a future pass: 28.50 / 130.10.
-function SIDE_35() = []; // gap — see RESEARCH.md Task 2 resolutions (c)
+// 3.5" side mount holes: X positions 28.50 (A8, near) / 130.10 (A8+A9, far),
+// both [A]. Z-height: re-read this pass, correcting Task 1/2's prior "gap" —
+// SFF-8301 Fig 3-1's A10=6.35 is actually a HORIZONTAL (Z-axis) dimension in
+// the side-view strip, not a further X-offset as previously transcribed;
+// independently corroborated by Seagate's own BarraCuda manual Figure 3
+// (vendor mechanical drawing citing SFF-8301/SFF-8323 conformance), which
+// draws the identical .250in=6.35mm dimension in the same geometric role —
+// tier [B] (2 independent peers) for the number+role. Which FACE it's
+// measured from (top vs bottom) is not textually labeled in either source;
+// resolved by inference from WD's side-mount-hole rendering (a 3rd source),
+// which shows the PCB as a distinct slab on one side of the casting in the
+// side view — PCBs mount to the bottom face on 3.5" HDDs, so the edge the
+// PCB hugs is the bottom face, and that's the edge SFF/Seagate's own Z-datum
+// tag sits on in both drawings. Z=6.35 from Z=0 (our bottom-face datum)
+// follows directly. Face-orientation semantic //VERIFY; number+role [B].
+function SIDE_35() = [
+    [28.50, 6.35], [130.10, 6.35],
+]; // X [A], Z [B] value/role + //VERIFY face-orientation — see RESEARCH.md Task 2 resolutions (c)
 
 // 3.5"/2.5" SATA connector position + extent — SFF-8223 Rev 2.7 Table 3-1
 // (2.5") and SFF-8323 Rev 1.6 Table 3-1 (3.5", bit-identical A2/A3/A5/A7/
@@ -173,5 +184,35 @@ module drive_placeholder(type) {
     else { // card: [w,len,h] -> box along +X=len, +Y=width
         s = drive_card_size(type);   // [w, len, h]
         cube([s[1], s[0], s[2]]);    // X=len, Y=width, Z=height
+    }
+}
+
+/* [Holes] */
+// Mount-hole cutters for a consumer difference(). Each cutter is a cylinder on the
+// hole axis, oversized in length so it fully pierces the wall it cuts.
+//   faces: "bottom" | "side" | "both" (block); card family always cuts its single
+//          standoff hole along -Z.
+//   dia:   hole clearance diameter (default 3.4 = M3 clearance; 3.5 ~ 6-32).
+//   depth: cutter length through the wall (default 40, a generous through-cut).
+module drive_holes(type, faces = "bottom", dia = 3.4, depth = 40) {
+    assert(faces=="bottom" || faces=="side" || faces=="both",
+           str("drives: unknown faces '", faces, "'"));
+    r = dia/2;
+    if (drive_family(type) == "card") {
+        h = drive_card_hole(type);            // [x,y] on the Z=0 face (x along len)
+        translate([h[0], h[1], 0])
+            cylinder(h = depth, r = r, center = true); // pierces Z=0 floor
+    } else {
+        s = drive_size(type);
+        if (faces=="bottom" || faces=="both")
+            for (p = drive_bottom_holes(type)) // [x,y] on Z=0
+                translate([p[0], p[1], 0])
+                    cylinder(h = depth, r = r, center = true);
+        if (faces=="side" || faces=="both")
+            for (p = drive_side_holes(type))   // [x,z]; one set per +/-Y wall
+                for (y = [0, s[1]])
+                    translate([p[0], y, p[1]])
+                        rotate([90,0,0])       // axis along Y
+                            cylinder(h = depth, r = r, center = true);
     }
 }
