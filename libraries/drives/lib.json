@@ -1,13 +1,18 @@
 {
   "name": "drives",
-  "description": "Storage-drive mechanical reference: 3.5\"/2.5\"/U.2 block-drive envelope, bottom/side mounting-hole coordinates and connector position; M.2 (2230/2242/2260/2280) card envelope, mounting hole, and card-edge/key. Scaffold only this pass -- data tables are populated in Task 2 from RESEARCH.md.",
+  "description": "Storage-drive mechanical reference -- envelope, mount-hole and connector geometry for 3.5\"/2.5\"/U.2 block drives and M.2 (2230/2242/2260/2280) cards. Placeholder + hole/cutout stamps for caddies and brackets. See RESEARCH.md for per-value evidence and tiering.",
   "version": "0.1.0",
   "sources": [
-    "https://members.snia.org/document/dl/25862 (SFF-8301 Rev 1.9, 3.5\" Form Factor Drive Dimensions)",
-    "https://members.snia.org/document/dl/25851 (SFF-8201 Rev 3.4, 2.5\" Form Factor Drive Dimensions)",
-    "https://members.snia.org/document/dl/25855 (SFF-8223 Rev 2.7, 2.5\" Drive Form Factor w/Serial Attached Connector)",
-    "https://members.snia.org/document/dl/26489 (SFF-TA-8639 Rev 2.2, Multifunction 6X Unshielded Connector / U.2)",
-    "https://www.vikingtechnology.com/wp-content/uploads/2021/03/M2_80mm_SMI_SM2258.pdf (Viking PSFEM5xxxxBxxx, M.2 2280 SATA SSD datasheet)",
-    "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/331/PSFNP5xxxx5xxx_C.pdf (Viking PSFNP5xxxx5xxx, M.2 2280 NVMe SSD manual)"
+    "https://members.snia.org/document/dl/25862 (SFF-8301 Rev 1.9, 3.5\" Form Factor Drive Dimensions -- envelope + bottom/side mount holes)",
+    "https://members.snia.org/document/dl/25851 (SFF-8201 Rev 3.4, 2.5\" Form Factor Drive Dimensions -- envelope + bottom/side mount holes)",
+    "https://members.snia.org/document/dl/25855 (SFF-8223 Rev 2.7, 2.5\" Drive Form Factor w/Serial Attached Connector -- SATA/SAS connector position)",
+    "https://members.snia.org/document/dl/25864 (SFF-8323 Rev 1.6, 3.5\" Drive Form Factor w/Serial Attached Connector -- confirms the 2.5\" connector figures are connector-intrinsic and reusable for hdd35; closed the 3.5\" connector-position gap left open after Task 1)",
+    "https://members.snia.org/document/dl/25920 (SFF-8482 Rev 2.5, Serial Attached Connector part spec -- fetched to check for connector-location data; confirmed it defers location to the Form Factor specs above and contributed no coordinates)",
+    "https://members.snia.org/document/dl/26489 (SFF-TA-8639 Rev 2.2, Multifunction 6X Unshielded Connector -- U.2 connector envelope)",
+    "https://members.snia.org/document/dl/26900 (SFF-TA-1001 Rev 1.1, Universal x4 Link Definition for SFF-8639 -- fetched, not cited for any value: electrical spec only, no mechanical content)",
+    "https://www.vikingtechnology.com/wp-content/uploads/2021/03/M2_80mm_SMI_SM2258.pdf (Viking PSFEM5xxxxBxxx Rev A1, M.2 2280 SATA SSD datasheet -- card envelope + mount hole)",
+    "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/331/PSFNP5xxxx5xxx_C.pdf (Viking PSFNP5xxxx5xxx Rev C, M.2 2280 NVMe SSD manual -- card envelope + mount hole + card-edge/key, primary source)",
+    "https://www.seagate.com/content/dam/seagate/migrated-assets/www-content/product-content/barracuda-fam/barracuda-new/en-us/docs/Seagate_BarraCuda_SATA_Product_Manual_210203200.pdf (Seagate BarraCuda SATA Product Manual 210203200 Rev A, March 2025, Figure 3 -- independent vendor drawing corroborating SFF-8301's A10 side-hole Z-height as [B] tier)",
+    "https://support.wdc.com/images/kb/2579-771970-A03.pdf (WD white paper \"3.5-inch Form Factor Mounting Screw Locations and Depths\" Rev A03 -- Figure 4/5 used to resolve which face (top/bottom) the side-hole Z-height is referenced from)"
   ]
 }
