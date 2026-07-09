@@ -143,11 +143,14 @@ function _block_table() = [
 ];
 /* [Data] — card drives (M.2). Row:
    [type, [w,len,h], [hole x,y], [edge [x,y,z], [w,d,h], key]]. Values per RESEARCH.md. */
+// 30.0/42.0/60.0 (2230/2242/2260 lengths) are WWLL-naming-convention derived,
+// NOT independently fetched this pass — [C] //VERIFY (cited-not-fetched).
+// 2280's 80.0 IS fetched/confirmed [A] (Viking datasheets).
 function _card_table() = [
-    ["m2_2230", [22.0, 30.0, 2.3], M2_HOLE_2230(), M2_EDGE()],
-    ["m2_2242", [22.0, 42.0, 2.3], M2_HOLE_2242(), M2_EDGE()],
-    ["m2_2260", [22.0, 60.0, 2.3], M2_HOLE_2260(), M2_EDGE()],
-    ["m2_2280", [22.0, 80.0, 2.3], M2_HOLE_2280(), M2_EDGE()],
+    ["m2_2230", [22.0, 30.0, 2.15], M2_HOLE_2230(), M2_EDGE()], // h=2.15 [A]: PCB 0.80 + top-component max 1.35 (RESEARCH.md, both Viking datasheets)
+    ["m2_2242", [22.0, 42.0, 2.15], M2_HOLE_2242(), M2_EDGE()], // h=2.15 [A]: PCB 0.80 + top-component max 1.35 (RESEARCH.md, both Viking datasheets)
+    ["m2_2260", [22.0, 60.0, 2.15], M2_HOLE_2260(), M2_EDGE()], // h=2.15 [A]: PCB 0.80 + top-component max 1.35 (RESEARCH.md, both Viking datasheets)
+    ["m2_2280", [22.0, 80.0, 2.15], M2_HOLE_2280(), M2_EDGE()], // h=2.15 [A]: PCB 0.80 + top-component max 1.35 (RESEARCH.md, both Viking datasheets)
 ];
 
 function _blk_row(type) =

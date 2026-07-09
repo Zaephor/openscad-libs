@@ -113,13 +113,13 @@ geometry).
 
 ![card-family overlay: m2_2280, placeholder vs. mount hole + card-edge cutout](renders/card-overlay.png)
 
-`m2_2280` (M.2 80mm). Because the card is only 2.3mm tall, the vertical
+`m2_2280` (M.2 80mm). Because the card is only 2.15mm tall, the vertical
 (XZ) projection compresses most detail into a thin strip — cutout placement
 was additionally confirmed by direct STL bounding-box inspection: the mount
 hole sits at `x=78.55` (near the far/free end, inside `[0,80]`), and the
 card-edge connector cutout spans `x=[-20.5, 5.5]` (overlapping the body only
 from `x=0` to `5.5`, i.e. cut into the connector end as intended) and
-`z=[-0.5, 1.3]` (the lower portion of the card's 2.3mm thickness, since the
+`z=[-0.5, 1.3]` (the lower portion of the card's 2.15mm thickness, since the
 connector record's height reuses the 0.8mm PCB-thickness figure, not the
 full assembled-card height — see Known Gaps).
 
@@ -199,6 +199,10 @@ own (now-stale) seed gap list.
   Datum-B (screw-hole-referenced) composition path. Position x/y tier [A];
   z and the U.2 reuse (assumes SFF-8639's compatibility statement carries
   the position over unchanged) tier `//VERIFY`.
+- **U.2 connector extent** (`U2_EXT()`'s `w=4.00`, `h=4.90`): only the depth
+  `d=33.43` is tier [A] (SFF-TA-8639 Figure 5-1, directly read); `w` and `h`
+  are `//VERIFY` — not independently re-dimensioned from the U.2 spec this
+  pass, carried over from the plain-SATA connector figures instead.
 - **2.5" envelope length** (`_block_table()`'s `100.0` for all `ssd25_*`/`u2`
   rows): tier **[C]**, test-mandated round number — the spec's own three
   genuine values (100.20mm nominal, 100.45mm new-Max, 101.85mm obsolete-Max)
@@ -226,7 +230,7 @@ own (now-stale) seed gap list.
   height is this pass's modeling choice, not a datasheet-stated connector
   height — flagged `//VERIFY`. Practical effect (confirmed by this task's
   render/bbox check): `drive_connector_cutout("m2_2280")` only carves the
-  lower 1.3mm of the card's 2.3mm total thickness at the connector end, not
+  lower 1.3mm of the card's 2.15mm total thickness at the connector end, not
   a full-height slot — a consumer modeling a real M.2 socket keepout should
   check whether that partial height is sufficient for their use case.
 - **M.2 card-edge connector x=0 placement**: tier **[C]**, this pass's own

@@ -29,7 +29,7 @@ assert(len(c)==3 && (c[0]=="sata" || c[0]=="sff8639"), "hdd35 connector type");
 assert(drive_connector("u2")[0] == "sff8639", "u2 connector type");
 
 // card
-assert(drive_card_size("m2_2280") == [22.0, 80.0, 2.3], "m2_2280 size");
+assert(drive_card_size("m2_2280") == [22.0, 80.0, 2.15], "m2_2280 size");
 assert(drive_card_size("m2_2242")[1] == 42.0, "m2_2242 length");
 assert(len(drive_card_hole("m2_2280")) == 2, "m2 hole is [x,y]");
 e = drive_card_edge("m2_2280");
