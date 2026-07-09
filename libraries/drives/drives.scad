@@ -122,6 +122,9 @@ function M2_EDGE() = [ [0, 1.075, 0], [5.0, 19.85, 0.80], "m" ];
 
 function _block_table() = [
     ["hdd35",    [147.0, 101.6, 26.1], BOTTOM_35(), SIDE_35(),   ["sata",    C35_POS(), C35_EXT()]],
+    // 100.0 (below, all four rows) is test-mandated, not a direct SFF-8201
+    // transcription (spec gives 100.20 nominal / 100.45 new-Max / 101.85
+    // obsolete-Max) — see RESEARCH.md "Task 2 resolutions" (a). [C]
     ["ssd25_7",  [100.0, 69.85,  7.0], BOTTOM_25(), SIDE_25_7(), ["sata",    C35_POS(), C35_EXT()]],
     ["ssd25_9",  [100.0, 69.85,  9.5], BOTTOM_25(), SIDE_25(),   ["sata",    C35_POS(), C35_EXT()]],
     ["ssd25_15", [100.0, 69.85, 15.0], BOTTOM_25(), SIDE_25(),   ["sata",    C35_POS(), C35_EXT()]],
