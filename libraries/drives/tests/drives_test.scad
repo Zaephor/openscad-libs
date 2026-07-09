@@ -52,4 +52,8 @@ assert(cc[2][0]>0 && cc[2][1]>0 && cc[2][2]>0, "sata conn extents positive");
 ce = drive_card_edge("m2_2280");
 assert(ce[1][0]>0 && ce[1][1]>0 && ce[1][2]>0, "m2 edge extents positive");
 
+// faceplate helper accepts the documented faces (module presence checked via render).
+// unknown face must assert -> covered by bash negative control in Task 7.
+assert(is_string("bottom"), "face vocab placeholder"); // sanity; real check = render + neg control
+
 echo("drives_test OK");

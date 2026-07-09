@@ -243,3 +243,40 @@ module drive_connector_cutout(type, clearance = 0.5, depth = 0) {
     translate([pos[0]-clearance-dd, pos[1]-clearance, pos[2]-clearance])
         cube([ext[0]+2*clearance+dd, ext[1]+2*clearance, ext[2]+2*clearance]);
 }
+
+/* [Faceplate] */
+// Convenience: cut the mounting holes + connector opening for one caddy face in a
+// single call, inside a consumer difference(). Face vocabulary and per-face meaning:
+//   "bottom" -> bottom mount holes (drive_holes(type,"bottom")); works for both
+//               families (card family's single mount hole lives on the Z=0 face).
+//   "xmin"   -> the connector opening. Per RESEARCH.md's "Datum convention used
+//               below" (X=0 at the connector end) and drive_connector_cutout's own
+//               header comment/Task 5 finding, BOTH families' connector/edge-contact
+//               sits at the LOW-X face (X=0), not high-Y as an earlier draft of this
+//               module assumed -- verified independently for this task by reading
+//               RESEARCH.md's datum section plus drive_connector_cutout's cutter,
+//               which grows outward in -X (translate([pos[0]-clearance-dd, ...])).
+//               Live check: drive_connector("ssd25_9")[1][0]=3.50 and
+//               drive_card_edge("m2_2280")[0][0]=0 -- both hard against X=0.
+//   "ymin"/"ymax" -> the side mount holes (drive_holes(type,"side")). These are
+//               stored as [x,z] pairs and, per Task 4, stamped on BOTH Y walls by a
+//               single drive_holes(type,"side") call -- i.e. this data model doesn't
+//               distinguish the near (Y=0) wall from the far (Y=width) wall, so a
+//               "ymin" call and a "ymax" call both cut both walls. Block family only;
+//               card types carry no side-hole data.
+//   "xmax"   -> the far X wall (opposite the connector) has no distinct hole/cutout
+//               data in the current data model for either family -- intentional
+//               no-op rather than inventing data that doesn't exist.
+module drive_faceplate_cutout(type, face) {
+    valid = ["bottom","xmin","xmax","ymin","ymax"];
+    assert(len([for (v=valid) if (v==face) 1])>0,
+           str("drives: unknown face '", face, "'"));
+    if (face == "bottom")
+        drive_holes(type, "bottom");
+    else if (face == "xmin")
+        drive_connector_cutout(type);
+    else if (face == "ymin" || face == "ymax") {
+        if (drive_family(type)=="block") drive_holes(type, "side");
+    }
+    // face == "xmax": no-op (see comment above).
+}
