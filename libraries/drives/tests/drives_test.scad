@@ -46,4 +46,10 @@ assert(len(drive_bottom_holes("hdd35")) >= 4, "hdd35 >=4 bottom holes");
 assert(len(drive_side_holes("hdd35"))  >= 2, "hdd35 side holes present");
 assert(len(drive_card_hole("m2_2280")) == 2, "m2 single mount hole");
 
+// connector records feed the cutout; assert extents positive.
+cc = drive_connector("ssd25_9");
+assert(cc[2][0]>0 && cc[2][1]>0 && cc[2][2]>0, "sata conn extents positive");
+ce = drive_card_edge("m2_2280");
+assert(ce[1][0]>0 && ce[1][1]>0 && ce[1][2]>0, "m2 edge extents positive");
+
 echo("drives_test OK");

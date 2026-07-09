@@ -216,3 +216,30 @@ module drive_holes(type, faces = "bottom", dia = 3.4, depth = 40) {
                             cylinder(h = depth, r = r, center = true);
     }
 }
+
+// Connector opening for a consumer difference(): the connector body box grown by
+// `clearance` per side. `depth` (default 0 -> 20) extends the cut outward past the
+// drive's connector-end edge so a caddy/bezel wall is fully pierced.
+//
+// Axis/direction: RESEARCH.md's own datum convention (see "Datum convention used
+// below") fixes X=0 at the CONNECTOR end for the block family, +X toward the free
+// end -- and C35_POS()/U2_POS() place the SATA/SFF-8639 connector at x=A7=3.50mm,
+// i.e. hard against that X=0 edge (RESEARCH.md "Task 2 resolutions (b)": "A7 =
+// 3.50mm is the connector's X-offset from the connector-end edge", corroborated by
+// SFF-8223/SFF-8323's "nominally flush" text). The card family's own comment on
+// M2_EDGE() states the same thing independently: "x=0 at the card's connector end
+// (by convention; corroborated by the mount hole sitting near the *far* end...)".
+// So for BOTH families the connector/edge-contact sits at/near the LOW-X face, not
+// a high-Y "back edge" as originally sketched -- the cut must grow in -X, past
+// x=0, not +Y. (Checked against the live data too: drive_connector("ssd25_9")[1][0]
+// = 3.50 and drive_card_edge("m2_2280")[0][0] = 0, both tiny relative to their
+// ~70-150mm envelope length and ~0 relative to width -- confirms low-X, not high-Y.)
+module drive_connector_cutout(type, clearance = 0.5, depth = 0) {
+    dd = depth > 0 ? depth : 20;
+    rec = (drive_family(type) == "card")
+        ? drive_card_edge(type)            // [[x,y,z],[w,d,h],key]
+        : let (c = drive_connector(type)) [c[1], c[2]];  // [[x,y,z],[w,d,h]]
+    pos = rec[0]; ext = rec[1];
+    translate([pos[0]-clearance-dd, pos[1]-clearance, pos[2]-clearance])
+        cube([ext[0]+2*clearance+dd, ext[1]+2*clearance, ext[2]+2*clearance]);
+}
