@@ -163,3 +163,15 @@ function drive_card_edge(type)     = _card_row(type)[3];
 
 function drive_known_types() =
     concat([for (e = _block_table()) e[0]], [for (e = _card_table()) e[0]]);
+
+/* [Placeholder] */
+// Envelope solid in the datum frame (bottom face Z=0, min corner at origin,
+// growing +X length, +Y width, +Z height). For fit checks in a consumer assembly.
+module drive_placeholder(type) {
+    if (drive_family(type) == "block")
+        cube(drive_size(type));
+    else { // card: [w,len,h] -> box along +X=len, +Y=width
+        s = drive_card_size(type);   // [w, len, h]
+        cube([s[1], s[0], s[2]]);    // X=len, Y=width, Z=height
+    }
+}

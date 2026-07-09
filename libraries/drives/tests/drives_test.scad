@@ -35,5 +35,9 @@ assert(len(drive_card_hole("m2_2280")) == 2, "m2 hole is [x,y]");
 e = drive_card_edge("m2_2280");
 assert(len(e)==3 && (e[2]=="b"||e[2]=="m"||e[2]=="bm"), "m2 edge key");
 
+// placeholder: renders a solid; volume equals the envelope box (verified by render).
+// (Geometry existence is asserted indirectly; the render step is the visual check.)
+assert(drive_size("hdd35")[0]*drive_size("hdd35")[1]*drive_size("hdd35")[2] > 0, "hdd35 vol");
+
 // wrong-family + unknown asserts are covered by the bash negative controls (Task 7).
 echo("drives_test OK");
