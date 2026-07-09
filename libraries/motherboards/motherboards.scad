@@ -16,6 +16,8 @@
 // The public accessors apply a single documented X-flip (x -> width - x) so callers
 // receive component-up-frame coords. See RESEARCH.md "Mirror".
 
+use <connectors/connectors.scad>;
+
 $fn = 48;
 
 /* [Data] */
@@ -170,8 +172,11 @@ module mobo_io_ports(ff, depth = 25, protrude = 2) {
 }
 
 // PCIe x16 slot connectors: one connector body per slot at the HIGH-X end of the rear
-// edge, stepped by mobo_pcie_pitch(). Body dimensions are a real PCIe x16 card-edge
-// socket [A] (Molex 87715: length 89.00, width 7.50, height 11.25mm above the PCB).
+// edge, stepped by mobo_pcie_pitch(). Body dimensions are SOURCED from the connectors
+// library (connector_size("pcie_x16") = 89.00 x 7.50 x 11.25mm). Those figures are
+// [C] //VERIFY (cited-not-fetched: Molex 87715 series / PCI-SIG CEM named but never
+// machine-fetched -- Molex product pages are a JS SPA, PCI-SIG is member-paywalled;
+// see connectors/RESEARCH.md). This DOWNGRADES the prior soft-[A] claim carried here.
 // The connector runs +Y into the board (a card inserts along it, bracket at the rear)
 // and is SET BACK from the rear edge by `setback` -- the connector body does not touch
 // the rear edge; the card's I/O bracket occupies that gap. setback = 42.6mm [B], derived
@@ -180,7 +185,11 @@ module mobo_io_ports(ff, depth = 25, protrude = 2) {
 // 20.32mm slot pitch + 10.16mm rear hole inset confirm a spec-true layout). This places
 // the body at y=[42.6,131.6], clearing every mounting hole (all at y<=33 or y>=165),
 // matching how a real board routes standoffs clear of the slots. See RESEARCH.md Task 12.
-module mobo_pcie_ports(ff, slots = -1, length = 89, height = 11.25, width = 7.5, setback = 42.6) {
+module mobo_pcie_ports(ff, slots = -1,
+                       length = connector_size("pcie_x16")[0],   // 89.00
+                       height = connector_size("pcie_x16")[2],   // 11.25
+                       width  = connector_size("pcie_x16")[1],   // 7.50
+                       setback = 42.6) {
     n = slots < 0 ? mobo_pcie_count(ff) : slots;
     o = mobo_pcie_first_xy(ff);
     t = mobo_thickness();

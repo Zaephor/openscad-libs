@@ -5,6 +5,7 @@
 // exact reconstruction (counts, subset, envelope) plus the publicly-certain
 // board sizes and pitch.
 use <motherboards/motherboards.scad>;
+use <connectors/connectors.scad>;
 
 // Board sizes [width_X, depth_Y] mm (publicly certain dimensions; library uses the
 // exact-inch mm values rather than the rounded 244/305 spec figures — see
@@ -15,6 +16,10 @@ assert(mobo_size("itx")  == [170, 170],       "itx size");
 
 // PCIe pitch.
 assert(mobo_pcie_pitch() == 20.32, "pcie pitch");
+
+// PCIe body is now sourced from the connectors catalog; assert the historical
+// triple is preserved (consume must not move geometry). pcie_x16 = [89,7.5,11.25].
+assert(connector_size("pcie_x16") == [89, 7.5, 11.25], "pcie_x16 body (source of mobo PCIe)");
 
 // Hole counts per form factor (set in Task 2 reconstruction).
 assert(len(mobo_standoff_xy("itx"))  >= 4, "itx >=4 holes");
