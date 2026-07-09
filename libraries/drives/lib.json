@@ -1,0 +1,13 @@
+{
+  "name": "drives",
+  "description": "Storage-drive mechanical reference: 3.5\"/2.5\"/U.2 block-drive envelope, bottom/side mounting-hole coordinates and connector position; M.2 (2230/2242/2260/2280) card envelope, mounting hole, and card-edge/key. Scaffold only this pass -- data tables are populated in Task 2 from RESEARCH.md.",
+  "version": "0.1.0",
+  "sources": [
+    "https://members.snia.org/document/dl/25862 (SFF-8301 Rev 1.9, 3.5\" Form Factor Drive Dimensions)",
+    "https://members.snia.org/document/dl/25851 (SFF-8201 Rev 3.4, 2.5\" Form Factor Drive Dimensions)",
+    "https://members.snia.org/document/dl/25855 (SFF-8223 Rev 2.7, 2.5\" Drive Form Factor w/Serial Attached Connector)",
+    "https://members.snia.org/document/dl/26489 (SFF-TA-8639 Rev 2.2, Multifunction 6X Unshielded Connector / U.2)",
+    "https://www.vikingtechnology.com/wp-content/uploads/2021/03/M2_80mm_SMI_SM2258.pdf (Viking PSFEM5xxxxBxxx, M.2 2280 SATA SSD datasheet)",
+    "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/331/PSFNP5xxxx5xxx_C.pdf (Viking PSFNP5xxxx5xxx, M.2 2280 NVMe SSD manual)"
+  ]
+}
