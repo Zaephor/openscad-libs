@@ -1,7 +1,7 @@
 {
   "name": "connectors",
-  "description": "Connector body (housing/shell) envelope dimensions for common PC/SBC panel and slot connectors — USB-A/C/micro, RJ45, HDMI (A/mini/micro), PCIe card-edge slot, 2.54mm GPIO header. See RESEARCH.md for per-type evidence and tiering.",
-  "version": "0.1.0",
+  "description": "Connector body (housing/shell) envelope dimensions for common PC/SBC panel and slot connectors — USB-A/A-stacked/A-stacked-shielded/C/micro, RJ45/RJ45-stacked/RJ45-shallow, HDMI (A/mini/micro), PCIe card-edge slot, 2.54mm GPIO header. See RESEARCH.md for per-type evidence and tiering.",
+  "version": "0.2.0",
   "sources": [
     "https://www.cuidevices.com/product/resource/uj2-ah-4-th.pdf",
     "https://www.cuidevices.com/product/resource/ujc-h-g-smt-p6-tr.pdf",

@@ -97,8 +97,9 @@ choice in the example script, not a modeled union or geometry defect.
 | `connector_cutout(type, clearance, depth)` | panel/board opening cutter (subtract from a consumer solid) |
 
 Valid `type` keys (`connector_known_types()`): `usb_a`, `usb_a_stack2`,
-`usb_c`, `micro_usb`, `rj45`, `rj45_stack2`, `hdmi`, `mini_hdmi`,
-`micro_hdmi`, `pcie_x1`, `pcie_x4`, `pcie_x8`, `pcie_x16`, `gpio_2x20`.
+`usb_a_stack2_shielded`, `usb_c`, `micro_usb`, `rj45`, `rj45_stack2`,
+`rj45_shallow`, `hdmi`, `mini_hdmi`, `micro_hdmi`, `pcie_x1`, `pcie_x4`,
+`pcie_x8`, `pcie_x16`, `gpio_2x20`.
 
 ## Sources
 
@@ -120,12 +121,31 @@ pending stronger corroboration.
 | Molex 87715 series (PCIe x16 card-edge socket) | C, named-not-fetched | `pcie_x1`/`x4`/`x8`/`x16` |
 | PCI-SIG PCI Express CEM Spec | C, named-not-fetched (member-paywalled) | `pcie_x1`/`x4`/`x8`/`x16` |
 | USB-IF (usb.org) USB 2.0 + Type-C mechanical specs | C, named-not-fetched (login/EULA-gated) | corroborates USB-A/C general form factor, not a specific dimension |
+| `libraries/sbc/sbc.scad` pi3b/pi3bplus/pi4b/pi5 `usb2_1`/`usb2_2`/`usb2`/`usb3` (peer-reconciled, SP1) | B | `usb_a_stack2_shielded` |
+| `libraries/sbc/sbc.scad` pi3b/pi3bplus `rj45`, corroborated on d+h by bpir4 `rj45_2`/`rj45_3`/`rj45_4` (peer-reconciled, SP1) | B | `rj45_shallow` |
 
 `sbc.scad` and `motherboards.scad` rows (`hdmi`, `usb_c`/`usbc_pwr`,
 `gpio`, `rj45*`, `mobo_pcie_ports()`) were read as **read-only
 cross-checks**, not sources this table cites — every per-type agreement/
 disagreement against those libraries' own rows is logged in `RESEARCH.md`,
-not folded into a fetched-source tier here.
+not folded into a fetched-source tier here. The two new SP1 rows above are
+the exception: `usb_a_stack2_shielded` and `rj45_shallow` are *new types*
+derived directly from that peer-reconciliation (no vendor datasheet fetched
+for either), so their evidence is the sbc.scad/RESEARCH.md cross-check
+itself — see the SP1 reconciliation note below for the full verdict table.
+
+### SP1 reconciliation (2026-07-09)
+
+`RESEARCH.md`'s `## SP1 reconciliation` section holds the full 21-row
+verdict table comparing every `sbc.scad` connector body against its peer
+type here (5 same / 14 different / 2 deferred / 0 error). Two new types
+were added from it (`usb_a_stack2_shielded`, `rj45_shallow`, both `[B]`,
+see Sources above), and two existing types were upgraded from
+`[C]//VERIFY` to `[B]` (`gpio_2x20` height, `micro_hdmi` tier — see
+Coverage / gaps below). `motherboards.scad` now sources its PCIe x16 body
+from `connector_size("pcie_x16")` instead of hardcoding the same numbers
+(see "Consumed-by" note below) — this is the first library to actually
+consume `connectors.scad` rather than just cross-check against it.
 
 ## Coverage / gaps
 
@@ -133,6 +153,13 @@ not folded into a fetched-source tier here.
 `usb_a_stack2`, `usb_c`, `micro_usb`, `rj45`, `rj45_stack2`, `hdmi`,
 `mini_hdmi`, `micro_hdmi`, `pcie_x1`, `pcie_x4`, `pcie_x8`, `pcie_x16`,
 `gpio_2x20`.
+
+**SP1 additions (2, `[B]`, see SP1 reconciliation above):**
+`usb_a_stack2_shielded` (dual-port shielded SBC USB-A housing, distinct
+from the derived-doubling `usb_a_stack2` — both stay, no type removed),
+`rj45_shallow` (no-integrated-magnetics SBC RJ45 jack, distinct from the
+fetched Bel Fuse MagJack `rj45` — both stay, no type removed).
+`connector_known_types()` now returns 16 types total.
 
 **Deferred types (not in this library at all):** DB9, DB25, VGA,
 DisplayPort, SATA (data + power). No slot exists for these yet — a future
@@ -156,23 +183,27 @@ fetch-attempt log behind each):
   found/reachable this pass (Same Sky/CUI's HDMI catalog has no mini/micro
   variant; other vendors' sites could not be machine-fetched this pass).
   Seed value retained, `[C] //VERIFY (cited-not-fetched)`.
-- **`micro_hdmi`** (`[7.5, 4.5, 3.0]`) — same fetch gap as `mini_hdmi`.
-  Width/height match the seed; depth (4.5mm) was pulled from `sbc.scad`'s
-  own Pi 4B/5 `[A]`-tagged board measurement in preference to the seed's
-  5.6mm, since sbc's figure traces to an actual board measurement even
-  though this library couldn't independently re-fetch a vendor datasheet.
-  Tier `[C] //VERIFY (cited-not-fetched)`.
+- **`micro_hdmi`** (`[7.5, 4.5, 3.0]`) — **upgraded `[C]//VERIFY` →
+  `[B]`, SP1.** Width/height match the seed; depth (4.5mm) was pulled from
+  `sbc.scad`'s own Pi 4B/5 board measurement. SP1's peer-reconciliation
+  found sbc's h=3.0 is itself `[A]` (a real "Z=3.0" drawing callout,
+  independently corroborated on pi5's own drawing), which is enough to
+  raise this type's overall tier to `[B]` — not `[A]`, since no vendor
+  micro-HDMI datasheet has been independently fetched by this library
+  itself. No longer `//VERIFY`.
 - **`pcie_x1`/`pcie_x4`/`pcie_x8`/`pcie_x16`** (widths 25.0/39.0/56.0/89.0,
   height 11.25, depth 7.5) — Molex 87715 series / PCI-SIG CEM spec named
   but **not fetched** this pass (Molex's product pages are a JS SPA that
   couldn't be scraped; the CEM spec is member-paywalled). Tier
   `[C] //VERIFY (cited-not-fetched)` for all four — explicitly **NOT**
   `[A]`, see the motherboards flag below.
-- **`gpio_2x20` height (8.5mm)** — width/depth (`50.8`/`5.08`) are solid
-  `[A]` 2.54mm-pitch arithmetic, further corroborated by a fetched pitch
-  table. The only 2.54mm-pitch header datasheet reachable this pass was a
-  shorter 6.0mm-total variant, not the tall-pin ~8.5mm HAT-stacking style
-  commonly used for GPIO — so height stays the seed value, `[C] //VERIFY`.
+- **`gpio_2x20` height (8.5mm)** — **upgraded `[C]//VERIFY` → `[B]`,
+  SP1.** Width/depth (`50.8`/`5.08`) remain solid `[A]` 2.54mm-pitch
+  arithmetic. Height was previously the unconfirmed seed value; SP1's
+  peer-reconciliation found sbc.scad's own h=8.5 is `[A]` (a real
+  "Z-Height=8.5" drawing callout on pi3b), independently corroborated by
+  pi4b's own separate drawing printing the same callout — two genuinely
+  independent vendor drawings. No longer `//VERIFY`.
 - **`usb_a_stack2`** (`[13.66, 14.6, 13.88]`) — derived as a naive 2x
   single-port height (2 x 6.94), not independently fetched for a real
   stacked-shell part. Tier `[C]`.
@@ -182,20 +213,36 @@ fetch-attempt log behind each):
   stack, so it only corroborates per-port pitch/depth, not the doubled
   height itself. Tier `[C]`.
 
-**Motherboards soft-`[A]` flag:** `libraries/motherboards/motherboards.scad`
-(around line 173-174) currently carries a soft `[A]` claim for the exact
-same PCIe x16 numbers (Molex 87715: 89.00 x 7.50 x 11.25mm) with no
-fetch/URL citation backing it in that library's own `RESEARCH.md`. This
-pass could not independently re-verify that claim either (same Molex-SPA/
-CEM-paywall blockers apply) — `connectors.scad` carries these values as
-`[C] //VERIFY` from the start rather than inheriting the unverified `[A]`.
-Recommend downgrading motherboards.scad's comment to `[C] //VERIFY` in a
-future pass unless an actual Molex/PCI-SIG fetch succeeds.
+**4 rows deferred, not silently dropped (SP1):** the SP1 reconciliation
+pass examined 4 `sbc.scad` rows that do **not** get a new connector type
+— they remain unresolved, flagged for a future re-fetch, and are recorded
+in `RESEARCH.md`'s "Notes / deferred items" rather than mapped to
+anything: pi3b/pi3bplus `microusb_pwr` and pizero/pizero2w `microusb_data`
+(height, and for `microusb_data` also depth, fail the ~0.5mm same/
+different threshold against `micro_usb`, but neither side's evidence is
+strong enough to call it a confirmed distinct part), and bpir4 `usb_1` and
+`usbc_pwr_1` (each has one axis that fails threshold against its nearest
+candidate peer, off a board reading sbc.scad's own `RESEARCH.md` already
+self-flags as `//VERIFY`). None of the 4 became a new type in this pass.
 
-**Consumed-by-sbc/motherboards retrofit is DEFERRED.** This library does
-not modify, and is not yet consumed by, `sbc.scad` or `motherboards.scad` —
-those libraries keep their own independently-sourced connector rows.
-Per-type cross-check results between this library's fetched values and
-sbc's/motherboards' existing rows (agreements, disagreements, and the
-motherboards soft-`[A]` PCIe flag above) are recorded in `RESEARCH.md`, not
-applied as edits to either library.
+**Motherboards soft-`[A]` flag: RESOLVED (SP1).**
+`libraries/motherboards/motherboards.scad` previously carried a soft `[A]`
+claim for the PCIe x16 numbers (Molex 87715: 89.00 x 7.50 x 11.25mm) with
+no fetch/URL citation backing it in that library's own `RESEARCH.md`. SP1
+downgraded that comment to `[C] //VERIFY (cited-not-fetched)` and switched
+`mobo_pcie_ports()`'s `length`/`width`/`height` defaults to read from
+`connector_size("pcie_x16")` (via a new `use <connectors/connectors.scad>;`
+in `motherboards.scad`) instead of hardcoding the same numbers a second
+time — this pass still could not independently re-verify the underlying
+Molex/PCI-SIG figures (same JS-SPA/paywall blockers apply), so the tier
+stays `[C] //VERIFY`, but the two libraries no longer carry two
+independent, silently-divergible copies of the same unverified value.
+
+**Consumed-by-sbc/motherboards retrofit is PARTIAL as of SP1.**
+`motherboards.scad` now consumes this library for its PCIe x16 body (see
+above) — the first consumer of `connectors.scad` rather than just a
+cross-check target. `sbc.scad` remains untouched and out of scope for
+SP1 (deferred to SP2); it keeps its own independently-sourced connector
+rows. Per-type cross-check results between this library's values and
+sbc's existing rows (agreements, disagreements) are recorded in
+`RESEARCH.md`'s SP1 section, not applied as edits to `sbc.scad`.
