@@ -6,7 +6,8 @@ use <connectors/connectors.scad>;
 assert(connector_known_types() == [
     "usb_a", "usb_a_stack2", "usb_c", "micro_usb",
     "rj45", "rj45_stack2", "hdmi", "mini_hdmi", "micro_hdmi",
-    "pcie_x1", "pcie_x4", "pcie_x8", "pcie_x16", "gpio_2x20"], "type list");
+    "pcie_x1", "pcie_x4", "pcie_x8", "pcie_x16", "gpio_2x20",
+    /* SP1 additions: */ "usb_a_stack2_shielded", "rj45_shallow"], "type list");
 
 // opening axes (fixed design decision)
 assert(connector_opening("usb_a")    == "+Y", "usb_a opening");
@@ -17,7 +18,11 @@ assert(connector_opening("gpio_2x20")== "+Z", "gpio opening");
 
 // strongest-sourced / representative dims (see per-line tiers)
 assert(connector_size("pcie_x16") == [89, 7.5, 11.25], "pcie_x16 body");     // [C] //VERIFY cited-not-fetched
-assert(connector_size("gpio_2x20") == [50.8, 5.08, 8.5], "gpio_2x20 body");  // w/d [A], h [C] //VERIFY
+assert(connector_size("gpio_2x20") == [50.8, 5.08, 8.5], "gpio_2x20 body");  // w/d [A], h [B] (SP1 upgrade)
+
+// SP1 reconciled bodies (values per RESEARCH.md SP1 table)
+assert(connector_size("usb_a_stack2_shielded") == [17, 18, 16.0], "usb_a_stack2_shielded body");
+assert(connector_size("rj45_shallow") == [21, 18.75, 13.5], "rj45_shallow body");
 
 // --- body renders + arithmetic guard (geometry verified by render step) ---
 // pcie_x16 body volume = 89*7.5*11.25 = 7509.375 mm^3

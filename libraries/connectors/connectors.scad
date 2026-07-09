@@ -38,12 +38,15 @@ function _connector_table() = [
     ["rj45_stack2",  [16.36, 30.48, 27.34], "+Y"], // [C] //VERIFY derived 2x height
     ["hdmi",         [14.50, 11.06,  6.17], "+Y"], // [A] Same Sky HD05-19-TH
     ["mini_hdmi",    [10.4,   7.5,   3.2 ], "+Y"], // [C] //VERIFY cited-not-fetched
-    ["micro_hdmi",   [ 7.5,   4.5,   3.0 ], "+Y"], // [C] //VERIFY depth 4.5 from sbc Pi measurement, not re-fetched
+    ["micro_hdmi",   [ 7.5,   4.5,   3.0 ], "+Y"], // [B] (SP1 upgrade) h=3.0 grounded by sbc.scad pi4b's [A] "Z=3.0" drawing callout (corroborated on pi5), w/d [B] standard-body estimate
     ["pcie_x1",      [25.0,   7.5,  11.25], "+Z"], // [C] //VERIFY Molex 87715/PCI-SIG cited-not-fetched
     ["pcie_x4",      [39.0,   7.5,  11.25], "+Z"], // [C] //VERIFY cited-not-fetched
     ["pcie_x8",      [56.0,   7.5,  11.25], "+Z"], // [C] //VERIFY cited-not-fetched
     ["pcie_x16",     [89.0,   7.5,  11.25], "+Z"], // [C] //VERIFY Molex 87715/PCI-SIG cited-not-fetched (NOT [A])
-    ["gpio_2x20",    [50.8,   5.08,  8.5 ], "+Z"], // w/d [A] 2.54 pitch; h 8.5 [C] //VERIFY tall-pin variant not fetched
+    ["gpio_2x20",    [50.8,   5.08,  8.5 ], "+Z"], // w/d [A] 2.54 pitch; h 8.5 [B] (SP1 upgrade: sbc.scad pi3b/pi4b independently-corroborated "Z-Height=8.5" drawing callout)
+    // --- SP1 additions (see RESEARCH.md SP1 table) ---
+    ["usb_a_stack2_shielded", [17,   18,   16.0], "+Y"], // [B] sbc.scad pi3b/pi3bplus/pi4b/pi5 dual-port shielded SBC housing (corroborated across multiple boards)
+    ["rj45_shallow",          [21,   18.75, 13.5], "+Y"], // [B] sbc.scad pi3b/pi3bplus rj45 (corroborated on d+h by bpir4 rj45_2/3/4), no integrated-magnetics module
 ];
 function connector_known_types() = [for (e = _connector_table()) e[0]];
 function _connector_row(type) =
