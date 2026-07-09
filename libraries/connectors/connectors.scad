@@ -39,10 +39,10 @@ function _connector_table() = [
     ["hdmi",         [14.50, 11.06,  6.17], "+Y"], // [A] Same Sky HD05-19-TH
     ["mini_hdmi",    [10.4,   7.5,   3.2 ], "+Y"], // [C] //VERIFY cited-not-fetched
     ["micro_hdmi",   [ 7.5,   4.5,   3.0 ], "+Y"], // [B] (SP1 upgrade) h=3.0 grounded by sbc.scad pi4b's [A] "Z=3.0" drawing callout (corroborated on pi5), w/d [B] standard-body estimate
-    ["pcie_x1",      [25.0,   7.5,  11.25], "+Z"], // [C] //VERIFY Molex 87715/PCI-SIG cited-not-fetched
-    ["pcie_x4",      [39.0,   7.5,  11.25], "+Z"], // [C] //VERIFY cited-not-fetched
-    ["pcie_x8",      [56.0,   7.5,  11.25], "+Z"], // [C] //VERIFY cited-not-fetched
-    ["pcie_x16",     [89.0,   7.5,  11.25], "+Z"], // [C] //VERIFY Molex 87715/PCI-SIG cited-not-fetched (NOT [A])
+    ["pcie_x1",      [25.0,   7.5,  11.25], "+Z"], // [A] Molex SD-87715-207 (PCI Express Edge Card Connector, Wayback-fetched+read)
+    ["pcie_x4",      [39.0,   7.5,  11.25], "+Z"], // [A] Molex SD-87715-207 (PCI Express Edge Card Connector, Wayback-fetched+read)
+    ["pcie_x8",      [56.0,   7.5,  11.25], "+Z"], // [A] Molex SD-87715-207 (PCI Express Edge Card Connector, Wayback-fetched+read)
+    ["pcie_x16",     [89.0,   7.5,  11.25], "+Z"], // [A] Molex SD-87715-207 (PCI Express Edge Card Connector, Wayback-fetched+read)
     ["gpio_2x20",    [50.8,   5.08,  8.5 ], "+Z"], // w/d [A] 2.54 pitch; h 8.5 [B] (SP1 upgrade: sbc.scad pi3b/pi4b independently-corroborated "Z-Height=8.5" drawing callout)
     // --- SP1 additions (see RESEARCH.md SP1 table) ---
     ["usb_a_stack2_shielded", [17,   18,   16.0], "+Y"], // [B] sbc.scad pi3b/pi3bplus/pi4b/pi5 dual-port shielded SBC housing (corroborated across multiple boards)

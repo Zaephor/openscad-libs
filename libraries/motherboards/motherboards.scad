@@ -173,10 +173,10 @@ module mobo_io_ports(ff, depth = 25, protrude = 2) {
 
 // PCIe x16 slot connectors: one connector body per slot at the HIGH-X end of the rear
 // edge, stepped by mobo_pcie_pitch(). Body dimensions are SOURCED from the connectors
-// library (connector_size("pcie_x16") = 89.00 x 7.50 x 11.25mm). Those figures are
-// [C] //VERIFY (cited-not-fetched: Molex 87715 series / PCI-SIG CEM named but never
-// machine-fetched -- Molex product pages are a JS SPA, PCI-SIG is member-paywalled;
-// see connectors/RESEARCH.md). This DOWNGRADES the prior soft-[A] claim carried here.
+// library (connector_size("pcie_x16") = 89.00 x 7.50 x 11.25mm), which is now this
+// value's single source of truth. Tier [A]: Molex SD-87715-207 "PCI Express Edge Card
+// Connector" (Wayback-fetched+read; see connectors/RESEARCH.md and this file's own
+// SP1 note below for the fetch record).
 // The connector runs +Y into the board (a card inserts along it, bracket at the rear)
 // and is SET BACK from the rear edge by `setback` -- the connector body does not touch
 // the rear edge; the card's I/O bracket occupies that gap. setback = 42.6mm [B], derived

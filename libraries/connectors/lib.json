@@ -10,7 +10,7 @@
     "https://www.cuidevices.com/product/resource/ssk01-mph-254.pdf",
     "https://www.belfuse.com/Data/Datasheets/0813-1X1T-43-F.pdf",
     "https://www.belfuse.com/Data/Datasheets/0810-2H4R-BG-F.pdf",
-    "Molex 87715 series (PCIe x16 card-edge socket) — named part, not fetched this pass (Molex product pages are a JS SPA); backs pcie_x16 //VERIFY",
+    "https://web.archive.org/web/20210228062138/https://www.molex.com/pdm_docs/sd/877159206_sd.pdf",
     "PCI-SIG PCI Express Card Electromechanical (CEM) Spec — named standard, not fetched (member-paywalled); backs pcie_x1/x4/x8 //VERIFY",
     "USB Implementers Forum (usb.org) USB 2.0 + Type-C mechanical specs — named standard, not fetched (login/EULA-gated this pass)"
   ]

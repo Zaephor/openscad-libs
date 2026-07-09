@@ -17,7 +17,7 @@ assert(connector_opening("pcie_x16") == "+Z", "pcie opening");
 assert(connector_opening("gpio_2x20")== "+Z", "gpio opening");
 
 // strongest-sourced / representative dims (see per-line tiers)
-assert(connector_size("pcie_x16") == [89, 7.5, 11.25], "pcie_x16 body");     // [C] //VERIFY cited-not-fetched
+assert(connector_size("pcie_x16") == [89, 7.5, 11.25], "pcie_x16 body");     // [A] Molex SD-87715-207
 assert(connector_size("gpio_2x20") == [50.8, 5.08, 8.5], "gpio_2x20 body");  // w/d [A], h [B] (SP1 upgrade)
 
 // SP1 reconciled bodies (values per RESEARCH.md SP1 table)

@@ -118,7 +118,7 @@ pending stronger corroboration.
 | [Bel Fuse 0810-2H4R-BG-F](https://www.belfuse.com/Data/Datasheets/0810-2H4R-BG-F.pdf) | A (wrong shape) | `rj45_stack2` per-port pitch/depth corroboration only — this part is a 2x4 array, not a clean 2-high stack, so it does not itself confirm the stacked-height value |
 | [Same Sky (CUI) HD05-19-TH-TR](https://www.cuidevices.com/product/resource/hd05-19-th-tr.pdf) | A | `hdmi` |
 | [Same Sky (CUI) SSK01-MPH-254](https://www.cuidevices.com/product/resource/ssk01-mph-254.pdf) | A | `gpio_2x20` width/depth (2.54mm pitch arithmetic); does NOT back the tall-pin height (see gaps) |
-| Molex 87715 series (PCIe x16 card-edge socket) | C, named-not-fetched | `pcie_x1`/`x4`/`x8`/`x16` |
+| [Molex SD-87715-207](https://web.archive.org/web/20210228062138/https://www.molex.com/pdm_docs/sd/877159206_sd.pdf) (PCI Express Edge Card Connector, 87715 series, Wayback) | A | `pcie_x1`/`x4`/`x8`/`x16` |
 | PCI-SIG PCI Express CEM Spec | C, named-not-fetched (member-paywalled) | `pcie_x1`/`x4`/`x8`/`x16` |
 | USB-IF (usb.org) USB 2.0 + Type-C mechanical specs | C, named-not-fetched (login/EULA-gated) | corroborates USB-A/C general form factor, not a specific dimension |
 | `libraries/sbc/sbc.scad` pi3b/pi3bplus/pi4b/pi5 `usb2_1`/`usb2_2`/`usb2`/`usb3` (peer-reconciled, SP1) | B | `usb_a_stack2_shielded` |
@@ -191,12 +191,6 @@ fetch-attempt log behind each):
   raise this type's overall tier to `[B]` — not `[A]`, since no vendor
   micro-HDMI datasheet has been independently fetched by this library
   itself. No longer `//VERIFY`.
-- **`pcie_x1`/`pcie_x4`/`pcie_x8`/`pcie_x16`** (widths 25.0/39.0/56.0/89.0,
-  height 11.25, depth 7.5) — Molex 87715 series / PCI-SIG CEM spec named
-  but **not fetched** this pass (Molex's product pages are a JS SPA that
-  couldn't be scraped; the CEM spec is member-paywalled). Tier
-  `[C] //VERIFY (cited-not-fetched)` for all four — explicitly **NOT**
-  `[A]`, see the motherboards flag below.
 - **`gpio_2x20` height (8.5mm)** — **upgraded `[C]//VERIFY` → `[B]`,
   SP1.** Width/depth (`50.8`/`5.08`) remain solid `[A]` 2.54mm-pitch
   arithmetic. Height was previously the unconfirmed seed value; SP1's
@@ -225,18 +219,21 @@ strong enough to call it a confirmed distinct part), and bpir4 `usb_1` and
 candidate peer, off a board reading sbc.scad's own `RESEARCH.md` already
 self-flags as `//VERIFY`). None of the 4 became a new type in this pass.
 
-**Motherboards soft-`[A]` flag: RESOLVED (SP1).**
-`libraries/motherboards/motherboards.scad` previously carried a soft `[A]`
-claim for the PCIe x16 numbers (Molex 87715: 89.00 x 7.50 x 11.25mm) with
-no fetch/URL citation backing it in that library's own `RESEARCH.md`. SP1
-downgraded that comment to `[C] //VERIFY (cited-not-fetched)` and switched
-`mobo_pcie_ports()`'s `length`/`width`/`height` defaults to read from
-`connector_size("pcie_x16")` (via a new `use <connectors/connectors.scad>;`
-in `motherboards.scad`) instead of hardcoding the same numbers a second
-time — this pass still could not independently re-verify the underlying
-Molex/PCI-SIG figures (same JS-SPA/paywall blockers apply), so the tier
-stays `[C] //VERIFY`, but the two libraries no longer carry two
-independent, silently-divergible copies of the same unverified value.
+**Motherboards `[A]` claim: was never soft — corrected (final review).**
+SP1's Task 1 mistakenly concluded that `libraries/motherboards/motherboards.scad`'s
+`[A]` claim for the PCIe x16 numbers (Molex 87715: 89.00 x 7.50 x 11.25mm) was
+soft/uncredited, and downgraded it to `[C] //VERIFY (cited-not-fetched)`. That
+conclusion was wrong: motherboards' own `RESEARCH.md` (Task 11) names a specific
+Wayback URL for Molex drawing `SD-87715-207`, and this branch's final review
+independently re-fetched that exact URL and confirmed it is the genuine drawing,
+with a master dimension table matching these seed values exactly (zero delta).
+Tier is restored to `[A]` for `pcie_x1`/`pcie_x4`/`pcie_x8`/`pcie_x16` here and in
+motherboards.scad. SP1's other change — switching `mobo_pcie_ports()`'s
+`length`/`width`/`height` defaults to read from `connector_size("pcie_x16")` (via
+a new `use <connectors/connectors.scad>;` in `motherboards.scad`) instead of
+hardcoding the same numbers a second time — is unaffected and still correct: the
+two libraries no longer carry two independent, silently-divergible copies of the
+same value, and that value now honestly carries `[A]`.
 
 **Consumed-by-sbc/motherboards retrofit is PARTIAL as of SP1.**
 `motherboards.scad` now consumes this library for its PCIe x16 body (see
