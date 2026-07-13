@@ -77,12 +77,48 @@ module _faceplate() {
         // chassis position. depth clears the panel thickness.
         translate([board_x(), board_y(), board_z()])
             sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
+        // Intake vents: vertical slots in each faceplate margin (clear of the
+        // board's connector band). Each side spans X in
+        // [board_w/2+vent_slot_gap, body_w/2-wall-vent_slot_gap]; sides mirror.
+        for (sx = [-1, 1]) {
+            m_out = sx * (body_w()/2 - wall - vent_slot_gap);
+            m_in  = sx * (board_w()/2 + vent_slot_gap);
+            lo = min(m_out, m_in); hi = max(m_out, m_in);
+            pitch = vent_slot_w + vent_slot_gap;
+            n = floor((hi - lo) / pitch);
+            for (i = [0 : max(n-1,0)])
+                translate([lo + vent_slot_gap + i*pitch, -faceplate_th - 1,
+                           floor_th + vent_slot_gap])
+                    cube([vent_slot_w, faceplate_th + 2,
+                          ext_h() - floor_th - lid_th - 2*vent_slot_gap]);
+        }
     }
+}
+
+// Internal bosses the lid screws into. M3 heat-set insert bore, top-loaded.
+// Placed at the four inner corners + front/rear mid-span (6 posts) so a wide
+// lid does not bow. Post top is at the ledge (ext_h - lid_th).
+function _lid_post_od() = lid_insert_bore + 3.2; // boss OD (shared by placement + geometry)
+function _lid_post_xy() =
+    let (post_r = _lid_post_od() / 2,           // post OD/2 (matches _lid_posts() OD)
+         ix = body_w()/2 - wall - post_r - 1.2, // ~1.2mm printable gap to wall inner face
+         y0 = board_y(),
+         yf = y0 + 6, yr = y0 + int_depth() - wall - 6, ym = (yf + yr)/2)
+    [ [-ix, yf], [ix, yf], [-ix, ym], [ix, ym], [-ix, yr], [ix, yr] ];
+
+module _lid_posts() {
+    h = ext_h() - lid_th;
+    for (p = _lid_post_xy())
+        translate([p[0], p[1], floor_th]) difference() {
+            cylinder(h = h - floor_th, d = _lid_post_od());
+            translate([0, 0, -1]) cylinder(h = h - floor_th + 2, d = lid_insert_bore);
+        }
 }
 
 module tray() {
     _tray_shell();
     _faceplate();
+    _lid_posts();
     // Board standoff posts.
     translate([board_x(), board_y(), floor_th])
         sbc_standoffs(BOARD, standoff_h, bore = board_insert_bore);

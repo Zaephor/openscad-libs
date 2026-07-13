@@ -34,4 +34,10 @@ assert(panel_w() > body_w() + 1e-6,
 assert(len([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin") c]) >= 8,
     "expected >=8 ymin front connectors on bpir4");
 
+// Each faceplate vent zone (bounded by the body walls, not the wide ears) must
+// fit at least one intake slot after both-end gap insets.
+margin = (body_w() - board_w())/2 - wall - 2*vent_slot_gap;
+assert(margin >= vent_slot_w,
+    str("faceplate vent-zone margin ", margin, " < one slot width ", vent_slot_w));
+
 // Render nothing (pure assert file).
