@@ -44,12 +44,12 @@ function ext_h()    = rack10_u() - stack_gap;    // chassis exterior height
 function int_h()    = ext_h() - floor_th - lid_th;
 function body_w()   = clear_w();                 // body passes between posts
 function rear_off() = enable_exhaust ? fan_plenum : rear_gap;
-function int_depth()= board_d() + rear_off();    // faceplate-inner -> rear-wall-inner
+function int_depth()= board_d() + rear_off();    // faceplate-inner (Y=0) -> rear-wall outer face
 // board placement in chassis frame:
 function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
-function rear_wall_y() = board_y() + int_depth();// inner face of rear wall
+function rear_wall_y() = board_y() + int_depth();// outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
 
 // Fan must physically fit the 1U internal height when exhaust is on.
 assert(!enable_exhaust || fan_size <= int_h() + 1e-6,

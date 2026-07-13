@@ -18,7 +18,7 @@ module _tray_shell() {
             for (sx = [-1, 1])
                 translate([sx*(body_w()/2) - (sx>0?wall:0), y0, 0])
                     cube([wall, dd, ext_h()]);
-            // Rear wall (solid for now; Task 5 cuts fans/vents).
+            // Rear wall.
             translate([-body_w()/2, y0 + dd - wall, 0])
                 cube([body_w(), wall, ext_h()]);
         }
@@ -26,6 +26,41 @@ module _tray_shell() {
         // front stays open (over-cut -Y) — the faceplate closes the front.
         translate([-(body_w()/2 - wall/2), y0 - 1, ext_h() - lid_th])
             cube([body_w() - wall, dd - wall/2 + 1, lid_th + 1]);
+        // Rear-wall fan bores or passive vents.
+        _rear_openings();
+    }
+}
+
+// Rear-wall openings. Fans on: `fan_count` bores + screw holes across the
+// wall, vertically centered on the interior clearance, axis rotated onto +Y
+// so the (default Z-axis) fan cutters punch straight through the wall. Fans
+// off: a vertical passive vent-slot array.
+//
+// rear_wall_y() is the wall's outer (rearmost) face; the wall itself occupies
+// [rear_wall_y()-wall, rear_wall_y()] (see _tray_shell()), so every cutter
+// below is anchored off `rear_wall_y() - wall` (the inner face) to actually
+// intersect the wall.
+module _rear_openings() {
+    yw = rear_wall_y();               // rear wall outer (rearmost) face
+    zc = floor_th + int_h()/2;        // vertical center of interior clearance
+    if (enable_exhaust) {
+        span = fan_count * fan_size;
+        x0   = -span/2 + fan_size/2;  // first fan center
+        for (i = [0 : fan_count-1])
+            translate([x0 + i*fan_size, yw - wall, zc])
+                rotate([-90, 0, 0]) {  // Z-axis cutters -> +Y, through the wall
+                    fan_bore(fan_size, depth = wall);
+                    fan_holes(fan_size, depth = wall);
+                }
+    } else {
+        // Passive slots: vertical rectangular cuts across the rear wall.
+        usable = body_w() - 2*wall - 2*vent_slot_gap;
+        pitch  = vent_slot_w + vent_slot_gap;
+        n      = floor(usable / pitch);
+        x0     = -(n-1)*pitch/2;
+        for (i = [0 : n-1])
+            translate([x0 + i*pitch - vent_slot_w/2, yw - wall - 1, floor_th + vent_slot_gap])
+                cube([vent_slot_w, wall + 2, int_h() - 2*vent_slot_gap]);
     }
 }
 

@@ -4,7 +4,11 @@ set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
 
-run() { "$root/scripts/openscad.sh" --export-format stl -o "$1" "$2" 2>&1; }
+run() { # <stl-out> <scad> <extra-D...>
+  local stl="$1"; shift
+  local scad="$1"; shift
+  "$root/scripts/openscad.sh" --export-format stl -o "$stl" "$scad" "$@" 2>&1
+}
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 fail=0
@@ -22,15 +26,19 @@ check_render() { # <label> <scad> <extra-D...>
   fi
 }
 
-check_render "assembly"      "$proj/assembly.scad"
-check_render "tray"          "$proj/parts/tray.scad"
-check_render "lid"           "$proj/parts/lid.scad"
+for ex in true false; do
+  check_render "assembly[fan=$ex]" "$proj/assembly.scad"  -D "enable_exhaust=$ex"
+  check_render "tray[fan=$ex]"     "$proj/parts/tray.scad" -D "enable_exhaust=$ex"
+done
+check_render "lid" "$proj/parts/lid.scad"
 
-# Geometry invariants (asserts.scad aborts the render on violation).
-out="$(run "$tmp/out.stl" "$proj/tests/asserts.scad")"
-if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-  echo "FAIL[asserts]: geometry invariant failed:"; echo "$out"; fail=1
-fi
+# Geometry invariants (asserts.scad aborts the render on violation), both fan modes.
+for ex in true false; do
+  out="$(run "$tmp/out.stl" "$proj/tests/asserts.scad" -D "enable_exhaust=$ex")"
+  if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+    echo "FAIL[asserts fan=$ex]: geometry invariant failed:"; echo "$out"; fail=1
+  fi
+done
 
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
