@@ -26,4 +26,12 @@ assert(standoff_h + sbc_thickness(BOARD) < int_h() + 1e-6,
     str("standoff+PCB ", standoff_h + sbc_thickness(BOARD),
         " exceeds internal height ", int_h()));
 
+// Faceplate must span the full rack panel width (ears reach the posts) and be
+// wider than the body (so ears overhang the clear opening).
+assert(panel_w() > body_w() + 1e-6,
+    str("panel width ", panel_w(), " should exceed body width ", body_w()));
+// All bpir4 front connectors share the ymin edge (spec invariant).
+assert(len([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin") c]) >= 8,
+    "expected >=8 ymin front connectors on bpir4");
+
 // Render nothing (pure assert file).

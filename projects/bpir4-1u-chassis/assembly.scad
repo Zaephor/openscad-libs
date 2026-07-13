@@ -16,7 +16,7 @@ show_board = true; // sbc_placeholder fit reference (not a printed part)
 module assembly() {
     if (show_tray) tray();
     if (show_board)
-        translate([board_x(), board_y(), standoff_h])
+        translate([board_x(), board_y(), board_z()])
             % sbc_placeholder(BOARD);
     if (show_lid)
         translate([0, 0, (ext_h() - lid_th) + 30 * explode])

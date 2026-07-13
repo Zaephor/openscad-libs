@@ -29,8 +29,25 @@ module _tray_shell() {
     }
 }
 
+// Front rack panel: full panel width, chassis-exterior height, front face on
+// Y=0 growing -Y (toward the rack front). Rack mount holes + connector cutouts.
+module _faceplate() {
+    difference() {
+        // Panel blank (own height = ext_h(); width from the library).
+        translate([-panel_w()/2, -faceplate_th, 0])
+            cube([panel_w(), faceplate_th, ext_h()]);
+        // Rack mounting holes — square cage-nut pattern, from the library.
+        rack10_holes(STD, 1, hole_type = "square");
+        // BPI-R4 front-panel connector openings (ymin edge), at the board's
+        // chassis position. depth clears the panel thickness.
+        translate([board_x(), board_y(), board_z()])
+            sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
+    }
+}
+
 module tray() {
     _tray_shell();
+    _faceplate();
     // Board standoff posts.
     translate([board_x(), board_y(), floor_th])
         sbc_standoffs(BOARD, standoff_h, bore = board_insert_bore);

@@ -48,6 +48,7 @@ function int_depth()= board_d() + rear_off();    // faceplate-inner -> rear-wall
 // board placement in chassis frame:
 function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
+function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
 function rear_wall_y() = board_y() + int_depth();// inner face of rear wall
 
 // Fan must physically fit the 1U internal height when exhaust is on.
