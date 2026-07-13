@@ -26,5 +26,11 @@ check_render "assembly"      "$proj/assembly.scad"
 check_render "tray"          "$proj/parts/tray.scad"
 check_render "lid"           "$proj/parts/lid.scad"
 
+# Geometry invariants (asserts.scad aborts the render on violation).
+out="$(run "$tmp/out.stl" "$proj/tests/asserts.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL[asserts]: geometry invariant failed:"; echo "$out"; fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
