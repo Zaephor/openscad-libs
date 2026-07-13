@@ -40,4 +40,10 @@ margin = (body_w() - board_w())/2 - wall - 2*vent_slot_gap;
 assert(margin >= vent_slot_w,
     str("faceplate vent-zone margin ", margin, " < one slot width ", vent_slot_w));
 
+// Lid must seat on the wall-top shelves (lip = wall/2) with positive clearance.
+lip = wall/2;
+lid_w = body_w() - 2*lip - 2*wall_gap;
+assert(lid_w > 0 && lid_w <= body_w() - 2*lip + 1e-6,
+    str("lid width ", lid_w, " must be >0 and <= lip opening ", body_w() - 2*lip));
+
 // Render nothing (pure assert file).
