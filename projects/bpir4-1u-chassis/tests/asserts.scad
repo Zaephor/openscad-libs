@@ -20,4 +20,10 @@ assert(len(sbc_holes_xy(BOARD)) == 16,
 assert(int_depth() >= board_d() + 1e-6,
     str("internal depth ", int_depth(), " does not clear board depth ", board_d()));
 
+// Internal height must clear the tallest standoff+board stack minus fans
+// (fan fit is asserted in params.scad). Standoff + PCB must sit under the lid.
+assert(standoff_h + sbc_thickness(BOARD) < int_h() + 1e-6,
+    str("standoff+PCB ", standoff_h + sbc_thickness(BOARD),
+        " exceeds internal height ", int_h()));
+
 // Render nothing (pure assert file).
