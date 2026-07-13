@@ -22,10 +22,15 @@ standoff_h   = 5.0;   // board underside clearance above floor
 stack_gap    = 0.45;  // 1U device-height gap below pitch (rack lib has no
                       // device-height fn — see spec "Library gap noted")
 wall_gap     = 0.25;  // lid-to-wall running clearance per side
-board_insert_bore = 3.4; // M2.5 heat-set insert OD (board standoffs)
+board_insert_bore = 3.4; // M2.5 heat-set insert OD (board standoffs) (coincidentally equals m3_clearance_mm(); unrelated — this is the M2.5 insert OD)
 lid_insert_bore   = 4.2; // M3 heat-set insert OD (lid posts)
 vent_slot_w   = 2.5;  // intake/lid vent slot width
 vent_slot_gap = 3.0;  // gap between vent slots
+boss_wall        = 3.2;  // lid-post wall thickness around the insert bore (post OD = lid_insert_bore + boss_wall)
+post_wall_gap    = 1.2;  // printable clearance from lid-post outer edge to side-wall inner face
+post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
+csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
+lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-103.7)
 
 // ---- cooling toggle ----
 enable_exhaust = true; // false = passive rear wall + shorter box
@@ -55,3 +60,7 @@ function rear_wall_y() = board_y() + int_depth();// outer (rearmost) face of rea
 assert(!enable_exhaust || fan_size <= int_h() + 1e-6,
     str("params: fan_size ", fan_size, " exceeds internal height ", int_h(),
         " — reduce floor_th/lid_th or fan_size"));
+
+// fan_size must be one of the sizes the fans library actually supports.
+assert(len([for (s = fan_known_sizes()) if (s == fan_size) s]) > 0,
+    str("params: fan_size ", fan_size, " not in fan_known_sizes() ", fan_known_sizes()));

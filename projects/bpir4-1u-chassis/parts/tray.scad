@@ -24,8 +24,9 @@ module _tray_shell() {
         }
         // lip = wall/2 outer strip kept above the shelf on the two sides + rear;
         // front stays open (over-cut -Y) — the faceplate closes the front.
-        translate([-(body_w()/2 - wall/2), y0 - 1, ext_h() - lid_th])
-            cube([body_w() - wall, dd - wall/2 + 1, lid_th + 1]);
+        lip = wall/2;
+        translate([-(body_w()/2 - lip), y0 - 1, ext_h() - lid_th])
+            cube([body_w() - wall, dd - lip + 1, lid_th + 1]);
         // Rear-wall fan bores or passive vents.
         _rear_openings();
     }
@@ -98,12 +99,12 @@ module _faceplate() {
 // Internal bosses the lid screws into. M3 heat-set insert bore, top-loaded.
 // Placed at the four inner corners + front/rear mid-span (6 posts) so a wide
 // lid does not bow. Post top is at the ledge (ext_h - lid_th).
-function _lid_post_od() = lid_insert_bore + 3.2; // boss OD (shared by placement + geometry)
+function _lid_post_od() = lid_insert_bore + boss_wall; // boss OD (shared by placement + geometry)
 function _lid_post_xy() =
-    let (post_r = _lid_post_od() / 2,           // post OD/2 (matches _lid_posts() OD)
-         ix = body_w()/2 - wall - post_r - 1.2, // ~1.2mm printable gap to wall inner face
+    let (post_r = _lid_post_od() / 2,                    // post OD/2 (matches _lid_posts() OD)
+         ix = body_w()/2 - wall - post_r - post_wall_gap, // printable gap to wall inner face
          y0 = board_y(),
-         yf = y0 + 6, yr = y0 + int_depth() - wall - 6, ym = (yf + yr)/2)
+         yf = y0 + post_edge_inset, yr = y0 + int_depth() - wall - post_edge_inset, ym = (yf + yr)/2)
     [ [-ix, yf], [ix, yf], [-ix, ym], [ix, ym], [-ix, yr], [ix, yr] ];
 
 module _lid_posts() {

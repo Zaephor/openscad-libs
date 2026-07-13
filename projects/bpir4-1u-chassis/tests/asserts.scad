@@ -8,7 +8,7 @@ use <sbc/sbc.scad>;
 assert(board_w() <= body_w() + 1e-6,
     str("board width ", board_w(), " exceeds body width ", body_w()));
 
-// Exterior height must not exceed the 1U pitch.
+// Guards stack_gap >= 0 (exterior height cannot exceed 1U pitch).
 assert(ext_h() <= rack10_u() + 1e-6,
     str("exterior height ", ext_h(), " exceeds 1U pitch ", rack10_u()));
 
@@ -16,7 +16,7 @@ assert(ext_h() <= rack10_u() + 1e-6,
 assert(len(sbc_holes_xy(BOARD)) == 16,
     str("expected 16 bpir4 holes, got ", len(sbc_holes_xy(BOARD))));
 
-// Board depth + rear offset must leave the board inside the box.
+// Guards rear_off() >= 0 (board depth fits within internal depth).
 assert(int_depth() >= board_d() + 1e-6,
     str("internal depth ", int_depth(), " does not clear board depth ", board_d()));
 

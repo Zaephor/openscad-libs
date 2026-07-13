@@ -12,7 +12,7 @@ module _lid_countersink() {
     // — NOT half of cs_dia (that would make the cone deeper than the lid and
     // remove the straight shank bore entirely).
     hole_dia = m3_clearance_mm();
-    cs_dia   = hole_dia + 2.6; // head dia approx (M3 CSK ~6mm -> generous)
+    cs_dia   = hole_dia + csk_head_extra; // head dia approx (M3 CSK ~6mm -> generous)
     cs_depth = (cs_dia - hole_dia) / 2;
     translate([0, 0, -1]) cylinder(h = lid_th + 2, d = hole_dia);
     // Cone: wide at the top face, narrowing down to the shank bore.
@@ -36,8 +36,8 @@ module lid() {
             n = floor((ld * 0.5) / pitch);
             cy = board_y() + int_depth()/2;
             for (i = [0 : n-1])
-                translate([-30, cy - (n-1)*pitch/2 + i*pitch, -1])
-                    cube([60, vent_slot_w, lid_th + 2]);
+                translate([-lid_vent_band_w/2, cy - (n-1)*pitch/2 + i*pitch, -1])
+                    cube([lid_vent_band_w, vent_slot_w, lid_th + 2]);
         }
     }
 }
