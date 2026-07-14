@@ -87,6 +87,16 @@ function rack10_screw_clearance(fastener) =
     fastener == "10-32" ? 5.0 :
     assert(false, str("rack10: unknown fastener '", fastener, "'"));
 
+// Obround (racetrack) cross-section: width `dia`, elongated `slot_travel`
+// along local X. Shared by rack10_holes()'s "slot" branch and its isolated
+// regression test (tests/test_rack10_lib.sh slot_iso block) so both exercise
+// the same geometry.
+module rack10_slot_profile(dia, slot_travel) {
+    assert(dia > 0, "rack10_slot_profile: dia must be > 0");
+    hull() for (sx = [-1, 1])
+        translate([sx * slot_travel / 2, 0]) circle(d = dia);
+}
+
 /* [Hole-stamp] */
 // 10in hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "round" (numeric clearance dia in `dia`), "m6"/"10-32" (dia from
@@ -113,9 +123,7 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_t
                     // rackpost drilling tolerance if available.
                     assert(dia > 0,
                         "rack10_holes: slot requires dia>0 (e.g. rack10_screw_clearance(\"m6\"))");
-                    linear_extrude(d)
-                        hull() for (sx = [-1, 1])
-                            translate([sx * slot_travel / 2, 0]) circle(d = dia);
+                    linear_extrude(d) rack10_slot_profile(dia, slot_travel);
                 }
                 else {
                     dd = hole_type == "round" ? dia : rack10_screw_clearance(hole_type);

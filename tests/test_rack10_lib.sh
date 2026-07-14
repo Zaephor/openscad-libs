@@ -66,13 +66,14 @@ PY
 # Elongation, isolated: slot1.scad above stamps holes at every rail h-center x
 # every per-U z-offset, so its STL bbox X-span is dominated by rail-column
 # separation (~241mm), not by any single slot's elongation -- the same test
-# would "pass" even with hole_type="round" at the same dia. This block
-# constructs ONE slot cross-section directly (mirroring the hull() of two
-# circle(d=dia) construction used inside rack10_holes, but standalone, with
-# no rail/U stamping and no rotate), so its bbox isolates the obround shape:
-# X-span must be dia+slot_travel (13), Y-span must be dia (5).
+# would "pass" even with hole_type="round" at the same dia. This block calls
+# the real rack10_slot_profile() module directly (the same one rack10_holes()
+# uses for its "slot" branch), standalone, with no rail/U stamping and no
+# rotate, so its bbox isolates the obround shape and exercises the actual
+# code path: X-span must be dia+slot_travel (13), Y-span must be dia (5).
 cat > "$tmp/slot_iso.scad" <<'EOF'
-linear_extrude(6) hull() for (sx = [-1, 1]) translate([sx * 8 / 2, 0]) circle(d = 5);
+use <rack10/rack10.scad>;
+linear_extrude(6) rack10_slot_profile(5, 8);
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/slot_iso.stl" "$tmp/slot_iso.scad" 2>/dev/null
 python3 - "$tmp/slot_iso.stl" <<'PY' || { echo "isolated slot not horizontally elongated"; exit 1; }
