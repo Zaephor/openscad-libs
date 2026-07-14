@@ -32,10 +32,10 @@ post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-103.7)
 
-// ---- cooling toggle ----
-enable_exhaust = true; // false = passive rear wall + shorter box
-fan_size  = 40;        // must be a fan_known_sizes() value
-fan_count = 2;
+// ---- cooling toggle (overridable by an entry file's customizer) ----
+enable_exhaust = is_undef(enable_exhaust) ? true : enable_exhaust; // false = passive
+fan_size  = is_undef(fan_size)  ? 40 : fan_size;   // must be a fan_known_sizes() value
+fan_count = is_undef(fan_count) ? 2  : fan_count;
 fan_plenum = 12.0;     // board-rear-edge -> rear-wall gap when fans on
 rear_gap   = 4.0;      // same when fans off
 lid_vents  = true;

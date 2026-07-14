@@ -1,5 +1,11 @@
 // bpir4-1u-chassis — multipart assembly with exploded view + fit reference.
 // Render: make render P=bpir4-1u-chassis
+
+/* [Cooling] */
+enable_exhaust = true; // toggle rear exhaust for review
+fan_size  = 40;
+fan_count = 2;
+
 include <params.scad>;
 use <parts/tray.scad>;
 use <parts/lid.scad>;
