@@ -377,7 +377,10 @@ function sbc_holes(b, role = undef) =
     sel == "all" ? hs : [for (h = hs) if (h[2] == sel) h];
 
 // Role of the i-th hole (index into the board's full hole list).
-function sbc_hole_role(b, i) = _sbc_row(b)[4][i][2];
+function sbc_hole_role(b, i) =
+    let (r = _sbc_row(b))
+    assert(!is_undef(r), _sbc_unknown(b))
+    r[4][i][2];
 
 // Backward-compatible [x,y]-only accessor, role-filterable.
 function sbc_holes_xy(b, role = undef) = [for (h = sbc_holes(b, role)) [h[0], h[1]]];

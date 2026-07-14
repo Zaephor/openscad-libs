@@ -82,5 +82,13 @@ assert(len(sbc_holes_xy("bpir4", "structural-mount")) < 16,
     "bpir4 structural subset must be strictly smaller than all 16 holes");
 // Each Pi corner set is all-structural (4 holes).
 assert(len(sbc_holes_xy("pi4b", "structural-mount")) == 4, "pi4b: 4 structural holes");
+
+// sbc_hole_role(b, i) returns the same role as the i-th entry from sbc_holes().
+assert(sbc_hole_role("pi4b", 0) == "structural-mount", "pi4b hole 0 is structural-mount");
+for (b = sbc_known_boards())
+    for (i = [0 : len(sbc_holes(b, "all")) - 1])
+        assert(sbc_hole_role(b, i) == sbc_holes(b, "all")[i][2],
+            str("sbc ", b, ": sbc_hole_role(", i, ") matches sbc_holes() role"));
+
 // Unknown role asserts (negative control).
 // (exercised from the bash harness via a separate bad-role file)
