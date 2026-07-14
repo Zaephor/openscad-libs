@@ -43,6 +43,12 @@ lid_vents  = true;
 
 // ---- rack ear hole type (overridable by an entry file's customizer) ----
 ear_hole_type = is_undef(ear_hole_type) ? "slot" : ear_hole_type; // "slot" | "10-32" | "m6" | "round"
+// Clearance dia (mm) used only when ear_hole_type == "round" — rack10_holes()
+// takes "round" dia literally (no library-resolved clearance the way "m6"/
+// "10-32" get one). Chosen midway between the library's own 10-32 (5.0mm) and
+// m6 (6.6mm) screw-clearance values (see rack10_screw_clearance()) so an
+// unspecified round hole comfortably clears either common rack-ear fastener.
+ear_hole_round_dia = 5.5; // mm
 
 // ---- derived from libraries (never typed) ----
 function board_w()  = sbc_size(BOARD)[0];        // 148.0

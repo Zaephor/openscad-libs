@@ -74,9 +74,14 @@ module _faceplate() {
             cube([panel_w(), faceplate_th, ext_h()]);
         // Rack mounting holes on the ears: slot (default) for post-spacing
         // tolerance, or a round type. Width from the 10-32 screw clearance.
+        // "round" has no library-resolved clearance (unlike "m6"/"10-32",
+        // which rack10_holes() resolves internally), so its dia is supplied
+        // from params.scad's ear_hole_round_dia.
         if (ear_hole_type == "slot")
             rack10_holes(STD, 1, hole_type = "slot",
                          dia = rack10_screw_clearance("10-32"));
+        else if (ear_hole_type == "round")
+            rack10_holes(STD, 1, hole_type = "round", dia = ear_hole_round_dia);
         else
             rack10_holes(STD, 1, hole_type = ear_hole_type);
         // BPI-R4 front-panel connector openings (ymin edge), at the board's

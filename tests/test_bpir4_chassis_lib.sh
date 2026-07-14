@@ -39,7 +39,7 @@ echo "$out" | grep -qiE 'WARNING:.*role categories' \
   && { echo "tray still triggers the unfiltered-role warning"; echo "$out"; exit 1; } || true
 
 # Item 3: ear_hole_type modes render clean (slot default + round option)
-for eh in "\"slot\"" "\"10-32\""; do
+for eh in "\"slot\"" "\"10-32\"" "\"round\""; do
   out="$(run "$tmp/out.stl" "$proj/parts/tray.scad" -D "ear_hole_type=$eh")"
   echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
     && { echo "ear_hole_type=$eh render errored"; echo "$out"; exit 1; } || true
