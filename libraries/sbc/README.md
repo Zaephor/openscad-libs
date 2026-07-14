@@ -81,15 +81,15 @@ drawing was drawn — genuinely absent on that board, not an omission).
 | `sbc_corner_radius(b)` | PCB corner radius, mm |
 | `sbc_thickness(b)` | PCB thickness, mm |
 | `sbc_hole_dia()` | mounting clearance hole diameter, mm |
-| `sbc_holes_xy(b)` | list of `[x,y]` mounting-hole coords |
+| `sbc_holes_xy(b, role)` | list of `[x,y]` mounting-hole coords |
 | `sbc_connectors(b)` | list of all connector records for the board |
 | `sbc_connector(b, name)` | single connector record by name |
 
 | Module | Produces |
 |---|---|
 | `sbc_placeholder(b)` | PCB envelope solid (rounded corners) + connector bodies, holes cut out (fit checks) |
-| `sbc_mount_holes(b, depth, dia)` | mounting clearance holes (subtract from a consumer solid) |
-| `sbc_standoffs(b, height, dia, bore)` | positive standoff posts with pilot bore (print a tray directly) |
+| `sbc_mount_holes(b, depth, role, dia)` | mounting clearance holes (subtract from a consumer solid) |
+| `sbc_standoffs(b, height, role, dia, bore)` | positive standoff posts with pilot bore (print a tray directly) |
 | `sbc_port_cutout(b, name, depth)` | one connector's panel opening, extruded outward along its exit edge |
 | `sbc_faceplate_cutouts(b, edge, depth)` | every connector opening on one edge in one call (a router/enclosure faceplate) |
 
