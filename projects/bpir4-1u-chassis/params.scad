@@ -31,6 +31,7 @@ post_wall_gap    = 1.2;  // printable clearance from lid-post outer edge to side
 post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-103.7)
+board_side_gap   = 1.0;  // board edge -> corner-post clearance
 
 // ---- cooling toggle (overridable by an entry file's customizer) ----
 enable_exhaust = is_undef(enable_exhaust) ? true : enable_exhaust; // false = passive
@@ -47,7 +48,12 @@ function panel_w()  = rack10_panel_width(STD);   // 254
 function clear_w()  = rack10_clear_width(STD);   // 222
 function ext_h()    = rack10_u() - stack_gap;    // chassis exterior height
 function int_h()    = ext_h() - floor_th - lid_th;
-function body_w()   = clear_w();                 // body passes between posts
+// Lid-post OD (boss outer diameter around the heat-set insert bore). Lives
+// here (not in parts/tray.scad) because body_w() below also derives from it.
+function _lid_post_od() = lid_insert_bore + boss_wall; // boss OD (shared placement + geometry)
+// Body hugs the board: each side carries board_side_gap + a corner post (tangent
+// to the wall) + the wall. Ears bridge body_w -> panel_w. Must stay <= clear_w.
+function body_w()   = board_w() + 2*(board_side_gap + _lid_post_od() + wall);
 function rear_off() = enable_exhaust ? fan_plenum : rear_gap;
 function int_depth()= board_d() + rear_off();    // faceplate-inner (Y=0) -> rear-wall outer face
 // board placement in chassis frame:
@@ -55,6 +61,14 @@ function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
 function rear_wall_y() = board_y() + int_depth();// outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
+
+// Intake vent band (faceplate): starts just above the tallest ymin (front-
+// edge) connector so the band clears every port, and stays inside the wall
+// height the ledge leaves for the lid.
+function _front_conn_max_h() =
+    max([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin") c[2][2]]);
+function _vent_band_z0() =
+    board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + 1; // 1mm above tops
 
 // Fan must physically fit the 1U internal height when exhaust is on.
 assert(!enable_exhaust || fan_size <= int_h() + 1e-6,

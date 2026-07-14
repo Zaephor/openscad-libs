@@ -78,28 +78,26 @@ module _faceplate() {
         // chassis position. depth clears the panel thickness.
         translate([board_x(), board_y(), board_z()])
             sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
-        // Intake vents: vertical slots in each faceplate margin (clear of the
-        // board's connector band). Each side spans X in
-        // [board_w/2+vent_slot_gap, body_w/2-wall-vent_slot_gap]; sides mirror.
-        for (sx = [-1, 1]) {
-            m_out = sx * (body_w()/2 - wall - vent_slot_gap);
-            m_in  = sx * (board_w()/2 + vent_slot_gap);
-            lo = min(m_out, m_in); hi = max(m_out, m_in);
-            pitch = vent_slot_w + vent_slot_gap;
-            n = floor((hi - lo) / pitch);
-            for (i = [0 : max(n-1,0)])
-                translate([lo + vent_slot_gap + i*pitch, -faceplate_th - 1,
-                           floor_th + vent_slot_gap])
-                    cube([vent_slot_w, faceplate_th + 2,
-                          ext_h() - floor_th - lid_th - 2*vent_slot_gap]);
-        }
+        // Intake vents ABOVE the IO portholes: horizontal slots across the
+        // connector cluster, from just above the tallest connector to just below
+        // the ledge — straight cross-chassis airflow over the SFP/connector tops.
+        cl = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]];
+        cr = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]+c[2][0]];
+        bx0 = min(cl); bx1 = max(cr);                 // connector cluster X-span (chassis frame)
+        z0 = _vent_band_z0();
+        z1 = ext_h() - lid_th - vent_slot_gap;        // just below the ledge
+        pitch = vent_slot_w + vent_slot_gap;
+        rows = floor((z1 - z0) / pitch);
+        for (i = [0 : max(rows-1, 0)])
+            translate([bx0, -faceplate_th - 1, z0 + i*pitch])
+                cube([bx1 - bx0, faceplate_th + 2, vent_slot_w]);
     }
 }
 
 // Internal bosses the lid screws into. M3 heat-set insert bore, top-loaded.
 // Placed at the four inner corners + front/rear mid-span (6 posts) so a wide
 // lid does not bow. Post top is at the ledge (ext_h - lid_th).
-function _lid_post_od() = lid_insert_bore + boss_wall; // boss OD (shared by placement + geometry)
+// _lid_post_od() lives in params.scad (body_w() derives from it too).
 function _lid_post_xy() =
     let (post_r = _lid_post_od() / 2,                    // post OD/2 (matches _lid_posts() OD)
          ix = body_w()/2 - wall - post_r - post_wall_gap, // printable gap to wall inner face

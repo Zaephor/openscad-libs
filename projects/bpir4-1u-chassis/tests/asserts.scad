@@ -34,11 +34,12 @@ assert(panel_w() > body_w() + 1e-6,
 assert(len([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin") c]) >= 8,
     "expected >=8 ymin front connectors on bpir4");
 
-// Each faceplate vent zone (bounded by the body walls, not the wide ears) must
-// fit at least one intake slot after both-end gap insets.
-margin = (body_w() - board_w())/2 - wall - 2*vent_slot_gap;
-assert(margin >= vent_slot_w,
-    str("faceplate vent-zone margin ", margin, " < one slot width ", vent_slot_w));
+// Item 6: the above-IO vent band (faceplate) must fit at least one intake
+// slot between the connector tops (_vent_band_z0()) and the ledge. Supersedes
+// the old side-margin-vent check now that vents sit above the connectors.
+_vb_z1 = ext_h() - lid_th - vent_slot_gap;
+assert(_vb_z1 - _vent_band_z0() >= vent_slot_w,
+    str("vent band span (", _vb_z1 - _vent_band_z0(), ") < one slot width ", vent_slot_w));
 
 // Lid must seat on the wall-top shelves (lip = wall/2) with positive clearance.
 lip = wall/2;
@@ -51,5 +52,20 @@ assert(lid_w > 0 && lid_w <= body_w() - 2*lip + 1e-6,
 _struct = sbc_holes_xy(BOARD, "structural-mount");
 assert(len(_struct) > 0 && len(_struct) < len(sbc_holes_xy(BOARD, "all")),
     str("structural subset (", len(_struct), ") must be >0 and < all holes"));
+
+// Item 6: body hugs the board but still passes between the posts, and leaves
+// room for a wall + a corner post beside the board.
+assert(body_w() <= clear_w() + 1e-6,
+    str("body_w ", body_w(), " must be <= clear_w ", clear_w()));
+assert(body_w() >= board_w() + 2*wall,
+    str("body_w ", body_w(), " must exceed board + 2 walls"));
+// Corner post sits BESIDE the board (inner edge outboard of the board edge).
+_ix = body_w()/2 - wall - _lid_post_od()/2;              // post center X (tangent to wall)
+assert(_ix - _lid_post_od()/2 >= board_w()/2,
+    str("corner post inner edge (", _ix - _lid_post_od()/2,
+        ") must clear board edge (", board_w()/2, ")"));
+// Vent band starts above the tallest front connector.
+assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
+    "vent band must start above the PCB");
 
 // Render nothing (pure assert file).
