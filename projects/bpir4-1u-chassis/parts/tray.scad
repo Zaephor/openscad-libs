@@ -120,9 +120,10 @@ module tray() {
     _tray_shell();
     _faceplate();
     _lid_posts();
-    // Board standoff posts.
+    // Board standoff posts — only the structural-mount holes (M.2/heatsink/
+    // keep-out holes are excluded; see sbc hole roles).
     translate([board_x(), board_y(), floor_th])
-        sbc_standoffs(BOARD, standoff_h, bore = board_insert_bore);
+        sbc_standoffs(BOARD, standoff_h, role = "structural-mount", bore = board_insert_bore);
 }
 
 tray();

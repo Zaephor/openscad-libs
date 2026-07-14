@@ -32,6 +32,12 @@ for ex in true false; do
 done
 check_render "lid" "$proj/parts/lid.scad"
 
+# Item 1: rendering the tray must NOT emit the sbc multi-role warning
+# (standoffs now pass an explicit role).
+out="$(run "$tmp/out.stl" "$proj/parts/tray.scad")"
+echo "$out" | grep -qiE 'WARNING:.*role categories' \
+  && { echo "tray still triggers the unfiltered-role warning"; echo "$out"; exit 1; } || true
+
 # Geometry invariants (asserts.scad aborts the render on violation), both fan modes.
 for ex in true false; do
   out="$(run "$tmp/out.stl" "$proj/tests/asserts.scad" -D "enable_exhaust=$ex")"

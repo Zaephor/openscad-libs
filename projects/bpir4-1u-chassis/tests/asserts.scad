@@ -46,4 +46,10 @@ lid_w = body_w() - 2*lip - 2*wall_gap;
 assert(lid_w > 0 && lid_w <= body_w() - 2*lip + 1e-6,
     str("lid width ", lid_w, " must be >0 and <= lip opening ", body_w() - 2*lip));
 
+// Item 1: the chassis mounts only the researched structural-mount subset,
+// which is strictly fewer than all 16 bpir4 holes.
+_struct = sbc_holes_xy(BOARD, "structural-mount");
+assert(len(_struct) > 0 && len(_struct) < len(sbc_holes_xy(BOARD, "all")),
+    str("structural subset (", len(_struct), ") must be >0 and < all holes"));
+
 // Render nothing (pure assert file).
