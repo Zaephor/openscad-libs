@@ -41,6 +41,9 @@ fan_plenum = 12.0;     // board-rear-edge -> rear-wall gap when fans on
 rear_gap   = 4.0;      // same when fans off
 lid_vents  = true;
 
+// ---- rack ear hole type (overridable by an entry file's customizer) ----
+ear_hole_type = is_undef(ear_hole_type) ? "slot" : ear_hole_type; // "slot" | "10-32" | "m6" | "round"
+
 // ---- derived from libraries (never typed) ----
 function board_w()  = sbc_size(BOARD)[0];        // 148.0
 function board_d()  = sbc_size(BOARD)[1];        // 100.5

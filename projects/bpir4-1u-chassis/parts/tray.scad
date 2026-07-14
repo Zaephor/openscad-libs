@@ -72,8 +72,13 @@ module _faceplate() {
         // Panel blank (own height = ext_h(); width from the library).
         translate([-panel_w()/2, -faceplate_th, 0])
             cube([panel_w(), faceplate_th, ext_h()]);
-        // Rack mounting holes — square cage-nut pattern, from the library.
-        rack10_holes(STD, 1, hole_type = "square");
+        // Rack mounting holes on the ears: slot (default) for post-spacing
+        // tolerance, or a round type. Width from the 10-32 screw clearance.
+        if (ear_hole_type == "slot")
+            rack10_holes(STD, 1, hole_type = "slot",
+                         dia = rack10_screw_clearance("10-32"));
+        else
+            rack10_holes(STD, 1, hole_type = ear_hole_type);
         // BPI-R4 front-panel connector openings (ymin edge), at the board's
         // chassis position. depth clears the panel thickness.
         translate([board_x(), board_y(), board_z()])
