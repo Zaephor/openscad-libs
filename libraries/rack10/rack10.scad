@@ -76,7 +76,7 @@ function rack10_hole_z(u) =
 // Cage-nut square side (carried for future square-hole vendors e.g. DeskPi/
 // TecMojo; LabRax itself uses round/M6/#10-32). [B] //VERIFY (rack19 precedent).
 function rack10_square_size() = 9.5;
-function rack10_known_hole_types() = ["round", "m6", "10-32", "square"];
+function rack10_known_hole_types() = ["round", "m6", "10-32", "square", "slot"];
 // Screw-clearance dia per fastener, mm (values + provenance carried from rack19,
 // re-implemented locally — no cross-lib coupling). See RESEARCH.md.
 //   m6:    [B] ISO 273 close-fit (repo hardware lib series 3.4/4.5/5.5).
