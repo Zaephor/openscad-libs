@@ -90,7 +90,8 @@ function rack10_screw_clearance(fastener) =
 /* [Hole-stamp] */
 // 10in hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "round" (numeric clearance dia in `dia`), "m6"/"10-32" (dia from
-// rack10_screw_clearance), "square" (rack10_square_size). Cutter CENTERED on the
+// rack10_screw_clearance), "square" (rack10_square_size), "slot" (obround,
+// dia + slot_travel along X). Cutter CENTERED on the
 // front-post plane Y=0 (spans y in [-d/2,+d/2]) so one stamp cuts panels (grow
 // -Y) and rail flanges (grow +Y). depth (`d`) sizes that span; default 40 =
 // -20..+20, enough for realistic panels/rails; a smaller value can under-cut.
@@ -106,7 +107,10 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_t
                     linear_extrude(d) square(rack10_square_size(), center = true);
                 else if (hole_type == "slot") {
                     // Horizontal obround (racetrack); width from dia (a screw
-                    // clearance), elongated slot_travel along X. //VERIFY default travel.
+                    // clearance), elongated slot_travel along X.
+                    // slot_travel default = 4mm is illustrative, no sourced
+                    // post-tolerance figure. //VERIFY: confirm against real
+                    // rackpost drilling tolerance if available.
                     assert(dia > 0,
                         "rack10_holes: slot requires dia>0 (e.g. rack10_screw_clearance(\"m6\"))");
                     linear_extrude(d)
