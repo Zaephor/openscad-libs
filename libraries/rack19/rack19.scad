@@ -83,11 +83,22 @@ function rack19_depth_preset(name) =
     name == "std-800"   ? 800 :
     assert(false, str("rack19: unknown depth preset '", name, "'"));
 
+// Obround (racetrack) cross-section: width `dia`, elongated `slot_travel`
+// along local X. Shared by rack19_holes()'s "slot" branch and its isolated
+// regression test (tests/test_rack19_lib.sh slot_iso block) so both exercise
+// the same geometry.
+module rack19_slot_profile(dia, slot_travel) {
+    assert(dia > 0, "rack19_slot_profile: dia must be > 0");
+    hull() for (sx = [-1, 1])
+        translate([sx * slot_travel / 2, 0]) circle(d = dia);
+}
+
 /* [Hole-stamp] */
 // EIA hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "square" (cage-nut square, rack19_square_size()), "tapped" (pass
 // thread string in `dia`, resolved via rack19_screw_clearance), "round" (pass
-// numeric clearance dia directly in `dia`). The cutter is CENTERED on the
+// numeric clearance dia directly in `dia`), "slot" (obround, dia + slot_travel
+// along X). The cutter is CENTERED on the
 // front-post plane (Y=0), spanning y in [-d/2, +d/2], so a single stamp cuts
 // in both +/-Y directions: panels (which grow into -Y from Y=0) and rail
 // flanges (which grow into +Y from Y=0). depth (`d`) sizes that span; default
@@ -96,8 +107,9 @@ function rack19_depth_preset(name) =
 // or the cut falls short of a through-hole; the default 40 covers realistic
 // panels (<=~20mm) and rails, but a smaller caller-supplied value can
 // under-cut a thicker target.
-module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
-    assert(hole_type == "square" || hole_type == "tapped" || hole_type == "round",
+module rack19_holes(u, hole_type = "square", dia = 0, depth = 0, slot_travel = 4) {
+    assert(hole_type == "square" || hole_type == "tapped" || hole_type == "round"
+        || hole_type == "slot",
         str("rack19_holes: unknown hole_type '", hole_type, "'"));
     d = depth > 0 ? depth : 40;
     for (x = rack19_hole_h_centers())
@@ -106,6 +118,16 @@ module rack19_holes(u, hole_type = "square", dia = 0, depth = 0) {
                 if (hole_type == "square")
                     linear_extrude(d)
                         square(rack19_square_size(), center = true);
+                else if (hole_type == "slot") {
+                    // Horizontal obround; width from dia (a screw clearance),
+                    // elongated slot_travel along X. slot_travel default = 4mm
+                    // is illustrative, no sourced post-tolerance figure.
+                    // //VERIFY: confirm against real rackpost drilling
+                    // tolerance if available.
+                    assert(dia > 0,
+                        "rack19_holes: slot requires dia>0 (e.g. rack19_screw_clearance(\"M6\"))");
+                    linear_extrude(d) rack19_slot_profile(dia, slot_travel);
+                }
                 else {
                     dd = hole_type == "tapped" ? rack19_screw_clearance(dia) : dia;
                     cylinder(h = d, d = dd);
@@ -135,10 +157,12 @@ module rack19_placeholder(u, depth_ftf, hole_type = "square") {
                 translate([x - fw/2, y, 0]) cube([fw, ft, h]);
                 if (y == 0)  // stamp holes only through the front flanges
                     rack19_holes(u, hole_type,
-                        // 5mm: illustrative default round-hole clearance dia for this
-                        // preview only, NOT a sourced value — a consumer wanting a real
-                        // round-hole size should call rack19_holes() directly with dia set.
-                        hole_type == "round" ? 5 : hole_type == "tapped" ? "M6" : 0);
+                        // 5mm: illustrative default round/slot-hole clearance dia for
+                        // this preview only, NOT a sourced value — a consumer wanting a
+                        // real round/slot size should call rack19_holes() directly with
+                        // dia (and slot_travel) set.
+                        hole_type == "round" || hole_type == "slot" ? 5
+                            : hole_type == "tapped" ? "M6" : 0);
             }
     // usable equipment volume marker (between rails, front to rear)
     %translate([-rack19_opening_width()/2, 0, 0])
