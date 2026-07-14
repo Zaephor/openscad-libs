@@ -3,6 +3,7 @@
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
+use <../parts/tray.scad>;   // for _lid_post_xy() (post-count invariant)
 
 // Board must fit within the body width (between the posts).
 assert(board_w() <= body_w() + 1e-6,
@@ -67,5 +68,8 @@ assert(_ix - _lid_post_od()/2 >= board_w()/2,
 // Vent band starts above the tallest front connector.
 assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
     "vent band must start above the PCB");
+
+// Item 4: four corner lid posts (side-midspan pair dropped).
+assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
 
 // Render nothing (pure assert file).

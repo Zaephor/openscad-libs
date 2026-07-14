@@ -95,23 +95,58 @@ module _faceplate() {
 }
 
 // Internal bosses the lid screws into. M3 heat-set insert bore, top-loaded.
-// Placed at the four inner corners + front/rear mid-span (6 posts) so a wide
-// lid does not bow. Post top is at the ledge (ext_h - lid_th).
-// _lid_post_od() lives in params.scad (body_w() derives from it too).
+// Four corner posts only (side-midspan pair dropped): each sits tangent to its
+// side wall, beside the board, and is buttressed to that wall so the tall thin
+// boss prints support-free and does not wobble. Post top is at the ledge
+// (ext_h - lid_th). _lid_post_od() lives in params.scad (body_w() derives from
+// it too). The X placement is TANGENT to the side-wall inner face (post outer
+// edge flush with the wall) — NOT offset by post_wall_gap. That earlier gap
+// pushed the post inboard until, under the narrowed body_w(), its inner edge
+// crossed the board footprint (inner edge 73.8 < board_w()/2 = 74.0 -> a 0.2mm
+// collision with the SBC). Tangent placement instead leaves the board_side_gap
+// (~1.0mm) the params establish: inner edge = ix - post_r clears board_w()/2.
 function _lid_post_xy() =
-    let (post_r = _lid_post_od() / 2,                    // post OD/2 (matches _lid_posts() OD)
-         ix = body_w()/2 - wall - post_r - post_wall_gap, // printable gap to wall inner face
-         y0 = board_y(),
-         yf = y0 + post_edge_inset, yr = y0 + int_depth() - wall - post_edge_inset, ym = (yf + yr)/2)
-    [ [-ix, yf], [ix, yf], [-ix, ym], [ix, ym], [-ix, yr], [ix, yr] ];
+    let (ix = body_w()/2 - wall - _lid_post_od()/2,      // tangent to side-wall inner face
+         yf = board_y() + post_edge_inset,               // front pair, inside faceplate
+         yr = board_y() + int_depth() - wall - post_edge_inset) // rear pair, ahead of rear wall
+    [ [-ix, yf], [ix, yf], [-ix, yr], [ix, yr] ];
+
+// Corner buttress (canonical +X side, local origin at the boss center): a
+// solid wedge fusing the boss to its side wall. Built as hull() of two vertical
+// reference boxes — one full-height slab overlapping into the wall, one lowered
+// slab at the boss inner edge — so the top is a single up-facing ramp that
+// falls away from the wall. Cross-section only SHRINKS with height (each layer
+// sits fully on the one below): no underside overhang, so it prints without
+// support. The wall face is at local x = +post_r (the boss is tangent to it);
+// the inner edge is at local x = -post_r, clearing the board.
+module _corner_buttress() {
+    r   = _lid_post_od()/2;                 // boss radius; wall face at +r, inner edge at -r
+    Hb  = ext_h() - lid_th - floor_th;      // boss height above the floor (top at the ledge)
+    gW  = _lid_post_od();                   // gusset width in Y (~ boss OD)
+    t   = 0.6;                              // thin reference-box thickness
+    ov  = 0.6;                              // overlap into the wall for a watertight union
+    drop = 2*r;                             // top falls ~45deg over the wall->inner run (=OD)
+    hull() {
+        // Full-height slab at the wall (its outer face buried in the wall).
+        translate([r - t, -gW/2, 0])   cube([t + ov, gW, Hb]);
+        // Lowered slab at the boss inner edge -> top ramps down away from wall.
+        translate([-r, -gW/2, 0])      cube([t, gW, Hb - drop]);
+    }
+}
 
 module _lid_posts() {
-    h = ext_h() - lid_th;
-    for (p = _lid_post_xy())
+    Hb = ext_h() - lid_th - floor_th;       // boss height above the floor
+    for (p = _lid_post_xy()) {
+        sx = sign(p[0]);                    // which side wall (-1 / +1)
         translate([p[0], p[1], floor_th]) difference() {
-            cylinder(h = h - floor_th, d = _lid_post_od());
-            translate([0, 0, -1]) cylinder(h = h - floor_th + 2, d = lid_insert_bore);
+            union() {
+                cylinder(h = Hb, d = _lid_post_od());   // solid boss
+                scale([sx, 1, 1]) _corner_buttress();   // wall-side wedge (mirror onto the -X wall)
+            }
+            // Insert bore, cut through boss AND buttress so it stays open full depth.
+            translate([0, 0, -1]) cylinder(h = Hb + 2, d = lid_insert_bore);
         }
+    }
 }
 
 module tray() {
