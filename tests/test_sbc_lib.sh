@@ -33,30 +33,21 @@ fi
 
 # Multi-role board, UNFILTERED access -> must emit the role-categories warning.
 #
-# DEVIATION FROM PLAN (see task-1-report.md "Concerns"): the plan's literal
-# positive control targets bpir4 for this assertion. As of Task 1, EVERY board
-# (including bpir4) is intentionally single-role — Pi/Zero corner holes are all
-# "structural-mount", and bpir4's 16 holes are all "component-mount" per Step 5's
-# explicit, binding conservative-classification instruction (never fabricate role
-# diversity ahead of Task 2's DXF-evidence-based classification). Since the
-# warning only fires when >1 role is present on a board (verbatim Step 3 logic,
-# also required so the pi4b self-check does NOT warn), no real board can trigger
-# it yet. Asserting it against bpir4 today would be true only by first breaking
-# the conservative-classification constraint. Two controls stand in for it here:
-#   1. bpir4 unfiltered access today must NOT warn (documents true current state;
-#      TODO(Task 2): once bpir4 is classified into >1 real role, replace this
-#      block with the plan's original "must warn for unfiltered bpir4" assertion
-#      — it will then be a genuine end-to-end positive control).
-#   2. A mechanism-level check that the echo-in-let warning pattern (same syntax
-#      sbc_holes uses) actually emits the expected WARNING text when >1 role
-#      categories are present, proving the mechanism itself works correctly.
-cat > "$tmp/nowarn_bpir4_currently_single_role.scad" <<'EOF'
+# Task 2 classified bpir4's 16 holes into 2 real role categories
+# ("component-mount" x14, "keep-out" x2 — see libraries/sbc/RESEARCH.md
+# "bpi-r4 hole roles"; 0 came out "structural-mount", which is fine, the
+# warning only cares about the *count* of distinct roles present, not which
+# ones). This replaces the Task-1-era placeholder block (see git history)
+# that stood in for this exact assertion while bpir4 was still
+# provisionally single-role — this is now the genuine end-to-end positive
+# control the plan originally called for.
+cat > "$tmp/warn_bpir4.scad" <<'EOF'
 use <sbc/sbc.scad>;
-x = sbc_holes_xy("bpir4");   // role omitted -> undef; bpir4 is single-role today
+x = sbc_holes_xy("bpir4");   // role omitted -> undef; bpir4 now spans 2 roles
 EOF
-out="$(run "$tmp/nowarn_bpir4_currently_single_role.scad")"
+out="$(run "$tmp/warn_bpir4.scad")"
 echo "$out" | grep -qiE 'WARNING:.*role categories' \
-  && { echo "bpir4 is single-role provisionally; unfiltered access must not warn until Task 2 classifies it"; echo "$out"; exit 1; } || true
+  || { echo "expected multi-role warning for unfiltered bpir4 access (bpir4 is classified into >1 role as of Task 2)"; echo "$out"; exit 1; }
 
 cat > "$tmp/warn_mechanism.scad" <<'EOF'
 present = ["structural-mount", "component-mount"];

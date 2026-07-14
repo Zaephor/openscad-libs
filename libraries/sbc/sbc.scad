@@ -159,8 +159,11 @@ function _sbc_table() = [
     // [C] 1.6mm nominal //VERIFY (standard multilayer-PCB thickness assumption; this
     // board is a heavier router design than the RPi family's carried-forward 1.4mm,
     // not reused from those rows). 16 mounting holes, [A] DXF PG_ASSEMBLY_HOLE_DIAM
-    // layer exact circle centers (14 at 3.0mm dia, 2 at ~3.3mm dia — see RESEARCH.md);
-    // pattern is asymmetric/component-driven, not a simple corner rectangle.
+    // layer exact circle centers (14 at 3.0mm dia, 2 at 3.32/3.31mm dia); pattern is
+    // asymmetric/component-driven, not a simple corner rectangle. Roles classified
+    // from DXF `M2` silkscreen text proximity + assembly-drawing component clusters
+    // (conservative, tiered): 14 component-mount, 2 keep-out, 0 structural-mount —
+    // see RESEARCH.md "bpi-r4 hole roles" for the full per-hole evidence table.
     // Connectors: NO refdes/component-name TEXT exists anywhere in the vendor DXF (checked
     // all layers) — every position below comes from pixel-measuring the vendor assembly
     // drawing (bpir4_assembly_p1_600.png, rendered at exactly 600dpi = 23.622px/mm,
@@ -171,15 +174,28 @@ function _sbc_table() = [
     // front-panel connectors (usb, 2xSFP, WAN rj45, 3xLAN rj45, DC jack, USB-C PD) share
     // one edge, ymin (y=0) — confirmed directly off the assembly drawing.
     ["bpir4",    [148.0, 100.5], 2.0, 1.6,
-        // PROVISIONAL roles+dia — finalized in the DXF-classification task; see RESEARCH.md.
+        // Roles + exact per-hole dia classified from the DXF text layers +
+        // vendor assembly drawing (conservative, tiered) — see RESEARCH.md
+        // "bpi-r4 hole roles". Summary: 7 holes sit 3.6-5.5mm from an `M2`
+        // silkscreen TEXT (DXF-exact, [A]) -> M.2-standoff component-mount;
+        // the 2 larger-dia holes (3.32/3.31mm) sit next to the FAN connector
+        // / VCORE-VPROC SoC-power block ([C]//VERIFY) -> component-mount;
+        // 5 more sit near other component clusters (CN11, tentative "CN6",
+        // U2/SW3/CN19, VCORE/VPROC, CON2/CON3) ([C]//VERIFY) -> component-
+        // mount; the 2 open board-corner holes have NO nearby component in
+        // any source AND no [A]/[B] doc ties them to chassis mounting, so
+        // per the brief's conservative rule they are "keep-out", not
+        // "structural-mount" (absence of a component tie is not positive
+        // evidence of a chassis-mount role). Net: 0 structural-mount, 14
+        // component-mount, 2 keep-out.
         [ [129.54, 15.25,"component-mount",3.0], [3.50, 23.50,"component-mount",3.0],
-          [144.50, 23.50,"component-mount",3.0], [75.85, 27.21,"component-mount",3.0],
+          [144.50, 23.50,"component-mount",3.0], [75.85, 27.21,"component-mount",3.32],
           [56.25, 31.59,"component-mount",3.0], [113.54, 31.59,"component-mount",3.0],
           [129.54, 35.25,"component-mount",3.0], [129.54, 53.25,"component-mount",3.0],
-          [129.54, 65.25,"component-mount",3.0], [117.75, 69.11,"component-mount",3.0],
+          [129.54, 65.25,"component-mount",3.0], [117.75, 69.11,"component-mount",3.31],
           [47.60, 75.69,"component-mount",3.0], [57.60, 75.69,"component-mount",3.0],
           [56.25, 88.30,"component-mount",3.0], [113.54, 88.30,"component-mount",3.0],
-          [3.50, 97.00,"component-mount",3.0], [144.50, 97.00,"component-mount",3.0] ],
+          [3.50, 97.00,"keep-out",3.0], [144.50, 97.00,"keep-out",3.0] ],
         [ // Front panel, left to right, all edge="ymin" (y=0), z=1.6:
           ["usb_1",       [7.41,   0, 1.6], [8.89,  23.16, 13.5], "ymin"], // CN11. [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3); //VERIFY width narrow vs typical USB-A 13.6mm body — see RESEARCH.md
           ["sfp_1",       [16.3,   0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent)
