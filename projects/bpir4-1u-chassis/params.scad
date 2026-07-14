@@ -27,10 +27,9 @@ lid_insert_bore   = 4.2; // M3 heat-set insert OD (lid posts)
 vent_slot_w   = 2.5;  // intake/lid vent slot width
 vent_slot_gap = 3.0;  // gap between vent slots
 boss_wall        = 3.2;  // lid-post wall thickness around the insert bore (post OD = lid_insert_bore + boss_wall)
-post_wall_gap    = 1.2;  // printable clearance from lid-post outer edge to side-wall inner face
 post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
-lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-103.7)
+lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-78.7)
 board_side_gap   = 1.0;  // board edge -> corner-post clearance
 
 // ---- cooling toggle (overridable by an entry file's customizer) ----

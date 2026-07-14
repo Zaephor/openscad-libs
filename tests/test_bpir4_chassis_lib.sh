@@ -31,6 +31,7 @@ for ex in true false; do
   check_render "tray[fan=$ex]"     "$proj/parts/tray.scad" -D "enable_exhaust=$ex"
 done
 check_render "lid" "$proj/parts/lid.scad"
+check_render "assembly[show_rack=true]" "$proj/assembly.scad" -D "show_rack=true"
 
 # Item 1: rendering the tray must NOT emit the sbc multi-role warning
 # (standoffs now pass an explicit role).
