@@ -9,7 +9,7 @@ description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD i
 
 - **The 45° self-support rule:** Overhangs steeper than 45° need support material. Read `reference/overhangs-supports.md`.
 - **Orient load across layers:** Part strength varies by direction; align stress toward layer planes. Read `reference/strength-physics.md`.
-- **Fillet internal corners:** Sharp corners create stress concentrations and are hard to print cleanly. Read `reference/glossary.md`.
+- **Fillet internal corners:** Sharp corners create stress concentrations and are hard to print cleanly. Read `reference/strength-physics.md`.
 - **Pick a fit band on purpose:** Clearances compound; measure before you design. Read `reference/tolerances-fits.md`.
 
 ## House Rules
