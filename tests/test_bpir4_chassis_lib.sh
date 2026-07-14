@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Verifies the bpir4-1u-chassis project renders (both fan modes) with no asserts.
+set -u
+root="$(cd "$(dirname "$0")/.." && pwd)"
+proj="$root/projects/bpir4-1u-chassis"
+
+run() { # <stl-out> <scad> <extra-D...>
+  local stl="$1"; shift
+  local scad="$1"; shift
+  "$root/scripts/openscad.sh" --export-format stl -o "$stl" "$scad" "$@" 2>&1
+}
+
+tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+fail=0
+
+check_render() { # <label> <scad> <extra-D...>
+  local label="$1"; shift
+  local scad="$1"; shift
+  local stl="$tmp/out.stl"
+  local out; out="$(run "$stl" "$scad" "$@")"
+  if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed|WARNING: Object may not be a valid'; then
+    echo "FAIL[$label]: render errored:"; echo "$out"; fail=1; return
+  fi
+  if [ ! -s "$stl" ]; then
+    echo "FAIL[$label]: empty STL"; fail=1; return
+  fi
+}
+
+for ex in true false; do
+  check_render "assembly[fan=$ex]" "$proj/assembly.scad"  -D "enable_exhaust=$ex"
+  check_render "tray[fan=$ex]"     "$proj/parts/tray.scad" -D "enable_exhaust=$ex"
+done
+check_render "lid" "$proj/parts/lid.scad"
+
+# Geometry invariants (asserts.scad aborts the render on violation), both fan modes.
+for ex in true false; do
+  out="$(run "$tmp/out.stl" "$proj/tests/asserts.scad" -D "enable_exhaust=$ex")"
+  if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+    echo "FAIL[asserts fan=$ex]: geometry invariant failed:"; echo "$out"; fail=1
+  fi
+done
+
+[ "$fail" -eq 0 ] && echo ok
+exit "$fail"

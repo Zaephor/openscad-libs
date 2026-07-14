@@ -76,7 +76,7 @@ function rack10_hole_z(u) =
 // Cage-nut square side (carried for future square-hole vendors e.g. DeskPi/
 // TecMojo; LabRax itself uses round/M6/#10-32). [B] //VERIFY (rack19 precedent).
 function rack10_square_size() = 9.5;
-function rack10_known_hole_types() = ["round", "m6", "10-32", "square"];
+function rack10_known_hole_types() = ["round", "m6", "10-32", "square", "slot"];
 // Screw-clearance dia per fastener, mm (values + provenance carried from rack19,
 // re-implemented locally — no cross-lib coupling). See RESEARCH.md.
 //   m6:    [B] ISO 273 close-fit (repo hardware lib series 3.4/4.5/5.5).
@@ -87,16 +87,27 @@ function rack10_screw_clearance(fastener) =
     fastener == "10-32" ? 5.0 :
     assert(false, str("rack10: unknown fastener '", fastener, "'"));
 
+// Obround (racetrack) cross-section: width `dia`, elongated `slot_travel`
+// along local X. Shared by rack10_holes()'s "slot" branch and its isolated
+// regression test (tests/test_rack10_lib.sh slot_iso block) so both exercise
+// the same geometry.
+module rack10_slot_profile(dia, slot_travel) {
+    assert(dia > 0, "rack10_slot_profile: dia must be > 0");
+    hull() for (sx = [-1, 1])
+        translate([sx * slot_travel / 2, 0]) circle(d = dia);
+}
+
 /* [Hole-stamp] */
 // 10in hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "round" (numeric clearance dia in `dia`), "m6"/"10-32" (dia from
-// rack10_screw_clearance), "square" (rack10_square_size). Cutter CENTERED on the
+// rack10_screw_clearance), "square" (rack10_square_size), "slot" (obround,
+// dia + slot_travel along X). Cutter CENTERED on the
 // front-post plane Y=0 (spans y in [-d/2,+d/2]) so one stamp cuts panels (grow
 // -Y) and rail flanges (grow +Y). depth (`d`) sizes that span; default 40 =
 // -20..+20, enough for realistic panels/rails; a smaller value can under-cut.
-module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0) {
+module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_travel = 4) {
     assert(hole_type == "round" || hole_type == "m6" || hole_type == "10-32"
-        || hole_type == "square",
+        || hole_type == "square" || hole_type == "slot",
         str("rack10_holes: unknown hole_type '", hole_type, "'"));
     d = depth > 0 ? depth : 40;
     for (x = rack10_hole_h_centers(standard))   // also asserts on unknown standard
@@ -104,6 +115,16 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0) {
             translate([x, -d/2, z]) rotate([-90, 0, 0]) {
                 if (hole_type == "square")
                     linear_extrude(d) square(rack10_square_size(), center = true);
+                else if (hole_type == "slot") {
+                    // Horizontal obround (racetrack); width from dia (a screw
+                    // clearance), elongated slot_travel along X.
+                    // slot_travel default = 4mm is illustrative, no sourced
+                    // post-tolerance figure. //VERIFY: confirm against real
+                    // rackpost drilling tolerance if available.
+                    assert(dia > 0,
+                        "rack10_holes: slot requires dia>0 (e.g. rack10_screw_clearance(\"m6\"))");
+                    linear_extrude(d) rack10_slot_profile(dia, slot_travel);
+                }
                 else {
                     dd = hole_type == "round" ? dia : rack10_screw_clearance(hole_type);
                     cylinder(h = d, d = dd);
@@ -145,8 +166,9 @@ module rack10_placeholder(standard, u, depth_ftf, hole_type = "round") {
                 translate([x - fw/2, y, 0]) cube([fw, ft, h]);
                 if (y == 0)  // holes on front flanges only
                     rack10_holes(standard, u, hole_type,
-                        // 5mm: illustrative preview clearance for "round" only, NOT sourced.
-                        hole_type == "round" ? 5 : 0);
+                        // 5mm: illustrative preview clearance for "round"/"slot" only,
+                        // NOT sourced; slot_travel uses its default.
+                        hole_type == "round" || hole_type == "slot" ? 5 : 0);
             }
     %translate([-rack10_clear_width(standard)/2, 0, 0])
         cube([rack10_clear_width(standard), depth_ftf, h]);
