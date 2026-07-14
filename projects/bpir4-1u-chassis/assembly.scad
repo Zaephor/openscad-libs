@@ -18,6 +18,7 @@ explode = 0; // [0:0.01:1]
 show_tray  = true;
 show_lid   = true;
 show_board = true; // sbc_placeholder fit reference (not a printed part)
+show_rack  = false; // 3U rackpost reference
 
 module assembly() {
     if (show_tray) tray();
@@ -27,6 +28,9 @@ module assembly() {
     if (show_lid)
         translate([0, 0, (ext_h() - lid_th) + 30 * explode])
             lid();
+    if (show_rack)
+        translate([0, 0, -rack10_u()])          // chassis is the middle of 3U
+            % rack10_placeholder(STD, 3, rack_depth_eff());
 }
 
 assembly();

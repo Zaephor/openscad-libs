@@ -51,6 +51,9 @@ ear_hole_type = is_undef(ear_hole_type) ? "slot" : ear_hole_type; // "slot" | "1
 // not a hand-picked literal.
 ear_hole_round_dia = rack10_screw_clearance("m6");
 
+// ---- rackpost fit-reference ----
+rack_depth = -1; // <0 -> rack10_depth_preset(STD)
+
 // ---- derived from libraries (never typed) ----
 function board_w()  = sbc_size(BOARD)[0];        // 148.0
 function board_d()  = sbc_size(BOARD)[1];        // 100.5
@@ -79,6 +82,7 @@ function _front_conn_max_h() =
     max([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin") c[2][2]]);
 function _vent_band_z0() =
     board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + 1; // 1mm above tops
+function rack_depth_eff() = rack_depth < 0 ? rack10_depth_preset(STD) : rack_depth;
 
 // Fan must physically fit the 1U internal height when exhaust is on.
 assert(!enable_exhaust || fan_size <= int_h() + 1e-6,
