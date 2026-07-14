@@ -150,6 +150,78 @@ module pizero_case_wall() {
 
 See `renders/pizero-faceplate-front.png` for the rendered result.
 
+## Hole roles
+
+Every mounting hole is stored as `[x, y, role, dia]`, not just `[x, y]` — each
+hole now carries **what it's for** and **its own diameter** (no more single
+global hole size across a board: `sbc_placeholder`/`sbc_mount_holes` cut each
+hole at its own `dia`, which matters on `bpir4`, where 14 holes are 3.0mm and
+2 are ~3.32/3.31mm).
+
+Four canonical roles, from `sbc_known_hole_roles()`:
+
+| Role | Meaning |
+|---|---|
+| `structural-mount` | Case/enclosure screws into this hole — safe to load-bear (standoff, screw boss). |
+| `component-mount` | Holds a component (M.2 standoff, connector shield, etc.) rather than the case — don't rely on it to carry enclosure load. |
+| `keep-out` | Not a fastener point at all — avoid, don't stamp a screw/standoff here. |
+| `alignment` | Locates a part (dowel/pin) but isn't itself a threaded fastener point. |
+
+Accessors:
+
+| Function | Returns |
+|---|---|
+| `sbc_known_hole_roles()` | the 4 canonical role strings, in table order |
+| `sbc_hole_role(b, i)` | role string of the `i`-th hole in the board's full hole list |
+| `sbc_holes(b, role=undef)` | full `[x,y,role,dia]` tuples, filtered by `role` |
+| `sbc_holes_xy(b, role=undef)` | `[x,y]`-only coords, filtered by `role` (backward-compatible signature — `sbc_holes_xy(b)` still returns every hole, unchanged from before role-tagging) |
+
+`role` accepts a canonical role string (only matching holes), `"all"` (every
+hole, no warning), or is left `undef`/omitted (every hole — but see the
+warning below). An unrecognized role string (anything not in
+`sbc_known_hole_roles()` and not `"all"`) is an `assert` failure, not a
+silent empty list.
+
+**Debug warning — unfiltered access on a multi-role board.** If you call
+`sbc_holes(b)` / `sbc_holes_xy(b)` (or anything that forwards `role=undef`,
+including `sbc_standoffs`/`sbc_mount_holes` with no `role` argument) on a
+board whose holes span **more than one role**, you get an `echo()` warning
+at render time:
+
+```
+WARNING: sbc 'bpir4' holes span 2 role categories ["structural-mount", "component-mount"]; no role filter selected — returning all. Pass a role (e.g. "structural-mount") or "all" to silence.
+```
+
+This is a breadcrumb, not an error — it still returns every hole (identical
+to the pre-role-tagging behavior), so nothing breaks. It fires only when a
+board's holes are genuinely heterogeneous (all four Pi/Zero families are
+single-role, `structural-mount` only, so calling them unfiltered is silent);
+`bpir4`'s 16 holes are 4 `structural-mount` + 12 `component-mount`, so any
+unfiltered call against `bpir4` prints it. **Silence it** by passing an
+explicit role (`sbc_standoffs("bpir4", height, role = "structural-mount")`
+to mount only the case-bearing holes) or `role = "all"` if you deliberately
+want every hole and don't want the reminder.
+
+`role` params on the hole-stamp modules (both default to `undef` — same "all
+holes" behavior as before role-tagging; role filtering is opt-in):
+
+| Module | `role` behavior |
+|---|---|
+| `sbc_mount_holes(b, depth, role=undef, dia=-1)` | cuts only the selected role's holes; `dia=-1` (default) uses each hole's own stored diameter, or pass a positive `dia` to override every cut hole to one size |
+| `sbc_standoffs(b, height, role=undef, dia=-1, bore=-1)` | same role filter; standoff OD/bore still default to the fixed `6.0`/`2.2` regardless of per-hole `dia` (a post is sized for the fastener class, not the clearance-hole diameter) |
+
+Example — mount only `bpir4`'s case-bearing holes, silencing the warning:
+
+```scad
+use <sbc/sbc.scad>;
+sbc_standoffs("bpir4", height = 5, role = "structural-mount");
+```
+
+**Not done here**: extending this same `[x,y,role,dia]` pattern to the
+`drives`/`motherboards` libraries' own hole tables is a tracked follow-on,
+not part of this change — `sbc` is the only library with role-tagged holes
+today.
+
 ## Sources
 
 | Source | Tier | Backs |
