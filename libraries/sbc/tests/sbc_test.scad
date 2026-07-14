@@ -67,3 +67,20 @@ assert(sbc_size("bpir4") == [148.0, 100.5], "bpir4 size");
 // The 2xSFP + 4xRJ45 variant: exactly 2 sfp_* and 4 rj45_* connectors.
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "sfp"))  1]) == 2, "bpir4 has 2 sfp");
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) 1]) == 4, "bpir4 has 4 rj45");
+
+// --- hole-role tagging invariants (Task 1) ---
+// Every hole on every board has a valid role and a positive diameter.
+for (b = sbc_known_boards())
+    for (h = sbc_holes(b, "all")) {
+        assert(len([for (rr = sbc_known_hole_roles()) if (rr == h[2]) rr]) == 1,
+            str("sbc ", b, ": hole ", h, " has invalid role '", h[2], "'"));
+        assert(h[3] > 0, str("sbc ", b, ": hole ", h, " has non-positive dia"));
+    }
+// Filtering: structural subset ⊆ all; for bpi-r4 it is strictly smaller than 16.
+assert(len(sbc_holes_xy("bpir4", "all")) == 16, "bpir4 must have 16 holes");
+assert(len(sbc_holes_xy("bpir4", "structural-mount")) < 16,
+    "bpir4 structural subset must be strictly smaller than all 16 holes");
+// Each Pi corner set is all-structural (4 holes).
+assert(len(sbc_holes_xy("pi4b", "structural-mount")) == 4, "pi4b: 4 structural holes");
+// Unknown role asserts (negative control).
+// (exercised from the bash harness via a separate bad-role file)

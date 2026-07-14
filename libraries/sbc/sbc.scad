@@ -65,7 +65,9 @@ function _sbc_table() = [
     // [A] https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-mechanical-drawing.pdf
     // corner radius: [A] drawing text "CORNER RADIUS = 3.0mm". thickness: no drawing
     // dimension exists on any Model-B mechanical drawing — [C] community-nominal //VERIFY.
-    ["pi3b",     [85.6, 56], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,52.5],[61.5,52.5]],
+    ["pi3b",     [85.6, 56], 3.0, 1.4,
+        [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
+         [3.5,52.5,"structural-mount",2.7],[61.5,52.5,"structural-mount",2.7]],
         [ _sbc_gpio(),
           // right edge (xmax) USB2 stack, 2 dual-port shells stacked over Ethernet.
           // Y-spans [A] from the drawing's own bottom-referenced "10.25/29/47/56"
@@ -84,7 +86,9 @@ function _sbc_table() = [
     // Same connector map as pi3b — pi3bplus's own drawing repeats byte-for-byte the
     // same "10.25/29/47/56" and "3.5/10.6/32/53.5" dimension chains (cross-checked
     // directly on this drawing, not merely assumed). See RESEARCH.md.
-    ["pi3bplus", [85.6, 56], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,52.5],[61.5,52.5]],
+    ["pi3bplus", [85.6, 56], 3.0, 1.4,
+        [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
+         [3.5,52.5,"structural-mount",2.7],[61.5,52.5,"structural-mount",2.7]],
         [ _sbc_gpio(),
           ["usb2_1",       [68.6, 29,    1.4], [17, 18,   16.0], "xmax"], // [A]/[B]
           ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY
@@ -94,7 +98,9 @@ function _sbc_table() = [
           ["av_jack",      [50.5, 0,     1.4], [6,   6,    6.0], "ymin"], // [A] pos+h / [C] body //VERIFY
         ] ],
     // [A] https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-mechanical-drawing.pdf
-    ["pi4b",     [85.6, 56], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,52.5],[61.5,52.5]],
+    ["pi4b",     [85.6, 56], 3.0, 1.4,
+        [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
+         [3.5,52.5,"structural-mount",2.7],[61.5,52.5,"structural-mount",2.7]],
         [ _sbc_gpio(),
           // right edge (xmax), top-to-bottom on the real board: rj45 (near GPIO
           // corner), usb3 stack, usb2 stack (Pi4B swapped the pi3b order) — Y-spans
@@ -113,7 +119,9 @@ function _sbc_table() = [
     // corner radius NOT labelled on the Pi5 drawing (unlike pi3b/pi3bplus/pi4b, which all
     // print "CORNER RADIUS = 3.0mm") — carried forward from the shared family value.
     // [B] //VERIFY corner radius against a Pi5 board/case.
-    ["pi5",      [85.6, 56], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,52.5],[61.5,52.5]],
+    ["pi5",      [85.6, 56], 3.0, 1.4,
+        [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
+         [3.5,52.5,"structural-mount",2.7],[61.5,52.5,"structural-mount",2.7]],
         [ _sbc_gpio(),
           // right edge (xmax): usb3 dual-port stack above a combined rj45+usb2
           // "combo" shell (real Pi5 hardware: Ethernet + 2xUSB2 share one molded
@@ -163,10 +171,15 @@ function _sbc_table() = [
     // front-panel connectors (usb, 2xSFP, WAN rj45, 3xLAN rj45, DC jack, USB-C PD) share
     // one edge, ymin (y=0) — confirmed directly off the assembly drawing.
     ["bpir4",    [148.0, 100.5], 2.0, 1.6,
-        [ [129.54, 15.25], [3.50, 23.50], [144.50, 23.50], [75.85, 27.21],
-          [56.25, 31.59], [113.54, 31.59], [129.54, 35.25], [129.54, 53.25],
-          [129.54, 65.25], [117.75, 69.11], [47.60, 75.69], [57.60, 75.69],
-          [56.25, 88.30], [113.54, 88.30], [3.50, 97.00], [144.50, 97.00] ],
+        // PROVISIONAL roles+dia — finalized in the DXF-classification task; see RESEARCH.md.
+        [ [129.54, 15.25,"component-mount",3.0], [3.50, 23.50,"component-mount",3.0],
+          [144.50, 23.50,"component-mount",3.0], [75.85, 27.21,"component-mount",3.0],
+          [56.25, 31.59,"component-mount",3.0], [113.54, 31.59,"component-mount",3.0],
+          [129.54, 35.25,"component-mount",3.0], [129.54, 53.25,"component-mount",3.0],
+          [129.54, 65.25,"component-mount",3.0], [117.75, 69.11,"component-mount",3.0],
+          [47.60, 75.69,"component-mount",3.0], [57.60, 75.69,"component-mount",3.0],
+          [56.25, 88.30,"component-mount",3.0], [113.54, 88.30,"component-mount",3.0],
+          [3.50, 97.00,"component-mount",3.0], [144.50, 97.00,"component-mount",3.0] ],
         [ // Front panel, left to right, all edge="ymin" (y=0), z=1.6:
           ["usb_1",       [7.41,   0, 1.6], [8.89,  23.16, 13.5], "ymin"], // CN11. [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3); //VERIFY width narrow vs typical USB-A 13.6mm body — see RESEARCH.md
           ["sfp_1",       [16.3,   0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent)
@@ -228,7 +241,9 @@ function _sbc_table() = [
     // which this top-side connector model (every connector at z=thickness) can't
     // cleanly represent, and its Z extent isn't derivable from a top-view sheet —
     // a documented scope gap, not a missing-evidence one (see RESEARCH.md).
-    ["pizero",   [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]],
+    ["pizero",   [65, 30], 3.0, 1.4,
+        [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
+         [3.5,26.5,"structural-mount",2.7],[61.5,26.5,"structural-mount",2.7]],
         [ // GPIO header footprint (unpopulated on base Zero, Pi-HAT-compatible 2x20/
           // 2.54mm through-hole grid) — [B] pos/extent pixel-measured (elongated slot
           // between the two ymax-side holes, inset 1.1mm from the top/ymax edge);
@@ -262,7 +277,9 @@ function _sbc_table() = [
     // (mini-HDMI/microUSB pair boxes agree with pizero's to within ~0.3mm) but
     // verified on its own terms per the brief, not blind-copied. Same no-Z-height-
     // text gap as pizero, so every h below is [C] //VERIFY.
-    ["pizero2w", [65, 30], 3.0, 1.4, [[3.5,3.5],[61.5,3.5],[3.5,26.5],[61.5,26.5]],
+    ["pizero2w", [65, 30], 3.0, 1.4,
+        [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
+         [3.5,26.5,"structural-mount",2.7],[61.5,26.5,"structural-mount",2.7]],
         [ // GPIO header — this sheet actually renders the 2x20 pin circles (unlike
           // pizero's plain unpopulated-slot outline), but position/extent match
           // pizero's own reading closely ([B] pixel-measured independently here).
@@ -294,8 +311,43 @@ function _sbc_unknown(b) = str("sbc: unknown board ", b, "; known: ", sbc_known_
 function sbc_size(b)          = let (r = _sbc_row(b)) assert(!is_undef(r), _sbc_unknown(b)) r[1];
 function sbc_corner_radius(b) = let (r = _sbc_row(b)) assert(!is_undef(r), _sbc_unknown(b)) r[2];
 function sbc_thickness(b)     = let (r = _sbc_row(b)) assert(!is_undef(r), _sbc_unknown(b)) r[3];
-function sbc_holes_xy(b)      = let (r = _sbc_row(b)) assert(!is_undef(r), _sbc_unknown(b)) r[4];
 function sbc_connectors(b)    = let (r = _sbc_row(b)) assert(!is_undef(r), _sbc_unknown(b)) r[5];
+
+// --- hole roles (Task: hole-role tagging) ---
+function sbc_known_hole_roles() = ["structural-mount", "component-mount", "keep-out", "alignment"];
+
+// Distinct roles actually present on a board's holes (order of the vocabulary).
+function _sbc_roles_present(b) =
+    let (hs = _sbc_row(b)[4])
+    [for (rr = sbc_known_hole_roles()) if (len([for (h = hs) if (h[2] == rr) h]) > 0) rr];
+
+// Full hole tuples [x,y,role,dia], filtered by role.
+//   role a canonical role  -> only that role
+//   role == "all"          -> every hole, silent (explicit intent)
+//   role == undef (omitted) -> every hole, PLUS a WARNING when >1 role present
+//   unknown role string    -> assert
+function sbc_holes(b, role = undef) =
+    let (r = _sbc_row(b))
+    assert(!is_undef(r), _sbc_unknown(b))
+    let (hs = r[4],
+         present = _sbc_roles_present(b),
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: sbc '", b, "' holes span ", len(present),
+                        " role categories ", present,
+                        "; no role filter selected — returning all. ",
+                        "Pass a role (e.g. \"structural-mount\") or \"all\" to silence."))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    assert(sel == "all"
+        || len([for (rr = sbc_known_hole_roles()) if (rr == sel) rr]) == 1,
+        str("sbc: unknown hole role '", sel, "'; known: ", sbc_known_hole_roles()))
+    sel == "all" ? hs : [for (h = hs) if (h[2] == sel) h];
+
+// Role of the i-th hole (index into the board's full hole list).
+function sbc_hole_role(b, i) = _sbc_row(b)[4][i][2];
+
+// Backward-compatible [x,y]-only accessor, role-filterable.
+function sbc_holes_xy(b, role = undef) = [for (h = sbc_holes(b, role)) [h[0], h[1]]];
 function sbc_connector(b, name) =
     let (cs = [for (c = sbc_connectors(b)) if (c[0] == name) c])
     assert(len(cs) > 0, str("sbc: board ", b, " has no connector ", name)) cs[0];
@@ -313,8 +365,8 @@ module sbc_placeholder(b) {
             // Connector bodies.
             for (c = sbc_connectors(b)) translate(c[1]) cube(c[2]);
         }
-        for (p = sbc_holes_xy(b))
-            translate([p[0], p[1], -1]) cylinder(h = t + 2, d = sbc_hole_dia());
+        for (h = sbc_holes(b, "all"))
+            translate([h[0], h[1], -1]) cylinder(h = t + 2, d = h[3]);
     }
 }
 
@@ -322,18 +374,18 @@ module sbc_placeholder(b) {
 SBC_OVERLAP = 0.5; // mm back-overlap so cutouts meet the board cleanly.
 
 // Mount clearance holes; use inside a consumer difference().
-module sbc_mount_holes(b, depth = 20, dia = -1) {
-    d = dia < 0 ? sbc_hole_dia() : dia;
-    for (p = sbc_holes_xy(b))
-        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = d);
+module sbc_mount_holes(b, depth = 20, role = undef, dia = -1) {
+    for (h = sbc_holes(b, role))
+        translate([h[0], h[1], -1])
+            cylinder(h = depth + 2, d = dia < 0 ? h[3] : dia);
 }
 
 // Positive standoff posts (print a tray directly). Pilot bore subtracted.
-module sbc_standoffs(b, height, dia = -1, bore = -1) {
+module sbc_standoffs(b, height, role = undef, dia = -1, bore = -1) {
     od = dia  < 0 ? 6.0 : dia;   // post OD default //VERIFY [C] vs hardware standoff
     bd = bore < 0 ? 2.2 : bore;  // pilot for M2.5 self-tap //VERIFY [C]
-    for (p = sbc_holes_xy(b))
-        translate([p[0], p[1], 0]) difference() {
+    for (h = sbc_holes(b, role))
+        translate([h[0], h[1], 0]) difference() {
             cylinder(h = height, d = od);
             translate([0, 0, -1]) cylinder(h = height + 2, d = bd);
         }
