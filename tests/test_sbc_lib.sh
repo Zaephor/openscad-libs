@@ -34,13 +34,18 @@ fi
 # Multi-role board, UNFILTERED access -> must emit the role-categories warning.
 #
 # Task 2 classified bpir4's 16 holes into 2 real role categories
-# ("component-mount" x14, "keep-out" x2 — see libraries/sbc/RESEARCH.md
-# "bpi-r4 hole roles"; 0 came out "structural-mount", which is fine, the
-# warning only cares about the *count* of distinct roles present, not which
-# ones). This replaces the Task-1-era placeholder block (see git history)
-# that stood in for this exact assertion while bpir4 was still
-# provisionally single-role — this is now the genuine end-to-end positive
-# control the plan originally called for.
+# ("component-mount" x12, "structural-mount" x4 — see libraries/sbc/
+# RESEARCH.md "bpi-r4 hole roles", incl. its "Follow-up re-review" section:
+# a first pass found 0 structural-mount / 2 keep-out, then a follow-up
+# review (requested after the first pass) upgraded 4 edge-inset holes —
+# including the original 2 keep-out ones — to structural-mount, landing on
+# 0 keep-out / 12 component-mount / 4 structural-mount. The warning only
+# cares about the *count* of distinct roles present (2), not which ones, so
+# this test is unaffected by that reclassification. This replaces the
+# Task-1-era placeholder block (see git history) that stood in for this
+# exact assertion while bpir4 was still provisionally single-role — this is
+# now the genuine end-to-end positive control the plan originally called
+# for.
 cat > "$tmp/warn_bpir4.scad" <<'EOF'
 use <sbc/sbc.scad>;
 x = sbc_holes_xy("bpir4");   // role omitted -> undef; bpir4 now spans 2 roles
