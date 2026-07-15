@@ -59,3 +59,14 @@ function multibuild_grid_points(cols, rows) =
          x0 = -(cols - 1) * p / 2,
          y0 = -(rows - 1) * p / 2)
     [for (r = [0 : rows - 1]) for (c = [0 : cols - 1]) [x0 + c * p, y0 + r * p]];
+
+/* [Placeholder] — envelope solid for fit checks. */
+// Mount-feature envelope: board mount face at Z=0, feature grows -Z. For fit/viz only.
+// Sized to the tip-flare span (widest point) x engagement length (the mount
+// is deliberately longer than the hole is deep -- see Task 2 note).
+module multibuild_mount_placeholder(type) {
+    d = 2 * multibuild_mount_tip_flare(type);
+    h = multibuild_mount_engagement(type);
+    translate([0, 0, -h])
+        cylinder(h = h, d = d, $fn = 48);
+}

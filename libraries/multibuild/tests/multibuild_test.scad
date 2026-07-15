@@ -28,3 +28,8 @@ pts = multibuild_grid_points(2, 3);
 assert(len(pts) == 6);
 dx = abs(pts[1][0] - pts[0][0]);
 assert(round(dx * 1e6) / 1e6 == round(p * 1e6) / 1e6);
+
+// mount_placeholder: test rendering for each known mount type
+for (t = multibuild_known_mounts()) {
+    multibuild_mount_placeholder(t);
+}
