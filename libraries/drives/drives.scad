@@ -248,6 +248,7 @@ module drive_holes(type, faces = "bottom", dia = 3.4, depth = 40, role = undef) 
            str("drives: unknown faces '", faces, "'"));
     r = dia/2;
     if (drive_family(type) == "card") {
+        assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()));
         h = drive_card_hole(type);            // [x,y,role,dia] on the Z=0 face (x along len)
         if (is_undef(role) || role == h[2])
             translate([h[0], h[1], 0])

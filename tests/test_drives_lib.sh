@@ -99,4 +99,18 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "role= consumer render failed:"; echo "$out"; exit 1
 fi
 
+# Negative control: unknown role on a CARD-family type (drive_card_hole has no
+# role param of its own; drive_holes()'s card branch must validate inline).
+cat > "$tmp/bad_role_card.scad" <<'EOF'
+use <drives/drives.scad>;
+difference() {
+    cube([25, 85, 5]);
+    drive_holes("m2_2280", role = "bogus-role");
+}
+EOF
+out="$(run "$tmp/bad_role_card.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unknown role on a card-family type:"; echo "$out"; exit 1
+fi
+
 echo ok
