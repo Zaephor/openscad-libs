@@ -112,4 +112,41 @@ ok = (
 sys.exit(0 if ok else 1)
 PY
 
+# Chamfer DIRECTION: the lead-in must widen going from the bore toward the
+# mouth (Z=0), not just "a wide point exists somewhere in the solid" (a
+# whole-solid bbox check can't tell widening-toward-+Z from widening-toward
+# the bore, since the same max diameter appears in the union either way).
+# Slice the no-relief pocket mesh at two known-vertex Z-bands: the bottom cap
+# (deep in the uniform-diameter pilot bore, always narrow) and the mouth
+# (Z=0, should be measurably wider than the bore in the correct direction).
+python3 - "$tmp/pocket_norelief.stl" "$m3_len" "$m3_li" "$m3_pd" <<'PY' || { echo "pocket chamfer direction incorrect (mouth not wider than bore)"; exit 1; }
+import struct,sys
+
+path,length,lead_in,pilot_dia = sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
+
+d=open(path,'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+verts=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        verts.append((x,z))
+
+def band_xspan(target_z, band=0.15):
+    xs=[x for x,z in verts if abs(z-target_z)<band]
+    return (max(xs)-min(xs)) if xs else None
+
+bore_dia  = band_xspan(-length)  # bottom cap: pure pilot bore, unaffected by chamfer direction
+mouth_dia = band_xspan(0.0)      # mouth (Z=0): wide only if chamfer widens toward +Z
+
+margin = lead_in  # require a real margin (one full lead_in), not just faceting/epsilon noise
+
+ok = (
+    bore_dia is not None and mouth_dia is not None and
+    abs(bore_dia - pilot_dia) < 0.1 and
+    mouth_dia > bore_dia + margin
+)
+sys.exit(0 if ok else 1)
+PY
+
 echo ok
