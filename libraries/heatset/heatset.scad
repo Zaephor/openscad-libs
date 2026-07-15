@@ -65,3 +65,13 @@ module heatset_pocket(size, melt_relief = true) {
             translate([0, 0, -len - li]) cylinder(h = li + 0.01, d = pd, $fn = 48);
     }
 }
+
+/* [Hole-stamp: boss] — support-free vertical column: top (install) face at
+   Z=0, grows -Z, matching the placeholder/pocket datum convention. Default
+   OD from the data table; pass `wall` to derive OD = pilot_dia + 2*wall
+   (e.g. to size a boss around a known pocket wall thickness). Consumer
+   idiom: difference() { heatset_boss(size, h); heatset_pocket(size); } */
+module heatset_boss(size, height, wall = -1) {
+    od = (wall < 0) ? heatset_boss_od(size) : heatset_pilot_dia(size) + 2 * wall;
+    translate([0, 0, -height]) cylinder(h = height, d = od, $fn = 48);
+}

@@ -149,4 +149,98 @@ ok = (
 sys.exit(0 if ok else 1)
 PY
 
+
+# Boss: default-OD path (wall<0) must equal heatset_boss_od(size); the
+# wall-derived-OD path (wall>=0) must equal heatset_pilot_dia(size)+2*wall —
+# these are genuinely different code paths, so both are exercised. Both
+# checked at height=8 (top face at Z=0, bottom at -8).
+cat > "$tmp/boss_dims.scad" <<'EOF'
+use <heatset/heatset.scad>;
+echo(heatset_boss_od("M4"));
+echo(heatset_pilot_dia("M4"));
+EOF
+dims_out="$(run "$tmp/boss_dims.scad")"
+m4_boss_od="$(echo "$dims_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.[0-9]+')"
+m4_pilot="$(echo "$dims_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.[0-9]+')"
+
+cat > "$tmp/boss_default.scad" <<'EOF'
+use <heatset/heatset.scad>;
+heatset_boss("M4", 8);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/boss_default.stl" "$tmp/boss_default.scad" 2>/dev/null
+
+cat > "$tmp/boss_wall.scad" <<'EOF'
+use <heatset/heatset.scad>;
+heatset_boss("M4", 8, wall = 2);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/boss_wall.stl" "$tmp/boss_wall.scad" 2>/dev/null
+
+python3 - "$tmp/boss_default.stl" "$tmp/boss_wall.stl" "$m4_boss_od" "$m4_pilot" <<'PY' || { echo "boss default/wall-derived OD or height incorrect"; exit 1; }
+import struct,sys
+
+def bbox(path):
+    d=open(path,'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+    xs=[];zs=[]
+    for i in range(n):
+        for v in range(3):
+            base=off+i*50+12+v*12
+            x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); zs.append(z)
+    return min(xs),max(xs),min(zs),max(zs)
+
+def_xmin,def_xmax,def_zmin,def_zmax = bbox(sys.argv[1])
+wal_xmin,wal_xmax,wal_zmin,wal_zmax = bbox(sys.argv[2])
+boss_od=float(sys.argv[3]); wall_od=float(sys.argv[4])+2*2
+tol=0.1
+
+ok = (
+    abs((def_xmax-def_xmin)-boss_od)<tol and                # default path: OD == heatset_boss_od
+    abs((wal_xmax-wal_xmin)-wall_od)<tol and                 # wall path: OD == pilot_dia+2*wall
+    abs(wall_od-boss_od)>1.0 and                             # sanity: the two paths are genuinely different
+    abs(def_zmin-(-8))<tol and abs(def_zmax-0)<tol and       # height=8, top at Z=0
+    abs(wal_zmin-(-8))<tol and abs(wal_zmax-0)<tol
+)
+sys.exit(0 if ok else 1)
+PY
+
+# Bored-boss consumer idiom: difference(){ heatset_boss("M4",8); heatset_pocket("M4"); }
+# Outer OD/height must survive the cut, and an axial bore must actually be
+# present. A solid OpenSCAD cylinder's cap triangulates as a fan between rim
+# vertices only (no center vertex) — verified empirically: an unbored boss's
+# STL has every vertex at radius == OD/2 exactly, min==max. So a bore is
+# unambiguous evidence: any vertex whose radius is measurably less than OD/2
+# means material was removed from the axis.
+cat > "$tmp/boss_bored.scad" <<'EOF'
+use <heatset/heatset.scad>;
+difference() {
+    heatset_boss("M4", 8);
+    heatset_pocket("M4");
+}
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/boss_bored.stl" "$tmp/boss_bored.scad" 2>/dev/null
+
+python3 - "$tmp/boss_bored.stl" "$m4_boss_od" <<'PY' || { echo "bored-boss OD/height/axial-bore incorrect"; exit 1; }
+import struct,sys,math
+
+path,boss_od = sys.argv[1], float(sys.argv[2])
+d=open(path,'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+verts=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        verts.append((x,y,z))
+
+xs=[x for x,y,z in verts]; zs=[z for x,y,z in verts]
+xspan=max(xs)-min(xs); zmin=min(zs); zmax=max(zs)
+radii=[math.hypot(x,y) for x,y,z in verts]
+
+ok = (
+    abs(xspan-boss_od)<0.1 and                  # outer OD unchanged by the cut
+    abs(zmin-(-8))<0.1 and abs(zmax-0)<0.1 and   # height=8 unchanged by the cut
+    max(radii) > boss_od/2 - 0.1 and             # outer rim still present
+    min(radii) < boss_od/2 - 1.0                 # axial bore: some vertex sits well inside the outer rim
+)
+sys.exit(0 if ok else 1)
+PY
+
 echo ok

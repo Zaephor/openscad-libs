@@ -41,3 +41,13 @@ difference() {
     translate([0, 0, -12]) cylinder(h = 12, d = heatset_boss_od("M3") + 2, $fn = 48);
     heatset_pocket("M3");
 }
+
+/* [Hole-stamp: boss] — support-free boss column, plain and documented
+   bored-boss consumer idiom. Smoke-checks the module renders cleanly;
+   numeric OD/height/bore checks live in tests/test_heatset_lib.sh. */
+heatset_boss("M4", 8);
+heatset_boss("M4", 8, wall = 2);
+difference() {
+    heatset_boss("M4", 8);
+    heatset_pocket("M4");
+}
