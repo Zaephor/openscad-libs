@@ -1,9 +1,15 @@
 // bpir4-1u-chassis — multipart assembly with exploded view + fit reference.
 // Render: make render P=bpir4-1u-chassis
 
-// Cooling + rack-ear defaults: single source of truth in defaults.scad (see
-// that file re: OpenSCAD Customizer visibility tradeoff).
-include <defaults.scad>;
+/* [Cooling] */
+// Declared here + in each entry file; params.scad consumes only.
+enable_exhaust = true; // toggle rear exhaust for review
+fan_size  = 40;
+fan_count = 2;
+
+/* [Rack Ears] */
+ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
+
 include <params.scad>;
 use <parts/tray.scad>;
 use <parts/lid.scad>;
