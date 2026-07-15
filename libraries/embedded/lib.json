@@ -1,0 +1,21 @@
+{
+  "name": "embedded",
+  "description": "Mechanical reference for ESP32/ESP8266 development boards (ESP32-DevKitC V4, ESP8266 NodeMCU v1.0, WEMOS D1 mini V4.0.0, ESP32-C3-DevKitM-1, ESP32-S3-DevKitC-1): board outline, corner radius, PCB thickness, mounting-hole coordinates (or documented absence), RF-module + antenna keep-out, and USB/pin-header connector footprints.",
+  "version": "0.1.0",
+  "sources": [
+    "https://dl.espressif.com/dl/schematics/esp32_devkitc_v4_dimensions.pdf (ESP32-DevKitC V4 dimension drawing)",
+    "https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32/esp32-devkitc/user_guide.html (ESP32-DevKitC V4 user guide)",
+    "https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf (ESP-WROOM-32 module dimensions)",
+    "https://dl.espressif.com/dl/schematics/esp_idf/DXF_ESP32-S3-DevKitC-1_V1.1_20220429.pdf (ESP32-S3-DevKitC-1 v1.1 dimension drawing)",
+    "https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.1.html (ESP32-S3-DevKitC-1 v1.1 user guide)",
+    "https://www.espressif.com/sites/default/files/documentation/esp32-s3-wroom-1_wroom-1u_datasheet_en.pdf (ESP32-S3-WROOM-1 module dimensions)",
+    "https://dl.espressif.com/dl/schematics/DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.pdf (ESP32-C3-DevKitM-1 dimension drawing)",
+    "https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html (ESP32-C3-DevKitM-1 user guide)",
+    "https://www.espressif.com/sites/default/files/documentation/esp32-c3-mini-1_datasheet_en.pdf (ESP32-C3-MINI-1 module dimensions)",
+    "https://www.wemos.cc/en/latest/_static/files/dim_d1_mini_v4.0.0.pdf (LOLIN D1 mini V4.0.0 dimension drawing)",
+    "https://www.wemos.cc/en/latest/d1/d1_mini.html (LOLIN D1 mini V4.0.0 docs; USB-C, 34.2x25.6mm)",
+    "https://www.etechnophiles.com/nodemcu-esp8266-pinout-specs-board-layout/ (NodeMCU v1.0 Amica/LoLin board dimensions, multi-peer)",
+    "https://components101.com/development-boards/nodemcu-esp8266-pinout-features-and-datasheet (NodeMCU ESP8266 specs corroboration)",
+    "https://github.com/nodemcu/nodemcu-devkit-v1.0 (NodeMCU DevKit v1.0 open-hardware reference design)"
+  ]
+}
