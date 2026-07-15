@@ -1,4 +1,5 @@
 use <embedded/embedded.scad>;
+use <connectors/connectors.scad>;
 
 // --- Step 1 (brief) baseline assertions ---
 assert(len(embedded_known_boards()) == 5, "5 known boards");
@@ -116,3 +117,44 @@ _embedded_task3_smoke();
 
 // The plan's own literal compile-smoke line (Task 3 brief, Step 1).
 translate([0, -40, 0]) embedded_placeholder("esp32_devkitc");
+
+// --- Task 4: connector cutouts + connectors-lib body sourcing ---
+
+// Every board connector mapped to a connectors-lib type (per RESEARCH.md's
+// "Connectors-lib mapping summary": every micro-USB port -> "micro_usb",
+// wemos_d1_mini's USB-C -> "usb_c") must have its stored [w,d,h] body
+// SOURCED from connector_size(type), not a duplicated literal. The body is
+// stored w/d-swapped from connectors.scad's canonical "+Y opening" frame
+// into this board's "opens along X" (xmin/xmax) frame (see embedded.scad's
+// header note): board w(X) = connectors-lib d, board d(Y) = connectors-lib
+// w, h unchanged. Un-swap and compare against connectors.scad's own value.
+_embedded_conn_body_check = [
+    ["esp32_devkitc",    "usb",      "micro_usb"],
+    ["esp8266_nodemcu",  "usb",      "micro_usb"],
+    ["wemos_d1_mini",    "usb",      "usb_c"],
+    ["esp32_c3_devkitm", "usb",      "micro_usb"],
+    ["esp32_s3_devkitc", "usb_uart", "micro_usb"],
+    ["esp32_s3_devkitc", "usb_otg",  "micro_usb"],
+];
+for (e = _embedded_conn_body_check) {
+    _b = embedded_connector(e[0], e[1])[2];
+    _expect = connector_size(e[2]);
+    assert(_b[0] == _expect[1] && _b[1] == _expect[0] && _b[2] == _expect[2],
+        str("embedded ", e[0], " connector ", e[1],
+            " body must be sourced from connector_size(\"", e[2], "\")"));
+}
+
+// Faceplate-cutout smoke: wemos_d1_mini's usb connector sits on "xmin" —
+// embedded_faceplate_cutouts() must stamp it (and only lateral-edge
+// connectors on that edge) into a consumer difference() with no ERROR.
+module _embedded_task4_smoke() {
+    difference() {
+        translate([0, -5, -2]) cube([34.3 + 20, 25.4 + 10, 6]);
+        embedded_faceplate_cutouts("wemos_d1_mini", "xmin", depth = 12);
+        embedded_port_cutout("esp32_devkitc", "usb", depth = 12);
+    }
+}
+translate([-60, 0, 0]) _embedded_task4_smoke();
+
+// Bad-edge assert (parity with sbc_port_cutout's own bad-edge assert) is
+// exercised from the bash harness (tests/test_embedded_lib.sh), not here.

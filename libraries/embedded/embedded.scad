@@ -25,6 +25,8 @@
 // reconstruction notes for every derived (non-verbatim) coordinate below.
 // Units: millimeters.
 
+use <connectors/connectors.scad>;
+
 $fn = 48;
 
 /* [Data] */
@@ -41,12 +43,14 @@ function embedded_known_boards() =
 // Every board here is a "stick" board (per RESEARCH.md's adopted convention):
 // USB at xmin (X=0), RF module/PCB-antenna keep-out at xmax, two single-row
 // 2.54mm pin headers running the long edges, both edge="top" (never lateral —
-// like sbc's gpio). USB body [w,d,h] and USB-C body [w,d,h] are taken from
-// connectors.scad's own [A] micro_usb ([7.72,5.48,3.96]) / usb_c ([8.94,6.90,
-// 3.16]) table rows (RESEARCH.md's own connectors-lib mapping), with w/d
-// swapped from that library's canonical "+Y opening" frame into this board's
-// "opens along X" frame (xmin/xmax edge): board w(X-extent) = connectors-lib
-// d, board d(Y-extent) = connectors-lib w. Header body length = pins x 2.54mm,
+// like sbc's gpio). USB body [w,d,h] and USB-C body [w,d,h] are SOURCED (Task
+// 4) from connectors.scad's own [A] micro_usb ([7.72,5.48,3.96]) / usb_c
+// ([8.94,6.90,3.16]) table rows via connector_size(type) — see
+// _embedded_conn_body() below — not duplicated literals (RESEARCH.md's own
+// connectors-lib mapping), with w/d swapped from that library's canonical
+// "+Y opening" frame into this board's "opens along X" frame (xmin/xmax
+// edge): board w(X-extent) = connectors-lib d, board d(Y-extent) =
+// connectors-lib w. Header body length = pins x 2.54mm,
 // width ~2.54mm, height ~2.5mm — all [C]//VERIFY per RESEARCH.md's own "Pin
 // headers" note. Connector X/Y positions are NOT individually dimensioned in
 // any source RESEARCH.md found ("Exact per-pin X/Y origins are Task 2/4's to
@@ -56,6 +60,16 @@ function embedded_known_boards() =
 // tagged [C]//VERIFY and NOT claimed as a verbatim drawing read. Only the
 // board outline / corner radius / thickness / mounting-hole geometry / bare
 // connector-body [w,d,h] extents are verbatim RESEARCH.md values.
+
+// Body [w,d,h] for a connectors-lib type, w/d swapped from connectors.scad's
+// canonical "+Y opening" frame (mating face centered in X, opening along +Y)
+// into this board's "opens along X" (xmin/xmax) frame: board w(X) =
+// connectors-lib d, board d(Y) = connectors-lib w, h unchanged (see header
+// note above). connectors.scad is the single source of truth for these
+// values — used by every mapped connector body in the table below (Task 4).
+function _embedded_conn_body(type) =
+    let (cs = connector_size(type)) [cs[1], cs[0], cs[2]];
+
 function _embedded_table() = [
     // esp32_devkitc — ESP32-DevKitC V4 (ESP-WROOM-32, 38-pin).
     // [A] esp32_devkitc_v4_dimensions.pdf. Outline 48.26x27.94 [A]; corners
@@ -67,8 +81,9 @@ function _embedded_table() = [
         [],
         [ // usb: micro-USB on xmin, roughly centered in Y [A type]/[C pos //VERIFY,
           // drawing shows the footprint but doesn't dimension its offset].
-          // Body [5.48,7.72,3.96] = connectors-lib micro_usb [A] w/d-swapped (see header note).
-          ["usb", [0, 10.11, 1.6], [5.48, 7.72, 3.96], "xmin"],
+          // Body = connectors-lib micro_usb [A], w/d-swapped (see header note);
+          // sourced via _embedded_conn_body(), not a duplicated literal (Task 4).
+          ["usb", [0, 10.11, 1.6], _embedded_conn_body("micro_usb"), "xmin"],
           // header_l/header_r: 19 pins/row (38 total), 2.54mm pitch [A],
           // edge="top". Length 19*2.54=48.26 [A pitch/count]; row insets
           // [C]//VERIFY (RESEARCH.md: DevKitC "places rows just inside the
@@ -93,8 +108,9 @@ function _embedded_table() = [
     // Mounting holes: NONE [B] (every peer describes a breadboard board).
     ["esp8266_nodemcu", [49, 26], 0.75, 1.6,
         [],
-        [ // usb: micro-USB on xmin [B]. Body per connectors-lib micro_usb (see header note).
-          ["usb", [0, 9.14, 1.6], [5.48, 7.72, 3.96], "xmin"],
+        [ // usb: micro-USB on xmin [B]. Body sourced from connectors-lib micro_usb
+          // via _embedded_conn_body() (see header note).
+          ["usb", [0, 9.14, 1.6], _embedded_conn_body("micro_usb"), "xmin"],
           // header_l/header_r: 15 pins/row (30 total), 2.54mm pitch, 0.9in
           // (22.86mm [B]) row spacing -> centerline inset (26-22.86)/2=1.57,
           // row body (width 2.54) centered on each centerline.
@@ -119,9 +135,9 @@ function _embedded_table() = [
         // designation for a mounting hole).
         [ [31.1, 2.5,  "structural-mount", 2.0],
           [31.1, 22.9, "structural-mount", 2.0] ],
-        [ // usb: USB-C on xmin [A] ("Type-C USB Port"). Body [6.90,8.94,3.16] =
-          // connectors-lib usb_c [A] w/d-swapped (see header note).
-          ["usb", [0, 8.23, 1.0], [6.90, 8.94, 3.16], "xmin"],
+        [ // usb: USB-C on xmin [A] ("Type-C USB Port"). Body = connectors-lib
+          // usb_c [A], w/d-swapped, sourced via _embedded_conn_body() (Task 4).
+          ["usb", [0, 8.23, 1.0], _embedded_conn_body("usb_c"), "xmin"],
           // header_l/header_r: 8 pins/row (16 total), 2.54mm pitch, 0.9in
           // (22.86mm, drawing "22.8600mm" [A]) row spacing -> centerline
           // inset (25.4-22.86)/2=1.27, row body centered on each centerline.
@@ -137,7 +153,7 @@ function _embedded_table() = [
     // thickness 1.6 [C]//VERIFY. Mounting holes: NONE [A].
     ["esp32_c3_devkitm", [38.91, 25.40], 2, 1.6,
         [],
-        [ ["usb", [0, 8.84, 1.6], [5.48, 7.72, 3.96], "xmin"], // [A] type / [C] pos //VERIFY; body per connectors-lib micro_usb
+        [ ["usb", [0, 8.84, 1.6], _embedded_conn_body("micro_usb"), "xmin"], // [A] type / [C] pos //VERIFY; body sourced from connectors-lib micro_usb
           // header_l/header_r: 15 pins/row (30 total), 2.54mm pitch, 22.86mm
           // (0.9in [A]) row spacing -> centerline inset (25.40-22.86)/2=1.27.
           ["header_l", [0.405, 0.00,  1.6], [38.10, 2.54, 2.5], "top"],
@@ -160,9 +176,10 @@ function _embedded_table() = [
           // later/clone S3-DevKitC-1 batches ship USB-C in these positions —
           // this v1.1 drawing itself shows micro-USB for both. Y split: no
           // per-port offset dimensioned, [C]//VERIFY even split of the
-          // 25.40mm edge into two halves (see header note).
-          ["usb_uart", [0, 2.49,  1.6], [5.48, 7.72, 3.96], "xmin"],
-          ["usb_otg",  [0, 15.19, 1.6], [5.48, 7.72, 3.96], "xmin"],
+          // 25.40mm edge into two halves (see header note). Bodies sourced
+          // from connectors-lib micro_usb via _embedded_conn_body() (Task 4).
+          ["usb_uart", [0, 2.49,  1.6], _embedded_conn_body("micro_usb"), "xmin"],
+          ["usb_otg",  [0, 15.19, 1.6], _embedded_conn_body("micro_usb"), "xmin"],
           // header_l/header_r: 22 pins/row (44 total), 2.54mm pitch [A].
           // Row inset [C]//VERIFY (RESEARCH.md: S3 "places rows just inside
           // the long edges", no dimensioned spacing given) — using the same
@@ -289,6 +306,27 @@ module embedded_standoffs(b, height, role = undef, dia = -1, bore = -1) {
             cylinder(h = height, d = od);
             translate([0, 0, -1]) cylinder(h = height + 2, d = bd);
         }
+}
+
+// One connector's panel opening, extruded outward along its exit edge.
+// Mirrors sbc_port_cutout() verbatim (see sbc.scad) — same edge branching,
+// same EMBEDDED_OVERLAP back-overlap, same bad-edge assert.
+module embedded_port_cutout(b, name, depth = 20) {
+    c = embedded_connector(b, name); p = c[1]; s = c[2]; e = c[3];
+    o = EMBEDDED_OVERLAP;
+    if      (e == "xmax") translate([p[0]+s[0]-o, p[1], p[2]]) cube([depth+o, s[1], s[2]]);
+    else if (e == "xmin") translate([p[0]-depth,  p[1], p[2]]) cube([depth+o, s[1], s[2]]);
+    else if (e == "ymax") translate([p[0], p[1]+s[1]-o, p[2]]) cube([s[0], depth+o, s[2]]);
+    else if (e == "ymin") translate([p[0], p[1]-depth,  p[2]]) cube([s[0], depth+o, s[2]]);
+    else if (e == "top")  translate([p[0], p[1], p[2]+s[2]-o]) cube([s[0], s[1], depth+o]);
+    else assert(false, str("embedded: connector ", name, " has bad edge ", e));
+}
+
+// All connectors on an edge → the full panel for that edge (e.g. a router
+// faceplate, or "top" for every up-facing header/module in one call). Mirrors
+// sbc_faceplate_cutouts() verbatim.
+module embedded_faceplate_cutouts(b, edge, depth = 20) {
+    for (c = embedded_connectors(b)) if (c[3] == edge) embedded_port_cutout(b, c[0], depth);
 }
 
 // Visual self-check when opened directly.
