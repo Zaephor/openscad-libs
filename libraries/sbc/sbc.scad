@@ -303,8 +303,8 @@ function _sbc_table() = [
     // sheet) — same gap as the pi5 row above; value carried forward from pizero's
     // [A] 3.0mm, tier [B] //VERIFY here. Sheet also omits the mounting-hole-diameter
     // callout and any title block (single-view page, no logo/date/ref box).
-    // Connectors, own-drawing pixel-measurement (rendered at 2x source scale via
-    // pdftoppm -r 600 for a cleaner pixel read; same hole-grid-calibrated method as
+    // Connectors, own-drawing pixel-measurement (rendered at 2x source scale, at
+    // high resolution for a cleaner pixel read; same hole-grid-calibrated method as
     // pizero above, independently re-run on this sheet's own hole centers, not
     // copied from the pizero row) — layout confirmed to match pizero closely
     // (mini-HDMI/microUSB pair boxes agree with pizero's to within ~0.3mm) but
