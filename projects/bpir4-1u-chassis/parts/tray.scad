@@ -14,6 +14,7 @@ use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
 use <hardware/hardware.scad>;
+use <_honeycomb.scad>;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
@@ -98,19 +99,31 @@ module _faceplate() {
         // chassis position. depth clears the panel thickness.
         translate([board_x(), board_y(), board_z()])
             sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
-        // Intake vents ABOVE the IO portholes: horizontal slots across the
-        // connector cluster, from just above the tallest connector to just below
-        // the ledge — straight cross-chassis airflow over the SFP/connector tops.
+        // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
+        // hex-hole cutter across the connector cluster, from just above the
+        // tallest connector to just below the ledge — straight cross-chassis
+        // airflow over the SFP/connector tops. Replaces the old full-width
+        // slot cubes (a flat, unsupported bridge spanning the whole cluster
+        // width) with honeycomb_vent() (parts/_honeycomb.scad): flat-top hex
+        // cells whose only bridge (the hex top edge) is a few mm, not the
+        // whole band width — see _honeycomb.scad for the self-support
+        // reasoning and honeycomb_cell/honeycomb_wall in params.scad.
         cl = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]];
         cr = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]+c[2][0]];
         bx0 = min(cl); bx1 = max(cr);                 // connector cluster X-span (chassis frame)
         z0 = _vent_band_z0();
         z1 = ext_h() - lid_th - vent_slot_gap;        // just below the ledge
-        pitch = vent_slot_w + vent_slot_gap;
-        rows = floor((z1 - z0) / pitch);
-        for (i = [0 : max(rows-1, 0)])
-            translate([bx0, -faceplate_th - 1, z0 + i*pitch])
-                cube([bx1 - bx0, faceplate_th + 2, vent_slot_w]);
+        // rotate([90,0,0]) maps honeycomb_vent's local (width=X, height=Y,
+        // depth=Z) frame onto the chassis frame: local X stays chassis X,
+        // local Y (depth, the cut-through axis) becomes chassis Y — cutting
+        // through the panel thickness like the old cube's Y span — and local
+        // Z (height) becomes chassis Z. translate([bx0, 1, z0]) then lands it
+        // exactly where the old cube band sat (Y from -faceplate_th-1 to +1,
+        // Z from z0 to z1).
+        translate([bx0, 1, z0])
+            rotate([90, 0, 0])
+                honeycomb_vent(bx1 - bx0, z1 - z0, faceplate_th + 2,
+                                honeycomb_cell, honeycomb_wall);
     }
 }
 

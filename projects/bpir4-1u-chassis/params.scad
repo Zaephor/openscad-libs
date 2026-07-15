@@ -26,6 +26,15 @@ board_insert_bore = 3.4; // M2.5 heat-set insert OD (board standoffs) (coinciden
 lid_insert_bore   = 4.2; // M3 heat-set insert OD (lid posts)
 vent_slot_w   = 2.5;  // intake/lid vent slot width
 vent_slot_gap = 3.0;  // gap between vent slots
+// Shared honeycomb vent geometry (parts/_honeycomb.scad honeycomb_vent()):
+// used by the faceplate above-IO band and (per the v3 plan) the lid vents,
+// so both bands look consistent. cell = hex point-to-point width; its flat
+// top edge (the only true bridge in a flat-top hex -- see _honeycomb.scad)
+// is cell/2 = 4mm, safely under design-for-print's <=5mm "reliably
+// self-supporting" bridge ceiling. wall = gap kept between adjacent hex
+// holes, sized >= 2x a 0.4mm nozzle's line width.
+honeycomb_cell = 8.0;
+honeycomb_wall = 1.2;
 boss_wall        = 3.2;  // lid-post wall thickness around the insert bore (post OD = lid_insert_bore + boss_wall)
 post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
