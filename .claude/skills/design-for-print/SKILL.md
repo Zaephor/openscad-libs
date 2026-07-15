@@ -1,6 +1,6 @@
 ---
 name: design-for-print
-description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD in this repo) and making a printability or design-language decision — chamfer vs fillet vs bevel, avoiding supports/overhangs, sizing a press/slip/free fit or hole clearance, orienting a part for strength, or adding a boss/rib/gusset. Also the reference for what a print or CAD term means.
+description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD in this repo) and making a printability or design-language decision — chamfer vs fillet vs bevel, avoiding supports/overhangs, sizing a press/slip/free fit or hole clearance, orienting a part for strength, or adding a boss/rib/gusset. Also the reference for what a print or CAD term means. Also for assembly order, insertion clearance, fastener access, exploded self-check.
 ---
 
 # Design for 3D Print
@@ -11,6 +11,7 @@ description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD i
 - **Orient load across layers:** Part strength varies by direction; align stress toward layer planes. Read `reference/strength-physics.md`.
 - **Fillet internal corners:** Sharp corners create stress concentrations and are hard to print cleanly. Read `reference/strength-physics.md`.
 - **Pick a fit band on purpose:** Clearances compound; measure before you design. Read `reference/tolerances-fits.md`.
+- **Design the assembly order:** inner parts first; verify with the exploded self-check. Read `reference/assembly-order.md`.
 
 ## House Rules
 
@@ -25,3 +26,4 @@ This repo defaults to **Bambu P1S (PETG, 0.4 mm nozzle, no supports)**. Every de
 | Clearances, fits, hole sizing, elephant's foot | `reference/tolerances-fits.md` |
 | Part strength, layer direction, ribs vs walls | `reference/strength-physics.md` |
 | This repo's printer/material defaults + clearances | `reference/house-rules.md` |
+| Assembly order, fastener access, insertion clearance, exploded self-check | `reference/assembly-order.md` |

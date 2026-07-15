@@ -25,5 +25,16 @@ grep -oE 'reference/[A-Za-z0-9_-]+\.md' "$skill/SKILL.md" | sort -u | while read
   [ -f "$skill/$ref" ] || { echo "missing reference file: $ref"; exit 3; }
 done || fail=1
 
+# 4. Image embeds must be real markdown, not wrapped in code spans (else GitHub
+#    renders literal text). Flag any line where ![..](..) is inside backticks.
+while IFS= read -r hit; do
+  echo "image embed wrapped in code span: $hit"; fail=1
+done < <(grep -rnE '`[^`]*!\[[^]]*\]\([^)]*\)[^`]*`' "$skill"/reference/*.md)
+
+# 5. DFA page is indexed, present, and references the assembly self-check.
+grep -q 'reference/assembly-order.md' "$skill/SKILL.md" || { echo "DFA page not in SKILL.md index"; fail=1; }
+[ -f "$skill/reference/assembly-order.md" ] || { echo "DFA page missing"; fail=1; }
+grep -qi 'assembly.scad' "$skill/reference/assembly-order.md" || { echo "DFA page missing self-check ref"; fail=1; }
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
