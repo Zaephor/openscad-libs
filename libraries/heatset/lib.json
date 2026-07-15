@@ -1,0 +1,12 @@
+{
+  "name": "heatset",
+  "description": "Brass heat-set threaded insert data + geometry (M2-M6): dimensions, placeholder, pocket/hole stamp, boss.",
+  "version": "0.1.0",
+  "sources": [
+    "https://www.pemnet.com/wp-content/uploads/sites/2/2022/06/sidata.pdf",
+    "https://www.cnckitchen.com/blog/tipps-amp-tricks-fr-gewindeeinstze-im-3d-druck-3awey",
+    "https://www.ruthex.de/en/pages/cad-daten",
+    "https://insertguide.com/guides/heat-set-insert-hole-size/",
+    "https://www.spirol.com/assets/files/ins-wp-how-to-design-the-proper-hole-for-heat-ultrasonic-inserts-us.pdf"
+  ]
+}
