@@ -39,3 +39,14 @@ for (t = multibuild_known_mounts()) {
 for (t = multibuild_known_mounts()) {
     multibuild_mount(t);
 }
+
+// hole: test rendering for each known mount type (negative board-hole cutter)
+for (t = multibuild_known_mounts()) {
+    difference() {
+        translate([0, 0, -multibuild_hole_depth(t) - 2])
+            cube([multibuild_hole_dia(t) + 4,
+                  multibuild_hole_dia(t) + 4,
+                  multibuild_hole_depth(t) + 2], center = true);
+        multibuild_hole(t);
+    }
+}

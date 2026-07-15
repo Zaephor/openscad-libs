@@ -125,3 +125,17 @@ module multibuild_mount(type) {
         }
     }
 }
+
+/* [Negative] — board-hole profile cut into a surface, for use inside a
+   consumer difference() (the accessory-panel case: a face that accepts
+   standard MultiBoard connectors). */
+// Negative board-hole cutter: board face at Z=0, cut grows -Z through the
+// tile thickness. Simplified to a straight cylinder at the measured waist
+// diameter (the true profile flares wider at both mouths -- this cut is the
+// conservative narrow-point approximation, see RESEARCH.md).
+module multibuild_hole(type) {
+    d = multibuild_hole_dia(type);
+    h = multibuild_hole_depth(type);
+    translate([0, 0, -h - 0.01])
+        cylinder(h = h + 0.02, d = d, $fn = 48);
+}
