@@ -31,5 +31,10 @@ while IFS= read -r hit; do
   echo "image embed wrapped in code span: $hit"; fail=1
 done < <(grep -rnE '`[^`]*!\[[^]]*\]\([^)]*\)[^`]*`' "$skill"/reference/*.md)
 
+# 5. DFA page is indexed, present, and references the assembly self-check.
+grep -q 'reference/assembly-order.md' "$skill/SKILL.md" || { echo "DFA page not in SKILL.md index"; fail=1; }
+[ -f "$skill/reference/assembly-order.md" ] || { echo "DFA page missing"; fail=1; }
+grep -qi 'assembly.scad' "$skill/reference/assembly-order.md" || { echo "DFA page missing self-check ref"; fail=1; }
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
