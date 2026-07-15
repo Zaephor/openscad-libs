@@ -18,19 +18,15 @@
 //   [C] single-sourced / derived, or a named part cited but not fetched.
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
 //
-// Task 1 status (this commit): scaffold + RESEARCH.md source log +
-// checkpoint only. The grid pitch/mount-type table (`_multibuild_table()`),
-// accessor functions (`multibuild_grid_pitch()`, `multibuild_known_mounts()`,
-// `multibuild_hole_dia()`/`multibuild_hole_depth()`, `multibuild_grid_count()`/
-// `multibuild_grid_snap()`/`multibuild_grid_points()`) and the
+// Status (through Task 2): grid pitch/mount-type table (`_multibuild_table()`)
+// and Role 1 accessor/grid-math functions are implemented below. The
 // `multibuild_mount_placeholder()` / `multibuild_mount()` / `multibuild_hole()`
-// modules are Task 2+ (see 
-// design.md for the exact API and 
-// multibuild-lib-design.md for the design rationale). Nothing below this
-// header is implemented yet — RESEARCH.md's Checkpoint findings section
-// confirms the mechanism (Regular Snap plugging into a Large Hole, chosen
-// over Threads/Peg Click/DS Snaps — see rationale there) fits this API shape
-// before any geometry is written.
+// modules (Roles 2-4) are Task 3+ (see 
+// multibuild-lib-design.md for the exact API and 
+// 2026-07-15-multibuild-lib-design.md for the design rationale). RESEARCH.md's
+// Checkpoint findings section confirms the mechanism (Regular Snap plugging
+// into a Large Hole, chosen over Threads/Peg Click/DS Snaps — see rationale
+// there) fits this API shape before any geometry is written.
 
 $fn = 48;
 
