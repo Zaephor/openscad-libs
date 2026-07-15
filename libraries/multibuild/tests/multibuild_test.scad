@@ -33,3 +33,9 @@ assert(round(dx * 1e6) / 1e6 == round(p * 1e6) / 1e6);
 for (t = multibuild_known_mounts()) {
     multibuild_mount_placeholder(t);
 }
+
+// mount: test rendering for each known mount type (bbox/manifold checks
+// live in tests/test_multibuild_lib.sh, which measures the exported STL)
+for (t = multibuild_known_mounts()) {
+    multibuild_mount(t);
+}

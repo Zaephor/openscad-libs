@@ -70,3 +70,58 @@ module multibuild_mount_placeholder(type) {
     translate([0, 0, -h])
         cylinder(h = h, d = d, $fn = 48);
 }
+
+/* [Positive] — printed connector feature (shaft + flared arms) on a
+   consumer part that mates into a board hole. */
+// Positive mount: mates into a board hole (multibuild_hole), a through-hole
+// snap-fit. Board face at Z=0, feature grows -Z. Central shaft (~half the
+// arm width) plus mount_arm_count tapered arms flaring from the shaft out to
+// mount_tip_flare radius at the tip -- the arm tip pokes past the far face
+// of the (thinner) hole and flares there for retention, so this feature is
+// deliberately taller than multibuild_hole_depth(type). Rigid static model:
+// the measured at-rest tip diameter already clears the hole waist (Task 2
+// note), so no compliant-flex simulation is needed for v1.
+module multibuild_mount(type) {
+    n  = multibuild_mount_arm_count(type);
+    w  = multibuild_mount_arm_width(type);
+    rf = multibuild_mount_tip_flare(type);
+    h  = multibuild_mount_engagement(type);
+    shaft_r = w / 2;
+    // Deviation from the brief's suggested code: the brief anchors the tip
+    // block's *near* (shaft-side) edge at x = rf - w/2, which places its
+    // outer corner at radius sqrt((rf-w/2)^2 + (w/2)^2) < rf -- e.g. for the
+    // "snap" row (rf=11.05, w=3) that lands the tip corner at r~9.68, not
+    // 11.05, so the measured bbox diameter comes out ~19.1mm instead of the
+    // researched ~22.1mm. Fixing that requires solving for the radial
+    // placement whose *outer corner* (offset +-w/2 tangentially) lands
+    // exactly on the r=rf circle: x_tip = sqrt(rf^2 - (w/2)^2).
+    x_tip = sqrt(rf * rf - (w / 2) * (w / 2));
+    // Deviation from the brief's suggested code: the brief's near-shaft
+    // block starts exactly at x = shaft_r, i.e. tangent to the shaft
+    // cylinder along a single line (only touching at y=0) rather than
+    // overlapping its volume -- CGAL flagged the resulting union as a
+    // non-manifold ("Object may not be a valid 2-manifold") because the arm
+    // and shaft share a knife-edge instead of a solid overlap. Starting the
+    // near block at the shaft's center (x=0) guarantees a genuine volume
+    // overlap with the cylinder (which also spans x in [-shaft_r, shaft_r]),
+    // resolving the manifold warning while keeping the same tapered-wedge
+    // shape from the shaft out to the tip flare. Also widened the epsilon
+    // thickness from the brief's 0.01mm to 0.1mm for numerical headroom.
+    eps = 0.1;
+    union() {
+        // central shaft
+        translate([0, 0, -h])
+            cylinder(h = h, r = shaft_r, $fn = 48);
+        // arms: hull a shaft-center block at Z=0 down to a tip-flare block
+        // at Z=-h, arranged at even rotational increments around the shaft.
+        for (a = [0 : 360 / n : 359]) {
+            rotate([0, 0, a])
+                hull() {
+                    translate([0, -w / 2, -eps])
+                        cube([shaft_r + eps, w, eps]);
+                    translate([x_tip, -w / 2, -h])
+                        cube([eps, w, eps]);
+                }
+        }
+    }
+}
