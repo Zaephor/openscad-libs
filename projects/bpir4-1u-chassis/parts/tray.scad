@@ -18,7 +18,7 @@ use <_honeycomb.scad>;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
-module _tray_shell() {
+module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
     y0 = board_y();
     dd = int_depth();
     difference() {
@@ -39,7 +39,7 @@ module _tray_shell() {
         translate([-(body_w()/2 - lip), y0 - 1, ext_h() - lid_th])
             cube([body_w() - wall, dd - lip + 1, lid_th + 1]);
         // Rear-wall fan bores or passive vents.
-        _rear_openings();
+        _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
     }
 }
 
@@ -52,7 +52,7 @@ module _tray_shell() {
 // [rear_wall_y()-wall, rear_wall_y()] (see _tray_shell()), so every cutter
 // below is anchored off `rear_wall_y() - wall` (the inner face) to actually
 // intersect the wall.
-module _rear_openings() {
+module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
     yw = rear_wall_y();               // rear wall outer (rearmost) face
     zc = floor_th + int_h()/2;        // vertical center of interior clearance
     if (enable_exhaust) {
@@ -78,7 +78,7 @@ module _rear_openings() {
 
 // Front rack panel: full panel width, chassis-exterior height, front face on
 // Y=0 growing -Y (toward the rack front). Rack mount holes + connector cutouts.
-module _faceplate() {
+module _faceplate(ear_hole_type = ear_hole_type) {
     difference() {
         // Panel blank (own height = ext_h(); width from the library).
         translate([-panel_w()/2, -faceplate_th, 0])
@@ -218,9 +218,9 @@ module _lid_posts() {
     }
 }
 
-module tray() {
-    _tray_shell();
-    _faceplate();
+module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type) {
+    _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
+    _faceplate(ear_hole_type = ear_hole_type);
     _lid_posts();
     // Board standoff posts — only the structural-mount holes (M.2/heatsink/
     // keep-out holes are excluded; see sbc hole roles).
