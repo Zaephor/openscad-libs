@@ -11,11 +11,13 @@
 // top face — pin headers, on-board modules/antenna keep-outs; no lateral
 // edge is touched).
 // Roles (see docs/LIBRARY-AUTHORING.md):
-//   1. Data — functions returning constants / table lookups
-//             (expose as functions: OpenSCAD `use` does not import variables)
-//   Placeholder / hole-stamp / cutout modules are deferred to later tasks
-//   (Task 3: embedded_placeholder()/embedded_mount_holes(); Task 4: connector
-//   cutouts) — this file is Role-1 (data + accessors) only for now.
+//   1. Data        — functions returning constants / table lookups
+//                    (expose as functions: OpenSCAD `use` does not import variables)
+//   2. Placeholder — embedded_placeholder(b): envelope solid for fit checks
+//   3. Hole-stamp / cutout — embedded_mount_holes(b), embedded_standoffs(b):
+//                    mounting-hole stamps for a consumer difference() /
+//                    printable standoff posts. Connector port cutouts are
+//                    Task 4's to add.
 // Provenance: [A] vendor official mechanical drawing/datasheet (dl.espressif.com,
 // espressif.com, wemos.cc), [B] multi-peer community corroboration, [C] single
 // community source or derived. //VERIFY marks weak/unconfirmed values. See
@@ -238,3 +240,56 @@ function embedded_holes_xy(b, role = undef) = [for (h = embedded_holes(b, role))
 function embedded_connector(b, name) =
     let (cs = [for (c = embedded_connectors(b)) if (c[0] == name) c])
     assert(len(cs) > 0, str("embedded: board ", b, " has no connector ", name)) cs[0];
+
+/* [Placeholder] */
+// PCB slab (rounded corners) + connector bodies; mounting holes as keep-outs.
+// Corner datum: board in +X/+Y, bottom on Z=0.
+// NOTE: 4 of 5 boards here have an EMPTY hole list (see RESEARCH.md) — the
+// difference() below is then a no-op over zero holes, which is correct and
+// honest (nothing to subtract), not a bug. esp32_devkitc's "module" and
+// "antenna_keepout" connector entries render as raised solid bodies here,
+// same as any other connector — mirrors sbc's "render every connector as a
+// cube" idiom verbatim; not filtered differently just because one is a
+// keep-out box (see Task 3 brief).
+module embedded_placeholder(b) {
+    sz = embedded_size(b); r = embedded_corner_radius(b); t = embedded_thickness(b);
+    difference() {
+        union() {
+            // Rounded-rect PCB via a minkowski-free hull of 4 corner cylinders.
+            hull() for (x = [r, sz[0]-r], y = [r, sz[1]-r])
+                translate([x, y, 0]) cylinder(h = t, r = r);
+            // Connector bodies.
+            for (c = embedded_connectors(b)) translate(c[1]) cube(c[2]);
+        }
+        for (h = embedded_holes(b, "all"))
+            translate([h[0], h[1], -1]) cylinder(h = t + 2, d = h[3]);
+    }
+}
+
+/* [Hole-stamp / cutout] */
+EMBEDDED_OVERLAP = 0.5; // mm back-overlap so cutouts meet the board cleanly (Task 4).
+
+// Mount clearance holes; use inside a consumer difference(). Boards with an
+// empty hole list (or an empty role-filtered subset) correctly stamp nothing.
+module embedded_mount_holes(b, depth = 20, role = undef, dia = -1) {
+    for (h = embedded_holes(b, role))
+        translate([h[0], h[1], -1])
+            cylinder(h = depth + 2, d = dia < 0 ? h[3] : dia);
+}
+
+// Positive standoff posts (print a tray directly). Pilot bore subtracted.
+// Same defaults as sbc_standoffs() — these boards are M2/M2.5-ish and
+// RESEARCH.md gives no board-specific standoff hardware data, so sbc's own
+// //VERIFY-tagged defaults are mirrored verbatim rather than guessed anew.
+module embedded_standoffs(b, height, role = undef, dia = -1, bore = -1) {
+    od = dia  < 0 ? 6.0 : dia;   // post OD default //VERIFY [C] vs hardware standoff
+    bd = bore < 0 ? 2.2 : bore;  // pilot for M2.5 self-tap //VERIFY [C]
+    for (h = embedded_holes(b, role))
+        translate([h[0], h[1], 0]) difference() {
+            cylinder(h = height, d = od);
+            translate([0, 0, -1]) cylinder(h = height + 2, d = bd);
+        }
+}
+
+// Visual self-check when opened directly.
+embedded_placeholder("wemos_d1_mini");

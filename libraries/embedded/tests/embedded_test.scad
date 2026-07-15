@@ -81,3 +81,38 @@ for (b = embedded_known_boards())
 
 // Unknown-board / unknown-role asserts are exercised from the bash harness
 // (tests/test_embedded_lib.sh), not here — same split as sbc.
+
+// --- Task 3: placeholder + mount-hole/standoff modules ---
+
+// Hole-stamp-count parity: embedded_mount_holes(b, role="structural-mount")
+// and embedded_standoffs(b, ..., role="structural-mount") both loop over
+// embedded_holes(b, "structural-mount") — this is exactly that list's length,
+// which is what a pure-SCAD assert CAN check (a real bbox/geometry check
+// belongs to Task 5's render harness, not here).
+_embedded_expected_structural_holes = [
+    ["esp32_devkitc", 0], ["esp8266_nodemcu", 0], ["wemos_d1_mini", 2],
+    ["esp32_c3_devkitm", 0], ["esp32_s3_devkitc", 0]
+];
+for (e = _embedded_expected_structural_holes)
+    assert(len(embedded_holes(e[0], "structural-mount")) == e[1],
+        str("embedded ", e[0], ": mount-hole stamp count == ", e[1]));
+
+// Compile-smoke: embedded_placeholder()/embedded_mount_holes()/
+// embedded_standoffs() must render for EVERY board without error, including
+// the 4 empty-hole-list boards (their mount-hole/standoff for-loops correctly
+// iterate zero times and stamp nothing — a no-op, not a bug). Boards are
+// spread out along X so the union stays a sane (non-overlapping) smoke shape.
+module _embedded_task3_smoke() {
+    boards = embedded_known_boards();
+    for (i = [0 : len(boards) - 1]) {
+        b = boards[i];
+        off = i * 80; // fixed pitch, comfortably wider than any board here
+        translate([off, 0, 0]) embedded_placeholder(b);
+        translate([off, 0, 0]) embedded_mount_holes(b);
+        translate([off, 0, 0]) embedded_standoffs(b, height = 5);
+    }
+}
+_embedded_task3_smoke();
+
+// The plan's own literal compile-smoke line (Task 3 brief, Step 1).
+translate([0, -40, 0]) embedded_placeholder("esp32_devkitc");
