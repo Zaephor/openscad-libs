@@ -26,22 +26,33 @@ board_insert_bore = 3.4; // M2.5 heat-set insert OD (board standoffs) (coinciden
 lid_insert_bore   = 4.2; // M3 heat-set insert OD (lid posts)
 vent_slot_w   = 2.5;  // intake/lid vent slot width
 vent_slot_gap = 3.0;  // gap between vent slots
+// Shared honeycomb vent geometry (parts/_honeycomb.scad honeycomb_vent()):
+// used by the faceplate above-IO band and (per the v3 plan) the lid vents,
+// so both bands look consistent. cell = hex point-to-point width; its flat
+// top edge (the only true bridge in a flat-top hex -- see _honeycomb.scad)
+// is cell/2 = 4mm, safely under design-for-print's <=5mm "reliably
+// self-supporting" bridge ceiling. wall = gap kept between adjacent hex
+// holes, sized >= 2x a 0.4mm nozzle's line width.
+honeycomb_cell = 8.0;
+honeycomb_wall = 1.2;
 boss_wall        = 3.2;  // lid-post wall thickness around the insert bore (post OD = lid_insert_bore + boss_wall)
 post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-78.7)
 board_side_gap   = 1.0;  // board edge -> corner-post clearance
 
-// ---- cooling toggle (overridable by an entry file's customizer) ----
-enable_exhaust = is_undef(enable_exhaust) ? true : enable_exhaust; // false = passive
-fan_size  = is_undef(fan_size)  ? 40 : fan_size;   // must be a fan_known_sizes() value
-fan_count = is_undef(fan_count) ? 2  : fan_count;
+// ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
+// their defaults in each entry file (assembly.scad, parts/tray.scad,
+// parts/lid.scad) BEFORE `include <params.scad>`; params.scad only consumes
+// them below and must never re-assign them (OpenSCAD is last-assignment-wins,
+// so a re-assignment here would silently discard whatever the entry file or
+// the customizer set).
 fan_plenum = 12.0;     // board-rear-edge -> rear-wall gap when fans on
 rear_gap   = 4.0;      // same when fans off
 lid_vents  = true;
 
-// ---- rack ear hole type (overridable by an entry file's customizer) ----
-ear_hole_type = is_undef(ear_hole_type) ? "slot" : ear_hole_type; // "slot" | "10-32" | "m6" | "round"
+// ---- rack ear hole type: ear_hole_type is likewise declared with its default
+// in each entry file before `include <params.scad>`; params.scad only consumes it.
 // Clearance dia (mm) used only when ear_hole_type == "round" — rack10_holes()
 // takes "round" dia literally (no library-resolved clearance the way "m6"/
 // "10-32" get one). Sourced directly from the library's own m6 screw-

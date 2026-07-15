@@ -1,5 +1,10 @@
 // asserts.scad — render-time invariants for the chassis geometry.
 // Rendered by tests/test_bpir4_chassis_lib.sh; any failed assert -> ERROR in stderr.
+// Declared here + in each entry file; params.scad consumes only.
+enable_exhaust = true; // false = passive (no rear fan plenum)
+fan_size  = 40;        // must be a fan_known_sizes() value
+fan_count = 2;
+ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
@@ -71,5 +76,25 @@ assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
 
 // Item 4: four corner lid posts (side-midspan pair dropped).
 assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
+
+// Task 4: corner posts now bond to BOTH the side wall AND the front/rear
+// wall (not just tangent to the side wall, with the old v2 front/rear
+// post_edge_inset gap). Front pair (_xy[0], _xy[1]) must be tangent to the
+// front interior boundary (board_y()); rear pair (_xy[2], _xy[3]) must be
+// tangent to the rear wall's inner face (rear_wall_y() - wall).
+_xy  = _lid_post_xy();
+_od2 = _lid_post_od() / 2;
+assert(abs((_xy[0][1] - _od2) - board_y()) < 1e-6,
+    str("front post not tangent to front boundary: y-od/2=", _xy[0][1] - _od2,
+        " board_y()=", board_y()));
+assert(abs((_xy[1][1] - _od2) - board_y()) < 1e-6,
+    str("front post (mirror) not tangent to front boundary: y-od/2=", _xy[1][1] - _od2,
+        " board_y()=", board_y()));
+assert(abs((_xy[2][1] + _od2) - (rear_wall_y() - wall)) < 1e-6,
+    str("rear post not tangent to rear-wall inner face: y+od/2=", _xy[2][1] + _od2,
+        " target=", rear_wall_y() - wall));
+assert(abs((_xy[3][1] + _od2) - (rear_wall_y() - wall)) < 1e-6,
+    str("rear post (mirror) not tangent to rear-wall inner face: y+od/2=", _xy[3][1] + _od2,
+        " target=", rear_wall_y() - wall));
 
 // Render nothing (pure assert file).

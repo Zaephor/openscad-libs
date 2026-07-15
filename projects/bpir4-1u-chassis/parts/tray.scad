@@ -1,9 +1,20 @@
 // tray part — single-body chassis: floor + faceplate + walls + rear wall.
+
+/* [Cooling] */
+// Declared here + in each entry file; params.scad consumes only.
+enable_exhaust = true; // false = passive (no rear fan plenum)
+fan_size  = 40;        // must be a fan_known_sizes() value
+fan_count = 2;
+
+/* [Rack Ears] */
+ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
+
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
 use <hardware/hardware.scad>;
+use <_honeycomb.scad>;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
@@ -88,74 +99,122 @@ module _faceplate() {
         // chassis position. depth clears the panel thickness.
         translate([board_x(), board_y(), board_z()])
             sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
-        // Intake vents ABOVE the IO portholes: horizontal slots across the
-        // connector cluster, from just above the tallest connector to just below
-        // the ledge — straight cross-chassis airflow over the SFP/connector tops.
+        // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
+        // hex-hole cutter across the connector cluster, from just above the
+        // tallest connector to just below the ledge — straight cross-chassis
+        // airflow over the SFP/connector tops. Replaces the old full-width
+        // slot cubes (a flat, unsupported bridge spanning the whole cluster
+        // width) with honeycomb_vent() (parts/_honeycomb.scad): flat-top hex
+        // cells whose only bridge (the hex top edge) is a few mm, not the
+        // whole band width — see _honeycomb.scad for the self-support
+        // reasoning and honeycomb_cell/honeycomb_wall in params.scad.
         cl = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]];
         cr = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]+c[2][0]];
         bx0 = min(cl); bx1 = max(cr);                 // connector cluster X-span (chassis frame)
         z0 = _vent_band_z0();
         z1 = ext_h() - lid_th - vent_slot_gap;        // just below the ledge
-        pitch = vent_slot_w + vent_slot_gap;
-        rows = floor((z1 - z0) / pitch);
-        for (i = [0 : max(rows-1, 0)])
-            translate([bx0, -faceplate_th - 1, z0 + i*pitch])
-                cube([bx1 - bx0, faceplate_th + 2, vent_slot_w]);
+        // rotate([90,0,0]) maps honeycomb_vent's local (width=X, height=Y,
+        // depth=Z) frame onto the chassis frame: local X stays chassis X,
+        // local Y (depth, the cut-through axis) becomes chassis Y — cutting
+        // through the panel thickness like the old cube's Y span — and local
+        // Z (height) becomes chassis Z. translate([bx0, 1, z0]) then lands it
+        // exactly where the old cube band sat (Y from -faceplate_th-1 to +1,
+        // Z from z0 to z1).
+        translate([bx0, 1, z0])
+            rotate([90, 0, 0])
+                honeycomb_vent(bx1 - bx0, z1 - z0, faceplate_th + 2,
+                                honeycomb_cell, honeycomb_wall);
     }
 }
 
 // Internal bosses the lid screws into. M3 heat-set insert bore, top-loaded.
-// Four corner posts only (side-midspan pair dropped): each sits tangent to its
-// side wall, beside the board, and is buttressed to that wall so the tall thin
-// boss prints support-free and does not wobble. Post top is at the ledge
-// (ext_h - lid_th). _lid_post_od() lives in params.scad (body_w() derives from
-// it too). The X placement is TANGENT to the side-wall inner face (post outer
-// edge flush with the wall) — NOT offset by post_wall_gap. That earlier gap
-// pushed the post inboard until, under the narrowed body_w(), its inner edge
-// crossed the board footprint (inner edge 73.8 < board_w()/2 = 74.0 -> a 0.2mm
-// collision with the SBC). Tangent placement instead leaves the board_side_gap
-// (~1.0mm) the params establish: inner edge = ix - post_r clears board_w()/2.
+// Four corner posts only (side-midspan pair dropped): each sits FULLY IN ITS
+// CORNER, bonded to BOTH the side wall AND the front/rear wall (v3 — v2 was
+// tangent to only the side wall, with a post_edge_inset gap off the front/
+// rear boundary, braced by a separate angled wedge buttress; see git
+// history for that design). Post top is at the ledge (ext_h - lid_th).
+// _lid_post_od() lives in params.scad (body_w() derives from it too). Both
+// the X and Y placement are TANGENT to their respective inner faces (post
+// face flush with the wall) — NOT offset by a gap. The X side reuses the v2
+// reasoning: tangent (not post_wall_gap-offset) placement is what clears the
+// board under the narrowed body_w() (inner edge = ix - post_r clears
+// board_w()/2 via the board_side_gap the params establish). The Y side
+// mirrors that same tangent logic onto the front boundary (board_y(), the
+// faceplate's inner face — see params.scad's board_y() comment) and the rear
+// wall's inner face (rear_wall_y() - wall).
 function _lid_post_xy() =
-    let (ix = body_w()/2 - wall - _lid_post_od()/2,      // tangent to side-wall inner face
-         yf = board_y() + post_edge_inset,               // front pair, inside faceplate
-         yr = board_y() + int_depth() - wall - post_edge_inset) // rear pair, ahead of rear wall
+    let (od2 = _lid_post_od()/2,
+         ix  = body_w()/2 - wall - od2,        // tangent to side-wall inner face
+         yf  = board_y() + od2,                // front pair, tangent to the front boundary
+         yr  = rear_wall_y() - wall - od2)     // rear pair, tangent to rear-wall inner face
     [ [-ix, yf], [ix, yf], [-ix, yr], [ix, yr] ];
 
-// Corner buttress (canonical +X side, local origin at the boss center): a
-// solid wedge fusing the boss to its side wall. Built as hull() of two vertical
-// reference boxes — one full-height slab overlapping into the wall, one lowered
-// slab at the boss inner edge — so the top is a single up-facing ramp that
-// falls away from the wall. Cross-section only SHRINKS with height (each layer
-// sits fully on the one below): no underside overhang, so it prints without
-// support. The wall face is at local x = +post_r (the boss is tangent to it);
-// the inner edge is at local x = -post_r, clearing the board.
-module _corner_buttress() {
-    r   = _lid_post_od()/2;                 // boss radius; wall face at +r, inner edge at -r
-    Hb  = ext_h() - lid_th - floor_th;      // boss height above the floor (top at the ledge)
-    gW  = _lid_post_od();                   // gusset width in Y (~ boss OD)
-    t   = 0.6;                              // thin reference-box thickness
-    ov  = 0.6;                              // overlap into the wall for a watertight union
-    drop = 2*r;                             // top falls ~45deg over the wall->inner run (=OD)
-    hull() {
-        // Full-height slab at the wall (its outer face buried in the wall).
-        translate([r - t, -gW/2, 0])   cube([t + ov, gW, Hb]);
-        // Lowered slab at the boss inner edge -> top ramps down away from wall.
-        translate([-r, -gW/2, 0])      cube([t, gW, Hb - drop]);
+// Canonical corner post (local origin at the post/bore center, local +X/+Y
+// axes): a full-height SQUARE column, flush (bonded) to both walls at its
+// +X and +Y faces — the side wall sits at local x=+r, the front/rear wall at
+// local y=+r (mirror via scale([sx,sy,1]) in _lid_posts() below to reach the
+// other 3 corners). Unlike v2's round boss + angled wedge buttress (built
+// with a hull-of-boxes ramp), this is a constant XY cross-section extruded
+// straight up: every layer sits exactly on the one below (no ramp, no
+// overhang) so it is trivially support-free.
+//
+// The two OTHER corners of the square get different treatment:
+//  - (+r,+r): fully buried where both walls' own material already meets
+//    (see _tray_shell()'s corner overlap) — nothing exposed, no treatment.
+//  - (-r,-r): the one FREE corner (both adjoining faces are open, facing the
+//    interior) — a genuine convex edge, so it gets the CHAMFER (assembly
+//    lead-in / de-burring on the exposed edge).
+//  - (-r,+r) and (+r,-r): each is where one FREE face meets the OTHER wall's
+//    face *continuing past the post's own footprint* (e.g. the post's free
+//    -X face meeting the front/rear wall's flat inner face beyond the
+//    post's X-extent) — a genuine reentrant (concave, 270-degree) corner in
+//    the solid, i.e. a real stress riser, so each gets FILLETED.
+// Fillet radius / chamfer leg both taken from design-for-print's
+// strength-physics.md guidance for an M3 boss-to-wall junction at this scale
+// (1.0-1.5mm, this repo's own precedent range). Both fillet cylinders are ADDED
+// material (concave-corner fillets are filled, not cut) and stay purely in
+// previously-open interior space, so neither reduces the insert-bore wall
+// thickness; the chamfer is a small cut far from the bore (see report for
+// the wall-thickness-floor check).
+module _lid_post_corner() {
+    r  = _lid_post_od()/2;             // half the square's side (= old boss radius)
+    Hb = ext_h() - lid_th - floor_th;  // post height above the floor (top at the ledge)
+    fr = 1.2;    // internal (concave) post<->wall junction fillet radius (mm)
+    cl = 1.2;    // exposed free (inner) vertical edge chamfer leg length (mm)
+    ov = 0.3;    // fillet-cylinder overlap into the square column + the wall
+                 // beyond it -- a fillet tangent (touching, zero-volume-
+                 // overlap) at both faces is a degenerate union for CGAL's
+                 // exact arithmetic (non-manifold seam); nudging the
+                 // cylinder ov past each tangent plane gives a real 3D
+                 // overlap on both sides, same reasoning as v2's old wedge-
+                 // buttress overlap constant (see git history).
+    difference() {
+        union() {
+            // Square column, flush to both walls (+X, +Y local faces).
+            translate([-r, -r, 0]) cube([2*r, 2*r, Hb]);
+            // Fillet the two internal (concave) post<->wall junctions: a
+            // cylinder tangent to both faces meeting at each notch (nudged
+            // by ov for a watertight union), filling the reentrant corner
+            // with a smooth curve.
+            translate([-r - fr + ov,  r - fr + ov, 0]) cylinder(h = Hb, r = fr);
+            translate([ r - fr + ov, -r - fr + ov, 0]) cylinder(h = Hb, r = fr);
+        }
+        // Chamfer the exposed free (inner) corner at (-r,-r): cuts exactly
+        // the `cl`-leg triangle off that convex corner, full height.
+        translate([-r, -r, -1])
+            linear_extrude(height = Hb + 2)
+                polygon([[0, 0], [cl, 0], [0, cl]]);
+        // Insert bore, cut through the whole column so it stays open full depth.
+        translate([0, 0, -1]) cylinder(h = Hb + 2, d = lid_insert_bore);
     }
 }
 
 module _lid_posts() {
-    Hb = ext_h() - lid_th - floor_th;       // boss height above the floor
     for (p = _lid_post_xy()) {
-        sx = sign(p[0]);                    // which side wall (-1 / +1)
-        translate([p[0], p[1], floor_th]) difference() {
-            union() {
-                cylinder(h = Hb, d = _lid_post_od());   // solid boss
-                scale([sx, 1, 1]) _corner_buttress();   // wall-side wedge (mirror onto the -X wall)
-            }
-            // Insert bore, cut through boss AND buttress so it stays open full depth.
-            translate([0, 0, -1]) cylinder(h = Hb + 2, d = lid_insert_bore);
-        }
+        sx = sign(p[0]);                                  // which side wall (-1 / +1)
+        sy = (p[1] < int_depth()/2) ? -1 : 1;              // front boundary (-1) or rear wall (+1)
+        translate([p[0], p[1], floor_th])
+            scale([sx, sy, 1]) _lid_post_corner();
     }
 }
 

@@ -2,13 +2,13 @@
 // Render: make render P=bpir4-1u-chassis
 
 /* [Cooling] */
-// NOTE: OpenSCAD's "was assigned ... but was overwritten in params.scad"
-// warnings on render are benign and expected — they are the visible side-effect
-// of the intentional customizer-override pattern (declare here for UI grouping,
-// guard via is_undef in params.scad). The overrides function correctly.
+// Declared here + in each entry file; params.scad consumes only.
 enable_exhaust = true; // toggle rear exhaust for review
 fan_size  = 40;
 fan_count = 2;
+
+/* [Rack Ears] */
+ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
 
 include <params.scad>;
 use <parts/tray.scad>;
