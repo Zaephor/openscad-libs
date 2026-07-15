@@ -25,5 +25,11 @@ grep -oE 'reference/[A-Za-z0-9_-]+\.md' "$skill/SKILL.md" | sort -u | while read
   [ -f "$skill/$ref" ] || { echo "missing reference file: $ref"; exit 3; }
 done || fail=1
 
+# 4. Image embeds must be real markdown, not wrapped in code spans (else GitHub
+#    renders literal text). Flag any line where ![..](..) is inside backticks.
+while IFS= read -r hit; do
+  echo "image embed wrapped in code span: $hit"; fail=1
+done < <(grep -rnE '`[^`]*!\[[^]]*\]\([^)]*\)[^`]*`' "$skill"/reference/*.md)
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
