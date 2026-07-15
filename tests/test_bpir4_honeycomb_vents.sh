@@ -10,7 +10,16 @@
 #   (d) the rendered band is actually a many-hole array, not one big slot --
 #       a honeycomb of dozens of hex prisms produces far more STL facets than
 #       the old single cube-per-row slot did (real-teeth proxy for (a)+(b)
-#       actually being wired together, not just textually true).
+#       actually being wired together, not just textually true);
+#   (e) the worst-case boundary-hex bridge span _honeycomb.scad computes for
+#       itself (echo()'d as HONEYCOMB_WORST_SPAN=, independently recomputed
+#       from _span_at() rather than trusting _hex_is_safe()'s boolean -- see
+#       that file) is numerically <=5mm, the design-for-print self-support
+#       ceiling. Facet count alone (d) can't tell a correctly-clipped
+#       boundary row from an oversized one -- both produce "dozens of hex
+#       prisms" -- so this is the actual regression guard for the fe87c75
+#       fix (boundary rows clip within the self-support ceiling instead of
+#       exposing up to ~cell-wide spans at whatever offset the clip lands).
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
@@ -56,5 +65,21 @@ if [ -s "$tmp/faceplate.stl" ]; then
   fi
 fi
 
-[ "$fail" -eq 0 ] && echo "ok ($facets facets)"
+# (e) worst-case boundary-hex bridge span, independently recomputed inside
+# _honeycomb.scad (see that file's `worst_span`/`_drawn_span()`), must be
+# <=5mm. This is what actually distinguishes the fe87c75 fix from the
+# original bug -- both pass the facet-count check above.
+span_line="$(echo "$out" | grep -o 'HONEYCOMB_WORST_SPAN=[0-9.]*' | tail -1)"
+if [ -z "$span_line" ]; then
+  echo "FAIL: HONEYCOMB_WORST_SPAN echo not found in render output -- can't verify bridge-span invariant"
+  fail=1
+else
+  span="$(echo "$span_line" | cut -d= -f2)"
+  if ! awk -v s="$span" 'BEGIN{exit !(s <= 5.000001)}'; then
+    echo "FAIL: HONEYCOMB_WORST_SPAN=$span exceeds the 5mm self-support ceiling"
+    fail=1
+  fi
+fi
+
+[ "$fail" -eq 0 ] && echo "ok ($facets facets, worst_span=${span:-?}mm)"
 exit "$fail"

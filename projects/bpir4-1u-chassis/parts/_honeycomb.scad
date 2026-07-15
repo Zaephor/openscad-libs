@@ -100,6 +100,36 @@ module honeycomb_vent(width, height, depth, cell, wall) {
     x0 = -col_pitch;
     y0 = -row_pitch;
 
+    // Regression guard -- independent of trusting _hex_is_safe()'s boolean.
+    // For every candidate this module ACTUALLY draws (same `_hex_is_safe(y)`
+    // gate the geometry loop below uses), compute the real exposed clip span
+    // directly via `_span_at()` rather than assuming "marked safe" means
+    // "<=max_safe_span". If `_hex_is_safe()` is ever weakened (wrong
+    // comparison, hard-coded true/false, wrong offset, etc.) this
+    // recomputation still measures the true span of what gets drawn and
+    // fails loudly here -- see tests/test_bpir4_honeycomb_vents.sh, which
+    // greps the echo() below and re-verifies it numerically from the shell
+    // side too (belt and suspenders: catches both a broken assert() and a
+    // broken echo()).
+    function _drawn_span(y) =
+        let (top = y + hex_h/2, bot = y - hex_h/2)
+        (bot >= 0 && top <= height) ? cell/2               // fully inside: natural flat edge
+      : (top <= 0 || bot >= height) ? 0                     // fully outside: nothing drawn here
+      : (bot < 0 && top > height)   ? cell                  // straddles both edges: worst case
+      : (top > height) ? _span_at(height - y)               // clipped at the top edge
+      : _span_at(0 - y);                                    // clipped at the bottom edge
+
+    worst_span = max([
+        for (cx = [0 : n_cols])
+            for (cy = [0 : n_rows])
+                let (y = y0 + cy * row_pitch + ((cx % 2 == 0) ? 0 : row_pitch / 2))
+                if (_hex_is_safe(y)) _drawn_span(y)
+    ]);
+    echo(str("HONEYCOMB_WORST_SPAN=", worst_span, " max_safe_span=", max_safe_span));
+    assert(worst_span <= max_safe_span + 1e-6,
+        str("honeycomb boundary hex exposes span ", worst_span, "mm > max_safe_span ",
+            max_safe_span, "mm -- self-support ceiling violated"));
+
     linear_extrude(height = depth)
         intersection() {
             square([width, height]);
