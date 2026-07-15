@@ -314,8 +314,10 @@ as literal as before.
 already the stronger one (e.g. pi4b/pi5 `hdmi_1`/`hdmi_2`, whose `[A]`
 drawing-measured `Z=3.0` reading is the evidence the catalog's own
 `micro_hdmi` entry was upgraded from), the catalog simply carries the same
-number; see the per-row tier notes in `RESEARCH.md` for the exact winner on
-each sourced row.
+number; pi3b/pi3bplus `hdmi` shows both outcomes in one row — `w`/`d` genuinely
+upgrade `[B]`→`[A]` via the catalog's datasheet-grounded value, while `h` is
+an `[A]`→`[A]` tie between two independent sources; see the per-row tier
+notes in `RESEARCH.md` for the exact winner on each sourced row.
 
 ## Coverage & verification notes
 
