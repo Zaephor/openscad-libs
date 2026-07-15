@@ -96,4 +96,64 @@ ok = (abs(xspan-expected_d)<tol and abs(yspan-expected_d)<tol and abs(zspan-expe
 sys.exit(0 if ok else 1)
 PY
 
+# Fit-check: for every known mount type, the positive mount's radial
+# envelope (STL bbox X/Y extent) must not exceed the negative hole's radial
+# envelope (STL bbox X/Y extent) -- i.e. the snap can physically pass
+# through the hole. This is a RADIAL check only: multibuild_mount is a
+# through-hole snap whose engagement length is deliberately taller than
+# multibuild_hole_depth (the tip pokes past the far face to flare and
+# retain -- see multibuild.scad comments), so Z/height containment is NOT
+# asserted here; asserting it would incorrectly fail on working geometry.
+cat > "$tmp/get_types.scad" <<'EOF'
+use <multibuild/multibuild.scad>;
+for (t = multibuild_known_mounts()) echo(t);
+EOF
+types_out="$(run "$tmp/get_types.scad")"
+mapfile -t fit_types < <(echo "$types_out" | grep -oE 'ECHO: "[^"]*"' | sed -E 's/ECHO: "(.*)"/\1/')
+if [ "${#fit_types[@]}" -eq 0 ]; then
+  echo "fit-check: failed to enumerate multibuild_known_mounts()"; exit 1
+fi
+
+for t in "${fit_types[@]}"; do
+  cat > "$tmp/fit_mount_$t.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_mount("$t");
+EOF
+  cat > "$tmp/fit_hole_$t.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_hole("$t");
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/fit_mount_$t.stl" "$tmp/fit_mount_$t.scad" 2>/dev/null
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/fit_hole_$t.stl" "$tmp/fit_hole_$t.scad" 2>/dev/null
+
+  python3 - "$tmp/fit_mount_$t.stl" "$tmp/fit_hole_$t.stl" "$t" <<'PY' || { echo "radial clearance failed for mount type '$t'"; exit 1; }
+import struct, sys
+
+def bbox_xy(path):
+    d = open(path, 'rb').read()
+    n = struct.unpack('<I', d[80:84])[0]
+    off = 84
+    xs = []; ys = []
+    for i in range(n):
+        for v in range(3):
+            base = off + i * 50 + 12 + v * 12
+            x, y, z = struct.unpack('<3f', d[base:base + 12])
+            xs.append(x); ys.append(y)
+    return max(xs) - min(xs), max(ys) - min(ys)
+
+mount_path, hole_path, t = sys.argv[1], sys.argv[2], sys.argv[3]
+mx, my = bbox_xy(mount_path)
+hx, hy = bbox_xy(hole_path)
+# Radial fit only (X/Y extent): the mount must be able to pass through the
+# hole's diameter. Deliberately NOT checking Z/height -- the through-hole
+# snap's engagement length exceeds the hole depth by design.
+tol = 1e-6
+ok = mx <= hx + tol and my <= hy + tol
+if not ok:
+    sys.stderr.write(
+        "type=%s mount x/y=%.4f/%.4f hole x/y=%.4f/%.4f\n" % (t, mx, my, hx, hy))
+sys.exit(0 if ok else 1)
+PY
+done
+
 echo ok
