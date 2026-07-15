@@ -26,8 +26,8 @@ both are `edge="top"` (never a lateral edge — like `sbc`'s `gpio`).
 
 ## Provenance tiers
 
-- `[A]` — a fetched vendor mechanical drawing / datasheet with the exact
-  dimension read directly off it this pass.
+- `[A]` — a vendor mechanical drawing / datasheet with the exact dimension read
+  directly off it this pass.
 - `[B]` — corroborated across ≥2 independent peers.
 - `[C]` — single community source or derived.
 - `//VERIFY` — weak/unconfirmed; re-check against a physical board or a stronger
@@ -35,9 +35,8 @@ both are `edge="top"` (never a lateral edge — like `sbc`'s `gpio`).
 
 ## Sources (primary)
 
-Official Espressif dimension drawings (vector PDF, read directly this pass — the
-dimension callouts are drawn as vector paths, rendered to raster and read off
-the printed "Unit: mm" figures):
+Official Espressif dimension drawings (vector PDF — the drawing's dimension
+callouts are vector-drawn and read directly off the printed "Unit: mm" figures):
 
 - ESP32-DevKitC V4 dimensions — `esp32_devkitc_v4_dimensions.pdf`
   (`https://dl.espressif.com/dl/schematics/esp32_devkitc_v4_dimensions.pdf`).
@@ -50,7 +49,8 @@ the printed "Unit: mm" figures):
   [A].
 - LOLIN (WEMOS) D1 mini **V4.0.0** dimension drawing — `dim_d1_mini_v4.0.0.pdf`
   (`https://www.wemos.cc/en/latest/_static/files/dim_d1_mini_v4.0.0.pdf`). [A]
-  board outline, corner radius, mounting-hole X-positions, 0.9″ row pitch.
+  board outline, mounting-hole diameter ("2.0000 mm") + X-positions, 0.9″ row
+  pitch. Corner radius is NOT a printed callout on this drawing (see detail).
 
 Module datasheets (dimension read from the "Physical Dimensions" table):
 
@@ -114,7 +114,7 @@ keep-out on the short edge opposite the USB.
 |---|---|---|---|---|---|---|
 | `esp32_devkitc`    | 48.26 × 27.94 [A] | ~0 square [A] | 1.6 [C]//VERIFY | **none** [A] | 1× micro-USB, `xmin` [A] | ESP-WROOM-32 (18×25.5) [A] |
 | `esp8266_nodemcu`  | 49 × 26 [B]//VERIFY | ~0.5–1 [C]//VERIFY | 1.6 [C]//VERIFY | **none** [B] | 1× micro-USB, `xmin` [B] | ESP-12E (16×24) [B] |
-| `wemos_d1_mini`    | 34.3 × 25.4 [A] | 2.0 [A] | 1.0 [C]//VERIFY | **2**, Ø2.0 [A]/[C] | 1× USB-C, `xmin` [A] | ESP8266EX on-board (PCB antenna) [A] |
+| `wemos_d1_mini`    | 34.3 × 25.4 [A] | ~4.0 [C]//VERIFY | 1.0 [C]//VERIFY | **2**, Ø2.0 [A] | 1× USB-C, `xmin` [A] | ESP8266EX on-board (PCB antenna) [A] |
 | `esp32_c3_devkitm` | 38.91 × 25.40 [A] | ~2 rounded [B]//VERIFY | 1.6 [C]//VERIFY | **none** [A] | 1× micro-USB, `xmin` [A] | ESP32-C3-MINI-1 (13.2×16.6) [A] |
 | `esp32_s3_devkitc` | 62.74 × 25.40 [A] | ~0 square [A] | 1.6 [C]//VERIFY | **none** [A] | **2×** micro-USB (UART+USB), `xmin` [A] | ESP32-S3-WROOM-1 (18×25.5) [A] |
 
@@ -182,8 +182,17 @@ Read off `dim_d1_mini_v4.0.0.pdf` (printed callouts + vector measurement):
 - **Outline 34.3 (X) × 25.4 (Y) mm** [A] (drawing prints "34.3000" and
   "25.4000"). The docs spec text quotes "34.2 × 25.6" — using the **drawing's
   34.3 × 25.4**.
-- **corner_r = 2.0 mm** [A] (drawing prints "2.0000 mm" with a leader to the
-  rounded corner).
+- **corner_r ≈ 4.0 mm** [C] //VERIFY. The drawing's **only** small-radius callout
+  reads "2.0000 mm", but its two extension lines are **tangent to the mounting
+  hole's left/right edges** — it dimensions the **hole diameter**, not the
+  corner (see holes below). The rounded corners carry **no** radius leader. The
+  two corners at the antenna (`xmax`) end are genuine quarter-circle fillets;
+  reconstructing their arc geometry at the drawing's own scale (calibrated three
+  ways — the printed 20.4 mm hole spacing and the 25.4 mm / 34.3 mm outline
+  witness lines all give 14.48 pt/mm) gives a corner-fillet bounding box of
+  ≈ 4.00 mm → **r ≈ 4.0 mm**. A strong estimate but **not a printed callout →
+  [C] //VERIFY**. (The two corners at the USB (`xmin`) end are a smaller
+  ≈ 1.0 mm break, also reconstructed, not dimensioned.)
 - **PCB thickness**: not dimensioned → **1.0 mm [C] //VERIFY** (D1 mini boards
   are commonly the thin ~1.0 mm 2-layer stock; unconfirmed on this sheet).
 - **Mounting holes: TWO** [A] — this is the notable V4.0.0 change. The drawing
@@ -191,10 +200,12 @@ Read off `dim_d1_mini_v4.0.0.pdf` (printed callouts + vector measurement):
   "2.5000 mm"), **20.4 mm** apart (drawing "20.4000 mm" = 25.4 − 2×2.5), i.e.
   at **Y = {2.5, 22.9}** [A]. They sit near the **`xmax` (antenna) end**, at
   **X ≈ 3.2 mm** from that end edge — [C] //VERIFY (X-from-end is
-  vector-measured, not a printed callout). **Hole Ø = 2.0 mm** — measured off
-  the drawing's own vector circle at the drawing's own scale (spacing-calibrated,
-  0.069 mm/pt), so a strong estimate but **not a printed callout → [C]
-  //VERIFY** (fits an M2 clearance / M1.6–M2 self-tap). Role: `structural-mount`.
+  vector-reconstructed, not a printed callout). **Hole Ø = 2.0 mm** [A] — this is
+  a **directly printed callout**: the drawing prints "2.0000 mm" with its two
+  extension lines tangent to a hole's left/right edges, and the hole's own vector
+  circle reconstructs to Ø ≈ 2.01 mm at the calibrated scale, confirming the
+  callout targets the hole diameter (fits an M2 clearance / M1.6–M2 self-tap).
+  Role: `structural-mount`.
 - **On-board ESP8266EX** (QFN, no metal can) with a **PCB trace antenna** at the
   `xmax` end (same end as the mounting holes). Board-unique keep-out, literal.
 - **Connectors**:
@@ -213,7 +224,8 @@ Read off `DIMENSION_ESP32-C3-DEVKITM-1_V1_20200915AA.pdf`:
   "25.40mm").
 - **corner_r ≈ 2 mm** [B] //VERIFY — the outline is drawn with **visibly
   rounded** corners (unlike the square DevKitC/S3), but the radius is not
-  dimensioned; 2 mm is a visual estimate matching the D1 mini's confirmed 2.0.
+  dimensioned; 2 mm is a visual estimate (this drawing's corners are visibly
+  tighter than the D1 mini's ≈ 4 mm antenna-end fillets).
 - **PCB thickness**: not dimensioned → **1.6 mm [C] //VERIFY**.
 - **Mounting holes: NONE** [A].
 - **ESP32-C3-MINI-1 module**: **13.2 × 16.6 mm** [A datasheet], at the `xmax`
@@ -284,9 +296,12 @@ pitch, and edges.
    1.6 mm (1.0 mm for D1 mini) are nominal `[C] //VERIFY`.
 2. **`esp8266_nodemcu` outline (49 × 26).** Community `[B]`, ~1 mm clone
    variance; no single-vendor drawing.
-3. **`wemos_d1_mini` hole Ø (2.0) and hole X-from-end (~3.2).** Vector-measured
-   off the drawing, not printed callouts → `[C] //VERIFY`. (Hole Y = {2.5, 22.9}
-   and 20.4 mm spacing ARE printed callouts → `[A]`.)
+3. **`wemos_d1_mini` corner_r (~4.0) and hole X-from-end (~3.2).**
+   Vector-reconstructed off the drawing, not printed callouts → `[C] //VERIFY`.
+   (Hole Ø = 2.0 mm — printed "2.0000 mm", extension lines tangent to the hole
+   edges — plus hole Y = {2.5, 22.9} and 20.4 mm spacing ARE printed callouts →
+   `[A]`. Note: the "2.0000 mm" callout dimensions the **hole diameter**, not the
+   corner radius.)
 4. **`esp32_c3_devkitm` corner radius (~2).** Visibly rounded but not
    dimensioned → `[B] //VERIFY`.
 5. **`esp32_s3_devkitc` USB receptacle type.** micro-USB per the v1.1 drawing;
