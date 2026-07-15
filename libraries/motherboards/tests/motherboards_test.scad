@@ -127,4 +127,24 @@ module _shares_atx_standoffs(ff) {
 _shares_atx_standoffs("matx");
 _shares_atx_standoffs("itx");
 
+// --- hole roles (Task 2 of the hole-role-tagging plan; mirrors sbc) ---
+// Every standoff coord now carries [x, y, role, dia] (not just [x,y]); this
+// lib has exactly one role (structural-mount) on every board today.
+holes = mobo_standoff_xy("atx");
+assert(holes[0][2] == "structural-mount", "atx standoff role");
+assert(round(holes[0][3]*1e6)/1e6 == round(mobo_hole_dia()*1e6)/1e6, "atx standoff dia");
+assert(len(mobo_standoff_xy("atx", "structural-mount")) == len(mobo_standoff_xy("atx")), "atx role filter matches unfiltered");
+assert(len(mobo_standoff_xy("atx", "keep-out")) == 0, "atx keep-out empty");
+assert(mobo_known_hole_roles()[0] == "structural-mount", "role vocab order");
+assert(mobo_known_hole_roles() == ["structural-mount", "component-mount", "keep-out", "alignment"], "role vocab full list");
+
+// Same role/dia check for matx and itx (all three ff rows migrated).
+for (ff = mobo_known_ff()) {
+    hs = mobo_standoff_xy(ff);
+    assert(len([for (h = hs) if (h[2] != "structural-mount") 1]) == 0, str(ff, " all standoffs structural-mount"));
+    assert(len([for (h = hs) if (round(h[3]*1e6)/1e6 != round(mobo_hole_dia()*1e6)/1e6) 1]) == 0, str(ff, " all standoffs dia == mobo_hole_dia()"));
+    assert(len(mobo_standoff_xy(ff, "structural-mount")) == len(hs), str(ff, " role filter matches unfiltered"));
+    assert(len(mobo_standoff_xy(ff, "keep-out")) == 0, str(ff, " keep-out empty"));
+}
+
 echo("motherboards_test OK");
