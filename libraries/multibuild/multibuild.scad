@@ -33,3 +33,33 @@
 // before any geometry is written.
 
 $fn = 48;
+
+/* [Data] — grid pitch + mount-type table.
+   Row: [type, hole_dia, hole_depth, mount_engagement, mount_arm_count,
+         mount_arm_width, mount_tip_flare] — see RESEARCH.md. */
+function multibuild_grid_pitch() = 25; // [A] docs.multibuild.io core-parts-documentation (MU unit)
+
+function _multibuild_table() = [
+    // hole_dia/hole_depth/mount_* all [C]//VERIFY — STL mesh measurement,
+    // Printables #716558 (snap) + #1277707 (tile), single community source.
+    ["snap", 22.2, 6.4, 8.6, 4, 3.0, 11.05],
+];
+function multibuild_known_mounts() = [for (e = _multibuild_table()) e[0]];
+function _multibuild_row(type) =
+    let (r = [for (e = _multibuild_table()) if (e[0] == type) e])
+    assert(len(r) == 1, str("multibuild: unknown mount type '", type, "'")) r[0];
+function multibuild_hole_dia(type)         = _multibuild_row(type)[1];
+function multibuild_hole_depth(type)       = _multibuild_row(type)[2];
+function multibuild_mount_engagement(type) = _multibuild_row(type)[3];
+function multibuild_mount_arm_count(type)  = _multibuild_row(type)[4];
+function multibuild_mount_arm_width(type)  = _multibuild_row(type)[5];
+function multibuild_mount_tip_flare(type)  = _multibuild_row(type)[6];
+
+/* [Data] — grid math off multibuild_grid_pitch(). */
+function multibuild_grid_count(length) = floor(length / multibuild_grid_pitch());
+function multibuild_grid_snap(length)  = round(length / multibuild_grid_pitch()) * multibuild_grid_pitch();
+function multibuild_grid_points(cols, rows) =
+    let (p = multibuild_grid_pitch(),
+         x0 = -(cols - 1) * p / 2,
+         y0 = -(rows - 1) * p / 2)
+    [for (r = [0 : rows - 1]) for (c = [0 : cols - 1]) [x0 + c * p, y0 + r * p]];
