@@ -1,0 +1,14 @@
+{
+  "name": "multibuild",
+  "description": "MultiBoard-compatible mount/hole interface (grid pitch + mount feature geometry) for parametric interop with the MultiBuild ecosystem. See RESEARCH.md for per-value evidence and the Task 1 checkpoint.",
+  "version": "0.1.0",
+  "sources": [
+    "https://multiboard.io/multiboard",
+    "https://docs.multibuild.io/beginner-section/core-parts-documentation",
+    "https://docs.multibuild.io/beginner-section/tile-mounting-guide",
+    "https://docs.multibuild.io/beginner-section/printing-guidelines",
+    "https://docs.multibuild.io/assets/images/multiboard_common-connections-4b433970f396897c7f5d5432da71b3f1.png",
+    "https://www.printables.com/model/716558-multiconnect-generic-connector-for-multiboard",
+    "https://www.printables.com/model/767851-multibolt-multiboard-bolt-connector-system"
+  ]
+}
