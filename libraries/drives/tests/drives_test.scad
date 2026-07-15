@@ -67,6 +67,12 @@ assert(len(drive_side_holes("hdd35", "structural-mount")) == len(drive_side_hole
        "hdd35 side holes: structural-mount filter == unfiltered count");
 assert(len(drive_side_holes("hdd35", "keep-out")) == 0, "hdd35 side holes: no keep-out holes");
 
+// "all" is a silent wildcard synonym for undef (no WARNING, same full list).
+assert(len(drive_bottom_holes("hdd35", "all")) == len(drive_bottom_holes("hdd35")),
+       "hdd35 bottom holes: \"all\" == unfiltered count");
+assert(len(drive_side_holes("hdd35", "all")) == len(drive_side_holes("hdd35")),
+       "hdd35 side holes: \"all\" == unfiltered count");
+
 // card mount hole is tagged too (no role filter on the singleton accessor)
 assert(drive_card_hole("m2_2280")[2] == "structural-mount", "m2_2280 hole role");
 

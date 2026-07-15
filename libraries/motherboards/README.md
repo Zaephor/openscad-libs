@@ -126,11 +126,12 @@ same vocabulary as `sbc`, for cross-library consistency, even though only the
 first is populated here.
 
 `mobo_standoff_xy(ff, role=undef)` accepts a canonical role string (only
-matching holes) or is left `undef`/omitted (every hole — with a `WARNING:`
-echo if a form factor's holes ever spanned more than one role; none do today,
-so calling it unfiltered never warns in practice). `mobo_standoff_holes()` and
-`mobo_standoffs()` both gained a passthrough `role=undef` param with the same
-filter behavior — omitted, they behave exactly as before role-tagging.
+matching holes), `"all"` (every hole, always silent — explicit intent), or is
+left `undef`/omitted (every hole — with a `WARNING:` echo if a form factor's
+holes ever spanned more than one role; none do today, so calling it unfiltered
+never warns in practice). `mobo_standoff_holes()` and `mobo_standoffs()` both
+gained a passthrough `role=undef` param with the same filter behavior (`"all"`
+included) — omitted, they behave exactly as before role-tagging.
 
 ```scad
 use <motherboards/motherboards.scad>;

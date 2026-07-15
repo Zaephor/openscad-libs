@@ -140,20 +140,22 @@ function mobo_known_hole_roles() = ["structural-mount", "component-mount", "keep
 
 // Standoff coords, component-up frame: [x, y, role, dia]. Each drawing-frame
 // [x,y,role,dia] -> [W-x, y, role, dia] (mirror flip preserves role/dia).
-// role == undef (omitted) -> every hole, PLUS a WARNING when >1 role present.
-// role == a canonical role string -> only that role.
+// role a canonical role string    -> only that role (silent).
+// role == "all"                   -> every hole, silent (explicit intent).
+// role == undef (omitted)         -> every hole, PLUS a WARNING when >1 role present.
 function mobo_standoff_xy(ff, role = undef) =
     let (r = _mobo_row(ff)) assert(!is_undef(r), _mobo_unknown(ff))
     let (w = r[1][0],
          all = [ for (p = r[2]) [w - p[0], p[1], p[2], p[3]] ],
-         present = [for (rr = mobo_known_hole_roles()) if (len([for (h = all) if (h[2] == rr) h]) > 0) rr])
-    assert(is_undef(role) || len([for (rr = mobo_known_hole_roles()) if (rr == role) rr]) == 1,
-        str("motherboards: unknown hole role '", role, "'; known: ", mobo_known_hole_roles()))
-    is_undef(role)
-        ? (len(present) > 1
-            ? echo(str("WARNING: motherboards '", ff, "' standoffs span ", len(present), " roles; pass role= to filter")) all
-            : all)
-        : [for (h = all) if (h[2] == role) h];
+         present = [for (rr = mobo_known_hole_roles()) if (len([for (h = all) if (h[2] == rr) h]) > 0) rr],
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: motherboards '", ff, "' standoffs span ", len(present), " roles; pass role= to filter"))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    assert(sel == "all"
+        || len([for (rr = mobo_known_hole_roles()) if (rr == sel) rr]) == 1,
+        str("motherboards: unknown hole role '", sel, "'; known: ", mobo_known_hole_roles()))
+    sel == "all" ? all : [for (h = all) if (h[2] == sel) h];
 
 // Rear I/O window [x_off,width,height], component-up frame. The drawing-frame near
 // (low-X) edge x0 mirrors to the far edge, so the component-up x_off = W - (x0 + width).

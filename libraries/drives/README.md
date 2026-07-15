@@ -91,7 +91,7 @@ wrong-family call (e.g. `drive_size()` on a card type).
 | Module | Produces |
 |---|---|
 | `drive_placeholder(type)` | envelope solid in the datum frame (fit-check reference) |
-| `drive_holes(type, faces="bottom", dia=3.4, depth=40, role=undef)` | mount-hole cutters for a consumer `difference()`; `faces`: `"bottom"｜"side"｜"both"` (block family; card family ignores `faces` and always cuts its single Z=0 standoff hole); `role` filters which holes are cut (default `undef` = all, unchanged from pre-role-tagging behavior) |
+| `drive_holes(type, faces="bottom", dia=-1, depth=40, role=undef)` | mount-hole cutters for a consumer `difference()`; `faces`: `"bottom"｜"side"｜"both"` (block family; card family ignores `faces` and always cuts its single Z=0 standoff hole); `dia=-1` uses each hole's own per-hole tagged dia (all current data is 3.4mm), pass a positive value to override uniformly; `role` filters which holes are cut (`"all"`/omitted = every hole, unchanged from pre-role-tagging behavior) |
 | `drive_connector_cutout(type, clearance=0.5, depth=0)` | connector/card-edge opening cutter, grown by `clearance`, extruded `-X` past the connector-end face (`depth=0` defaults to a generous 20mm through-cut) |
 | `drive_faceplate_cutout(type, face)` | convenience: cuts the mount holes/connector opening for one named face in a single call. `face` ∈ `"bottom"｜"xmin"｜"xmax"｜"ymin"｜"ymax"` — see Known Gaps for `"xmax"`'s no-op and `"ymin"`/`"ymax"`'s degenerate-identical behavior |
 
@@ -111,8 +111,10 @@ with no `role` argument returns/cuts every hole and never emits the multi-role
 `WARNING:` echo — that echo only fires if a future type's holes ever span more
 than one role, matching `sbc`'s idiom exactly so a consumer can rely on
 identical behavior across both libs. Pass an explicit `role` (e.g.
-`drive_bottom_holes("hdd35", "structural-mount")`) to filter, or `role=undef`
-(the default) for "give me everything."
+`drive_bottom_holes("hdd35", "structural-mount")`) to filter, `role="all"` for
+an explicit, always-silent "give me everything" (never warns, even when >1
+role is present), or leave `role` omitted (`undef`, the default) for the same
+"everything" result but with the multi-role `WARNING:` when applicable.
 
 ## Renders
 
@@ -271,9 +273,9 @@ own (now-stale) seed gap list.
   citation alone isn't read as also covering the connector).
 - **Imperial 6-32 UNC clearance-hole diameter** (3.5"/2.5" fastener):
   SFF-8301/8201 specify the *tapped* thread (6-32 UNC / M3), not a
-  clearance-fit diameter. `drive_holes()`'s `dia` default (3.4mm) is an M3
-  clearance figure; a 6-32 (imperial) clearance constant does not exist in
-  this repo's `hardware.scad` (metric-only currently) — noted as a
+  clearance-fit diameter. Every hole tuple's tagged/rendered `dia` (3.4mm) is
+  an M3 clearance figure; a 6-32 (imperial) clearance constant does not exist
+  in this repo's `hardware.scad` (metric-only currently) — noted as a
   `hardware`-library gap, not fabricated into `drives`.
 - **`drive_faceplate_cutout(type, "xmax")`**: intentional **no-op** — the
   far X wall (opposite the connector) has no distinct hole/cutout data in

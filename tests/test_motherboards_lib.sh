@@ -58,4 +58,18 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "unknown hole role must assert:"; echo "$out"; exit 1
 fi
 
+# Positive control: role="all" is a silent wildcard synonym for undef -- must
+# render cleanly (no assert) and match sbc's idiom.
+cat > "$tmp/role_all.scad" <<'EOF'
+use <motherboards/motherboards.scad>;
+difference() {
+    cube([304.80, 243.84, 1.57]);
+    mobo_standoff_holes("atx", role = "all");
+}
+EOF
+out="$(run "$tmp/role_all.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "role=\"all\" mobo_standoff_holes(\"atx\") render failed:"; echo "$out"; exit 1
+fi
+
 echo ok

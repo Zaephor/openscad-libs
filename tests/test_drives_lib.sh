@@ -113,4 +113,19 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown role on a card-family type:"; echo "$out"; exit 1
 fi
 
+# Positive control: role="all" is a silent wildcard synonym for undef -- must
+# render cleanly (no assert) for both block and card families.
+cat > "$tmp/role_all.scad" <<'EOF'
+use <drives/drives.scad>;
+difference() {
+    cube([150, 105, 30]);
+    drive_holes("hdd35", "both", role = "all");
+    translate([0, 0, -1]) drive_holes("m2_2280", role = "all");
+}
+EOF
+out="$(run "$tmp/role_all.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "role=\"all\" consumer render failed:"; echo "$out"; exit 1
+fi
+
 echo ok

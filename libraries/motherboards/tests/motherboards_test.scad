@@ -135,6 +135,7 @@ assert(holes[0][2] == "structural-mount", "atx standoff role");
 assert(round(holes[0][3]*1e6)/1e6 == round(mobo_hole_dia()*1e6)/1e6, "atx standoff dia");
 assert(len(mobo_standoff_xy("atx", "structural-mount")) == len(mobo_standoff_xy("atx")), "atx role filter matches unfiltered");
 assert(len(mobo_standoff_xy("atx", "keep-out")) == 0, "atx keep-out empty");
+assert(len(mobo_standoff_xy("atx", "all")) == len(mobo_standoff_xy("atx")), "atx \"all\" == unfiltered count");
 assert(mobo_known_hole_roles()[0] == "structural-mount", "role vocab order");
 assert(mobo_known_hole_roles() == ["structural-mount", "component-mount", "keep-out", "alignment"], "role vocab full list");
 

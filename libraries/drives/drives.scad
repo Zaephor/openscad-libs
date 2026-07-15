@@ -191,35 +191,36 @@ function drives_known_hole_roles() = ["structural-mount", "component-mount", "ke
 function _drive_roles_present(all) =
     [for (r = drives_known_hole_roles()) if (len([for (h = all) if (h[2] == r) h]) > 0) r];
 
-// role must be undef (= "all") or a known role string; anything else is a caller
-// error (typo'd role), asserted loudly rather than silently returning [].
+// role must be undef (= "all"), "all", or a known role string; anything else is
+// a caller error (typo'd role), asserted loudly rather than silently returning [].
 function _drive_role_ok(role) =
-    is_undef(role) || len([for (r = drives_known_hole_roles()) if (r == role) r]) == 1;
+    is_undef(role) || role == "all" || len([for (r = drives_known_hole_roles()) if (r == role) r]) == 1;
 
 // Full hole tuples [x,y,role,dia] for a block drive's bottom/side mount holes,
 // optionally filtered by role.
-//   role == undef (omitted) -> every hole, PLUS a WARNING when >1 role present
-//   role a canonical role   -> only that role (silent)
-//   role anything else      -> assert (unknown role)
+//   role a canonical role    -> only that role (silent)
+//   role == "all"            -> every hole, silent (explicit intent)
+//   role == undef (omitted)  -> every hole, PLUS a WARNING when >1 role present
+//   role anything else       -> assert (unknown role)
 function drive_bottom_holes(type, role = undef) =
     assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()))
     let (all = _blk_row(type)[2],
-         present = _drive_roles_present(all))
-    is_undef(role)
-        ? (len(present) > 1
-            ? echo(str("WARNING: drives '", type, "' bottom holes span ", len(present), " roles; pass role= to filter")) all
-            : all)
-        : [for (h = all) if (h[2] == role) h];
+         present = _drive_roles_present(all),
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: drives '", type, "' bottom holes span ", len(present), " roles; pass role= to filter"))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    sel == "all" ? all : [for (h = all) if (h[2] == sel) h];
 
 function drive_side_holes(type, role = undef) =
     assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()))
     let (all = _blk_row(type)[3],
-         present = _drive_roles_present(all))
-    is_undef(role)
-        ? (len(present) > 1
-            ? echo(str("WARNING: drives '", type, "' side holes span ", len(present), " roles; pass role= to filter")) all
-            : all)
-        : [for (h = all) if (h[2] == role) h];
+         present = _drive_roles_present(all),
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: drives '", type, "' side holes span ", len(present), " roles; pass role= to filter"))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    sel == "all" ? all : [for (h = all) if (h[2] == sel) h];
 
 /* [Placeholder] */
 // Envelope solid in the datum frame (bottom face Z=0, min corner at origin,
@@ -238,33 +239,41 @@ module drive_placeholder(type) {
 // hole axis, oversized in length so it fully pierces the wall it cuts.
 //   faces: "bottom" | "side" | "both" (block); card family always cuts its single
 //          standoff hole along -Z.
-//   dia:   hole clearance diameter (default 3.4 = M3 clearance; 3.5 ~ 6-32).
+//   dia:   hole clearance diameter override; default -1 uses each hole's own
+//          per-hole tagged dia (all current data is 3.4 = M3 clearance, but this
+//          now reads the tuple, not a hardcoded constant -- matches
+//          mobo_standoff_holes()/sbc_mount_holes()'s per-hole-dia convention).
 //   depth: cutter length through the wall (default 40, a generous through-cut).
-//   role:  optional hole-role filter (see drives_known_hole_roles()); default
-//          undef stamps every hole for the requested face(s), unchanged from
-//          pre-role-tagging behavior (single-role libs never warn).
-module drive_holes(type, faces = "bottom", dia = 3.4, depth = 40, role = undef) {
+//   role:  optional hole-role filter (see drives_known_hole_roles()); "all" or
+//          undef (omitted) both stamp every hole for the requested face(s);
+//          undef additionally WARNs if >1 role is present (see
+//          drive_bottom_holes()/drive_side_holes()).
+module drive_holes(type, faces = "bottom", dia = -1, depth = 40, role = undef) {
     assert(faces=="bottom" || faces=="side" || faces=="both",
            str("drives: unknown faces '", faces, "'"));
-    r = dia/2;
     if (drive_family(type) == "card") {
         assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()));
         h = drive_card_hole(type);            // [x,y,role,dia] on the Z=0 face (x along len)
-        if (is_undef(role) || role == h[2])
+        r = (dia < 0 ? h[3] : dia) / 2;
+        if (is_undef(role) || role == "all" || role == h[2])
             translate([h[0], h[1], 0])
                 cylinder(h = depth, r = r, center = true); // pierces Z=0 floor
     } else {
         s = drive_size(type);
         if (faces=="bottom" || faces=="both")
-            for (p = drive_bottom_holes(type, role)) // [x,y,role,dia] on Z=0
+            for (p = drive_bottom_holes(type, role)) { // [x,y,role,dia] on Z=0
+                r = (dia < 0 ? p[3] : dia) / 2;
                 translate([p[0], p[1], 0])
                     cylinder(h = depth, r = r, center = true);
+            }
         if (faces=="side" || faces=="both")
-            for (p = drive_side_holes(type, role))   // [x,z,role,dia]; one set per +/-Y wall
+            for (p = drive_side_holes(type, role)) {   // [x,z,role,dia]; one set per +/-Y wall
+                r = (dia < 0 ? p[3] : dia) / 2;
                 for (y = [0, s[1]])
                     translate([p[0], y, p[1]])
                         rotate([90,0,0])       // axis along Y
                             cylinder(h = depth, r = r, center = true);
+            }
     }
 }
 
