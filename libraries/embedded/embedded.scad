@@ -97,7 +97,7 @@ function _embedded_table() = [
           // combined block ends at x=48.26) [C]//VERIFY position; extents [A].
           // Board-unique body (not a connectors-lib type); edge="top" (a
           // component/keep-out sitting on the PCB, not a lateral port).
-          ["module",          [16.82, 4.97, 1.6], [25.40, 18.00, 3.10], "top"], // [A] extents (WROOM-32 datasheet+drawing) / [C] position //VERIFY
+          ["module",          [16.82, 4.97, 1.6], [25.40, 18.00, 3.10], "top"], // [A] extents (DevKitC drawing; WROOM-32 datasheet gives 25.50) / [C] position //VERIFY
           ["antenna_keepout", [42.22, 4.97, 1.6], [6.04,  18.00, 3.10], "top"], // [A] length (drawing "6.04mm") / [C] Y-extent+height reused from module, position //VERIFY
         ] ],
     // esp8266_nodemcu — NodeMCU v1.0, ESP-12E (Amica, "narrow" 0.9in rows).
@@ -300,7 +300,7 @@ module embedded_mount_holes(b, depth = 20, role = undef, dia = -1) {
 // //VERIFY-tagged defaults are mirrored verbatim rather than guessed anew.
 module embedded_standoffs(b, height, role = undef, dia = -1, bore = -1) {
     od = dia  < 0 ? 6.0 : dia;   // post OD default //VERIFY [C] vs hardware standoff
-    bd = bore < 0 ? 2.2 : bore;  // pilot for M2.5 self-tap //VERIFY [C]
+    bd = bore < 0 ? 2.2 : bore;  // pilot for M2/M2.5-class self-tap //VERIFY [C]
     for (h = embedded_holes(b, role))
         translate([h[0], h[1], 0]) difference() {
             cylinder(h = height, d = od);

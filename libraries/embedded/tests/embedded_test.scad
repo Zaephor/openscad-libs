@@ -156,5 +156,9 @@ module _embedded_task4_smoke() {
 }
 translate([-60, 0, 0]) _embedded_task4_smoke();
 
-// Bad-edge assert (parity with sbc_port_cutout's own bad-edge assert) is
-// exercised from the bash harness (tests/test_embedded_lib.sh), not here.
+// Bad-edge assert (parity with sbc_port_cutout's own bad-edge assert): no
+// real board data can reach this branch (every connector's edge is one of
+// xmin/xmax/ymin/ymax/top), so it is exercised synthetically from the bash
+// harness (tests/test_embedded_lib.sh's bad_edge.scad sub-test, which
+// inlines embedded_port_cutout's exact edge branching with a bogus edge
+// string) rather than here.

@@ -92,4 +92,24 @@ out="$(run "$tmp/warn_mechanism.scad")"
 echo "$out" | grep -qiE 'WARNING:.*role categories' \
   || { echo "warning mechanism (echo-in-let) failed to emit expected text"; echo "$out"; exit 1; }
 
+# Synthetic exercise of embedded_port_cutout()'s bad-edge assert: no board's
+# connector table can ever produce an edge outside xmin/xmax/ymin/ymax/top
+# (see embedded.scad's data), so there is no real-board positive control for
+# this branch. Instead this inlines the exact same if/else-if/assert edge
+# branching from embedded_port_cutout() with a bogus edge string, same
+# construct as the warn_mechanism.scad sub-test above.
+cat > "$tmp/bad_edge.scad" <<'EOF'
+p = [0, 0, 0]; s = [1, 1, 1]; depth = 20; name = "synthetic"; e = "bogus";
+o = 0.5;
+if      (e == "xmax") translate([p[0]+s[0]-o, p[1], p[2]]) cube([depth+o, s[1], s[2]]);
+else if (e == "xmin") translate([p[0]-depth,  p[1], p[2]]) cube([depth+o, s[1], s[2]]);
+else if (e == "ymax") translate([p[0], p[1]+s[1]-o, p[2]]) cube([s[0], depth+o, s[2]]);
+else if (e == "ymin") translate([p[0], p[1]-depth,  p[2]]) cube([s[0], depth+o, s[2]]);
+else if (e == "top")  translate([p[0], p[1], p[2]+s[2]-o]) cube([s[0], s[1], depth+o]);
+else assert(false, str("embedded: connector ", name, " has bad edge ", e));
+EOF
+out="$(run "$tmp/bad_edge.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  || { echo "synthetic bad-edge assert failed to fire"; echo "$out"; exit 1; }
+
 echo ok
