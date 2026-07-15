@@ -1,16 +1,10 @@
 // lid part — flat cover, flush top, countersunk M3 into tray posts.
 
-/* [Cooling] */
 // lid() itself doesn't branch on these, but params.scad's rear_off()/
-// int_depth() (which size the lid) and its fan_size assert do — declared
-// here + in each entry file; params.scad consumes only.
-enable_exhaust = true; // false = passive (no rear fan plenum)
-fan_size  = 40;        // must be a fan_known_sizes() value
-fan_count = 2;
-
-/* [Rack Ears] */
-ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
-
+// int_depth() (which size the lid) and its fan_size assert do. Cooling +
+// rack-ear defaults: single source of truth in ../defaults.scad (see that
+// file re: OpenSCAD Customizer visibility tradeoff).
+include <../defaults.scad>;
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <hardware/hardware.scad>;

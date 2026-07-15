@@ -32,18 +32,19 @@ csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> 
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-78.7)
 board_side_gap   = 1.0;  // board edge -> corner-post clearance
 
-// ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
-// their defaults in each entry file (assembly.scad, parts/tray.scad,
-// parts/lid.scad) BEFORE `include <params.scad>`; params.scad only consumes
-// them below and must never re-assign them (OpenSCAD is last-assignment-wins,
-// so a re-assignment here would silently discard whatever the entry file or
-// the customizer set).
+// ---- cooling toggle: enable_exhaust/fan_size/fan_count get their defaults
+// from ../defaults.scad, `include`d by every entry file (assembly.scad,
+// parts/tray.scad, parts/lid.scad, tests/asserts.scad) BEFORE
+// `include <params.scad>`; params.scad only consumes them below and must
+// never re-assign them (OpenSCAD is last-assignment-wins, so a re-assignment
+// here would silently discard whatever defaults.scad or a CLI -D override set).
 fan_plenum = 12.0;     // board-rear-edge -> rear-wall gap when fans on
 rear_gap   = 4.0;      // same when fans off
 lid_vents  = true;
 
-// ---- rack ear hole type: ear_hole_type is likewise declared with its default
-// in each entry file before `include <params.scad>`; params.scad only consumes it.
+// ---- rack ear hole type: ear_hole_type is likewise sourced from
+// defaults.scad, included by each entry file before `include <params.scad>`;
+// params.scad only consumes it.
 // Clearance dia (mm) used only when ear_hole_type == "round" — rack10_holes()
 // takes "round" dia literally (no library-resolved clearance the way "m6"/
 // "10-32" get one). Sourced directly from the library's own m6 screw-

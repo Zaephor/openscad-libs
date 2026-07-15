@@ -1,10 +1,8 @@
 // asserts.scad — render-time invariants for the chassis geometry.
 // Rendered by tests/test_bpir4_chassis_lib.sh; any failed assert -> ERROR in stderr.
-// Declared here + in each entry file; params.scad consumes only.
-enable_exhaust = true; // false = passive (no rear fan plenum)
-fan_size  = 40;        // must be a fan_known_sizes() value
-fan_count = 2;
-ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
+// Cooling + rack-ear defaults: single source of truth in ../defaults.scad
+// (see that file re: OpenSCAD Customizer visibility tradeoff).
+include <../defaults.scad>;
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
