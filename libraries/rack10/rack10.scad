@@ -35,6 +35,18 @@ $fn = 48;
 
 /* [Data] — 10in mini-rack, vendor-keyed. Tiers per docs/LIBRARY-AUTHORING.md; see RESEARCH.md. */
 function rack10_u() = 44.45; // [B] LabRax designer article (explicit, "44.45mm rack unit spacing"); EIA-compatible pitch — see RESEARCH.md "1U pitch"
+// 1U DEVICE exterior height is shorter than the 44.45mm pitch, leaving a small
+// gap so stacked units don't bind. [C] //VERIFY — no LabRax-specific or
+// 10in-specific source states a panel-height relief figure; this value is
+// rack19's own [B] EIA-310 number (0.79mm) borrowed by analogy, since LabRax
+// already borrows the 44.45mm pitch and 3-hole sub-pattern from EIA-310 — see
+// RESEARCH.md "Device height / stacking gap (Task 1 follow-up)".
+function rack10_stack_gap()      = 0.79;   // [C] //VERIFY — see RESEARCH.md
+// Device exterior height for a `u`-unit device: the 0.79mm gap is subtracted
+// ONCE total, not per-U (a 2U device is 2*44.45 - 0.79 = 88.11mm, NOT
+// 88.90 - 2*0.79 = 87.32mm) — same non-per-U framing as rack19, see
+// RESEARCH.md "Device height / stacking gap (Task 1 follow-up)".
+function rack10_device_height(u) = round((u*rack10_u() - rack10_stack_gap())*1e6)/1e6;
 
 function rack10_known_standards() = ["labrax"];
 
