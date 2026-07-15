@@ -44,6 +44,25 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown face:"; echo "$out"; exit 1
 fi
 
+# Negative control: unknown/typo'd hole role must assert (not silently return []).
+cat > "$tmp/bad_role.scad" <<'EOF'
+use <drives/drives.scad>;
+x = drive_bottom_holes("hdd35", "structural-moutn"); // typo, must assert
+EOF
+out="$(run "$tmp/bad_role.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unknown hole role (drive_bottom_holes):"; echo "$out"; exit 1
+fi
+
+cat > "$tmp/bad_role_side.scad" <<'EOF'
+use <drives/drives.scad>;
+x = drive_side_holes("hdd35", "bogus-role"); // unknown role, must assert
+EOF
+out="$(run "$tmp/bad_role_side.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unknown hole role (drive_side_holes):"; echo "$out"; exit 1
+fi
+
 # Backward-compat control: a no-role consumer must render cleanly with NO
 # WARNING (every drive type today has exactly one hole role present, so the
 # multi-role WARNING idiom must never fire in practice).
@@ -61,6 +80,23 @@ if echo "$out" | grep -qi 'WARNING:'; then
 fi
 if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "no-role consumer render failed:"; echo "$out"; exit 1
+fi
+
+# Module role= end-to-end: an explicit matching role still cuts holes cleanly,
+# and an explicit non-present role ("keep-out") is a legal no-op cut (0 holes,
+# no error) rather than an assert -- exercises drive_holes()'s own role param,
+# not just the underlying accessor functions.
+cat > "$tmp/role_consumer.scad" <<'EOF'
+use <drives/drives.scad>;
+difference() {
+    cube([150, 105, 30]);
+    drive_holes("hdd35", "both", role = "structural-mount");
+    drive_holes("hdd35", "bottom", role = "keep-out"); // present-but-empty filter: legal no-op
+}
+EOF
+out="$(run "$tmp/role_consumer.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "role= consumer render failed:"; echo "$out"; exit 1
 fi
 
 echo ok

@@ -186,13 +186,25 @@ function drive_known_types() =
 // --- hole roles (hole-role-tagging sweep; mirrors sbc's idiom) ---
 function drives_known_hole_roles() = ["structural-mount", "component-mount", "keep-out", "alignment"];
 
+// Distinct roles actually present among a hole list `all` (order of the vocabulary).
+// Shared by drive_bottom_holes()/drive_side_holes() (mirrors sbc's _sbc_roles_present).
+function _drive_roles_present(all) =
+    [for (r = drives_known_hole_roles()) if (len([for (h = all) if (h[2] == r) h]) > 0) r];
+
+// role must be undef (= "all") or a known role string; anything else is a caller
+// error (typo'd role), asserted loudly rather than silently returning [].
+function _drive_role_ok(role) =
+    is_undef(role) || len([for (r = drives_known_hole_roles()) if (r == role) r]) == 1;
+
 // Full hole tuples [x,y,role,dia] for a block drive's bottom/side mount holes,
 // optionally filtered by role.
 //   role == undef (omitted) -> every hole, PLUS a WARNING when >1 role present
 //   role a canonical role   -> only that role (silent)
+//   role anything else      -> assert (unknown role)
 function drive_bottom_holes(type, role = undef) =
+    assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()))
     let (all = _blk_row(type)[2],
-         present = [for (r = drives_known_hole_roles()) if (len([for (h = all) if (h[2] == r) h]) > 0) r])
+         present = _drive_roles_present(all))
     is_undef(role)
         ? (len(present) > 1
             ? echo(str("WARNING: drives '", type, "' bottom holes span ", len(present), " roles; pass role= to filter")) all
@@ -200,8 +212,9 @@ function drive_bottom_holes(type, role = undef) =
         : [for (h = all) if (h[2] == role) h];
 
 function drive_side_holes(type, role = undef) =
+    assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()))
     let (all = _blk_row(type)[3],
-         present = [for (r = drives_known_hole_roles()) if (len([for (h = all) if (h[2] == r) h]) > 0) r])
+         present = _drive_roles_present(all))
     is_undef(role)
         ? (len(present) > 1
             ? echo(str("WARNING: drives '", type, "' side holes span ", len(present), " roles; pass role= to filter")) all
