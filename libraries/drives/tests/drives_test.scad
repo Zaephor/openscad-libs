@@ -31,7 +31,7 @@ assert(drive_connector("u2")[0] == "sff8639", "u2 connector type");
 // card
 assert(drive_card_size("m2_2280") == [22.0, 80.0, 2.15], "m2_2280 size");
 assert(drive_card_size("m2_2242")[1] == 42.0, "m2_2242 length");
-assert(len(drive_card_hole("m2_2280")) == 2, "m2 hole is [x,y]");
+assert(len(drive_card_hole("m2_2280")) == 4, "m2 hole is [x,y,role,dia]");
 e = drive_card_edge("m2_2280");
 assert(len(e)==3 && (e[2]=="b"||e[2]=="m"||e[2]=="bm"), "m2 edge key");
 
@@ -44,7 +44,31 @@ assert(drive_size("hdd35")[0]*drive_size("hdd35")[1]*drive_size("hdd35")[2] > 0,
 // hole counts drive the stamp; assert the source lists are non-empty where expected.
 assert(len(drive_bottom_holes("hdd35")) >= 4, "hdd35 >=4 bottom holes");
 assert(len(drive_side_holes("hdd35"))  >= 2, "hdd35 side holes present");
-assert(len(drive_card_hole("m2_2280")) == 2, "m2 single mount hole");
+assert(len(drive_card_hole("m2_2280")) == 4, "m2 single mount hole, [x,y,role,dia] shape");
+
+// --- hole-role tagging (hole-role-sweep, drives parity with sbc) ---
+assert(drives_known_hole_roles()[0] == "structural-mount", "role vocab starts w/ structural-mount");
+
+// every bottom/side hole for a representative 3.5in + 2.5in type is tagged structural-mount
+module _assert_all_structural(t) {
+    for (h = drive_bottom_holes(t))
+        assert(h[2] == "structural-mount", str(t, " bottom hole role"));
+    for (h = drive_side_holes(t))
+        assert(h[2] == "structural-mount", str(t, " side hole role"));
+}
+_assert_all_structural("hdd35");
+_assert_all_structural("ssd25_9");
+
+// role filter: same-role filter is a no-op on count; unrelated role filters to empty
+assert(len(drive_bottom_holes("hdd35", "structural-mount")) == len(drive_bottom_holes("hdd35")),
+       "hdd35 bottom holes: structural-mount filter == unfiltered count");
+assert(len(drive_bottom_holes("hdd35", "keep-out")) == 0, "hdd35 bottom holes: no keep-out holes");
+assert(len(drive_side_holes("hdd35", "structural-mount")) == len(drive_side_holes("hdd35")),
+       "hdd35 side holes: structural-mount filter == unfiltered count");
+assert(len(drive_side_holes("hdd35", "keep-out")) == 0, "hdd35 side holes: no keep-out holes");
+
+// card mount hole is tagged too (no role filter on the singleton accessor)
+assert(drive_card_hole("m2_2280")[2] == "structural-mount", "m2_2280 hole role");
 
 // connector records feed the cutout; assert extents positive.
 cc = drive_connector("ssd25_9");

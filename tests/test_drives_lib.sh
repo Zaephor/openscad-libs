@@ -44,4 +44,23 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown face:"; echo "$out"; exit 1
 fi
 
+# Backward-compat control: a no-role consumer must render cleanly with NO
+# WARNING (every drive type today has exactly one hole role present, so the
+# multi-role WARNING idiom must never fire in practice).
+cat > "$tmp/no_role_consumer.scad" <<'EOF'
+use <drives/drives.scad>;
+difference() {
+    cube([150, 105, 30]);
+    drive_holes("hdd35", "both");
+    translate([0, 0, -1]) drive_holes("m2_2280");
+}
+EOF
+out="$(run "$tmp/no_role_consumer.scad")"
+if echo "$out" | grep -qi 'WARNING:'; then
+  echo "no-role consumer unexpectedly warned:"; echo "$out"; exit 1
+fi
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "no-role consumer render failed:"; echo "$out"; exit 1
+fi
+
 echo ok
