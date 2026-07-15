@@ -169,13 +169,14 @@ heatset_boss("M4", 8);
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/boss_default.stl" "$tmp/boss_default.scad" 2>/dev/null
 
-cat > "$tmp/boss_wall.scad" <<'EOF'
+wall=2
+cat > "$tmp/boss_wall.scad" <<EOF
 use <heatset/heatset.scad>;
-heatset_boss("M4", 8, wall = 2);
+heatset_boss("M4", 8, wall = $wall);
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/boss_wall.stl" "$tmp/boss_wall.scad" 2>/dev/null
 
-python3 - "$tmp/boss_default.stl" "$tmp/boss_wall.stl" "$m4_boss_od" "$m4_pilot" <<'PY' || { echo "boss default/wall-derived OD or height incorrect"; exit 1; }
+python3 - "$tmp/boss_default.stl" "$tmp/boss_wall.stl" "$m4_boss_od" "$m4_pilot" "$wall" <<'PY' || { echo "boss default/wall-derived OD or height incorrect"; exit 1; }
 import struct,sys
 
 def bbox(path):
@@ -189,7 +190,7 @@ def bbox(path):
 
 def_xmin,def_xmax,def_zmin,def_zmax = bbox(sys.argv[1])
 wal_xmin,wal_xmax,wal_zmin,wal_zmax = bbox(sys.argv[2])
-boss_od=float(sys.argv[3]); wall_od=float(sys.argv[4])+2*2
+boss_od=float(sys.argv[3]); wall_od=float(sys.argv[4])+2*float(sys.argv[5])
 tol=0.1
 
 ok = (

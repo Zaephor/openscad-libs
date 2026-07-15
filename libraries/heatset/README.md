@@ -132,9 +132,10 @@ Valid `size` keys (`heatset_known_sizes()`): `M2`, `M2.5`, `M3`, `M4`,
 ![heatset bored-boss idiom render](renders/heatset-boss-idiom.png)
 
 The bored-boss idiom above: `difference(){ heatset_boss("M3", 8);
-heatset_pocket("M3"); }` — the axial bore, lead-in chamfer at the top
-mouth, and melt-relief step below the pilot bore are all visible cut into
-the boss column.
+heatset_pocket("M3"); }` — the axial bore and the lead-in chamfer at the
+top mouth are visible cut into the boss column. (The melt-relief cavity
+is a same-diameter blind-bore extension below the pilot bore, so it
+doesn't show as a visible step in this render.)
 
 ![heatset placeholder render](renders/heatset-placeholder.png)
 

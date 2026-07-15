@@ -43,7 +43,7 @@ function heatset_lead_in(s)       = _heatset_row(s)[5];
    Knurl approximated as a plain cylinder at nominal OD. For fit/viz only. */
 module heatset_placeholder(size) {
     translate([0, 0, -heatset_insert_length(size)])
-        cylinder(h = heatset_insert_length(size), d = heatset_insert_od(size), $fn = 48);
+        cylinder(h = heatset_insert_length(size), d = heatset_insert_od(size));
 }
 
 /* [Pocket] — negative cutter for a consumer difference(): pilot bore
@@ -57,21 +57,26 @@ module heatset_pocket(size, melt_relief = true) {
     pd  = heatset_pilot_dia(size);
     union() {
         // pilot bore, Z=0 down to -len
-        translate([0, 0, -len]) cylinder(h = len + 0.01, d = pd, $fn = 48);
+        translate([0, 0, -len]) cylinder(h = len + 0.01, d = pd);
         // top lead-in chamfer (mouth wider than pd by 2*li)
-        translate([0, 0, -li]) cylinder(h = li + 0.01, d1 = pd, d2 = pd + 2 * li, $fn = 48);
+        translate([0, 0, -li]) cylinder(h = li + 0.01, d1 = pd, d2 = pd + 2 * li);
         // melt-relief cavity below the seat for displaced plastic
         if (melt_relief)
-            translate([0, 0, -len - li]) cylinder(h = li + 0.01, d = pd, $fn = 48);
+            translate([0, 0, -len - li]) cylinder(h = li + 0.01, d = pd);
     }
 }
 
 /* [Hole-stamp: boss] — support-free vertical column: top (install) face at
    Z=0, grows -Z, matching the placeholder/pocket datum convention. Default
    OD from the data table; pass `wall` to derive OD = pilot_dia + 2*wall
-   (e.g. to size a boss around a known pocket wall thickness). Consumer
-   idiom: difference() { heatset_boss(size, h); heatset_pocket(size); } */
+   (e.g. to size a boss around a known pocket wall thickness). `wall` is
+   measured from the pilot bore, not the (larger) insert body, so the
+   effective wall thickness around the insert is actually
+   `wall - (insert_od - pilot_dia)/2`, i.e. less than requested. At very
+   small `wall` values this can size the boss narrower than the insert
+   itself; no guard is implemented for that case. Consumer idiom:
+   difference() { heatset_boss(size, h); heatset_pocket(size); } */
 module heatset_boss(size, height, wall = -1) {
     od = (wall < 0) ? heatset_boss_od(size) : heatset_pilot_dia(size) + 2 * wall;
-    translate([0, 0, -height]) cylinder(h = height, d = od, $fn = 48);
+    translate([0, 0, -height]) cylinder(h = height, d = od);
 }

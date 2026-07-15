@@ -9,6 +9,7 @@ assert(heatset_known_sizes() == ["M2", "M2.5", "M3", "M4", "M5", "M6"], "size li
 for (s = heatset_known_sizes()) {
     assert(heatset_insert_od(s) > 0, str(s, " insert_od > 0"));
     assert(heatset_insert_length(s) > 0, str(s, " insert_length > 0"));
+    assert(heatset_pilot_dia(s) > 0, str(s, " pilot_dia > 0"));
     assert(heatset_pilot_dia(s) < heatset_insert_od(s), str(s, " pilot_dia < insert_od (melt-grip)"));
     assert(heatset_boss_od(s) > heatset_insert_od(s), str(s, " boss_od > insert_od"));
     assert(heatset_lead_in(s) >= 0, str(s, " lead_in >= 0"));
