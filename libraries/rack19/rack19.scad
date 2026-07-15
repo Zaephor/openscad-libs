@@ -25,6 +25,16 @@ $fn = 48;
 
 /* [Data] — EIA-310-D. Tiers per docs/LIBRARY-AUTHORING.md; see RESEARCH.md. */
 function rack19_u()             = 44.45;    // [B] Wikipedia + IBM; 1U = 1.75in
+// 1U DEVICE exterior height is shorter than the 44.45mm pitch, leaving a small
+// gap so stacked units don't bind. [B] Wikipedia (Rack_unit) + Micropolis
+// rack-mounting FAQ, exact match (h = 44.45n - 0.79mm); //VERIFY the
+// "subtracted once, not per-U" framing is this pass's own arithmetic reading
+// of that formula, not a direct quote — see RESEARCH.md "Stacking gap".
+function rack19_stack_gap()      = 0.79;   // [B] //VERIFY — see RESEARCH.md
+// Device exterior height for a `u`-unit device: the 0.79mm gap is subtracted
+// ONCE total, not per-U (a 2U device is 2*44.45 - 0.79 = 88.11mm, NOT
+// 88.90 - 2*0.79 = 87.32mm) — see RESEARCH.md "Stacking gap" for why.
+function rack19_device_height(u) = round((u*rack19_u() - rack19_stack_gap())*1e6)/1e6;
 function rack19_panel_width()   = 482.6;    // [B] Wikipedia (closure-checked)
 function rack19_opening_width() = 450.85;   // [B] Wikipedia + IBM
 function rack19_hole_h_span()   = 465.1;    // [B] //VERIFY 465.1 nominal vs IBM 464.2-465.8mm band — no discrete point-value source

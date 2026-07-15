@@ -33,3 +33,11 @@ assert(rack19_flange_width() > 0 && rack19_flange_thickness() > 0, "flange dims"
 // --- panel blank differences cleanly with the hole stamp ---
 // (compile-only reachability: exercised in the render step; assert the height math)
 assert(2 * rack19_u() == 88.9, "2U height");
+
+// --- device height / stacking gap ---
+// device height derives from pitch minus the stacking gap
+assert(round(rack19_device_height(1)*1e6)/1e6 == round((rack19_u() - rack19_stack_gap())*1e6)/1e6,
+    "device_height u=1");
+assert(round(rack19_device_height(2)*1e6)/1e6 == round((2*rack19_u() - rack19_stack_gap())*1e6)/1e6,
+    "device_height u=2");
+assert(rack19_stack_gap() > 0 && rack19_stack_gap() < 2, "stack_gap sane small value");
