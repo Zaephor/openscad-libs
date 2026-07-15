@@ -18,15 +18,14 @@
 //   [C] single-sourced / derived, or a named part cited but not fetched.
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
 //
-// Status (through Task 2): grid pitch/mount-type table (`_multibuild_table()`)
-// and Role 1 accessor/grid-math functions are implemented below. The
-// `multibuild_mount_placeholder()` / `multibuild_mount()` / `multibuild_hole()`
-// modules (Roles 2-4) are Task 3+ (see 
-// multibuild-lib-design.md for the exact API and 
-// 2026-07-15-multibuild-lib-design.md for the design rationale). RESEARCH.md's
-// Checkpoint findings section confirms the mechanism (Regular Snap plugging
-// into a Large Hole, chosen over Threads/Peg Click/DS Snaps — see rationale
-// there) fits this API shape before any geometry is written.
+// Status (v1 complete): grid pitch/mount-type table (`_multibuild_table()`)
+// and all four roles — Role 1 accessor/grid-math functions and Roles 2-4
+// modules `multibuild_mount_placeholder()` / `multibuild_mount()` /
+// `multibuild_hole()` — are fully implemented below. RESEARCH.md documents
+// the complete research evidence chain (Task 1, 1b, 1c) backing this
+// implementation. Checkpoint findings confirm the Regular Snap mechanism
+// (plugging into a Large Hole, chosen over Threads/Peg Click/DS Snaps) fits
+// this API shape.
 
 $fn = 48;
 
