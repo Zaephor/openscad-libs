@@ -93,7 +93,8 @@ Form-factor key: `"itx"` / `"matx"` / `"atx"` (see `mobo_known_ff()`).
 | `mobo_thickness()` | PCB thickness, mm (0.062″ nominal) |
 | `mobo_hole_dia()` | standoff clearance hole diameter, mm |
 | `mobo_pcie_pitch()` | PCIe slot-to-slot pitch, mm |
-| `mobo_standoff_xy(ff)` | list of `[x,y]` standoff hole coords |
+| `mobo_known_hole_roles()` | the 4 canonical hole-role strings, in table order |
+| `mobo_standoff_xy(ff, role=undef)` | list of `[x, y, role, dia]` standoff hole tuples, filtered by `role` (backward-compatible — `mobo_standoff_xy(ff)` still returns the same holes at the same positions, just now with role/dia appended) |
 | `mobo_io_cutout(ff)` | `[x_off, width, height]` rear I/O window |
 | `mobo_pcie_first_xy(ff)` | `[x,y]` of the first (rearmost) PCIe slot |
 | `mobo_pcie_count(ff)` | number of PCIe slots for the form factor |
@@ -103,10 +104,39 @@ Form-factor key: `"itx"` / `"matx"` / `"atx"` (see `mobo_known_ff()`).
 | `mobo_placeholder(ff)` | PCB envelope + standoff holes cut + raised rear I/O block (low-X) & PCIe slot bars (high-X) — fit checks / visual reference |
 | `mobo_io_ports(ff, depth, protrude)` | representative rear I/O-port cluster block over the 158.75×44.45 window (low-X); envelope, not per-port |
 | `mobo_pcie_ports(ff, slots, length, height, width)` | representative PCIe/expansion slot bars (high-X), one per slot, running +Y into the board |
-| `mobo_standoff_holes(ff, depth, dia)` | standoff clearance holes (subtract from a consumer solid) |
-| `mobo_standoffs(ff, height, dia, bore)` | positive standoff posts with pilot bore (print a tray directly) |
+| `mobo_standoff_holes(ff, depth, dia, role=undef)` | standoff clearance holes (subtract from a consumer solid); `role` filters which holes are cut |
+| `mobo_standoffs(ff, height, dia, bore, role=undef)` | positive standoff posts with pilot bore (print a tray directly); `role` filters which holes get a post |
 | `mobo_io_cutout_stamp(ff, depth)` | rear I/O window as a subtraction solid at `Y=0` |
 | `mobo_pcie_cutout(ff, slots, depth)` | PCIe slot openings stepped from the first slot by pitch |
+
+## Hole roles
+
+Every standoff coord is stored as `[x, y, role, dia]`, not just `[x, y]` — same
+pattern as the `sbc` library (see its README "Hole roles" for the full
+rationale). **Every motherboard standoff hole classifies as
+`structural-mount`** — this lib has no component-mount, keep-out, or alignment
+holes today (see `RESEARCH.md` "Hole roles", tier `[B]`, design-obvious: the
+spec drawings call these plain "MTG HOLES" with no further classification
+needed). `dia` reuses `mobo_hole_dia()` (3.96mm) per hole, so it can't drift
+out of sync with the constant.
+
+`mobo_known_hole_roles()` returns the 4 canonical role strings (in table
+order): `structural-mount`, `component-mount`, `keep-out`, `alignment` — the
+same vocabulary as `sbc`, for cross-library consistency, even though only the
+first is populated here.
+
+`mobo_standoff_xy(ff, role=undef)` accepts a canonical role string (only
+matching holes), `"all"` (every hole, always silent — explicit intent), or is
+left `undef`/omitted (every hole — with a `WARNING:` echo if a form factor's
+holes ever spanned more than one role; none do today, so calling it unfiltered
+never warns in practice). `mobo_standoff_holes()` and `mobo_standoffs()` both
+gained a passthrough `role=undef` param with the same filter behavior (`"all"`
+included) — omitted, they behave exactly as before role-tagging.
+
+```scad
+use <motherboards/motherboards.scad>;
+mobo_standoffs("atx", height = 5, role = "structural-mount");
+```
 
 ## Sources
 

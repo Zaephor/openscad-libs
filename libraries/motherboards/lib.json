@@ -1,7 +1,7 @@
 {
   "name": "motherboards",
   "description": "Motherboard mechanical mounting reference (mini-ITX/microATX/ATX): board sizes, standoff hole coordinates, rear I/O window, PCIe slot data — reconstructed from Intel/formfactors spec drawings.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "sources": [
     "https://www.bitsavers.org/pdf/intel/ATX/ATX_Specification_2.01_199702.PDF",
     "https://xdevs.com/doc/_PC_HW/Form_factors/matxspe1.2.pdf",

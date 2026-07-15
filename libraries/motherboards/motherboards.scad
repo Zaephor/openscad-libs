@@ -54,10 +54,10 @@ function _mobo_table() = [
     //      row2=165.10 (= row1 + 6.100in -- the 6.100in is row1-referenced, NOT edge:
     //      the chain-reference error corrected in Task 10). F off-row = row1 + .900in = 33.02.
     ["itx",  [170, 170],
-        [ [6.35, 10.16],     // C  [A] rear-left mounting hole (.250in from left, .400in from rear)
-          [163.83, 33.02],   // F  [A] C + 6.200in col; off-row Y = row1 + .900in = 33.02
-          [6.35, 165.10],    // H  [A] C's column, row2 (row1 + 6.100in)
-          [163.83, 165.10] ],// J  [A] F's column, row2
+        [ [6.35, 10.16, "structural-mount", mobo_hole_dia()],     // C  [A] rear-left mounting hole (.250in from left, .400in from rear)
+          [163.83, 33.02, "structural-mount", mobo_hole_dia()],   // F  [A] C + 6.200in col; off-row Y = row1 + .900in = 33.02
+          [6.35, 165.10, "structural-mount", mobo_hole_dia()],    // H  [A] C's column, row2 (row1 + 6.100in)
+          [163.83, 165.10, "structural-mount", mobo_hole_dia()] ],// J  [A] F's column, row2
         // io: near edge = C + .300in[7.52] = 13.87 [A]; width 158.75 [A] (6.250in shield);
         // 156.31mm from the right edge, aligning with ATX/mATX io in-chassis. height 44.45 [B].
         [13.87, 158.75, 44.45],  // io [x_off,w,h]  [A] x_off/w; h [B]
@@ -76,15 +76,15 @@ function _mobo_table() = [
     //      Shares ATX cols 2/3/4 at a right-corner +60.96mm offset (34.29->95.25, 80.01->140.97,
     //      237.49->298.45 = ATX cols); holes+io+slots all co-locate with ATX in-chassis.
     ["matx", [243.84, 243.84],
-        [ [80.01, 10.16],    // C   [A] C/H/L col, rear row
-          [80.01, 165.10],   // H   [A] row2
-          [80.01, 237.49],   // L   [A] row3
-          [237.49, 165.10],  // J   [A] F/J/M col, row2
-          [237.49, 237.49],  // M   [A] row3
-          [237.49, 33.02],   // F   [A] F/J/M col; off-row Y = row1 + .900in = 33.02
-          [34.29, 10.16],    // B   [A] Datum B, 1.350in from left, rear row
-          [13.97, 165.10],   // A2  [A] microATX-only left column (0.550in from left), row2
-          [34.29, 165.10] ], // B2  [A] Datum-B column, row2
+        [ [80.01, 10.16, "structural-mount", mobo_hole_dia()],    // C   [A] C/H/L col, rear row
+          [80.01, 165.10, "structural-mount", mobo_hole_dia()],   // H   [A] row2
+          [80.01, 237.49, "structural-mount", mobo_hole_dia()],   // L   [A] row3
+          [237.49, 165.10, "structural-mount", mobo_hole_dia()],  // J   [A] F/J/M col, row2
+          [237.49, 237.49, "structural-mount", mobo_hole_dia()],  // M   [A] row3
+          [237.49, 33.02, "structural-mount", mobo_hole_dia()],   // F   [A] F/J/M col; off-row Y = row1 + .900in = 33.02
+          [34.29, 10.16, "structural-mount", mobo_hole_dia()],    // B   [A] Datum B, 1.350in from left, rear row
+          [13.97, 165.10, "structural-mount", mobo_hole_dia()],   // A2  [A] microATX-only left column (0.550in from left), row2
+          [34.29, 165.10, "structural-mount", mobo_hole_dia()] ], // B2  [A] Datum-B column, row2
         // io: near edge = 87.53 [A] (measured; 156.31mm from right edge -> aligns with ATX io
         // in-chassis). width 158.75 [A] (6.250in shield), far edge overhangs right edge 2.44mm.
         // height 44.45 [B] (standard I/O panel).
@@ -105,16 +105,16 @@ function _mobo_table() = [
     //      column, rear) = row1 + .900in = 33.02. Cols 3/4 (140.97, 298.45) are the standoffs
     //      microATX + mini-ITX share (right-corner aligned); io + slots co-locate in-chassis.
     ["atx",  [304.80, 243.84],
-        [ [16.51, 10.16],    // col1 rear
-          [16.51, 165.10],   // col1 row2
-          [16.51, 237.49],   // col1 row3
-          [95.25, 10.16],    // col2 (rear only)
-          [140.97, 10.16],   // col3 rear  (shared standoff)
-          [140.97, 165.10],  // col3 row2  (shared standoff)
-          [140.97, 237.49],  // col3 row3
-          [298.45, 33.02],   // col4 (rightmost) off-row rear = row1 + .900in
-          [298.45, 165.10],  // col4 row2  (shared standoff)
-          [298.45, 237.49] ],// col4 row3
+        [ [16.51, 10.16, "structural-mount", mobo_hole_dia()],    // col1 rear
+          [16.51, 165.10, "structural-mount", mobo_hole_dia()],   // col1 row2
+          [16.51, 237.49, "structural-mount", mobo_hole_dia()],   // col1 row3
+          [95.25, 10.16, "structural-mount", mobo_hole_dia()],    // col2 (rear only)
+          [140.97, 10.16, "structural-mount", mobo_hole_dia()],   // col3 rear  (shared standoff)
+          [140.97, 165.10, "structural-mount", mobo_hole_dia()],  // col3 row2  (shared standoff)
+          [140.97, 237.49, "structural-mount", mobo_hole_dia()],  // col3 row3
+          [298.45, 33.02, "structural-mount", mobo_hole_dia()],   // col4 (rightmost) off-row rear = row1 + .900in
+          [298.45, 165.10, "structural-mount", mobo_hole_dia()],  // col4 row2  (shared standoff)
+          [298.45, 237.49, "structural-mount", mobo_hole_dia()] ],// col4 row3
         // io: near edge = 148.49 [A] (measured; 156.31mm from the right edge). width 158.75
         // [A] (6.250in shield), far edge overhangs the right edge by 2.44mm. height 44.45 [B].
         [148.49, 158.75, 44.45], // io  [A] near-edge measured; 156.31 from right edge
@@ -132,13 +132,30 @@ function _mobo_row(ff) =
     len(rows) > 0 ? rows[0] : undef;
 function _mobo_unknown(ff) = str("motherboards: unknown ff ", ff, "; known: ", mobo_known_ff());
 
+// --- hole roles (Task 2 of the hole-role-tagging plan; mirrors sbc.scad) ---
+function mobo_known_hole_roles() = ["structural-mount", "component-mount", "keep-out", "alignment"];
+
 // All three geometry accessors apply the drawing->component-up X-flip (x -> W - x);
 // see the MIRROR note at the top of this file. W = board width for the ff.
 
-// Standoff coords, component-up frame. Each drawing-frame [x,y] -> [W-x, y].
-function mobo_standoff_xy(ff) =
+// Standoff coords, component-up frame: [x, y, role, dia]. Each drawing-frame
+// [x,y,role,dia] -> [W-x, y, role, dia] (mirror flip preserves role/dia).
+// role a canonical role string    -> only that role (silent).
+// role == "all"                   -> every hole, silent (explicit intent).
+// role == undef (omitted)         -> every hole, PLUS a WARNING when >1 role present.
+function mobo_standoff_xy(ff, role = undef) =
     let (r = _mobo_row(ff)) assert(!is_undef(r), _mobo_unknown(ff))
-    let (w = r[1][0]) [ for (p = r[2]) [w - p[0], p[1]] ];
+    let (w = r[1][0],
+         all = [ for (p = r[2]) [w - p[0], p[1], p[2], p[3]] ],
+         present = [for (rr = mobo_known_hole_roles()) if (len([for (h = all) if (h[2] == rr) h]) > 0) rr],
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: motherboards '", ff, "' standoffs span ", len(present), " roles; pass role= to filter"))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    assert(sel == "all"
+        || len([for (rr = mobo_known_hole_roles()) if (rr == sel) rr]) == 1,
+        str("motherboards: unknown hole role '", sel, "'; known: ", mobo_known_hole_roles()))
+    sel == "all" ? all : [for (h = all) if (h[2] == sel) h];
 
 // Rear I/O window [x_off,width,height], component-up frame. The drawing-frame near
 // (low-X) edge x0 mirrors to the far edge, so the component-up x_off = W - (x0 + width).
@@ -216,17 +233,16 @@ module mobo_placeholder(ff) {
 
 /* [Hole-stamp / cutout] */
 // Standoff clearance holes; use inside a consumer difference().
-module mobo_standoff_holes(ff, depth = 20, dia = -1) {
-    d = dia < 0 ? mobo_hole_dia() : dia;
-    for (p = mobo_standoff_xy(ff))
-        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = d);
+module mobo_standoff_holes(ff, depth = 20, dia = -1, role = undef) {
+    for (p = mobo_standoff_xy(ff, role))
+        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = dia < 0 ? p[3] : dia);
 }
 
 // Positive standoff posts (print a tray directly). Pilot bore subtracted.
-module mobo_standoffs(ff, height, dia = -1, bore = -1) {
+module mobo_standoffs(ff, height, dia = -1, bore = -1, role = undef) {
     od = dia  < 0 ? 6.0 : dia;   // post OD default //VERIFY vs hardware standoff
     bd = bore < 0 ? 2.5 : bore;  // pilot for self-tapping screw //VERIFY
-    for (p = mobo_standoff_xy(ff))
+    for (p = mobo_standoff_xy(ff, role))
         translate([p[0], p[1], 0]) difference() {
             cylinder(h = height, d = od);
             translate([0, 0, -1]) cylinder(h = height + 2, d = bd);

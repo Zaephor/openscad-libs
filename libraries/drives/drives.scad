@@ -30,10 +30,14 @@ $fn = 48;
 // =85.73, A13-direct=76.20) — a vendor picks one, the other, or both; all
 // three rows are shipped so a consumer's cutout is compatible with any of
 // them. Y columns: near=3.18 (A5), far=95.25 (A4).
+// Hole tuples are [x, y, role, dia]; role tag added for hole-role-sweep parity
+// with sbc (all drive mount holes are real chassis fastening points, hence
+// "structural-mount" uniformly). dia=3.4 reuses drive_holes()'s own
+// already-documented default clearance (M3 clearance) — not a new datum.
 function BOTTOM_35() = [
-    [41.28,  3.18], [41.28, 95.25], // required row (A7)
-    [85.73,  3.18], [85.73, 95.25], // optional row (A7+A6)
-    [76.20,  3.18], [76.20, 95.25], // optional row (A13, direct)
+    [41.28,  3.18, "structural-mount", 3.4], [41.28, 95.25, "structural-mount", 3.4], // required row (A7)
+    [85.73,  3.18, "structural-mount", 3.4], [85.73, 95.25, "structural-mount", 3.4], // optional row (A7+A6)
+    [76.20,  3.18, "structural-mount", 3.4], [76.20, 95.25, "structural-mount", 3.4], // optional row (A13, direct)
 ]; // [A]
 
 // 3.5" side mount holes: X positions 28.50 (A8, near) / 130.10 (A8+A9, far),
@@ -52,7 +56,7 @@ function BOTTOM_35() = [
 // tag sits on in both drawings. Z=6.35 from Z=0 (our bottom-face datum)
 // follows directly. Face-orientation semantic //VERIFY; number+role [B].
 function SIDE_35() = [
-    [28.50, 6.35], [130.10, 6.35],
+    [28.50, 6.35, "structural-mount", 3.4], [130.10, 6.35, "structural-mount", 3.4],
 ]; // X [A], Z [B] value/role + //VERIFY face-orientation — see RESEARCH.md Task 2 resolutions (c)
 
 // 3.5"/2.5" SATA connector position + extent — SFF-8223 Rev 2.7 Table 3-1
@@ -76,7 +80,8 @@ function C35_EXT() = [4.00, 33.39, 4.90]; // w=VERIFY, d=[A], h=VERIFY
 // row-alignment in Figure 3-1 — Task 1's own inference, not independently
 // re-dimensioned for the bottom holes in Table 3-1 — //VERIFY.
 function BOTTOM_25() = [
-    [14.00,  4.07], [14.00, 65.79], [90.60,  4.07], [90.60, 65.79],
+    [14.00,  4.07, "structural-mount", 3.4], [14.00, 65.79, "structural-mount", 3.4],
+    [90.60,  4.07, "structural-mount", 3.4], [90.60, 65.79, "structural-mount", 3.4],
 ]; // X //VERIFY, Y [A]
 
 // 2.5" side mount holes, 9.5mm/15mm height classes — SFF-8201 Table 3-1 +
@@ -84,7 +89,7 @@ function BOTTOM_25() = [
 // (A23) — number is [A], but its semantic reading as "hole Z-height above
 // the bottom face" is this pass's figure-layout inference, not an
 // explicitly-labeled callout in the spec prose — //VERIFY.
-function SIDE_25() = [ [14.00, 3.00], [90.60, 3.00] ]; // X [A], Z //VERIFY
+function SIDE_25() = [ [14.00, 3.00, "structural-mount", 3.4], [90.60, 3.00, "structural-mount", 3.4] ]; // X [A], Z //VERIFY
 
 // 2.5" side mount holes, 7mm height class. RESEARCH.md's own note ("4
 // corner [bottom] holes... optional when A1 <= 7mm") only speaks to
@@ -113,10 +118,12 @@ function U2_EXT() = [4.00, 33.43, 4.90]; // 33.43 [A] (SFF-8639 Fig 5-1), rest /
 // the same 1.45mm inset unchanged — NOT independently confirmed for the
 // shorter modules (RESEARCH.md Task 1 gap, carried through) — //VERIFY.
 // Not exercised by the Task 2 test (only m2_2280's hole shape is asserted).
-function M2_HOLE_2280() = [80.0 - 1.45, 11.00]; // [A]
-function M2_HOLE_2260() = [60.0 - 1.45, 11.00]; // //VERIFY (extrapolated)
-function M2_HOLE_2242() = [42.0 - 1.45, 11.00]; // //VERIFY (extrapolated)
-function M2_HOLE_2230() = [30.0 - 1.45, 11.00]; // //VERIFY (extrapolated)
+// dia=3.4 reuses drive_holes()'s documented default clearance (see BOTTOM_35()
+// comment above); not re-derived for the M.2 standoff screw specifically.
+function M2_HOLE_2280() = [80.0 - 1.45, 11.00, "structural-mount", 3.4]; // [A]
+function M2_HOLE_2260() = [60.0 - 1.45, 11.00, "structural-mount", 3.4]; // //VERIFY (extrapolated)
+function M2_HOLE_2242() = [42.0 - 1.45, 11.00, "structural-mount", 3.4]; // //VERIFY (extrapolated)
+function M2_HOLE_2230() = [30.0 - 1.45, 11.00, "structural-mount", 3.4]; // //VERIFY (extrapolated)
 
 // M.2 card-edge (gold-finger) connector footprint. x=0 at the card's
 // connector end (by convention; corroborated by the mount hole sitting near
@@ -168,15 +175,52 @@ function drive_family(type) =
     assert(false, str("drives: unknown type '", type, "'"));
 
 function drive_size(type)          = _blk_row(type)[1];
-function drive_bottom_holes(type)  = _blk_row(type)[2];
-function drive_side_holes(type)    = _blk_row(type)[3];
 function drive_connector(type)     = _blk_row(type)[4];
 function drive_card_size(type)     = _card_row(type)[1];
-function drive_card_hole(type)     = _card_row(type)[2];
+function drive_card_hole(type)     = _card_row(type)[2]; // [x,y,role,dia]; single point, no role filter (degenerate)
 function drive_card_edge(type)     = _card_row(type)[3];
 
 function drive_known_types() =
     concat([for (e = _block_table()) e[0]], [for (e = _card_table()) e[0]]);
+
+// --- hole roles (hole-role-tagging sweep; mirrors sbc's idiom) ---
+function drives_known_hole_roles() = ["structural-mount", "component-mount", "keep-out", "alignment"];
+
+// Distinct roles actually present among a hole list `all` (order of the vocabulary).
+// Shared by drive_bottom_holes()/drive_side_holes() (mirrors sbc's _sbc_roles_present).
+function _drive_roles_present(all) =
+    [for (r = drives_known_hole_roles()) if (len([for (h = all) if (h[2] == r) h]) > 0) r];
+
+// role must be undef (= "all"), "all", or a known role string; anything else is
+// a caller error (typo'd role), asserted loudly rather than silently returning [].
+function _drive_role_ok(role) =
+    is_undef(role) || role == "all" || len([for (r = drives_known_hole_roles()) if (r == role) r]) == 1;
+
+// Full hole tuples [x,y,role,dia] for a block drive's bottom/side mount holes,
+// optionally filtered by role.
+//   role a canonical role    -> only that role (silent)
+//   role == "all"            -> every hole, silent (explicit intent)
+//   role == undef (omitted)  -> every hole, PLUS a WARNING when >1 role present
+//   role anything else       -> assert (unknown role)
+function drive_bottom_holes(type, role = undef) =
+    assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()))
+    let (all = _blk_row(type)[2],
+         present = _drive_roles_present(all),
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: drives '", type, "' bottom holes span ", len(present), " roles; pass role= to filter"))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    sel == "all" ? all : [for (h = all) if (h[2] == sel) h];
+
+function drive_side_holes(type, role = undef) =
+    assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()))
+    let (all = _blk_row(type)[3],
+         present = _drive_roles_present(all),
+         _warn = (is_undef(role) && len(present) > 1)
+             ? echo(str("WARNING: drives '", type, "' side holes span ", len(present), " roles; pass role= to filter"))
+             : undef,
+         sel = is_undef(role) ? "all" : role)
+    sel == "all" ? all : [for (h = all) if (h[2] == sel) h];
 
 /* [Placeholder] */
 // Envelope solid in the datum frame (bottom face Z=0, min corner at origin,
@@ -195,28 +239,41 @@ module drive_placeholder(type) {
 // hole axis, oversized in length so it fully pierces the wall it cuts.
 //   faces: "bottom" | "side" | "both" (block); card family always cuts its single
 //          standoff hole along -Z.
-//   dia:   hole clearance diameter (default 3.4 = M3 clearance; 3.5 ~ 6-32).
+//   dia:   hole clearance diameter override; default -1 uses each hole's own
+//          per-hole tagged dia (all current data is 3.4 = M3 clearance, but this
+//          now reads the tuple, not a hardcoded constant -- matches
+//          mobo_standoff_holes()/sbc_mount_holes()'s per-hole-dia convention).
 //   depth: cutter length through the wall (default 40, a generous through-cut).
-module drive_holes(type, faces = "bottom", dia = 3.4, depth = 40) {
+//   role:  optional hole-role filter (see drives_known_hole_roles()); "all" or
+//          undef (omitted) both stamp every hole for the requested face(s);
+//          undef additionally WARNs if >1 role is present (see
+//          drive_bottom_holes()/drive_side_holes()).
+module drive_holes(type, faces = "bottom", dia = -1, depth = 40, role = undef) {
     assert(faces=="bottom" || faces=="side" || faces=="both",
            str("drives: unknown faces '", faces, "'"));
-    r = dia/2;
     if (drive_family(type) == "card") {
-        h = drive_card_hole(type);            // [x,y] on the Z=0 face (x along len)
-        translate([h[0], h[1], 0])
-            cylinder(h = depth, r = r, center = true); // pierces Z=0 floor
+        assert(_drive_role_ok(role), str("drives: unknown hole role '", role, "'; known: ", drives_known_hole_roles()));
+        h = drive_card_hole(type);            // [x,y,role,dia] on the Z=0 face (x along len)
+        r = (dia < 0 ? h[3] : dia) / 2;
+        if (is_undef(role) || role == "all" || role == h[2])
+            translate([h[0], h[1], 0])
+                cylinder(h = depth, r = r, center = true); // pierces Z=0 floor
     } else {
         s = drive_size(type);
         if (faces=="bottom" || faces=="both")
-            for (p = drive_bottom_holes(type)) // [x,y] on Z=0
+            for (p = drive_bottom_holes(type, role)) { // [x,y,role,dia] on Z=0
+                r = (dia < 0 ? p[3] : dia) / 2;
                 translate([p[0], p[1], 0])
                     cylinder(h = depth, r = r, center = true);
+            }
         if (faces=="side" || faces=="both")
-            for (p = drive_side_holes(type))   // [x,z]; one set per +/-Y wall
+            for (p = drive_side_holes(type, role)) {   // [x,z,role,dia]; one set per +/-Y wall
+                r = (dia < 0 ? p[3] : dia) / 2;
                 for (y = [0, s[1]])
                     translate([p[0], y, p[1]])
                         rotate([90,0,0])       // axis along Y
                             cylinder(h = depth, r = r, center = true);
+            }
     }
 }
 

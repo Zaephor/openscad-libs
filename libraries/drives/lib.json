@@ -1,7 +1,7 @@
 {
   "name": "drives",
   "description": "Storage-drive mechanical reference -- envelope, mount-hole and connector geometry for 3.5\"/2.5\"/U.2 block drives and M.2 (2230/2242/2260/2280) cards. Placeholder + hole/cutout stamps for caddies and brackets. See RESEARCH.md for per-value evidence and tiering.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "sources": [
     "https://members.snia.org/document/dl/25862 (SFF-8301 Rev 1.9, 3.5\" Form Factor Drive Dimensions -- envelope + bottom/side mount holes)",
     "https://members.snia.org/document/dl/25851 (SFF-8201 Rev 3.4, 2.5\" Form Factor Drive Dimensions -- envelope + bottom/side mount holes)",
