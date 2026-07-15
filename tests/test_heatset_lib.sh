@@ -57,4 +57,59 @@ tol=0.1
 sys.exit(0 if abs(xspan-expected_od)<tol and abs(yspan-expected_od)<tol and abs(zspan-expected_len)<tol and abs(zmin-(-expected_len))<tol and abs(zmax)<tol else 1)
 PY
 
+# Pocket: Z-extent must differ with/without melt_relief, and the mouth (top
+# lead-in chamfer) must be wider than the pilot bore. All expected numbers are
+# derived dynamically from the accessor functions, not hardcoded.
+cat > "$tmp/pocket_dims.scad" <<'EOF'
+use <heatset/heatset.scad>;
+echo(heatset_insert_length("M3"));
+echo(heatset_lead_in("M3"));
+echo(heatset_pilot_dia("M3"));
+EOF
+dims_out="$(run "$tmp/pocket_dims.scad")"
+m3_len="$(echo "$dims_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.[0-9]+')"
+m3_li="$(echo "$dims_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.[0-9]+')"
+m3_pd="$(echo "$dims_out" | grep -m3 'ECHO:' | tail -1 | grep -oE '[0-9]+\.[0-9]+')"
+
+cat > "$tmp/pocket_norelief.scad" <<'EOF'
+use <heatset/heatset.scad>;
+heatset_pocket("M3", melt_relief = false);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/pocket_norelief.stl" "$tmp/pocket_norelief.scad" 2>/dev/null
+
+cat > "$tmp/pocket_relief.scad" <<'EOF'
+use <heatset/heatset.scad>;
+heatset_pocket("M3", melt_relief = true);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/pocket_relief.stl" "$tmp/pocket_relief.scad" 2>/dev/null
+
+python3 - "$tmp/pocket_norelief.stl" "$tmp/pocket_relief.stl" "$m3_len" "$m3_li" "$m3_pd" <<'PY' || { echo "pocket Z-extent/mouth-width incorrect"; exit 1; }
+import struct,sys
+
+def bbox(path):
+    d=open(path,'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+    xs=[];zs=[]
+    for i in range(n):
+        for v in range(3):
+            base=off+i*50+12+v*12
+            x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); zs.append(z)
+    return min(xs),max(xs),min(zs),max(zs)
+
+nr_xmin,nr_xmax,nr_zmin,nr_zmax = bbox(sys.argv[1])
+rl_xmin,rl_xmax,rl_zmin,rl_zmax = bbox(sys.argv[2])
+length=float(sys.argv[3]); lead_in=float(sys.argv[4]); pilot_dia=float(sys.argv[5])
+mouth_dia = pilot_dia + 2*lead_in
+tol=0.1
+
+ok = (
+    abs(nr_zmin - (-length)) < tol and                      # no relief: bottom at -insert_length
+    abs(rl_zmin - (-(length + lead_in))) < tol and           # with relief: extends further below
+    rl_zmin < nr_zmin - 0.01 and                             # relief strictly deeper than no-relief
+    nr_zmax < 0.1 and rl_zmax < 0.1 and                      # mouth at/near Z=0
+    abs((nr_xmax - nr_xmin) - mouth_dia) < tol and           # mouth wider than pilot bore (lead-in chamfer)
+    abs((rl_xmax - rl_xmin) - mouth_dia) < tol
+)
+sys.exit(0 if ok else 1)
+PY
+
 echo ok

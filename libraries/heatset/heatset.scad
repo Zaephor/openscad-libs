@@ -45,3 +45,23 @@ module heatset_placeholder(size) {
     translate([0, 0, -heatset_insert_length(size)])
         cylinder(h = heatset_insert_length(size), d = heatset_insert_od(size), $fn = 48);
 }
+
+/* [Pocket] — negative cutter for a consumer difference(): pilot bore
+   (melt-grip, < insert_od) from Z=0 down to -insert_length, a top lead-in
+   chamfer at the +Z mouth (widens toward +Z), and an optional melt-relief
+   cavity below the seat for displaced plastic. Z=0 = install face; all
+   cutting geometry extends -Z from there. */
+module heatset_pocket(size, melt_relief = true) {
+    li  = heatset_lead_in(size);
+    len = heatset_insert_length(size);
+    pd  = heatset_pilot_dia(size);
+    union() {
+        // pilot bore, Z=0 down to -len
+        translate([0, 0, -len]) cylinder(h = len + 0.01, d = pd, $fn = 48);
+        // top lead-in chamfer (mouth wider than pd by 2*li)
+        translate([0, 0, -li]) cylinder(h = li + 0.01, d1 = pd, d2 = pd + 2 * li, $fn = 48);
+        // melt-relief cavity below the seat for displaced plastic
+        if (melt_relief)
+            translate([0, 0, -len - li]) cylinder(h = li + 0.01, d = pd, $fn = 48);
+    }
+}

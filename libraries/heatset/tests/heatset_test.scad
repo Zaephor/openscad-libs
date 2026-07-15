@@ -33,3 +33,11 @@ echo("heatset_test OK");
 
 /* [Placeholder] — insert envelope for fit/interference checks */
 heatset_placeholder("M3");
+
+/* [Hole-stamp: pocket] — consumer difference(): pilot bore + lead-in chamfer +
+   melt-relief cut from a boss-sized block. Smoke-checks the module renders
+   cleanly; numeric Z-extent checks live in tests/test_heatset_lib.sh. */
+difference() {
+    translate([0, 0, -12]) cylinder(h = 12, d = heatset_boss_od("M3") + 2, $fn = 48);
+    heatset_pocket("M3");
+}
