@@ -147,6 +147,8 @@ function mobo_standoff_xy(ff, role = undef) =
     let (w = r[1][0],
          all = [ for (p = r[2]) [w - p[0], p[1], p[2], p[3]] ],
          present = [for (rr = mobo_known_hole_roles()) if (len([for (h = all) if (h[2] == rr) h]) > 0) rr])
+    assert(is_undef(role) || len([for (rr = mobo_known_hole_roles()) if (rr == role) rr]) == 1,
+        str("motherboards: unknown hole role '", role, "'; known: ", mobo_known_hole_roles()))
     is_undef(role)
         ? (len(present) > 1
             ? echo(str("WARNING: motherboards '", ff, "' standoffs span ", len(present), " roles; pass role= to filter")) all
@@ -230,9 +232,8 @@ module mobo_placeholder(ff) {
 /* [Hole-stamp / cutout] */
 // Standoff clearance holes; use inside a consumer difference().
 module mobo_standoff_holes(ff, depth = 20, dia = -1, role = undef) {
-    d = dia < 0 ? mobo_hole_dia() : dia;
     for (p = mobo_standoff_xy(ff, role))
-        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = d);
+        translate([p[0], p[1], -1]) cylinder(h = depth + 2, d = dia < 0 ? p[3] : dia);
 }
 
 // Positive standoff posts (print a tray directly). Pilot bore subtracted.

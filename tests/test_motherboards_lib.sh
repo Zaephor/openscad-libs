@@ -46,4 +46,16 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch a wrong assert:"; echo "$out"; exit 1
 fi
 
+# Negative: an unknown hole-role string MUST assert (sbc parity -- a typo'd
+# role must not silently return an empty list). mirrors sbc's unknown-role
+# negative control.
+cat > "$tmp/badrole.scad" <<'EOF'
+use <motherboards/motherboards.scad>;
+x = mobo_standoff_xy("atx", "bogus-role");
+EOF
+out="$(run "$tmp/badrole.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "unknown hole role must assert:"; echo "$out"; exit 1
+fi
+
 echo ok

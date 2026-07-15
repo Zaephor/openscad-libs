@@ -94,7 +94,7 @@ Form-factor key: `"itx"` / `"matx"` / `"atx"` (see `mobo_known_ff()`).
 | `mobo_hole_dia()` | standoff clearance hole diameter, mm |
 | `mobo_pcie_pitch()` | PCIe slot-to-slot pitch, mm |
 | `mobo_known_hole_roles()` | the 4 canonical hole-role strings, in table order |
-| `mobo_standoff_xy(ff, role=undef)` | list of `[x, y, role, dia]` standoff hole tuples, filtered by `role` (backward-compatible — `mobo_standoff_xy(ff)` still returns every hole, unchanged from before role-tagging) |
+| `mobo_standoff_xy(ff, role=undef)` | list of `[x, y, role, dia]` standoff hole tuples, filtered by `role` (backward-compatible — `mobo_standoff_xy(ff)` still returns the same holes at the same positions, just now with role/dia appended) |
 | `mobo_io_cutout(ff)` | `[x_off, width, height]` rear I/O window |
 | `mobo_pcie_first_xy(ff)` | `[x,y]` of the first (rearmost) PCIe slot |
 | `mobo_pcie_count(ff)` | number of PCIe slots for the form factor |
