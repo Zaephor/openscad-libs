@@ -30,3 +30,6 @@ for (s = heatset_known_sizes())
            str(s, " boss_od ~= 2.5x insert_od"));
 
 echo("heatset_test OK");
+
+/* [Placeholder] — insert envelope for fit/interference checks */
+heatset_placeholder("M3");

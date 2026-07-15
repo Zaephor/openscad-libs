@@ -38,3 +38,10 @@ function heatset_insert_length(s) = _heatset_row(s)[2];
 function heatset_pilot_dia(s)     = _heatset_row(s)[3];
 function heatset_boss_od(s)       = _heatset_row(s)[4];
 function heatset_lead_in(s)       = _heatset_row(s)[5];
+
+/* [Placeholder] — insert envelope: top (install) face at Z=0, body grows -Z.
+   Knurl approximated as a plain cylinder at nominal OD. For fit/viz only. */
+module heatset_placeholder(size) {
+    translate([0, 0, -heatset_insert_length(size)])
+        cylinder(h = heatset_insert_length(size), d = heatset_insert_od(size), $fn = 48);
+}

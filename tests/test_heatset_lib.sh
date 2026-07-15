@@ -23,4 +23,26 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown size:"; echo "$out"; exit 1
 fi
 
+# Placeholder: M3 bbox must match insert_od x insert_length with top face at Z=0.
+cat > "$tmp/placeholder_m3.scad" <<'EOF'
+use <heatset/heatset.scad>;
+heatset_placeholder("M3");
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/placeholder_m3.stl" "$tmp/placeholder_m3.scad" 2>/dev/null
+python3 - "$tmp/placeholder_m3.stl" <<'PY' || { echo "M3 placeholder bbox incorrect"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[];zs=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); ys.append(y); zs.append(z)
+xspan=max(xs)-min(xs); yspan=max(ys)-min(ys); zspan=max(zs)-min(zs)
+zmin=min(zs); zmax=max(zs)
+# Expected: insert_od=4.55, insert_length=5.74, Z ranges from -5.74 to 0
+# Tolerance for $fn=48 faceting: ~2%
+tol=0.1
+sys.exit(0 if abs(xspan-4.55)<tol and abs(yspan-4.55)<tol and abs(zspan-5.74)<tol and abs(zmin-(-5.74))<tol and abs(zmax)<tol else 1)
+PY
+
 echo ok
