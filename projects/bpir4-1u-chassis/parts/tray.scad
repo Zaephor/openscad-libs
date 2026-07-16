@@ -65,14 +65,24 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
                     fan_holes(fan_size, depth = wall);
                 }
     } else {
-        // Passive slots: vertical rectangular cuts across the rear wall.
-        usable = body_w() - 2*wall - 2*vent_slot_gap;
-        pitch  = vent_slot_w + vent_slot_gap;
-        n      = floor(usable / pitch);
-        x0     = -(n-1)*pitch/2;
-        for (i = [0 : n-1])
-            translate([x0 + i*pitch - vent_slot_w/2, yw - wall - 1, floor_th + vent_slot_gap])
-                cube([vent_slot_w, wall + 2, int_h() - 2*vent_slot_gap]);
+        // Passive honeycomb: self-supporting hex vent over the same
+        // fan_count*fan_size footprint the active fans would occupy
+        // (X centered on 0, Z band centered on zc), cut fully through the
+        // rear wall. Same rotate([90,0,0]) idiom as the faceplate band (see
+        // _faceplate()): local X (honeycomb's `width`) stays chassis X;
+        // local Y (honeycomb's `height`) becomes chassis Z (the fan_size
+        // band around zc); local Z (honeycomb's `depth`, its extrusion /
+        // cut-through axis) becomes chassis -Y, punching through the rear
+        // wall — `wall + 2` gives a 1mm overcut on both faces, matching the
+        // old slot cutter's overcut. Translate places the honeycomb's local
+        // (0,0,0) corner at (x=-span/2, y=yw+1 [outer wall face + 1mm
+        // overcut], z=zc-fan_size/2), so after rotation the cut spans
+        // Y=[yw-wall-1, yw+1] through the wall and Z=[zc-fan_size/2,
+        // zc+fan_size/2] centered on zc.
+        span = fan_count * fan_size;
+        translate([-span/2, yw + 1, zc - fan_size/2])
+            rotate([90, 0, 0])
+                honeycomb_vent(span, fan_size, wall + 2, honeycomb_cell, honeycomb_wall);
     }
 }
 
