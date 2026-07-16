@@ -77,13 +77,21 @@ function _lid_post_od() = lid_insert_bore + boss_wall; // boss OD (shared placem
 // Body hugs the board: each side carries board_side_gap + a corner post (tangent
 // to the wall) + the wall. Ears bridge body_w -> panel_w. Must stay <= clear_w.
 function body_w()   = board_w() + 2*(board_side_gap + _lid_post_od() + wall);
-function rear_off() = enable_exhaust ? fan_plenum : rear_gap;
-function int_depth()= board_d() + rear_off();    // faceplate-inner (Y=0) -> rear-wall outer face
+// ee defaults to the file-global enable_exhaust so every existing no-arg call
+// site (including within this file) is unchanged. The optional param exists
+// because a `use`-scoped consumer (parts/tray.scad, parts/lid.scad) with its
+// own enable_exhaust MODULE parameter cannot make a plain function call see
+// that value -- functions only read their own file's globals, never a
+// caller's module params -- so such a consumer must pass its local
+// enable_exhaust through explicitly as `ee` for the depth path to respond to
+// the Customizer value.
+function rear_off(ee = enable_exhaust) = ee ? fan_plenum : rear_gap;
+function int_depth(ee = enable_exhaust) = board_d() + rear_off(ee); // faceplate-inner (Y=0) -> rear-wall outer face
 // board placement in chassis frame:
 function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
-function rear_wall_y() = board_y() + int_depth();// outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
+function rear_wall_y(ee = enable_exhaust) = board_y() + int_depth(ee); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
 
 // Intake vent band (faceplate): starts just above the tallest ymin (front-
 // edge) connector so the band clears every port, and stays inside the wall

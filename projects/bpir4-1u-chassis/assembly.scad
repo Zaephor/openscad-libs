@@ -31,7 +31,7 @@ module assembly() {
             % sbc_placeholder(BOARD);
     if (show_lid)
         translate([0, 0, (ext_h() - lid_th) + 30 * explode])
-            lid();
+            lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
     if (show_rack)
         translate([0, 0, -rack10_u()])          // chassis is the middle of 3U
             % rack10_placeholder(STD, 3, rack_depth_eff());
