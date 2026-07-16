@@ -25,7 +25,7 @@ show_board = true; // sbc_placeholder fit reference (not a printed part)
 show_rack  = false; // 3U rackpost reference
 
 module assembly() {
-    if (show_tray) tray(enable_exhaust=enable_exhaust, fan_size=fan_size, fan_count=fan_count, ear_hole_type=ear_hole_type);
+    if (show_tray) tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type);
     if (show_board)
         translate([board_x(), board_y(), board_z()])
             % sbc_placeholder(BOARD);

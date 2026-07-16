@@ -46,12 +46,16 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
 // Rear-wall openings. Fans on: `fan_count` bores + screw holes across the
 // wall, vertically centered on the interior clearance, axis rotated onto +Y
 // so the (default Z-axis) fan cutters punch straight through the wall. Fans
-// off: a vertical passive vent-slot array.
+// off: a self-supporting honeycomb hex vent over the same fan footprint
+// (see the honeycomb_vent() call below).
 //
-// rear_wall_y() is the wall's outer (rearmost) face; the wall itself occupies
-// [rear_wall_y()-wall, rear_wall_y()] (see _tray_shell()), so every cutter
-// below is anchored off `rear_wall_y() - wall` (the inner face) to actually
-// intersect the wall.
+// rear_wall_y(ee = enable_exhaust) is the wall's outer (rearmost) face; the
+// wall itself occupies [rear_wall_y()-wall, rear_wall_y()] (see
+// _tray_shell()), so every cutter below is anchored off
+// `rear_wall_y(ee) - wall` (the inner face) to actually intersect the wall.
+// The `ee` param (params.scad) must be threaded through explicitly from this
+// module's own enable_exhaust parameter -- see params.scad's "ee defaults
+// to..." comment for why a plain no-arg call can't see it.
 module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
     yw = rear_wall_y(enable_exhaust); // rear wall outer (rearmost) face
     zc = floor_th + int_h()/2;        // vertical center of interior clearance

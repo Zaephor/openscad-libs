@@ -7,10 +7,17 @@ width) with four support-free corner posts beside it, each bonded to
 **both** walls of its corner as a full-height square column (fillet on the
 two internal post↔wall junctions, chamfer on the one exposed free edge —
 no angled buttress). Rear exhaust fans are behind an `enable_exhaust` toggle
-exposed in the assembly customizer alongside `fan_size`/`fan_count` (fixed:
-the toggle now actually drives tray/lid geometry via the Customizer or
-`-D enable_exhaust=false`, instead of being silently overridden); passive
-mode swaps the fan bores for a rear vent-slot array. Intake air runs through
+exposed in the assembly customizer alongside `fan_size`/`fan_count`; the
+toggle drives geometry end-to-end via the Customizer (or
+`-D enable_exhaust=false`) — active mode is the full-depth box with rear
+fan bores, **passive mode is a shorter box** (no fan plenum) with a
+self-supporting honeycomb hex vent over the same fan footprint, replacing
+the fan bores. The rear exhaust fan mounts on the tray's interior rear-wall
+face (screwed in from inside the case, airflow venting out through the wall
+bore); `fan_plenum` auto-derives from the fan's own depth
+(`fan_default_thickness()`, `libraries/fans/fans.scad`) plus a clearance
+margin, so the fan can never be placed closer to the board than that margin
+allows. Intake air runs through
 a self-supporting honeycomb hex-vent band above the IO connector cluster
 (not side margins), for a straight cross-chassis path over the SFP/connector
 tops — no supports needed, since each hex cell's own bridge is only a few mm
