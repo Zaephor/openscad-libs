@@ -20,6 +20,16 @@
 // community corroboration, [C] single community STL/reverse-engineered. //VERIFY
 // marks weak/unconfirmed values. See RESEARCH.md for full source list + notes.
 // Units: millimeters.
+// SP2: connector bodies ([w,d,h], the 3rd element of a connector row) reconciled
+// against libraries/connectors/connectors.scad's catalog are now SOURCED from
+// connector_size(type) instead of a literal — see RESEARCH.md "SP2 connector
+// reconcile — Task 1" for the full verdict table. Only rows the table calls
+// "same" (within 0.5mm of a catalog peer, 21 rows total) are adopted this way;
+// every "different"/"error"/"no-peer" body stays literal (adopting an off-peer
+// value would corrupt real board data — see RESEARCH.md for why no new catalog
+// type was added instead). Position [x,y,z] and the edge string are always sbc's
+// own and are never replaced.
+use <connectors/connectors.scad>;
 
 $fn = 48;
 
@@ -59,7 +69,11 @@ function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings labe
 // carried forward byte-for-byte onto pi3bplus/pi5 [B] — the 40-pin header position
 // is fixed across the whole family by the Raspberry Pi HAT mechanical spec, so reuse
 // here is a compatibility requirement, not a guess.
-function _sbc_gpio() = ["gpio", [7.1, 50.0, 1.4], [51.0, 5.0, 8.5], "top"];
+// Body sourced from connectors' gpio_2x20 (SP2 "same" verdict: Δ = +0.20,−0.08,0.00,
+// well within 0.5mm; cat h=[B] is this exact sbc reading's own SP1 upgrade, no
+// downgrade). Reused byte-for-byte by pi3b/pi3bplus/pi4b/pi5 (4 "same" verdict-table
+// rows from this one line) — pizero/pizero2w define their own separate gpio rows below.
+function _sbc_gpio() = ["gpio", [7.1, 50.0, 1.4], connector_size("gpio_2x20"), "top"];
 
 function _sbc_table() = [
     // [A] https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-mechanical-drawing.pdf
@@ -73,14 +87,14 @@ function _sbc_table() = [
           // Y-spans [A] from the drawing's own bottom-referenced "10.25/29/47/56"
           // chain; X depth (w) is the brief's standard USB-A body depth [B] (drawing
           // gives no top-view X-depth text), so x is derived (85.6 - w).
-          ["usb2_1",       [68.6, 29,    1.4], [17, 18,   16.0], "xmax"], // [A]/[B]
-          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY (see RESEARCH.md re: 9mm span)
-          ["rj45",         [64.6, 10.25, 1.4], [21, 18.75, 13.5], "xmax"], // [A]/[B]
+          ["usb2_1",       [68.6, 29,    1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", exact match — this cat type was derived from this very row in SP1)
+          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY (see RESEARCH.md re: 9mm span) — SP2 verdict "error" (chain-truncated d), left literal
+          ["rj45",         [64.6, 10.25, 1.4], connector_size("rj45_shallow"), "xmax"], // [A] pos / body sourced from connectors rj45_shallow (SP2 "same", exact match — cat type derived from this very row in SP1)
           // bottom edge (ymin): X centrelines [A] off the "3.5/10.6/32/53.5" chain,
           // converted to min-corner using standard body widths [B]/[C].
-          ["microusb_pwr", [6.85, 0,     1.4], [7.5, 5.5,  2.8], "ymin"], // [A] pos / [C] body //VERIFY
-          ["hdmi",         [24.5, 0,     1.4], [15,  11.5, 6.5], "ymin"], // [A] pos+h / [B] body
-          ["av_jack",      [50.5, 0,     1.4], [6,   6,    6.0], "ymin"], // [A] pos+h / [C] body //VERIFY
+          ["microusb_pwr", [6.85, 0,     1.4], [7.5, 5.5,  2.8], "ymin"], // [A] pos / [C] body //VERIFY — SP2 verdict "different" (h fails >2x threshold vs micro_usb), left literal
+          ["hdmi",         [24.5, 0,     1.4], connector_size("hdmi"), "ymin"], // [A] pos / body sourced from connectors hdmi (SP2 "same", w exactly at the 0.5mm boundary)
+          ["av_jack",      [50.5, 0,     1.4], [6,   6,    6.0], "ymin"], // [A] pos+h / [C] body //VERIFY — SP2 verdict "no-peer", left literal
         ] ],
     // [A] https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-plus-mechanical-drawing.pdf
     // Same connector map as pi3b — pi3bplus's own drawing repeats byte-for-byte the
@@ -90,12 +104,12 @@ function _sbc_table() = [
         [[3.5,3.5,"structural-mount",2.7],[61.5,3.5,"structural-mount",2.7],
          [3.5,52.5,"structural-mount",2.7],[61.5,52.5,"structural-mount",2.7]],
         [ _sbc_gpio(),
-          ["usb2_1",       [68.6, 29,    1.4], [17, 18,   16.0], "xmax"], // [A]/[B]
-          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY
-          ["rj45",         [64.6, 10.25, 1.4], [21, 18.75, 13.5], "xmax"], // [A]/[B]
-          ["microusb_pwr", [6.85, 0,     1.4], [7.5, 5.5,  2.8], "ymin"], // [A] pos / [C] body //VERIFY
-          ["hdmi",         [24.5, 0,     1.4], [15,  11.5, 6.5], "ymin"], // [A] pos+h / [B] body
-          ["av_jack",      [50.5, 0,     1.4], [6,   6,    6.0], "ymin"], // [A] pos+h / [C] body //VERIFY
+          ["usb2_1",       [68.6, 29,    1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", corroborates pi3b)
+          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY — SP2 verdict "error", same truncation reasoning as pi3b, left literal
+          ["rj45",         [64.6, 10.25, 1.4], connector_size("rj45_shallow"), "xmax"], // [A] pos / body sourced from connectors rj45_shallow (SP2 "same", corroborates pi3b)
+          ["microusb_pwr", [6.85, 0,     1.4], [7.5, 5.5,  2.8], "ymin"], // [A] pos / [C] body //VERIFY — SP2 verdict "different", left literal
+          ["hdmi",         [24.5, 0,     1.4], connector_size("hdmi"), "ymin"], // [A] pos / body sourced from connectors hdmi (SP2 "same", corroborates pi3b)
+          ["av_jack",      [50.5, 0,     1.4], [6,   6,    6.0], "ymin"], // [A] pos+h / [C] body //VERIFY — SP2 verdict "no-peer", left literal
         ] ],
     // [A] https://datasheets.raspberrypi.com/rpi4/raspberry-pi-4-mechanical-drawing.pdf
     ["pi4b",     [85.6, 56], 3.0, 1.4,
@@ -105,15 +119,15 @@ function _sbc_table() = [
           // right edge (xmax), top-to-bottom on the real board: rj45 (near GPIO
           // corner), usb3 stack, usb2 stack (Pi4B swapped the pi3b order) — Y-spans
           // [A] off the drawing's own "9/27/45.75/56" chain.
-          ["usb2",     [68.6, 9,     1.4], [17, 18,    16.0], "xmax"], // [A]/[B]
-          ["usb3",     [68.6, 27,    1.4], [17, 18.75, 16.0], "xmax"], // [A]/[B]
-          ["rj45",     [64.6, 45.75, 1.4], [21, 10.25, 13.5], "xmax"], // [A]/[B]
+          ["usb2",     [68.6, 9,     1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", matches pi3b usb2_1 exactly)
+          ["usb3",     [68.6, 27,    1.4], [17, 18.75, 16.0], "xmax"], // [A]/[B] — SP2 verdict "different (marginal)", d over threshold by 0.25mm, left literal pending adjudication
+          ["rj45",     [64.6, 45.75, 1.4], [21, 10.25, 13.5], "xmax"], // [A]/[B] — SP2 verdict "error" (d short vs pi3b family by truncation-signature analogy), left literal
           // bottom edge (ymin): X centrelines [A] off the "3.5/7.7/14.8/13.5/7.5"
           // chain (cumulative from the left edge: 11.2, 26.0, 39.5, 47.0).
-          ["usbc_pwr", [6.7,   0, 1.4], [9,   7.4, 3.2], "ymin"], // [A]
-          ["hdmi_1",   [22.25, 0, 1.4], [7.5, 4.5, 3.0], "ymin"], // [A]
-          ["hdmi_2",   [35.75, 0, 1.4], [7.5, 4.5, 3.0], "ymin"], // [A]
-          ["av_jack",  [50.5,  0, 1.4], [6,   6,   6.0], "ymin"], // [A] h / [C] position by analogy to pi3b's 8mm hole-offset //VERIFY
+          ["usbc_pwr", [6.7,   0, 1.4], connector_size("usb_c"), "ymin"], // [A] pos / body sourced from connectors usb_c (SP2 "same", d exactly at the 0.5mm boundary)
+          ["hdmi_1",   [22.25, 0, 1.4], connector_size("micro_hdmi"), "ymin"], // [A] pos / body sourced from connectors micro_hdmi (SP2 "same", exact match — this reading is the actual grounding evidence behind cat's own SP1 upgrade)
+          ["hdmi_2",   [35.75, 0, 1.4], connector_size("micro_hdmi"), "ymin"], // [A] pos / body sourced from connectors micro_hdmi (SP2 "same", same as hdmi_1)
+          ["av_jack",  [50.5,  0, 1.4], [6,   6,   6.0], "ymin"], // [A] h / [C] position by analogy to pi3b's 8mm hole-offset //VERIFY — SP2 verdict "no-peer", left literal
         ] ],
     // [A] https://datasheets.raspberrypi.com/rpi5/raspberry-pi-5-mechanical-drawing.pdf
     // corner radius NOT labelled on the Pi5 drawing (unlike pi3b/pi3bplus/pi4b, which all
@@ -127,15 +141,15 @@ function _sbc_table() = [
           // "combo" shell (real Pi5 hardware: Ethernet + 2xUSB2 share one molded
           // part). Y-spans [A] off the drawing's own "10.2/29.1/47/56" chain; rj45
           // and usb2 intentionally share the same box — see RESEARCH.md.
-          ["usb3",     [68.6, 29.1, 1.4], [17, 17.9, 16.0], "xmax"], // [A]/[B]
-          ["rj45",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A] pos /[C] extent //VERIFY rj45+usb2 combo, undimensioned split
-          ["usb2",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A] pos /[C] extent //VERIFY rj45+usb2 combo, undimensioned split
+          ["usb3",     [68.6, 29.1, 1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", closely corroborates pi3b/pi4b family)
+          ["rj45",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A] pos /[C] extent //VERIFY rj45+usb2 combo, undimensioned split — SP2 verdict "no-peer" (combo shell, board-unique), left literal
+          ["usb2",     [64.6, 10.2, 1.4], [21, 18.9, 16.0], "xmax"], // [A] pos /[C] extent //VERIFY rj45+usb2 combo, undimensioned split — SP2 verdict "no-peer", left literal
           // bottom edge (ymin): X centrelines [A] off the drawing's own explicit
           // "11.2 / 25.8 / 39.2" dimensions (Pi5 prints these directly, unlike the
           // chained values on pi3b/pi4b).
-          ["usbc_pwr", [6.7,   0, 1.4], [9,   7.4, 3.2], "ymin"], // [A]
-          ["hdmi_1",   [22.05, 0, 1.4], [7.5, 4.5, 3.0], "ymin"], // [A]
-          ["hdmi_2",   [35.45, 0, 1.4], [7.5, 4.5, 3.0], "ymin"], // [A]
+          ["usbc_pwr", [6.7,   0, 1.4], connector_size("usb_c"), "ymin"], // [A] pos / body sourced from connectors usb_c (SP2 "same", same as pi4b usbc_pwr)
+          ["hdmi_1",   [22.05, 0, 1.4], connector_size("micro_hdmi"), "ymin"], // [A] pos / body sourced from connectors micro_hdmi (SP2 "same", independently corroborates pi4b's reading)
+          ["hdmi_2",   [35.45, 0, 1.4], connector_size("micro_hdmi"), "ymin"], // [A] pos / body sourced from connectors micro_hdmi (SP2 "same", same as hdmi_1)
           // PCIe FFC connector: seen on the drawing between micro-HDMI 2 and the
           // fan header, but no dimension text found for it — fully estimated.
           ["pcie_fpc", [44, 0, 1.4], [8, 3, 3], "ymin"], // //VERIFY [C] estimated, no drawing dimension found
@@ -284,11 +298,11 @@ function _sbc_table() = [
           // -sourced _sbc_gpio() figures, cross-validating both readings. h=8.5 [B]
           // carried forward from the Model-B family — same physical HAT header part,
           // no Z-height text on this sheet to read directly.
-          ["gpio",          [7.1,  23.9, 1.4], [51.0, 5.0, 8.5], "top"], // [B]/[B] h
+          ["gpio",          [7.1,  23.9, 1.4], connector_size("gpio_2x20"), "top"], // [B] pos / body sourced from connectors gpio_2x20 (SP2 "same", corroborates the Model-B family's _sbc_gpio() reading)
           // Bottom edge (ymin), left-to-right real layout: mini-HDMI, then the two
           // micro-USB ports nearest the right corner — [B] pos+extent pixel-measured,
           // all three boxes' bottom edges sit right on the y=0 line (snapped to 0).
-          ["minihdmi",      [6.9,  0,    1.4], [10.9, 7.0, 3.4], "ymin"], // [B] pos+extent / [C] h //VERIFY generic mini-HDMI (Type C) shell height
+          ["minihdmi",      [6.9,  0,    1.4], connector_size("mini_hdmi"), "ymin"], // [B] pos / body sourced from connectors mini_hdmi (SP2 "same", w+d both exactly at the 0.5mm boundary — cat itself is [C]//VERIFY cited-not-fetched, so this corroborates rather than upgrades; //VERIFY carried forward, see RESEARCH.md)
           ["microusb_data", [37.7, 0,    1.4], [7.5,  4.7, 2.8], "ymin"], // [B] pos+extent (silkscreen "USB", left of the pair) / [C] h reused from pi3b's microUSB-B figure
           ["microusb_pwr",  [50.3, 0,    1.4], [7.6,  4.7, 2.8], "ymin"], // [B] pos+extent (silkscreen "PWR IN", right of the pair, nearest the corner hole) / [C] h as above
         ] ],
@@ -316,7 +330,7 @@ function _sbc_table() = [
         [ // GPIO header — this sheet actually renders the 2x20 pin circles (unlike
           // pizero's plain unpopulated-slot outline), but position/extent match
           // pizero's own reading closely ([B] pixel-measured independently here).
-          ["gpio",          [7.2,  23.9, 1.4], [50.6, 4.9, 8.5], "top"], // [B]/[B] h carried forward, see pizero row
+          ["gpio",          [7.2,  23.9, 1.4], connector_size("gpio_2x20"), "top"], // [B] pos / body sourced from connectors gpio_2x20 (SP2 "same", corroborates pizero's gpio reading)
           // Bottom edge (ymin): same three-connector cluster as pizero, independently
           // measured on this sheet — mini-HDMI then the two micro-USB ports.
           ["minihdmi",      [7.1,  0,    1.4], [10.8, 6.8, 3.4], "ymin"], // [B] pos+extent / [C] h //VERIFY, see pizero row

@@ -1,4 +1,5 @@
 use <sbc/sbc.scad>;
+use <connectors/connectors.scad>;
 
 // Outline (publicly certain for Model-B).
 assert(sbc_size("pi4b") == [85.6, 56], "pi4b size");
@@ -25,7 +26,15 @@ for (b = sbc_known_boards()) _check_holes(b);
 // (lateral or "top") is within the transverse envelope. "top" (and "bottom" if
 // ever used) connectors open along Z, not out a board edge, so they have no
 // edge-touch check.
-function _near(a, b) = abs(a - b) < 0.6;  // tolerance for drawing rounding
+// Scalar OR element-wise vector compare (default tol matches the original
+// scalar-only 0.6mm drawing-rounding tolerance; pass tol explicitly for the
+// SP2 reconcile threshold, 0.5mm). Inclusive (<=): the reconcile rule is
+// "within 0.5mm" and several verdict-table rows sit exactly AT the 0.5mm
+// boundary and are still called "same" (e.g. pi4b usbc_pwr d, pi3b hdmi w).
+function _near(a, b, tol = 0.6) =
+    is_list(a) ? (len(a) == len(b) &&
+                  len([for (i = [0:len(a)-1]) if (!(abs(a[i]-b[i]) <= tol)) 1]) == 0)
+               : abs(a - b) <= tol;
 _lateral_edges = ["xmin", "xmax", "ymin", "ymax"];
 module _check_connectors(b) {
     sz = sbc_size(b);
@@ -92,3 +101,62 @@ for (b = sbc_known_boards())
 
 // Unknown role asserts (negative control).
 // (exercised from the bash harness via a separate bad-role file)
+
+// --- SP2 Task 3: adopted connector bodies sourced from connectors' connector_size() ---
+// Sanity check: the pre-retrofit literals (as recorded in RESEARCH.md's "SP2 connector
+// reconcile — Task 1" verdict table) are within the 0.5mm same-verdict threshold of the
+// catalog peer they now get sourced from. This isn't a regression guard on sbc.scad's
+// current values (those are asserted exactly below) — it documents/locks the reconcile
+// math itself so a future edit to the catalog can't silently invalidate the "same" call
+// without a test noticing.
+assert(_near([9, 7.4, 3.2], connector_size("usb_c"), 0.5),
+    "pi4b/pi5 usbc_pwr pre-retrofit literal within 0.5mm of connectors usb_c (verdict sanity)");
+assert(_near([15, 11.5, 6.5], connector_size("hdmi"), 0.5),
+    "pi3b/pi3bplus hdmi pre-retrofit literal within 0.5mm of connectors hdmi (verdict sanity, w at the boundary)");
+assert(_near([10.9, 7.0, 3.4], connector_size("mini_hdmi"), 0.5),
+    "pizero minihdmi pre-retrofit literal within 0.5mm of connectors mini_hdmi (verdict sanity, w+d at the boundary)");
+
+// The full 21-row "same" adoption set (RESEARCH.md verdict table) — body must now equal
+// connector_size(<mapped type>) EXACTLY (post-adoption, sbc IS the catalog literal, no
+// tolerance needed). Position [x,y,z] and edge are untouched by Task 3 and are already
+// covered by _check_connectors() above.
+_sp2_same_bodies = [
+    ["pi3b",     "usb2_1",   "usb_a_stack2_shielded"],
+    ["pi3b",     "rj45",     "rj45_shallow"],
+    ["pi3b",     "hdmi",     "hdmi"],
+    ["pi3bplus", "usb2_1",   "usb_a_stack2_shielded"],
+    ["pi3bplus", "rj45",     "rj45_shallow"],
+    ["pi3bplus", "hdmi",     "hdmi"],
+    ["pi4b",     "usb2",     "usb_a_stack2_shielded"],
+    ["pi4b",     "usbc_pwr", "usb_c"],
+    ["pi4b",     "hdmi_1",   "micro_hdmi"],
+    ["pi4b",     "hdmi_2",   "micro_hdmi"],
+    ["pi5",      "usb3",     "usb_a_stack2_shielded"],
+    ["pi5",      "usbc_pwr", "usb_c"],
+    ["pi5",      "hdmi_1",   "micro_hdmi"],
+    ["pi5",      "hdmi_2",   "micro_hdmi"],
+    ["pizero",   "minihdmi", "mini_hdmi"],
+];
+for (r = _sp2_same_bodies)
+    assert(sbc_connector(r[0], r[1])[2] == connector_size(r[2]),
+        str("sbc ", r[0], " ", r[1], " body sourced from connectors ", r[2]));
+
+// gpio: the shared _sbc_gpio() row (reused by pi3b/pi3bplus/pi4b/pi5) plus pizero's and
+// pizero2w's own independent gpio rows — all 6 are "same" vs gpio_2x20 in the verdict
+// table, even though only 3 literals exist in sbc.scad to edit (the shared fn + 2 own rows).
+for (b = ["pi3b", "pi3bplus", "pi4b", "pi5", "pizero", "pizero2w"])
+    assert(sbc_connector(b, "gpio")[2] == connector_size("gpio_2x20"),
+        str("sbc ", b, " gpio body sourced from connectors gpio_2x20"));
+
+// Non-"same" bodies (different/error/no-peer) must stay LITERAL, untouched by Task 3 —
+// spot-check a few from each category so a future over-eager adoption gets caught.
+assert(sbc_connector("pi3b", "usb2_2")[2] == [17, 9, 16.0],
+    "pi3b usb2_2 (error verdict) stays literal");
+assert(sbc_connector("pi4b", "usb3")[2] == [17, 18.75, 16.0],
+    "pi4b usb3 (different, marginal) stays literal");
+assert(sbc_connector("bpir4", "usb_1")[2] == [8.89, 23.16, 13.5],
+    "bpir4 usb_1 (different, weak) stays literal");
+assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 53.98, 13.4],
+    "bpir4 sfp_1 (no-peer) stays literal");
+assert(sbc_connector("pi3b", "av_jack")[2] == [6, 6, 6.0],
+    "pi3b av_jack (no-peer) stays literal");

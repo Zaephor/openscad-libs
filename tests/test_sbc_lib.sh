@@ -85,4 +85,48 @@ out="$(run "$tmp/badrole.scad")"
 echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
   || { echo "unknown role must assert"; echo "$out"; exit 1; }
 
+# SP2 connector_size() adoption — source-level regression guard.
+#
+# Task 3 rewired 21 "same"-verdict connector rows in sbc.scad (per the
+# verdict table in libraries/sbc/RESEARCH.md, "SP2 connector reconcile —
+# Task 1") to source their [w,d,h] from connectors.scad's connector_size()
+# instead of a hardcoded literal. For 8 of those rows the adopted catalog
+# value is numerically IDENTICAL to the literal it replaced (Δ=0,0,0:
+# pi3b/pi3bplus usb2_1+rj45, pi4b usb2+hdmi_1+hdmi_2, pi5 hdmi_1+hdmi_2) —
+# a numeric assert in sbc_test.scad can't tell "wired to connector_size()"
+# apart from "reverted to the same-valued literal", so it has no teeth
+# against that regression. This block greps sbc.scad's own source text
+# instead: each entry below ties a connector row's name to the specific
+# connector_size("<type>") call it must still make, with the exact count
+# of same-named/typed rows expected (boards that share identical position+
+# type text collapse to one pattern matching >1 line — the count is what
+# catches a single reverted row dropping out of that group). gpio is
+# shared via the _sbc_gpio() helper (pi3b/pi3bplus/pi4b/pi5) plus two
+# explicit inline rows (pizero, pizero2w) — checked separately below.
+sbcscad="$root/libraries/sbc/sbc.scad"
+# pattern -> expected occurrence count -> description (rows covered)
+sp2_checks=(
+  '^\s*function _sbc_gpio\(\) =.*connector_size\("gpio_2x20"\)|1|_sbc_gpio() shared helper (pi3b/pi3bplus/pi4b/pi5 gpio)'
+  '^\s*\["gpio",.*connector_size\("gpio_2x20"\)|2|pizero+pizero2w inline gpio rows'
+  '^\s*\["usb2_1",.*connector_size\("usb_a_stack2_shielded"\)|2|pi3b+pi3bplus usb2_1'
+  '^\s*\["rj45",.*connector_size\("rj45_shallow"\)|2|pi3b+pi3bplus rj45'
+  '^\s*\["hdmi",.*connector_size\("hdmi"\)|2|pi3b+pi3bplus hdmi'
+  '^\s*\["usb2",.*connector_size\("usb_a_stack2_shielded"\)|1|pi4b usb2'
+  '^\s*\["usbc_pwr",.*connector_size\("usb_c"\)|2|pi4b+pi5 usbc_pwr'
+  '^\s*\["hdmi_1",.*connector_size\("micro_hdmi"\)|2|pi4b+pi5 hdmi_1'
+  '^\s*\["hdmi_2",.*connector_size\("micro_hdmi"\)|2|pi4b+pi5 hdmi_2'
+  '^\s*\["usb3",.*connector_size\("usb_a_stack2_shielded"\)|1|pi5 usb3'
+  '^\s*\["minihdmi",.*connector_size\("mini_hdmi"\)|1|pizero minihdmi'
+)
+for c in "${sp2_checks[@]}"; do
+  IFS='|' read -r pat expected desc <<< "$c"
+  actual="$(grep -cE "$pat" "$sbcscad")"
+  if [ "$actual" != "$expected" ]; then
+    echo "SP2 connector_size() adoption regression: $desc"
+    echo "  expected $expected match(es) of /$pat/ in $sbcscad, found $actual"
+    echo "  (a 'same'-verdict row was reverted away from connector_size(), or its count drifted)"
+    exit 1
+  fi
+done
+
 echo ok

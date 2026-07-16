@@ -262,6 +262,63 @@ community corroboration (≥2 independent sources agree), **[C]** single
 community STL/reverse-engineered or estimated. Full chained-dimension
 reconstruction: `RESEARCH.md`.
 
+## Connector body sourcing (SP2)
+
+Each board's connector *bodies* — the `[w,d,h]` element of a connector
+record — were reconciled against the shared `connectors` library's generic
+catalog (`libraries/connectors/connectors.scad`). Where a body matches a
+catalog type within 0.5mm on every axis, `sbc.scad` now sources that body
+live via `connector_size(type)` (`use <connectors/connectors.scad>;` at the
+top of the file) instead of carrying its own literal `[w,d,h]` — one shared
+source of truth for the dimension, instead of two copies that could drift.
+**Positions `[x,y,z]` and exit edges are always sbc's own** and were never
+touched by this. Full 51-row verdict table: `RESEARCH.md`, "SP2 connector
+reconcile — Task 1".
+
+**Sourced (21 of 51)** — mapped to a catalog type:
+
+| Board | Sourced connectors | Catalog type(s) |
+|---|---|---|
+| pi3b / pi3bplus | `gpio`, `usb2_1`, `rj45`, `hdmi` | `gpio_2x20`, `usb_a_stack2_shielded`, `rj45_shallow`, `hdmi` |
+| pi4b | `gpio`, `usb2`, `usbc_pwr`, `hdmi_1`, `hdmi_2` | `gpio_2x20`, `usb_a_stack2_shielded`, `usb_c`, `micro_hdmi` |
+| pi5 | `gpio`, `usb3`, `usbc_pwr`, `hdmi_1`, `hdmi_2` | `gpio_2x20`, `usb_a_stack2_shielded`, `usb_c`, `micro_hdmi` |
+| pizero | `gpio`, `minihdmi` | `gpio_2x20`, `mini_hdmi` |
+| pizero2w | `gpio` | `gpio_2x20` |
+| bpir4 | *(none)* | — |
+
+**Literal (30 of 51)** — unchanged, for one of three reasons:
+
+- **No catalog peer at all (13)**: `av_jack` (pi3b/pi3bplus/pi4b),
+  `csi_dsi_1`/`csi_dsi_2` (pi5), `csi` (pizero2w), `pcie_fpc` (pi5), the pi5
+  `rj45`/`usb2` combo shell, `sfp_1`/`sfp_2` (bpir4), `dc_power_1` (bpir4
+  barrel jack), `uart_1` (bpir4 console header) — genuinely distinct part
+  classes the catalog doesn't model, not gaps to fill.
+- **A peer exists but disagrees by >0.5mm on some axis (13)**, and neither
+  side is confidently right: each is either marginal single-axis noise (pi4b
+  `usb3`, pizero2w `minihdmi`) or a self-flagged-weak reading on one or both
+  sides (the `micro_usb` family; bpir4 `usb_1`, `usbc_pwr_1`, `rj45_2..4`).
+  Adjudicated as not a distinct physical part worth a new catalog type —
+  left literal and `//VERIFY`-flagged for a future re-measurement pass.
+- **The sbc-side reading itself looks wrong (4)**: a chain-truncated Y-span
+  in every case — pi3b/pi3bplus `usb2_2`, pi4b `rj45`, bpir4 `rj45_1`. A
+  data-correction problem, not a sourcing one; flagged rather than silently
+  patched.
+
+**bpir4 sources nothing** — all 10 of its connectors landed
+different/error/no-peer against the catalog, consistent with it already
+being the board with the weakest connector provenance (no refdes text on
+its source DXF at all — see Sources above). This pass leaves bpir4 exactly
+as literal as before.
+
+**Grounding**: no adopted body was a downgrade — where sbc's own tier was
+already the stronger one (e.g. pi4b/pi5 `hdmi_1`/`hdmi_2`, whose `[A]`
+drawing-measured `Z=3.0` reading is the evidence the catalog's own
+`micro_hdmi` entry was upgraded from), the catalog simply carries the same
+number; pi3b/pi3bplus `hdmi` shows both outcomes in one row — `w`/`d` genuinely
+upgrade `[B]`→`[A]` via the catalog's datasheet-grounded value, while `h` is
+an `[A]`→`[A]` tie between two independent sources; see the per-row tier
+notes in `RESEARCH.md` for the exact winner on each sourced row.
+
 ## Coverage & verification notes
 
 **Boards covered now**: the Model-B family (`pi3b`, `pi3bplus`, `pi4b`,
