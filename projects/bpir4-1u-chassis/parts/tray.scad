@@ -18,9 +18,9 @@ use <_honeycomb.scad>;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
-module _tray_shell() {
+module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
     y0 = board_y();
-    dd = int_depth();
+    dd = int_depth(enable_exhaust);
     difference() {
         union() {
             // Floor.
@@ -39,21 +39,25 @@ module _tray_shell() {
         translate([-(body_w()/2 - lip), y0 - 1, ext_h() - lid_th])
             cube([body_w() - wall, dd - lip + 1, lid_th + 1]);
         // Rear-wall fan bores or passive vents.
-        _rear_openings();
+        _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
     }
 }
 
 // Rear-wall openings. Fans on: `fan_count` bores + screw holes across the
 // wall, vertically centered on the interior clearance, axis rotated onto +Y
 // so the (default Z-axis) fan cutters punch straight through the wall. Fans
-// off: a vertical passive vent-slot array.
+// off: a self-supporting honeycomb hex vent over the same fan footprint
+// (see the honeycomb_vent() call below).
 //
-// rear_wall_y() is the wall's outer (rearmost) face; the wall itself occupies
-// [rear_wall_y()-wall, rear_wall_y()] (see _tray_shell()), so every cutter
-// below is anchored off `rear_wall_y() - wall` (the inner face) to actually
-// intersect the wall.
-module _rear_openings() {
-    yw = rear_wall_y();               // rear wall outer (rearmost) face
+// rear_wall_y(ee = enable_exhaust) is the wall's outer (rearmost) face; the
+// wall itself occupies [rear_wall_y()-wall, rear_wall_y()] (see
+// _tray_shell()), so every cutter below is anchored off
+// `rear_wall_y(ee) - wall` (the inner face) to actually intersect the wall.
+// The `ee` param (params.scad) must be threaded through explicitly from this
+// module's own enable_exhaust parameter -- see params.scad's "ee defaults
+// to..." comment for why a plain no-arg call can't see it.
+module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
+    yw = rear_wall_y(enable_exhaust); // rear wall outer (rearmost) face
     zc = floor_th + int_h()/2;        // vertical center of interior clearance
     if (enable_exhaust) {
         span = fan_count * fan_size;
@@ -65,20 +69,30 @@ module _rear_openings() {
                     fan_holes(fan_size, depth = wall);
                 }
     } else {
-        // Passive slots: vertical rectangular cuts across the rear wall.
-        usable = body_w() - 2*wall - 2*vent_slot_gap;
-        pitch  = vent_slot_w + vent_slot_gap;
-        n      = floor(usable / pitch);
-        x0     = -(n-1)*pitch/2;
-        for (i = [0 : n-1])
-            translate([x0 + i*pitch - vent_slot_w/2, yw - wall - 1, floor_th + vent_slot_gap])
-                cube([vent_slot_w, wall + 2, int_h() - 2*vent_slot_gap]);
+        // Passive honeycomb: self-supporting hex vent over the same
+        // fan_count*fan_size footprint the active fans would occupy
+        // (X centered on 0, Z band centered on zc), cut fully through the
+        // rear wall. Same rotate([90,0,0]) idiom as the faceplate band (see
+        // _faceplate()): local X (honeycomb's `width`) stays chassis X;
+        // local Y (honeycomb's `height`) becomes chassis Z (the fan_size
+        // band around zc); local Z (honeycomb's `depth`, its extrusion /
+        // cut-through axis) becomes chassis -Y, punching through the rear
+        // wall — `wall + 2` gives a 1mm overcut on both faces, matching the
+        // old slot cutter's overcut. Translate places the honeycomb's local
+        // (0,0,0) corner at (x=-span/2, y=yw+1 [outer wall face + 1mm
+        // overcut], z=zc-fan_size/2), so after rotation the cut spans
+        // Y=[yw-wall-1, yw+1] through the wall and Z=[zc-fan_size/2,
+        // zc+fan_size/2] centered on zc.
+        span = fan_count * fan_size;
+        translate([-span/2, yw + 1, zc - fan_size/2])
+            rotate([90, 0, 0])
+                honeycomb_vent(span, fan_size, wall + 2, honeycomb_cell, honeycomb_wall);
     }
 }
 
 // Front rack panel: full panel width, chassis-exterior height, front face on
 // Y=0 growing -Y (toward the rack front). Rack mount holes + connector cutouts.
-module _faceplate() {
+module _faceplate(ear_hole_type = ear_hole_type) {
     difference() {
         // Panel blank (own height = ext_h(); width from the library).
         translate([-panel_w()/2, -faceplate_th, 0])
@@ -142,11 +156,11 @@ module _faceplate() {
 // mirrors that same tangent logic onto the front boundary (board_y(), the
 // faceplate's inner face — see params.scad's board_y() comment) and the rear
 // wall's inner face (rear_wall_y() - wall).
-function _lid_post_xy() =
+function _lid_post_xy(ee = enable_exhaust) =
     let (od2 = _lid_post_od()/2,
          ix  = body_w()/2 - wall - od2,        // tangent to side-wall inner face
          yf  = board_y() + od2,                // front pair, tangent to the front boundary
-         yr  = rear_wall_y() - wall - od2)     // rear pair, tangent to rear-wall inner face
+         yr  = rear_wall_y(ee) - wall - od2)   // rear pair, tangent to rear-wall inner face
     [ [-ix, yf], [ix, yf], [-ix, yr], [ix, yr] ];
 
 // Canonical corner post (local origin at the post/bore center, local +X/+Y
@@ -209,19 +223,19 @@ module _lid_post_corner() {
     }
 }
 
-module _lid_posts() {
-    for (p = _lid_post_xy()) {
+module _lid_posts(enable_exhaust = enable_exhaust) {
+    for (p = _lid_post_xy(enable_exhaust)) {
         sx = sign(p[0]);                                  // which side wall (-1 / +1)
-        sy = (p[1] < int_depth()/2) ? -1 : 1;              // front boundary (-1) or rear wall (+1)
+        sy = (p[1] < int_depth(enable_exhaust)/2) ? -1 : 1; // front boundary (-1) or rear wall (+1)
         translate([p[0], p[1], floor_th])
             scale([sx, sy, 1]) _lid_post_corner();
     }
 }
 
-module tray() {
-    _tray_shell();
-    _faceplate();
-    _lid_posts();
+module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type) {
+    _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
+    _faceplate(ear_hole_type = ear_hole_type);
+    _lid_posts(enable_exhaust = enable_exhaust);
     // Board standoff posts — only the structural-mount holes (M.2/heatsink/
     // keep-out holes are excluded; see sbc hole roles).
     translate([board_x(), board_y(), floor_th])

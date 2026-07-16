@@ -1,9 +1,13 @@
 // lid part — flat cover, flush top, countersunk M3 into tray posts.
 
 /* [Cooling] */
-// lid() itself doesn't branch on these, but params.scad's rear_off()/
-// int_depth() (which size the lid) and its fan_size assert do — declared
-// here + in each entry file; params.scad consumes only.
+// These top-level vars are lid()'s module-param DEFAULTS (see lid() below)
+// and also feed params.scad's fan_size assert at include-time — declared
+// here + in each entry file; params.scad consumes only, never re-assigns.
+// Of the three, only enable_exhaust actually drives lid() geometry (via
+// int_depth()/_lid_post_xy()); fan_size/fan_count are accepted by lid() for
+// call-site symmetry with tray() but don't change lid geometry — see lid()'s
+// own comment below.
 enable_exhaust = true; // false = passive (no rear fan plenum)
 fan_size  = 40;        // must be a fan_known_sizes() value
 fan_count = 2;
@@ -33,15 +37,25 @@ module _lid_countersink() {
         cylinder(h = cs_depth + 0.01, d1 = hole_dia, d2 = cs_dia);
 }
 
-module lid() {
+// enable_exhaust drives the depth path (int_depth()/rear_wall_y(), so the lid
+// shrinks with the tray in passive mode) and the post/countersink placement
+// (_lid_post_xy(), shared with tray()'s posts so both stay coincident by
+// construction). fan_size/fan_count are accepted ONLY so the assembly call
+// site can pass all three cooling params uniformly with tray() -- lid
+// geometry does NOT consume them (int_depth() has no fan_size term, and
+// params.scad's fan_size assert already runs once at include-time regardless
+// of what's passed here); they are otherwise inert for the lid.
+module lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
     lip = wall/2;
-    lw = body_w() - 2*lip - 2*wall_gap;    // rests on the side shelves
-    ld = int_depth() - lip - 2*wall_gap;   // rear edge on the rear shelf
+    lw = body_w() - 2*lip - 2*wall_gap;                    // rests on the side shelves
+    ld = int_depth(enable_exhaust) - lip - 2*wall_gap;     // rear edge on the rear shelf
     difference() {
         translate([-lw/2, board_y() + wall_gap, 0])
             cube([lw, ld, lid_th]);
-        // Countersunk screw holes over each lid post (shared via _lid_post_xy()).
-        for (p = _lid_post_xy())
+        // Countersunk screw holes over each lid post (shared via _lid_post_xy(),
+        // which must be called with the SAME enable_exhaust as tray()'s posts
+        // so the countersinks stay coincident with the posts they seat on).
+        for (p = _lid_post_xy(enable_exhaust))
             translate([p[0], p[1], 0]) _lid_countersink();
         // Optional lid vents over the hot zone (center band): a self-
         // supporting honeycomb hex-hole cutter (parts/_honeycomb.scad),
@@ -72,7 +86,7 @@ module lid() {
         // no boundary clipping) via tests/test_bpir4_lid_honeycomb_vents.sh.
         if (lid_vents) {
             band_len = ld * 0.5;
-            cy = board_y() + int_depth()/2;
+            cy = board_y() + int_depth(enable_exhaust)/2;
             translate([-lid_vent_band_w/2, cy - band_len/2, -1])
                 honeycomb_vent(lid_vent_band_w, band_len, lid_th + 2,
                                 honeycomb_cell, honeycomb_wall);

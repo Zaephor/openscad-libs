@@ -47,7 +47,19 @@ board_side_gap   = 1.0;  // board edge -> corner-post clearance
 // them below and must never re-assign them (OpenSCAD is last-assignment-wins,
 // so a re-assignment here would silently discard whatever the entry file or
 // the customizer set).
-fan_plenum = 12.0;     // board-rear-edge -> rear-wall gap when fans on
+// fan_board_gap: clearance kept between the interior-mounted fan's inner
+// face and the board's rear edge. (Task 5 fix — the old fan_plenum=12.0
+// literal was hand-picked and, for the only valid fan_size (40mm), put the
+// fan's inner face 0.4mm INSIDE the board: it wasn't derived from the
+// library's actual fan depth.)
+fan_board_gap = 1.5;   // clearance between interior fan face and board rear edge
+// fan_plenum: board-rear-edge -> rear-wall gap when fans on. Derived from
+// the library-owned fan depth (fan_default_thickness(fan_size) — NOT
+// duplicated here as a literal) plus the wall thickness (the fan mounts on
+// the wall's interior face) plus fan_board_gap, so the plenum can never
+// under-clear the board regardless of fan_size (see the depth-clearance
+// assert below, which makes any future under-clearance fail loudly).
+fan_plenum = fan_default_thickness(fan_size) + wall + fan_board_gap;
 rear_gap   = 4.0;      // same when fans off
 lid_vents  = true;
 
@@ -77,13 +89,21 @@ function _lid_post_od() = lid_insert_bore + boss_wall; // boss OD (shared placem
 // Body hugs the board: each side carries board_side_gap + a corner post (tangent
 // to the wall) + the wall. Ears bridge body_w -> panel_w. Must stay <= clear_w.
 function body_w()   = board_w() + 2*(board_side_gap + _lid_post_od() + wall);
-function rear_off() = enable_exhaust ? fan_plenum : rear_gap;
-function int_depth()= board_d() + rear_off();    // faceplate-inner (Y=0) -> rear-wall outer face
+// ee defaults to the file-global enable_exhaust so every existing no-arg call
+// site (including within this file) is unchanged. The optional param exists
+// because a `use`-scoped consumer (parts/tray.scad, parts/lid.scad) with its
+// own enable_exhaust MODULE parameter cannot make a plain function call see
+// that value -- functions only read their own file's globals, never a
+// caller's module params -- so such a consumer must pass its local
+// enable_exhaust through explicitly as `ee` for the depth path to respond to
+// the Customizer value.
+function rear_off(ee = enable_exhaust) = ee ? fan_plenum : rear_gap;
+function int_depth(ee = enable_exhaust) = board_d() + rear_off(ee); // faceplate-inner (Y=0) -> rear-wall outer face
 // board placement in chassis frame:
 function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
-function rear_wall_y() = board_y() + int_depth();// outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
+function rear_wall_y(ee = enable_exhaust) = board_y() + int_depth(ee); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
 
 // Intake vent band (faceplate): starts just above the tallest ymin (front-
 // edge) connector so the band clears every port, and stays inside the wall
@@ -98,6 +118,21 @@ function rack_depth_eff() = rack_depth < 0 ? rack10_depth_preset(STD) : rack_dep
 assert(!enable_exhaust || fan_size <= int_h() + 1e-6,
     str("params: fan_size ", fan_size, " exceeds internal height ", int_h(),
         " — reduce floor_th/lid_th or fan_size"));
+
+// Interior-mounted fan (Task 4/5) must clear the board's rear edge: the
+// fan's inner face sits at (rear_wall_y() - wall) - fan_default_thickness(
+// fan_size); that must be >= board_d() (the fan sits entirely behind the
+// board, not intruding into it). Catches any future under-clearing of
+// fan_plenum/fan_board_gap/fan_size at render time instead of silently
+// producing a colliding STL.
+assert(!enable_exhaust ||
+    (rear_wall_y() - wall) - fan_default_thickness(fan_size) >= board_d() - 1e-6,
+    str("params: interior fan (thickness ", fan_default_thickness(fan_size),
+        "mm) intrudes into the board — fan inner face is at ",
+        (rear_wall_y() - wall) - fan_default_thickness(fan_size),
+        " but board rear edge is at ", board_d(),
+        " (gap ", (rear_wall_y() - wall) - fan_default_thickness(fan_size) - board_d(),
+        "mm) — increase fan_board_gap/fan_plenum"));
 
 // fan_size must be one of the sizes the fans library actually supports.
 assert(len([for (s = fan_known_sizes()) if (s == fan_size) s]) > 0,

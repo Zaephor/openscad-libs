@@ -25,13 +25,13 @@ show_board = true; // sbc_placeholder fit reference (not a printed part)
 show_rack  = false; // 3U rackpost reference
 
 module assembly() {
-    if (show_tray) tray();
+    if (show_tray) tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type);
     if (show_board)
         translate([board_x(), board_y(), board_z()])
             % sbc_placeholder(BOARD);
     if (show_lid)
         translate([0, 0, (ext_h() - lid_th) + 30 * explode])
-            lid();
+            lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
     if (show_rack)
         translate([0, 0, -rack10_u()])          // chassis is the middle of 3U
             % rack10_placeholder(STD, 3, rack_depth_eff());
