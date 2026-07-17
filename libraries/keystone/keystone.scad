@@ -33,11 +33,21 @@ $fn = 48;
 
 /* [Data] — single canonical keystone profile. Tiers per docs/LIBRARY-AUTHORING.md;
    see RESEARCH.md for the full evidence log. */
-// [ow,oh] plate window (X,Y), mm. [A] Samm Teknoloji "Unshielded ISO/IEC
-// Keystone Jack" mechanical drawing, "Suggested Panel Cutout - Plastic"
-// (14.70 x 16.40); corroborated within ~0.3mm by the widely-cited community
-// figure 14.5 x 16.0 [B]. See RESEARCH.md.
-function keystone_opening()         = [14.70, 16.40];
+function keystone_known_styles() = ["lip", "face"];
+// Invariant jack face / plug cross-section [fw,fh], mm. [B] Wikipedia keystone
+// module (14.5 x 16.0), corroborated across retailer/installer sources.
+function keystone_face() = [14.5, 16.0];
+// Panel WINDOW to cut, per retention style [ow,oh], mm:
+//   "lip"  = rotate-and-snap: taller opening; a rigid fulcrum (bottom) catches
+//            the opening's bottom lip, a flex clip (top) snaps over the top lip.
+//            [14.8, 20.3] — width [B]; height 20.3 [B]//VERIFY (community, single
+//            source; caliper-upgradeable — see RESEARCH.md / #16).
+//   "face" = face-grip (retention by plate-thickness front/rear grip):
+//            [14.70, 16.40] [A] Samm Teknoloji "Suggested Panel Cutout" (pre-#28 value).
+function keystone_opening(style = "lip") =
+    style == "lip"  ? [14.8, 20.3] :
+    style == "face" ? [14.70, 16.40] :
+    assert(false, str("keystone: unknown style '", style, "'"));
 // [bw,bh,bd] jack envelope keep-out (X,Y,Z-depth behind panel), mm. bd=28.60
 // //VERIFY: Samm Teknoloji drawing's single labelled overall-depth dimension
 // (assembled jack + rear wire cap) — a single, non-decomposed reading from
@@ -108,8 +118,8 @@ module keystone_placeholder() {
    by plate front-lip + rear-edge, so the plate thickness must sit within
    keystone_plate_thickness(). Front face at Z=0; window overcuts +1 above and
    +1 below the plate. `clearance` grows the window per side. */
-module keystone_cutout(plate_thickness = 3.0, clearance = 0.25) {
-    o = keystone_opening(); // [ow, oh]
+module keystone_cutout(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
+    o = keystone_opening(style); // [ow, oh] for the chosen style
     wx = o[0] + 2 * clearance;
     wy = o[1] + 2 * clearance;
     translate([-wx/2, -wy/2, -(plate_thickness + 1)])

@@ -7,7 +7,39 @@ STL/SCAD mesh (cite the artifact URL) — **not** single-sourced/uncorroborated,
 `//VERIFY` = weak/unsourced (never a tier it didn't earn), flagged for a
 future pass.
 
-## `keystone_opening()` — `[14.70, 16.40]` mm — **[A]**
+## Face / Opening decomposition (Task #28)
+
+The jack's physical face and the panel window to cut have diverged into two
+roles:
+
+- `keystone_face()` — `[14.5, 16.0]` mm — **[B]** invariant jack face /
+  plug cross-section (the actual electrical contact footprint). Wikipedia
+  "Keystone module" article (secondary source) cites "14.5 mm wide by 16.0
+  mm high"; corroborated by cross-retailer sources.
+- `keystone_opening(style)` — panel window size per retention style:
+  - `"face"` — `[14.70, 16.40]` **[A]** (face-grip retention; preserved from
+    pre-#28 default)
+  - `"lip"` — `[14.8, 20.3]` **[B]//VERIFY** (rotate-and-snap retention;
+    width corroborated by community sources, height 20.3 marked `//VERIFY` as
+    a single community source — caliper-upgradeable, see #16). The taller
+    opening allows a rigid fulcrum (bottom) to catch the opening's bottom lip
+    while a flex clip (top) snaps over the top lip, achieving retention by
+    mechanical pivot rather than plate thickness.
+
+The decomposition lets consumers choose retention style before cutting: tight
+face-grip if the assembly uses metal face plates (original design), or snap
+if the plate is 3D-printed plastic (new flexibility). Default is `"lip"`
+(the taller window).
+
+## `keystone_opening(style)` — per-style panels
+
+See Face/Opening decomposition above. `keystone_opening()` signature changed
+from `keystone_opening()` (nullary, returning fixed `[14.70, 16.40]`) to
+`keystone_opening(style = "lip")` (unary with string parameter and default).
+
+## `keystone_opening()` — `[14.70, 16.40]` mm — **[A]** (deprecated name; use `keystone_opening("face")` or `keystone_face()`)
+
+Preserved for reference. The `"face"` style window size.
 
 Source: Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical
 drawing (DOC rev 01, dated 2021-12-15), "Suggested Panel Cutout" section,

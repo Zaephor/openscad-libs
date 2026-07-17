@@ -3,13 +3,24 @@
 // (assert failures surface on stderr; OpenSCAD exit code on assert files is unreliable.)
 use <keystone/keystone.scad>;
 
+// --- style/decomposition invariants (task #28) ---
+assert(keystone_known_styles() == ["lip", "face"], "styles list");
+assert(keystone_face() == [14.5, 16.0], "jack face invariant");
+assert(keystone_opening("face") == [14.70, 16.40], "face-grip opening (Samm [A])");
+assert(keystone_opening("lip")  == [14.8, 20.3],  "lip opening (taller)");
+assert(keystone_opening() == keystone_opening("lip"), "default style = lip");
+
 // --- metric invariants (always hold regardless of sourced numbers) ---
 o = keystone_opening();
 assert(len(o) == 2 && o[0] > 0 && o[1] > 0, "opening [ow,oh] positive");
 
 b = keystone_body();
 assert(len(b) == 3 && b[0] > 0 && b[1] > 0 && b[2] > 0, "body [bw,bh,bd] positive");
-assert(b[0] >= o[0] && b[1] >= o[1], "body at least as large as opening in X,Y");
+// Body (jack keep-out) must cover the FACE in X,Y. The "lip" opening is
+// intentionally taller than the jack (rotate-and-snap margin), so it may exceed
+// the body height — compare the body to the face, not the oversized opening.
+f = keystone_face();
+assert(b[0] >= f[0] && b[1] >= f[1], "body at least as large as jack face in X,Y");
 
 pt = keystone_plate_thickness();
 assert(len(pt) == 2 && pt[0] > 0 && pt[1] > pt[0], "plate thickness [min,max], min<max");

@@ -44,6 +44,16 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_pitch_assert wrongly aborted at min_pitch:"; echo "$out"; exit 1
 fi
 
+# Negative control: keystone_opening("bogus") must abort with assert.
+cat > "$tmp/unknown_style.scad" <<'EOF'
+use <keystone/keystone.scad>;
+o = keystone_opening("bogus");
+EOF
+out="$(run "$tmp/unknown_style.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_opening(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
+fi
+
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
 cat > "$tmp/dims.scad" <<'EOF'
 use <keystone/keystone.scad>;

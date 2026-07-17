@@ -15,13 +15,34 @@ Units: **mm**.
 
 Panel-mount default orientation: the panel **front face sits on `Z=0`**,
 **centered in X/Y**. The jack **body grows into `-Z`** (behind the panel),
-and the opening / show-face faces **+Z**. `keystone_opening()` is the X
+and the opening / show-face faces **+Z**. `keystone_opening(style)` is the X
 width x Y height of the plate window a consumer cuts; `keystone_body()` is
 the X, Y extents x Z depth of the jack envelope behind the panel (a
 keep-out volume, not print geometry). Consumers rotate the whole port to
 match their own panel orientation (e.g. `rotate([-90,0,0])` for a vertical
 1U faceplate) rather than this library baking in a rack/panel-specific
 orientation.
+
+## Retention styles (Task #28)
+
+The library now supports two retention styles — **pass `style=` to
+`keystone_opening()` and `keystone_cutout()` to choose**:
+
+- **`"face"` (face-grip)** — `[14.70, 16.40]` mm. Retention by front/rear
+  plate-thickness squeeze. Original Samm Teknoloji suggested panel cutout
+  [A]. Use for face-plate panels where the latch mechanism relies on plate
+  clamping.
+- **`"lip"` (rotate-and-snap, **default**)** — `[14.8, 20.3]` mm. Retention
+  by bottom-lip fulcrum + top-clip snap; taller opening allows the jack to
+  rotate into the window until a rigid bottom lip catches, then flex at the
+  top. Use for 3D-printed plastic plates where the snap mechanism (rather
+  than plate thickness) drives retention.
+
+**Backward-compatibility note:** Pre-#28 code called `keystone_opening()`
+with no arguments and got `[14.70, 16.40]` (the face-grip window). As of
+#28, the **default has changed to `"lip"`** (`[14.8, 20.3]`). If your
+design relies on the original behavior, pass `style="face"` explicitly to
+`keystone_opening()` and `keystone_cutout()`.
 
 ## Import
 
@@ -49,7 +70,10 @@ functional jack.
 ```scad
 use <keystone/keystone.scad>;
 
-o = keystone_opening();          // [14.70, 16.40]
+// Basic data
+f = keystone_face();             // [14.5, 16.0] invariant jack face
+o = keystone_opening("lip");     // [14.8, 20.3] lip (rotate-and-snap, default)
+o = keystone_opening("face");    // [14.70, 16.40] face-grip (original)
 b = keystone_body();             // [17.5, 19.5, 28.60]
 pt = keystone_plate_thickness(); // [1.5, 3.0]
 
@@ -58,12 +82,18 @@ xs = [for (i = [0:3]) i * keystone_pitch()];
 assert(keystone_layout_ok(xs), "ports too close together");
 keystone_pitch_assert(keystone_pitch()); // hard-fail at render if too tight
 
-// A faceplate: cut the window, place a jack keep-out for interference viz.
+// A faceplate with lip-style windows (default):
 difference() {
     translate([-30, -20, -3]) cube([60, 40, 3]);
-    keystone_cutout(plate_thickness = 3.0);
+    keystone_cutout(plate_thickness = 3.0);  // default style="lip"
 }
 color("orange") keystone_placeholder();
+
+// Face-grip style (original, if needed):
+difference() {
+    translate([-30, -20, -3]) cube([60, 40, 3]);
+    keystone_cutout(plate_thickness = 3.0, style = "face");
+}
 
 // Virtual mate-check: drop the insert into the cutout (see renders/ below).
 keystone_insert(plate_thickness = 3.0);
@@ -73,7 +103,9 @@ keystone_insert(plate_thickness = 3.0);
 
 | Function/module | Returns / does |
 |---|---|
-| `keystone_opening()` | `[ow, oh]` — plate window (X width, Y height), mm |
+| `keystone_known_styles()` | `["lip", "face"]` — list of supported retention styles |
+| `keystone_face()` | `[14.5, 16.0]` — invariant jack face / plug cross-section, mm |
+| `keystone_opening(style="lip")` | `[ow, oh]` — plate window (X width, Y height) per retention style, mm |
 | `keystone_body()` | `[bw, bh, bd]` — jack envelope keep-out (X, Y, Z-depth behind panel), mm |
 | `keystone_plate_thickness()` | `[tmin, tmax]` — accepted faceplate thickness range, mm |
 | `keystone_pitch()` | nominal center-to-center port spacing in a strip, mm |
@@ -84,7 +116,7 @@ keystone_insert(plate_thickness = 3.0);
 | `keystone_layout_ok(xs)` | true if every adjacent gap in ascending X-center list `xs` clears `keystone_min_pitch()` |
 | `keystone_pitch_assert(pitch)` | module; hard-fails render (stderr assert) if `pitch` is below `keystone_min_pitch()` |
 | `keystone_placeholder()` | module; jack envelope solid (`keystone_body()`), flange face at `Z=0`, body into `-Z` — fit/interference viz only |
-| `keystone_cutout(plate_thickness=3.0, clearance=0.25)` | module; plain rectangular through-hole for a consumer `difference()`, sized `keystone_opening()` + `2*clearance` per side, overcut 1mm above/below the plate |
+| `keystone_cutout(plate_thickness=3.0, clearance=0.25, style="lip")` | module; plain rectangular through-hole for a consumer `difference()`, sized `keystone_opening(style)` + `2*clearance` per side, overcut 1mm above/below the plate |
 | `keystone_insert(plate_thickness=3.0, fit=0.2)` | module; geometric mate-reference body (flange + through-plug + `+Y` hook + `-Y` latch bump), narrowed by `fit` per side so it threads `keystone_cutout()`'s window |
 
 ## Verification
