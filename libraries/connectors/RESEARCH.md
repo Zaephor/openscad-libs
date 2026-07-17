@@ -316,12 +316,50 @@ types / Upgrades lists below into `connectors.scad` (and, in SP2, `sbc.scad`).
 - `usb_a_stack2_shielded` = `[17, 18, 16.0]` opening `+Y` — **[B]** — evidence: sbc.scad pi3b/pi3bplus `usb2_1` (xmax, `[A]` Y-span+h drawing callout / `[B]` w standard-body estimate), corroborated by pi4b `usb2`/`usb3` and pi5 `usb3` (rows above). A real dual-port shielded SBC housing, distinct from the derived-doubling `usb_a_stack2` (which stays; no existing type removed).
 - `rj45_shallow` = `[21, 18.75, 13.5]` opening `+Y` — **[B]** — evidence: sbc.scad pi3b/pi3bplus `rj45` (xmax, `[A]` Y-span+h drawing callout / `[B]` w standard-body estimate), corroborated on d+h by bpir4 `rj45_2`/`rj45_3`/`rj45_4` (w excluded, see table note). A real no-integrated-magnetics SBC jack, distinct from the fetched Bel Fuse MagJack `rj45` (which stays; no existing type removed).
 
+### sfp — single SFP/SFP+ cage (Task 1, #14)
+- **Fetched**: TE Connectivity `2007198-1` "SFP+ 1X1 Cage Assembly, Press-Fit,
+  EMI Springs" — `https://www.te.com/en/product-2007198-1.html`, Customer
+  Drawing 2007198, Rev C1 (product page structured dimension table + the
+  drawing itself, both consulted this pass). This is a
+  genuine single-port (1x1) cage — distinct from TE's `114-13219` stacked
+  (2xN) SFP+ Connector and Cage Assembly, which was also fetched this pass
+  but ruled out as the wrong product shape for this type.
+- **Read**: product page's structured "Dimensions" fields — Length (their
+  X-axis) 48.70mm, Width (their Z-axis) 14.50mm, Profile Height (their
+  Y-axis) 9.70mm. Corroborated by reference dimensions `(14.5)` and `(9.7)`
+  printed directly on the drawing's front/side views (parenthesized =
+  derived/reference dims on this drawing's convention), matching the
+  structured page exactly. Mapped to this library's canonical frame:
+  W (panel-face width) = 14.50, D (depth into chassis) = 48.70, H (height
+  above PCB) = 9.70. The drawing's own toleranced port-opening dims
+  (14.00±0.10 x 8.95±0.15) are the transceiver mating-slot clearance, not
+  the outer cage envelope — not used for the body value.
+- **Confirmed**: `[14.5, 48.7, 9.7]`, opening `+Y`. Tier **[A]**.
+- **Corroborating secondary source** (not itself fetched/read as a primary
+  citation): an industry SFP-cage-dimensions guide independently states a
+  1x1 cage is "approximately 48.73mm long" — within 0.03mm of TE's own
+  48.70mm, consistent with the fetched value but not used to raise the tier
+  (already [A] from the direct fetch).
+- **Seed cross-check**: seed `[14.2, 45.0, 11.9]` — width AGREE (+0.3mm),
+  depth AGREE (+3.7mm, ~8%), height DISAGREE (-2.2mm, ~18% over in the
+  seed) — the seed's height was too tall; the real cage body (excluding the
+  taller mated-transceiver-plus-latch silhouette) is closer to 9.7mm.
+- **sbc.scad reconcile target (not adopted this pass)**: `sfp_1`/`sfp_2`
+  `[16.51, 53.98, 13.4]` — recorded in the "No-peer connectors" list below
+  as having no matching type prior to this task. Now that `sfp` exists,
+  every axis of sbc's figure runs larger (w+2.01, d+5.28, h+3.7) than this
+  library's `[A]`-fetched single-port cage — plausibly a different SFP
+  variant (e.g. with heatsink/light-pipe, or a belly-to-belly/stacked
+  footprint misread as single-port) or a looser board-photo silhouette.
+  Verdict deferred to sbc-adoption time, per the brief; `sfp_1`/`sfp_2` are
+  NOT copied into this table.
+
 ### Upgrades / fixes to existing types (Task 2)
 - `gpio_2x20`: height `8.5` stays `8.5`, tier `[C]//VERIFY` → **`[B]`** — grounded by sbc.scad pi3b's "Z-Height=8.5" mechanical-drawing callout, independently corroborated by pi4b's own separate drawing printing the same callout (sbc/RESEARCH.md GPIO section; carried forward at `[B]` on pi3bplus/pi5). Not `[A]`: per this file's own provenance legend, `[A]` requires "fetched + read this pass" by connectors itself, which has never fetched a Raspberry Pi drawing — citing sbc's fetch as connectors' own `[A]` would be a soft, uncredited-fetch claim, the kind this file's final-review fix pass had to correct for motherboards' PCIe claim (see the `pcie_x1`/.../`pcie_x16` section above) — that claim turned out to be genuine, but only because it carried a real, checkable citation. (Corrects an earlier draft of this section that claimed `[A]`; see the note added to the pre-existing gpio_2x20 section above.) Width/depth tier unchanged (already `[A]`, 2.54mm-pitch arithmetic).
 - `micro_hdmi`: value stays `[7.5, 4.5, 3.0]`, tier `[C]//VERIFY (cited-not-fetched)` → **`[B]`** — grounded by sbc.scad pi4b's `[A]` "Z=3.0" drawing callout for height (independently corroborated on pi5's own drawing per sbc/RESEARCH.md) plus `[B]` standard-body w/d estimate on both sides; not `[A]` since no vendor micro-HDMI datasheet was independently fetched this pass or the connectors build pass.
 
 ### No-peer connectors (recorded, untouched)
-- `av_jack`, `csi_dsi_1`/`csi_dsi_2`, `sfp_1`/`sfp_2`, `pcie_fpc` — confirmed no matching type exists anywhere in `_connector_table()`; genuinely distinct physical connector classes (audio jack, camera/display FPC, SFP cage, PCIe FFC ribbon — none overlap the slot/panel types currently modeled).
+- `av_jack`, `csi_dsi_1`/`csi_dsi_2`, `sfp_1`/`sfp_2`, `pcie_fpc` — confirmed no matching type existed anywhere in `_connector_table()` at SP1 time; genuinely distinct physical connector classes (audio jack, camera/display FPC, SFP cage, PCIe FFC ribbon — none overlapped the slot/panel types modeled then). **Update (Task 1, #14):** `sfp` was added to the table this task, giving `sfp_1`/`sfp_2` a candidate peer for the first time — see the `sfp` section above. Not adopted this pass (no `sbc.scad` edit); the other three types in this list remain genuinely no-peer.
 - `microusb_data` — **not** no-peer; resolved as matched to `micro_usb` (see table row above). The brief's "(if unmatched)" conditional is answered: it is matched.
 
 ### Notes / deferred items (not new types, not no-peer)
