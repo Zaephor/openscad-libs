@@ -202,3 +202,117 @@ the minimum-wall-derived alternative on record too.
 
 No value in this table was invented without at least a fetched-and-read
 source or an explicitly derived-and-labeled arithmetic rule behind it.
+
+## Cross-brand M2.5/M3 (Task #6)
+
+Purpose: decide whether the M2.5/M3 insert dimensions diverge enough between
+brands to justify a **brand-keyed** table (Task 2 builds the key), or whether
+one flat per-size row corroborated across brands is sufficient (Task 2 just
+corroborates the existing flat table). Focused on the two smallest
+production sizes this repo actually consumes, and on the two
+divergence-relevant columns (`insert_od`, install-hole `pilot_dia`) plus
+`insert_length`.
+
+Sources read this pass (in addition to those already logged above):
+- **PennEngineering (PEM) SI datasheet** (as above) — tier `[A]` for the
+  M2.5/M3 rows it lists.
+- **CNC Kitchen "threaded inserts in comparison" spec table** (CNC Kitchen's
+  own published dimension table for their standard M2.5 and M3 inserts;
+  columns `L` length, `D1` insert OD, `D2` centre-tip dia, `D3` hole dia,
+  `W` min wall). Tier `[A]` (manufacturer's own product spec).
+- **ruthex M2.5 (RX-M2.5x5.7) and M3 (RX-M3x5.7) technical-specifications
+  table** (ruthex's own per-product spec, same `D1/D2/D3/L/W` scheme). Tier
+  `[B]` — ruthex-published numbers, corroborated cell-for-cell by the CNC
+  Kitchen table for the barbed "3D-printing" body family.
+- **ruthex HSS drill set for thread inserts** — product spec lists the five
+  drill diameters `3.2 / 4.0 / 5.6 / 6.4 / 8.0 mm` covering M2, M2.5, M3, M4,
+  M5, M6 & 1/4"; the single 4.0 mm bit is ruthex's recommended install hole
+  for **both** M2.5 and M3 (they share a drill). Tier `[B]`.
+- **insertguide.com** hole-size guide (community buyer's-guide, not a
+  manufacturer) — M2.5 pilot 3.8, M3 pilot 4.2. Tier `[C]`.
+
+### Findings table
+
+Rows = size × brand; all mm. `[tier] source` per cell.
+
+| size | brand | insert_od | pilot/hole | insert_length |
+|---|---|---|---|---|
+| M2.5 | PEM SI      | 4.55 [A] PEM SI datasheet | 4.01 [A] PEM SI "Hole Dia." | 5.74 [A] PEM SI |
+| M2.5 | CNC Kitchen | 4.6 [A] CNC Kitchen spec table (`D1`) | 4.0 [A] CNC Kitchen (`D3`) | 4.0 [A] CNC Kitchen (`L`) |
+| M2.5 | ruthex      | 4.6 [B] ruthex RX-M2.5x5.7 spec (`D1`) | 4.0 [B] ruthex (`D3`) + drill-set 4.0mm bit | 5.7 [B] ruthex RX-M2.5x5.7 |
+| M2.5 | generic     | 4.4–4.6 [C] community consensus | 3.8 [C] insertguide.com | 5.7 [C] common "standard" |
+| M3   | PEM SI      | 4.55 [A] PEM SI datasheet | 4.01 [A] PEM SI "Hole Dia." | 5.74 [A] PEM SI |
+| M3   | CNC Kitchen | 4.6 [A] CNC Kitchen spec table (`D1`) | 4.0 [A] CNC Kitchen (`D3`) | 5.7 [A] CNC Kitchen (`L`) |
+| M3   | ruthex      | 4.6 [B] ruthex RX-M3x5.7 spec (`D1`) | 4.0 [B] ruthex (`D3`) + drill-set 4.0mm bit | 5.7 [B] ruthex RX-M3x5.7 |
+| M3   | generic     | 4.4–4.6 [C] community consensus | 4.2 [C] insertguide.com | 5.7 [C] common "standard" |
+
+**Boss min-wall guideline** (the wall of plastic that must remain around the
+install hole):
+
+| guideline | value | source |
+|---|---|---|
+| min wall around hole, M2.5 | 1.6 mm [A/B] | CNC Kitchen `W` = 1.6 **and** ruthex `W (min.)` = 1.6 (two manufacturers agree) |
+| min wall around hole, M3   | 1.6 mm [A/B] | CNC Kitchen `W` = 1.6 **and** ruthex `W (min.)` = 1.6 |
+| optimum boss OD (all sizes)| 2–3 × insert_od | SPIROL white paper (as logged above), multiplier tapering down with size |
+
+Note the two figures answer different questions: CNC Kitchen/ruthex `W` is a
+**minimum** wall (crack-risk floor, ~pilot_dia + 2·1.6 ≈ 7.2 mm boss OD for
+M3), SPIROL's 2–3× is an **optimum** target (the flat table's 2.5× ≈ 11.4 mm
+boss OD for M3). Both are on record; Task 3's `heatset_min_wall` accessor
+should expose the 1.6 mm manufacturer minimum, distinct from the derived
+optimum boss OD already in the flat table.
+
+### Shared-knurl-body observation (per brand)
+
+- **PEM SI:** M2.5 and M3 share the same external body — identical `insert_od`
+  (4.55), `pilot_dia` (4.01) and `length` (5.74); only the internal thread
+  differs. [A]
+- **ruthex:** M2.5 and M3 share the same body exactly — both `RX-*x5.7`, both
+  `D1` 4.6 / `D3` 4.0 / `L` 5.7 / `W` 1.6; only the internal thread differs.
+  Both driven by the single 4.0 mm bit in ruthex's own drill set. [B]
+- **CNC Kitchen:** M2.5 and M3 share `D1` 4.6 / `D3` 4.0 / `W` 1.6; they
+  differ only in length (M2.5 standard `L` = 4.0, M3 standard `L` = 5.7). So
+  same knurl-body **diameter** family, different length variant. [A]
+
+So within every brand, M2.5 and M3 are the same knurl-body diameter — the
+size distinction is purely the internal thread (and, for CNC Kitchen, a
+shorter standard M2.5 length).
+
+### Divergence verdict
+
+**Criterion (from task brief):** brand-key iff any `insert_od` OR
+recommended-hole difference > 0.2 mm between brands for the same size, OR the
+brands use distinct knurl families that a single number can't serve.
+
+- `insert_od` spread, same size: PEM 4.55 vs CNC Kitchen/ruthex 4.6 →
+  **0.05 mm** (both M2.5 and M3). Well under 0.2 mm.
+- install-hole spread: PEM 4.01 vs CNC Kitchen/ruthex 4.0 → **0.01 mm**.
+  insertguide's M3 generic 4.2 is +0.2 vs the 4.0 manufacturer figure —
+  exactly *at*, not *over*, the threshold, and it is a `[C]` community value
+  contradicted by two `[A]` manufacturer specs, so it does not tip the
+  verdict.
+- knurl families: PEM SI is a straight-wall opposed-knurl insert and CNC
+  Kitchen/ruthex are barbed "3D-printing" inserts — technically different
+  product lines, but their OD-over-knurl and install-hole numbers converge
+  within 0.05 mm, so one canonical value serves all three brands.
+
+**Verdict: CONVERGED.** No `insert_od` or hole difference exceeds 0.2 mm and
+no dimensional knurl-family split exists for M2.5/M3. → **Task 2 corroborates
+the flat table (no brand key).** The brand-keyed API is *not* warranted by
+this evidence; Task 2 should keep one flat per-size row and record the
+three-brand agreement.
+
+### Current-lib values this pass touches (flag for Task 2)
+
+- `heatset.scad` M2.5/M3 `insert_od = 4.55` (PEM, canonical) is now
+  corroborated by CNC Kitchen (4.6) and ruthex (4.6) within 0.05 mm. The
+  **M2.5 `insert_od` tier can rise from single-source `[A]`(PEM) to `[B]`**
+  (three-brand agreement) — a tier upgrade requires re-checking the primary
+  source, done here. M3 `insert_od` is already `[B]`. No number change
+  needed; PEM's 4.55 stays canonical (choosing the tighter of two
+  within-tolerance values).
+- `pilot_dia = 4.01` (PEM) vs CNC Kitchen/ruthex 4.0 — 0.01 mm, no change.
+- **New for Task 3:** a manufacturer **min-wall = 1.6 mm** (M2.5 and M3,
+  CNC Kitchen + ruthex agreeing) is now on record — distinct from the
+  SPIROL-derived optimum boss OD already in the flat table. No current lib
+  value contradicts it; it is additive.
