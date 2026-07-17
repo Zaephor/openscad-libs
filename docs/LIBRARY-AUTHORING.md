@@ -15,8 +15,17 @@ function fan_hole_spacing(size) = ...; // [B] https://en.wikipedia.org/wiki/Comp
   ATX spec, raspberrypi.com mechanical drawing, SNIA SFF-8201, EIA-310-D, ...).
 - **[B]** — corroborated across multiple independent peers (e.g. Wikipedia plus
   two retailer/datasheet sources that agree).
+- **[B] (caliper)** — a direct caliper measurement of the actual physical part.
+  Tag it `[B] caliper` and note the specimen. A single instrument on one
+  specimen is auditable primary evidence but not a governing spec, so it does
+  not earn [A]; **upgrade to [A]** only if an official datasheet/standard later
+  corroborates the measured value. Stronger than [C] (a mesh of someone else's
+  model), weaker than [A].
 - **[C]** — reverse-engineered from a public STL or SCAD library (cite the
   artifact URL).
+
+Any tier change — up OR down (e.g. [B] caliper → [A] on a later datasheet, or a
+downgrade) — requires re-checking the primary source, not just editing the tag.
 
 A group of values that share one source (e.g. a whole dimension table from one
 drawing) may carry a single citation above the block.
