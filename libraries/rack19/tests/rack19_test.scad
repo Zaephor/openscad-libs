@@ -41,3 +41,4 @@ assert(round(rack19_device_height(1)*1e6)/1e6 == round((rack19_u() - rack19_stac
 assert(round(rack19_device_height(2)*1e6)/1e6 == round((2*rack19_u() - rack19_stack_gap())*1e6)/1e6,
     "device_height u=2");
 assert(rack19_stack_gap() > 0 && rack19_stack_gap() < 2, "stack_gap sane small value");
+assert(rack19_device_height(1) < rack19_u(), "device_height must be under 1U pitch");

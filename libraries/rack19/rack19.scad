@@ -182,7 +182,11 @@ module rack19_placeholder(u, depth_ftf, hole_type = "square") {
 /* [Panel helper] */
 // Faceplate blank: full 19in panel width x (u*pitch) tall x `thickness`, front
 // face on Y=0 (grows -Y). Consumer subtracts rack19_holes() for mounting holes.
+// HEIGHT ADVISORY: 1U panel/faceplate exterior height is rack19_device_height(u)
+// (= u*pitch - stack_gap per EIA-310), NOT raw u*rack19_u() — the stacking gap
+// keeps abutting units from binding. Consumers building rack panels should use
+// this helper (or rack19_device_height()) rather than u*rack19_u().
 module rack19_panel(u, thickness = 3) {
     translate([-rack19_panel_width()/2, -thickness, 0])
-        cube([rack19_panel_width(), thickness, u * rack19_u()]);
+        cube([rack19_panel_width(), thickness, rack19_device_height(u)]);
 }
