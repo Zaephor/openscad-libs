@@ -23,7 +23,7 @@ $fn = 48;
    Row: [size, insert_od, insert_length, pilot_dia, boss_od, lead_in] mm. */
 function _heatset_table() = [
     ["M2",   3.73, 4.00, 3.23,  9.3, 0.4], // insert_od/length/pilot_dia [A]/[B] PEM SI-6; boss_od [C] //VERIFY derived 2.5x insert_od; lead_in [C] //VERIFY repo 45deg convention
-    ["M2.5", 4.55, 5.74, 4.01, 11.4, 0.4], // insert_od/length/pilot_dia [B] PEM+CNC Kitchen+ruthex/insertguide; boss_od [C] //VERIFY derived 2.5x insert_od; lead_in [C] //VERIFY repo 45deg convention
+    ["M2.5", 4.55, 5.74, 4.01, 11.4, 0.4], // insert_od/pilot_dia [B] PEM+CNC Kitchen+ruthex/insertguide; length [B] PEM+ruthex (CNC Kitchen M2.5 L=4.0 is the short variant); boss_od [C] //VERIFY derived 2.5x insert_od; lead_in [C] //VERIFY repo 45deg convention
     ["M3",   4.55, 5.74, 4.01, 11.4, 0.4], // insert_od/length/pilot_dia [B] PEM+CNC Kitchen+ruthex/insertguide; boss_od [C] //VERIFY derived 2.5x insert_od; lead_in [C] //VERIFY repo 45deg convention
     ["M4",   6.17, 8.15, 5.67, 15.4, 0.4], // insert_od/length/pilot_dia [B] PEM+CNC Kitchen+ruthex/insertguide; boss_od [C] //VERIFY derived 2.5x insert_od; lead_in [C] //VERIFY repo 45deg convention
     ["M5",   6.93, 9.52, 6.43, 17.3, 0.4], // insert_od/length/pilot_dia [B] PEM+CNC Kitchen+ruthex; boss_od [C] //VERIFY derived 2.5x insert_od; lead_in [C] //VERIFY repo 45deg convention
