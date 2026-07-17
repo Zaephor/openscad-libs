@@ -354,13 +354,19 @@ Sources:
    states, verbatim, *"the width being 236.525mm (9.312") between screw
    holes"*, and separately lists the **GeeekPi / DeskPi RackMate** line
    (T0/T1/T2) as products built to this same spacing.
+9. **ComputingForGeeks, "Build a 10-Inch Mini Rack for a Homelab"** —
+   `computingforgeeks.com/build-10-inch-mini-rack-homelab/`. States,
+   verbatim, that the rails sit *"just 236.525 mm apart instead of 19
+   inches"*, and separately names the **DeskPi RackMate T1** as "the one
+   most builds start with" — a second, independent source for the same
+   236.525mm figure, not merely a bare mention.
 
 #### DeskPi — 4 geom fields
 
 | Field | Value | Tier | Citation |
 |---|---|---|---|
 | `panel_width` | **281 mm** | **[B]** | DeskPi T0 product page, verbatim "External dimensions: 281mm\*200mm\*274mm" |
-| `hole_h_span` | **236.525 mm** | **[B]** `//VERIFY` not DeskPi's own literal wording | mini-rack.jeffgeerling.com community 10in-rack standard, which explicitly names DeskPi/GeeekPi RackMate as built to this spacing; internally plausible against DeskPi's own 281/212mm figures (implies ~22mm post material outside the hole line, ~12mm inside it — not an outrageous post cross-section) |
+| `hole_h_span` | **236.525 mm** | **[B]** `//VERIFY` not DeskPi's own literal wording | mini-rack.jeffgeerling.com and computingforgeeks.com (sources 8-9), both naming DeskPi/GeeekPi RackMate as built to this spacing; plausible against DeskPi's own 281/212mm figures (~22mm post material outside the hole line, ~12mm inside) |
 | `clear_width` | **212 mm** | **[B]** | DeskPi T0 product page, verbatim "Internal dimensions: 212mm\*200mm\*241mm" |
 | `depth_ftf` | **200 mm** (T0/T1 preset) | **[B]** | DeskPi T0 product page, verbatim "maximum installation depth of this 10-inch rack is 20cm"; DeskPi wiki's T1 overall chassis "11x7.8x16 inches" (7.8in ≈ 198mm) is consistent |
 
@@ -394,12 +400,11 @@ sources agreeing.
 Sources:
 
 1. **Tecmojo 6U/10in Network Rack Instruction Manual** —
-   `manuals.plus/asin/B0F4JZ9YJW` (fetched as the underlying PDF; not
-   committed — see repo rule against committing third-party manuals).
-   Contains an actual dimensioned product drawing (its own "Specifications"
-   diagram) plus a spec table. Verbatim spec-table rows: *"Width: 10 inches
-   (280mm)"*, *"Depth: 7.87 inches (200mm)"*, *"Height: 14.53 inches
-   (369.1mm)"*. The diagram itself separately labels *"Width 11.02"
+   `manuals.plus/asin/B0F4JZ9YJW` (not committed to the repo — third-party
+   manual). Contains an actual dimensioned product drawing (its own
+   "Specifications" diagram) plus a spec table. Verbatim spec-table rows:
+   *"Width: 10 inches (280mm)"*, *"Depth: 7.87 inches (200mm)"*, *"Height:
+   14.53 inches (369.1mm)"*. The diagram itself separately labels *"Width 11.02"
    (280mm)"*, *"Depth 7.87" (200mm)"*, a vertical U-pitch callout *"1.75"
    (44.45mm)"* (confirming TecMojo uses the same 44.45mm U pitch as the
    rest of this library), and a horizontal callout *"8.27" (210mm)"*
@@ -421,13 +426,22 @@ Sources:
    both M6/10-32/12-24 cage-nut kits (square-hole use) and 10-32/12-24
    pilot-point pan-head screws (round/tapped-hole use) as separate SKUs,
    consistent with the manual's own "tapped/square" combo-hole description.
+4. **mini-rack.jeffgeerling.com** ("Project MINI RACK") + its GitHub
+   README (`github.com/geerlingguy/mini-rack`) — same URL as DeskPi source
+   8 above; community-consensus documentation of the 10-inch mini-rack
+   convention, states, verbatim, *"the width being 236.525mm (9.312")
+   between screw holes"*.
+5. **ComputingForGeeks, "Build a 10-Inch Mini Rack for a Homelab"** —
+   `computingforgeeks.com/build-10-inch-mini-rack-homelab/`; same URL as
+   DeskPi source 9 above. States, verbatim, that the rails sit *"just
+   236.525 mm apart instead of 19 inches"*.
 
 #### TecMojo — 4 geom fields
 
 | Field | Value | Tier | Citation |
 |---|---|---|---|
-| `panel_width` | **280 mm** (11.02in) | **[B]** | Manual spec table + diagram, verbatim "Width 11.02\" (280mm)"; the same 11.02in width recurs on the 4U and 12U product pages regardless of U-height, i.e. corroborated across the vendor's own model line |
-| `hole_h_span` | **236.525 mm** | **[B]** `//VERIFY` not TecMojo's own literal wording (the manual's own diagram labels only the *vertical* 44.45mm U-pitch, never a horizontal hole-to-hole span) | mini-rack.jeffgeerling.com / ComputingForGeeks community 10in-rack standard (same source class as the DeskPi row above); internally plausible against TecMojo's own 280/210mm figures |
+| `panel_width` | **280 mm** (11.02in) | **[B]** | Manual spec table + diagram, verbatim "Width 11.02\" (280mm)"; same figure recurs on the 4U and 12U product pages regardless of U-height |
+| `hole_h_span` | **236.525 mm** | **[B]** `//VERIFY` not TecMojo's own literal wording (the manual's diagram labels only the *vertical* 44.45mm U-pitch, never a horizontal hole-to-hole span) | mini-rack.jeffgeerling.com and computingforgeeks.com (sources 4-5), community 10in-rack standard; plausible against TecMojo's own 280/210mm figures |
 | `clear_width` | **210 mm** (8.27in) | **[B]** `//VERIFY` exact measurement endpoint inferred from the diagram's callout position (front equipment-bay opening), not a captioned "clear width" label in words | Manual's own dimensioned diagram, verbatim "8.27\" (210mm)" |
 | `depth_ftf` | **200 mm** (7.87in, 4U/6U/9U preset) | **[B]** | Manual spec table, verbatim "Depth: 7.87 inches (200mm)" |
 
@@ -458,16 +472,15 @@ its 9.312in equivalent) in so many words — unlike LabRax's own article,
 which does say it explicitly. For both new rows the figure is carried at
 tier **[B]** via the same community-consensus mechanism the value-
 confidence rule allows (`docs/LIBRARY-AUTHORING.md`'s community-consensus
-rung): `mini-rack.jeffgeerling.com` (corroborated by `computingforgeeks.com`)
-documents 236.525mm as the de facto 10-inch mini-rack hole spacing the
-whole ecosystem is built around, and explicitly names the DeskPi/GeeekPi
-RackMate line as one of the product lines built to it. This is the *same*
-class of evidence (an independent, non-vendor technical source describing
-the shared convention, not the vendor's own literal number) this file
-already used for LabRax's panel-width/per-U-offset values above — carried
-here at the same tier, not upgraded, per the locked design decision that
-`hole_h_span` is shared/universal across all three vendors rather than
-independently re-derived per row.
+rung): `mini-rack.jeffgeerling.com` and `computingforgeeks.com` (DeskPi
+sources 8-9 / TecMojo sources 4-5) each independently document 236.525mm
+as the de facto 10-inch mini-rack hole spacing the whole ecosystem is
+built around, and both name the DeskPi/GeeekPi RackMate line as one of the
+product lines built to it. Same class of evidence this file already used
+for LabRax's panel-width/per-U-offset values above — carried at the same
+tier, not upgraded, per the locked design decision that `hole_h_span` is
+shared/universal across all three vendors rather than independently
+re-derived per row.
 
 ### Summary table for Task 2 (deskpi / tecmojo rows)
 
