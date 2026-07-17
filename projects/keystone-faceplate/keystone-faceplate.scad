@@ -57,7 +57,16 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
             " below min for port_count ", port_count));
     ow = keystone_opening()[0];
     ear_col = rack10_hole_h_span(standard) / 2;
-    ear_r   = rack10_screw_clearance(ear_fastener) / 2;
+    // ear_r = ear cutout's half-width along X (the axis ear_col/outer_edge
+    // measure along). "slot" elongates the clearance circle by slot_travel/2
+    // further inward (rack10_holes()'s obround, hull'd along local X which
+    // maps 1:1 to global X through its rotate([-90,0,0])); "square" ignores
+    // the fastener dia entirely and cuts a fixed rack10_square_size() square
+    // instead (see rack10_holes()) — neither matches a plain clearance-circle
+    // radius.
+    ear_r = ear_hole_type == "slot"   ? rack10_screw_clearance(ear_fastener) / 2 + slot_travel / 2
+          : ear_hole_type == "square" ? rack10_square_size() / 2
+          : rack10_screw_clearance(ear_fastener) / 2;
     outer_edge = port_count <= 0 ? 0
                : max([for (x = xs) abs(x)]) + ow / 2 + port_clearance;
     assert(outer_edge <= ear_col - ear_r,
