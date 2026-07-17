@@ -3,8 +3,8 @@
 Connector body (housing/shell) envelope dimensions for common PC/SBC panel
 and slot connectors: USB Type-A / Type-A-stacked / Type-C / Micro-B, RJ45 /
 RJ45-stacked, HDMI Type-A / mini / micro, PCIe x1/x4/x8/x16 card-edge slot,
-and a 2.54mm-pitch 2x20 GPIO header. Mechanical envelope only (no
-electrical/signal data). Units: **mm**.
+a 2.54mm-pitch 2x20 GPIO header, and a single-port SFP/SFP+ cage. Mechanical
+envelope only (no electrical/signal data). Units: **mm**.
 
 This library answers one question per connector type: "how big a box (and
 which way does it open) do I need to reserve or cut a hole for this part?"
@@ -99,7 +99,7 @@ choice in the example script, not a modeled union or geometry defect.
 Valid `type` keys (`connector_known_types()`): `usb_a`, `usb_a_stack2`,
 `usb_a_stack2_shielded`, `usb_c`, `micro_usb`, `rj45`, `rj45_stack2`,
 `rj45_shallow`, `hdmi`, `mini_hdmi`, `micro_hdmi`, `pcie_x1`, `pcie_x4`,
-`pcie_x8`, `pcie_x16`, `gpio_2x20`.
+`pcie_x8`, `pcie_x16`, `gpio_2x20`, `sfp`.
 
 ## Sources
 
@@ -123,6 +123,7 @@ pending stronger corroboration.
 | USB-IF (usb.org) USB 2.0 + Type-C mechanical specs | C, named-not-fetched (login/EULA-gated) | corroborates USB-A/C general form factor, not a specific dimension |
 | `libraries/sbc/sbc.scad` pi3b/pi3bplus/pi4b/pi5 `usb2_1`/`usb2_2`/`usb2`/`usb3` (peer-reconciled, SP1) | B | `usb_a_stack2_shielded` |
 | `libraries/sbc/sbc.scad` pi3b/pi3bplus `rj45`, corroborated on d+h by bpir4 `rj45_2`/`rj45_3`/`rj45_4` (peer-reconciled, SP1) | B | `rj45_shallow` |
+| [TE Connectivity 2007198-1](https://www.te.com/en/product-2007198-1.html) "SFP+ 1X1 Cage Assembly, Press-Fit, EMI Springs" (Customer Drawing 2007198, Rev C1) | A | `sfp` |
 
 `sbc.scad` and `motherboards.scad` rows (`hdmi`, `usb_c`/`usbc_pwr`,
 `gpio`, `rj45*`, `mobo_pcie_ports()`) were read as **read-only
@@ -159,7 +160,10 @@ consume `connectors.scad` rather than just cross-check against it.
 from the derived-doubling `usb_a_stack2` — both stay, no type removed),
 `rj45_shallow` (no-integrated-magnetics SBC RJ45 jack, distinct from the
 fetched Bel Fuse MagJack `rj45` — both stay, no type removed).
-`connector_known_types()` now returns 16 types total.
+
+**Task 1 addition (1, `[A]`, see Sources above):** `sfp` (single-port
+SFP/SFP+ cage; sbc's own `sfp_1`/`sfp_2` remain a deferred adoption target,
+see `RESEARCH.md`). `connector_known_types()` now returns 17 types total.
 
 **Deferred types (not in this library at all):** DB9, DB25, VGA,
 DisplayPort, SATA (data + power). No slot exists for these yet — a future

@@ -7,7 +7,8 @@ assert(connector_known_types() == [
     "usb_a", "usb_a_stack2", "usb_c", "micro_usb",
     "rj45", "rj45_stack2", "hdmi", "mini_hdmi", "micro_hdmi",
     "pcie_x1", "pcie_x4", "pcie_x8", "pcie_x16", "gpio_2x20",
-    /* SP1 additions: */ "usb_a_stack2_shielded", "rj45_shallow"], "type list");
+    /* SP1 additions: */ "usb_a_stack2_shielded", "rj45_shallow",
+    /* SFP type (#14): */ "sfp"], "type list");
 
 // opening axes (fixed design decision)
 assert(connector_opening("usb_a")    == "+Y", "usb_a opening");
@@ -15,6 +16,7 @@ assert(connector_opening("rj45")     == "+Y", "rj45 opening");
 assert(connector_opening("micro_hdmi") == "+Y", "micro_hdmi opening");
 assert(connector_opening("pcie_x16") == "+Z", "pcie opening");
 assert(connector_opening("gpio_2x20")== "+Z", "gpio opening");
+assert(connector_opening("sfp") == "+Y", "sfp opening");
 
 // strongest-sourced / representative dims (see per-line tiers)
 assert(connector_size("pcie_x16") == [89, 7.5, 11.25], "pcie_x16 body");     // [A] Molex SD-87715-207
@@ -23,6 +25,9 @@ assert(connector_size("gpio_2x20") == [50.8, 5.08, 8.5], "gpio_2x20 body");  // 
 // SP1 reconciled bodies (values per RESEARCH.md SP1 table)
 assert(connector_size("usb_a_stack2_shielded") == [17, 18, 16.0], "usb_a_stack2_shielded body");
 assert(connector_size("rj45_shallow") == [21, 18.75, 13.5], "rj45_shallow body");
+
+// SFP type (#14)
+assert(connector_size("sfp") == [14.5, 48.7, 9.7], "sfp body"); // [A] TE 2007198-1 SFP+ 1x1 cage
 
 // --- body renders + arithmetic guard (geometry verified by render step) ---
 // pcie_x16 body volume = 89*7.5*11.25 = 7509.375 mm^3
