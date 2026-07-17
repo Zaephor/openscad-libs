@@ -97,4 +97,29 @@ assert(abs((_xy[3][1] + _od2) - (rear_wall_y() - wall)) < 1e-6,
     str("rear post (mirror) not tangent to rear-wall inner face: y+od/2=", _xy[3][1] + _od2,
         " target=", rear_wall_y() - wall));
 
+// --- #23 regression lock: bpir4 front RJ45 is ONE 4-port ganged block (#8
+// re-model). The faceplate cuts these openings generically from
+// sbc_connectors(), so this guards the faceplate opening against any sbc change
+// that silently alters it. The 62.61/118.53/13.98 numbers below are EXPECTED-
+// VALUE regression guards (not a data source — the data lives in sbc.scad).
+_rj45 = [for (c = sbc_connectors(BOARD))
+            if (c[3] == "ymin" &&
+                (c[0] == "rj45_1" || c[0] == "rj45_2" ||
+                 c[0] == "rj45_3" || c[0] == "rj45_4")) c];
+assert(len(_rj45) == 4,
+    str("bpir4 RJ45: expected 4 ganged ports, got ", len(_rj45)));
+// Contiguous (abutting): each port x0 == previous port x0 + previous width.
+for (i = [1:len(_rj45)-1])
+    assert(abs(_rj45[i][1][0] - (_rj45[i-1][1][0] + _rj45[i-1][2][0])) < 1e-6,
+        str("bpir4 RJ45: ports not contiguous at index ", i,
+            " (x0=", _rj45[i][1][0], ")"));
+// Block span (board frame) and per-port width.
+assert(abs(_rj45[0][1][0] - 62.61) < 1e-6,
+    str("bpir4 RJ45: block x0 ", _rj45[0][1][0], " != 62.61"));
+assert(abs((_rj45[3][1][0] + _rj45[3][2][0]) - 118.53) < 1e-6,
+    str("bpir4 RJ45: block x1 ", _rj45[3][1][0] + _rj45[3][2][0], " != 118.53"));
+for (c = _rj45)
+    assert(abs(c[2][0] - 13.98) < 1e-6,
+        str("bpir4 RJ45: ", c[0], " width ", c[2][0], " != 13.98"));
+
 // Render nothing (pure assert file).
