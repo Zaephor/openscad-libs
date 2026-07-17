@@ -222,6 +222,51 @@ if not noclip_ok:
     sys.stderr.write("insert tab protrudes into solid frame within the plate band (regression)\n")
 sys.exit(0 if (flange_ok and plug_ok and behind_ok and noclip_ok) else 1)
 PY
+
+  # Tab/plug connectivity (#28 review finding): plug_ok above only checks the
+  # plug TIP cross-section (deepest Z -- unrelated to hook/latch position) and
+  # noclip_ok only checks an UPPER bound against the window edge, which the
+  # original mid-flight bug also satisfied (it capped at the same o[1]/2, just
+  # with a gap on the PLUG side). Neither would catch a regression that
+  # reintroduces the exact bug the implementer hand-caught by dumping raw STL
+  # vertices: a hook/latch (or fulcrum/clip) tab anchored to a stale
+  # opening-derived Y offset instead of the plug's own face-derived edge
+  # (plug_h_xy/2 = (fh-2*fit)/2), leaving it floating with a gap instead of
+  # meeting the plug flush. Detect this directly and style-agnostically: the
+  # keystone_insert() solid (flange+plug+both retention features) is meant to
+  # be ONE physical part, so if any tab doesn't actually touch the plug it
+  # will render as a disconnected island in the STL mesh -- count connected
+  # components via union-find over (rounded) shared vertices and require
+  # exactly one. This is proven to catch the bug class: with the pre-fix
+  # o[1]/2-anchored formula reintroduced locally (both tab features, both
+  # styles) this check fails with 2-3 components; against the real fix it is 1.
+  python3 - "$tmp/insert_$STYLE.stl" <<PY || { echo "insert ($STYLE) tab/plug Y-edge disconnected -- a hook/latch/fulcrum/clip tab is floating away from the plug (#28 regression)"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+tris=[]
+for i in range(n):
+    tri=[]
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        tri.append((round(x,2), round(y,2), round(z,2)))
+    tris.append(tri)
+parent={}
+def find(x):
+    while parent[x]!=x:
+        parent[x]=parent[parent[x]]; x=parent[x]
+    return x
+def union(a,b):
+    ra,rb=find(a),find(b)
+    if ra!=rb: parent[ra]=rb
+for tri in tris:
+    for v in tri: parent.setdefault(v,v)
+    a,b,c=tri; union(a,b); union(b,c)
+roots=set(find(v) for v in parent)
+if len(roots)!=1:
+    sys.stderr.write(f"insert ($STYLE) is NOT one connected solid: {len(roots)} disjoint piece(s)\n")
+sys.exit(0 if len(roots)==1 else 1)
+PY
 done
 
 echo ok
