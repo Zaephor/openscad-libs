@@ -57,4 +57,37 @@ ok=(abs((max(xs)-min(xs))-bw)<tol and abs((max(ys)-min(ys))-bh)<tol and
 sys.exit(0 if ok else 1)
 PY
 
+# Cutout: window (ow+2c) x (oh+2c), spanning the plate thickness in Z with overcut.
+cat > "$tmp/opening.scad" <<'EOF'
+use <keystone/keystone.scad>;
+o = keystone_opening();
+echo(o[0]); echo(o[1]);
+EOF
+op_out="$(run "$tmp/opening.scad")"
+ow="$(echo "$op_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+oh="$(echo "$op_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+
+PLATE=3.0; CLR=0.25
+cat > "$tmp/cutout.scad" <<EOF
+use <keystone/keystone.scad>;
+keystone_cutout(plate_thickness = $PLATE, clearance = $CLR);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/cutout.stl" "$tmp/cutout.scad" 2>/dev/null
+
+python3 - "$tmp/cutout.stl" "$ow" "$oh" "$CLR" "$PLATE" <<'PY' || { echo "cutout window/extent incorrect"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[];zs=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); ys.append(y); zs.append(z)
+ow,oh,clr,plate=map(float,sys.argv[2:6]); tol=0.1
+wx=ow+2*clr; wy=oh+2*clr
+ok=(abs((max(xs)-min(xs))-wx)<tol and abs((max(ys)-min(ys))-wy)<tol and
+    max(zs)>0.5 and                      # front overcut above Z=0
+    min(zs) < -(plate) + 0.001)          # rear overcut below the plate rear face
+sys.exit(0 if ok else 1)
+PY
+
 echo ok

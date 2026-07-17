@@ -31,3 +31,10 @@ echo("keystone_test OK");
 
 /* [Placeholder] — smoke render; numeric bbox checked in tests/test_keystone_lib.sh */
 keystone_placeholder();
+
+/* [Cutout] — smoke render: window cut from a representative 3mm plate.
+   Numeric extents checked in tests/test_keystone_lib.sh. */
+translate([30, 0, 0]) difference() {
+    translate([-15, -15, -3]) cube([30, 30, 3]); // stand-in faceplate
+    keystone_cutout(plate_thickness = 3.0);
+}

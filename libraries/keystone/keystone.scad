@@ -93,3 +93,16 @@ module keystone_placeholder() {
     translate([-b[0]/2, -b[1]/2, -b[2]])
         cube([b[0], b[1], b[2]]);
 }
+
+/* [Cutout] — plate window for a consumer difference(). Plain rectangular
+   through-hole (NO undercut => faceplate stays support-free); jack retention is
+   by plate front-lip + rear-edge, so the plate thickness must sit within
+   keystone_plate_thickness(). Front face at Z=0; window overcuts +1 above and
+   +1 below the plate. `clearance` grows the window per side. */
+module keystone_cutout(plate_thickness = 3.0, clearance = 0.25) {
+    o = keystone_opening(); // [ow, oh]
+    wx = o[0] + 2 * clearance;
+    wy = o[1] + 2 * clearance;
+    translate([-wx/2, -wy/2, -(plate_thickness + 1)])
+        cube([wx, wy, plate_thickness + 2]);
+}
