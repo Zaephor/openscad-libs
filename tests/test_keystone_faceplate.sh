@@ -31,4 +31,30 @@ out="$(run "$proj/tests/asserts.scad")"
 echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
   && { echo "asserts.scad failed"; echo "$out"; exit 1; } || true
 
+# N ports pierce the plate: a 6-port plate has strictly more facets removed than
+# a 0-port plate (each window adds facets). Proxy: 6-port STL triangle count >
+# 0-port STL count.
+# NOTE: OPENSCADPATH is only libraries/ (scripts/openscad.sh) — projects/ is NOT
+# on it, so the temp scad files use an ABSOLUTE path to the entry file via an
+# unquoted heredoc ($proj expands; the snippets contain no OpenSCAD `$` tokens).
+tri() { python3 - "$1" <<'PY'
+import struct,sys
+d=open(sys.argv[1],'rb').read(); print(struct.unpack('<I',d[80:84])[0])
+PY
+}
+cat > "$tmp/p0.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 0, keystone_pitch(), 3.0);
+EOF
+cat > "$tmp/p6.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 6, keystone_pitch(), 3.0);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/p0.stl" "$tmp/p0.scad" 2>/dev/null
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/p6.stl" "$tmp/p6.scad" 2>/dev/null
+[ "$(tri "$tmp/p6.stl")" -gt "$(tri "$tmp/p0.stl")" ] \
+  || { echo "6-port plate has no more facets than blank -> ports not cut"; exit 1; }
+
 echo ok

@@ -44,5 +44,12 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
         rack10_panel(standard, 1, plate_thickness);
         rack10_holes(standard, 1, ear_hole_type,
             dia = rack10_screw_clearance(ear_fastener), slot_travel = slot_travel);
+        // Keystone ports: row centered on X=0, vertically centered on the panel.
+        // rotate([-90,0,0]) maps the cutout's oh->Z, ow->X, through-axis->+Y so
+        // the window fully pierces the Y∈[-t,0] plate (see plan coordinate note).
+        for (x = _kf_port_centers(port_count, port_pitch))
+            translate([x, 0, rack10_device_height(1) / 2])
+                rotate([-90, 0, 0])
+                    keystone_cutout(plate_thickness, port_clearance);
     }
 }
