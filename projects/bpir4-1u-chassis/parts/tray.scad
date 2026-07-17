@@ -219,7 +219,7 @@ module _lid_post_corner() {
             linear_extrude(height = Hb + 2)
                 polygon([[0, 0], [cl, 0], [0, cl]]);
         // Insert bore, cut through the whole column so it stays open full depth.
-        translate([0, 0, -1]) cylinder(h = Hb + 2, d = lid_insert_bore);
+        translate([0, 0, -1]) cylinder(h = Hb + 2, d = lid_insert_bore());
     }
 }
 
@@ -239,7 +239,7 @@ module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fa
     // Board standoff posts — only the structural-mount holes (M.2/heatsink/
     // keep-out holes are excluded; see sbc hole roles).
     translate([board_x(), board_y(), floor_th])
-        sbc_standoffs(BOARD, standoff_h, role = "structural-mount", bore = board_insert_bore);
+        sbc_standoffs(BOARD, standoff_h, role = "structural-mount", bore = board_insert_bore());
 }
 
 tray();

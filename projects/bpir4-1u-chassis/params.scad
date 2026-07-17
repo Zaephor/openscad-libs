@@ -6,6 +6,7 @@ use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
 use <hardware/hardware.scad>;
+use <heatset/heatset.scad>;
 
 $fn = 48;
 
@@ -22,8 +23,12 @@ standoff_h   = 5.0;   // board underside clearance above floor
 stack_gap    = 0.45;  // 1U device-height gap below pitch (rack lib has no
                       // device-height fn — see spec "Library gap noted")
 wall_gap     = 0.25;  // lid-to-wall running clearance per side
-board_insert_bore = 3.4; // M2.5 heat-set insert OD (board standoffs) (coincidentally equals m3_clearance_mm(); unrelated — this is the M2.5 insert OD)
-lid_insert_bore   = 4.2; // M3 heat-set insert OD (lid posts)
+// Heat-set insert sizes (generic brand — see #6 spec, RESEARCH.md). Bores +
+// boss OD derive from the heatset lib; no local insert-dim literals.
+board_insert_size = "M2.5";   // board standoff inserts
+lid_insert_size   = "M3";     // lid-post inserts
+function board_insert_bore() = heatset_pilot_dia(board_insert_size); // was 3.4
+function lid_insert_bore()   = heatset_pilot_dia(lid_insert_size);   // was 4.2
 vent_slot_w   = 2.5;  // intake/lid vent slot width
 vent_slot_gap = 3.0;  // gap between vent slots
 // Shared honeycomb vent geometry (parts/_honeycomb.scad honeycomb_vent()):
@@ -35,7 +40,6 @@ vent_slot_gap = 3.0;  // gap between vent slots
 // holes, sized >= 2x a 0.4mm nozzle's line width.
 honeycomb_cell = 8.0;
 honeycomb_wall = 1.2;
-boss_wall        = 3.2;  // lid-post wall thickness around the insert bore (post OD = lid_insert_bore + boss_wall)
 post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-78.7)
@@ -85,7 +89,9 @@ function ext_h()    = rack10_u() - stack_gap;    // chassis exterior height
 function int_h()    = ext_h() - floor_th - lid_th;
 // Lid-post OD (boss outer diameter around the heat-set insert bore). Lives
 // here (not in parts/tray.scad) because body_w() below also derives from it.
-function _lid_post_od() = lid_insert_bore + boss_wall; // boss OD (shared placement + geometry)
+// Square lid-post side = insert bore + 2x sourced min wall (wall-based, not the
+// lib's 2.5x boss_od proxy). Was lid_insert_bore + boss_wall (=7.4).
+function _lid_post_od() = lid_insert_bore() + 2*heatset_min_wall(lid_insert_size);
 // Body hugs the board: each side carries board_side_gap + a corner post (tangent
 // to the wall) + the wall. Ears bridge body_w -> panel_w. Must stay <= clear_w.
 function body_w()   = board_w() + 2*(board_side_gap + _lid_post_od() + wall);

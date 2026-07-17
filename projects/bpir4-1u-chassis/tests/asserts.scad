@@ -59,6 +59,11 @@ _struct = sbc_holes_xy(BOARD, "structural-mount");
 assert(len(_struct) > 0 && len(_struct) < len(sbc_holes_xy(BOARD, "all")),
     str("structural subset (", len(_struct), ") must be >0 and < all holes"));
 
+// Task 4: the board bore (~pilot M2.5) in the default 6.0mm sbc_standoffs OD
+// must leave >=0.8mm wall per side (support-free, sound insert seat).
+assert((6.0 - board_insert_bore())/2 >= 0.8,
+    str("board standoff wall ", (6.0 - board_insert_bore())/2, " < 0.8mm min"));
+
 // Item 6: body hugs the board but still passes between the posts, and leaves
 // room for a wall + a corner post beside the board.
 assert(body_w() <= clear_w() + 1e-6,
