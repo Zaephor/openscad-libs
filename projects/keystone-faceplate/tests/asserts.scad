@@ -12,3 +12,5 @@ assert(keystone_plate_thickness()[1] == 3.0, "plate_thickness default drifted fr
 
 // Blank plate (port_count=0) renders (full guards added in Task 5).
 keystone_faceplate("labrax", 0, 19.05, 3.0);
+// Positive: a realistic 6-port plate at defaults renders without tripping guards.
+keystone_faceplate("labrax", 6, keystone_pitch(), keystone_plate_thickness()[1]);

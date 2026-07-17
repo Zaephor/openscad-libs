@@ -57,4 +57,34 @@ EOF
 [ "$(tri "$tmp/p6.stl")" -gt "$(tri "$tmp/p0.stl")" ] \
   || { echo "6-port plate has no more facets than blank -> ports not cut"; exit 1; }
 
+# Each bad-param render MUST assert.
+expect_assert() { # $1 = scad file, $2 = label
+  local o; o="$(run "$1")"
+  echo "$o" | grep -qiE 'ERROR:|Assertion .* failed' \
+    || { echo "expected assert: $2"; echo "$o"; exit 1; }
+}
+# Absolute path to the entry file (OPENSCADPATH excludes projects/); unquoted
+# heredocs so $proj expands.
+# Sub-min pitch.
+cat > "$tmp/badpitch.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 4, 5, 3.0);   // 5mm << min_pitch
+EOF
+expect_assert "$tmp/badpitch.scad" "sub-min pitch"
+# Thickness above snap range.
+cat > "$tmp/badthick.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 4, keystone_pitch(), 5.0);  // > 3.0 max
+EOF
+expect_assert "$tmp/badthick.scad" "thickness above range"
+# Too many ports -> row overflows into ear columns.
+cat > "$tmp/badN.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 40, keystone_pitch(), 3.0);
+EOF
+expect_assert "$tmp/badN.scad" "port row overflow"
+
 echo ok
