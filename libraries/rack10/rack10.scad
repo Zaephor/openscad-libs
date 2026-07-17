@@ -1,4 +1,4 @@
-// rack10 — 10-inch mini-rack mechanical reference, vendor-keyed (v1 = LabRax only).
+// rack10 — 10-inch mini-rack mechanical reference, vendor-keyed.
 // Datum: millimeters. X centered on rack width (X=0 at rack centerline).
 // Z=0 at the bottom of the U-stack (+Z = upward, stacking U-by-U).
 // Y=0 at the front post face (+Y = rearward, into the rack).
@@ -15,8 +15,8 @@
 // standard for 10-inch racks, but Lab Rax follows the most commonly
 // accepted dimensions" — see RESEARCH.md). So [A] is not reachable for
 // anything in this library; the ceiling is [B]. Every geometry fn below
-// therefore takes a `standard` key (see rack10_known_standards()); v1 ships
-// only "labrax" — nothing in this library is [A].
+// therefore takes a `standard` key (see rack10_known_standards()); currently
+// "labrax", "deskpi", "tecmojo" — nothing in this library is [A].
 // Provenance legend (see RESEARCH.md for the full evidence log this pass):
 //   [A] upstream vendor datasheet or governing standard — not reachable this
 //       pass (no standard exists for 10in mini-racks at all).
