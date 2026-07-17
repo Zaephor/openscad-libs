@@ -622,10 +622,26 @@ Notes per row:
   is **[B]** (re-derived detector read) and body dims are **[A]** (exact
   datasheet for the exact part).
 
-  Resulting block: x=[62.61, 118.53] (55.92mm, 4×13.98mm), comfortably
-  inside both neighbor boundaries — 12.02mm clear of `sfp_2`'s right edge
-  (50.59) and 6.06mm clear of `dc_power_1`'s left edge (124.59). No
-  board-geometry conflict.
+  Resulting block: x=[62.61, 118.53] (55.92mm, 4×13.98mm) — 12.02mm clear
+  of `sfp_2`'s right edge (50.59). No board-geometry conflict on that side.
+
+  **Unreconciled gap, //VERIFY:** the computed block end (118.53, from
+  block_x0 + 4×pitch) falls 4.24mm short of the drawing's own
+  detector-confirmed right edge (122.77, cited two paragraphs above and
+  independently re-confirmed on `dc_power_1`'s own boundary read below).
+  Plausible explanation: the datasheet's front-view **59.00mm overall
+  bezel width** (vs. 55.92mm from pitch alone, a 3.08mm difference — noted
+  above) is a bezel/housing overhang not captured by modeling each port's
+  body as exactly one pitch-width cell; the true physical bezel likely
+  extends closer to (or to) 122.77 on the right. Not resolved here — the
+  per-port body dims stay as datasheet-sourced ([A]) rather than stretched
+  to fit the drawing's outer edge without a matching datasheet dimension
+  for that overhang. **Use the drawing-confirmed 122.77mm as the
+  conservative right-edge bound for clearance purposes**: true clearance to
+  `dc_power_1`'s left edge (124.59) is **~1.82mm** (not the 6.06mm the
+  pitch-only computation would suggest) — still clear, no overlap, but a
+  materially tighter margin. Flagging for a future pass rather than
+  guessing the bezel-overhang split between the two ends.
 - **`dc_power_1` (CN4 "DC12V")**: x/y envelope pixel-detected consistently
   across two separate windowed runs (122.77/124.59/134.62 cols;
   10.71/0 rows) — tier [B] for position. Height (10.0mm) has **no top-view
