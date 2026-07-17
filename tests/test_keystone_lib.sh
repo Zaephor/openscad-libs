@@ -187,18 +187,30 @@ keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
 EOF
   "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert_$STYLE.stl" "$tmp/insert_$STYLE.scad" 2>/dev/null
 
-  python3 - "$tmp/insert_$STYLE.stl" "$sow" "$soh" "$fw" "$fh" "$FIT" "$PLATE" <<'PY' || { echo "insert mate geometry incorrect ($STYLE)"; exit 1; }
+  # Single STL parse feeds all four checks below (bbox/plug/noclip, mesh
+  # connectivity, and the direct per-tab edge-coordinate check) -- avoids
+  # re-reading/re-parsing the same binary STL three times (test-only nit).
+  python3 - "$tmp/insert_$STYLE.stl" "$sow" "$soh" "$fw" "$fh" "$FIT" "$PLATE" "$ledge_z" "$tab_th" "$STYLE" <<'PY' || { echo "insert ($STYLE) geometry check failed"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
-verts=[]
+verts=[]   # raw (x,y,z) per vertex, in STL order
+tris=[]    # per-triangle list of rounded (x,y,z) vertices, for connectivity
 for i in range(n):
+    tri=[]
     for v in range(3):
         base=off+i*50+12+v*12
-        x,y,z=struct.unpack('<3f',d[base:base+12]); verts.append((x,y,z))
-ow,oh,fw,fh,fit,plate=map(float,sys.argv[2:8]); tol=0.1
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        verts.append((x,y,z))
+        tri.append((round(x,2), round(y,2), round(z,2)))
+    tris.append(tri)
+ow,oh,fw,fh,fit,plate,ledge_z,tab_th=map(float,sys.argv[2:10]); style=sys.argv[10]
+tol=0.1
 xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
+errs=[]
+
 # flange: overall X span exceeds the window width (front stop present)
 flange_ok = (max(xs)-min(xs)) > ow + 0.5
+
 # plug tip = the deepest point (through-plug always extends further back than
 # any tab feature); its cross-section must be the jack FACE minus fit per
 # side -- NOT the (style-varying, taller-for-lip) opening. This is the core
@@ -208,49 +220,37 @@ band = [(x,y) for x,y,z in verts if abs(z-minz) < 0.05]
 plug_w = max(x for x,y in band) - min(x for x,y in band)
 plug_h = max(y for x,y in band) - min(y for x,y in band)
 plug_ok = bool(band) and abs(plug_w-(fw-2*fit)) < tol and abs(plug_h-(fh-2*fit)) < tol
+plug_h_xy = fh - 2*fit
+if not plug_ok:
+    errs.append(f"plug cross-section {plug_w:.2f}x{plug_h:.2f} != face-derived {fw-2*fit:.2f}x{fh-2*fit:.2f}")
+
 # body reaches behind the plate rear (latch/clip region)
 behind_ok = minz < -plate - 0.2
+
 # no-collision invariant: any vertex strictly WITHIN the plate's solid Z-band
 # (excludes the front flange at Z>=0 and any feature at/behind the plate rear,
 # which are allowed -- by design -- to grip material outside the window) must
 # stay within the window's raw X/Y bound, i.e. never punch into solid frame.
 inband = [(x,y) for x,y,z in verts if -(plate-0.02) < z < -0.02]
 noclip_ok = all(abs(x) <= ow/2+0.05 and abs(y) <= oh/2+0.05 for x,y in inband)
-if not plug_ok:
-    sys.stderr.write(f"plug cross-section {plug_w:.2f}x{plug_h:.2f} != face-derived {fw-2*fit:.2f}x{fh-2*fit:.2f}\n")
 if not noclip_ok:
-    sys.stderr.write("insert tab protrudes into solid frame within the plate band (regression)\n")
-sys.exit(0 if (flange_ok and plug_ok and behind_ok and noclip_ok) else 1)
-PY
+    errs.append("insert tab protrudes into solid frame within the plate band (regression)")
 
-  # Tab/plug connectivity (#28 review finding): plug_ok above only checks the
-  # plug TIP cross-section (deepest Z -- unrelated to hook/latch position) and
-  # noclip_ok only checks an UPPER bound against the window edge, which the
-  # original mid-flight bug also satisfied (it capped at the same o[1]/2, just
-  # with a gap on the PLUG side). Neither would catch a regression that
-  # reintroduces the exact bug the implementer hand-caught by dumping raw STL
-  # vertices: a hook/latch (or fulcrum/clip) tab anchored to a stale
-  # opening-derived Y offset instead of the plug's own face-derived edge
-  # (plug_h_xy/2 = (fh-2*fit)/2), leaving it floating with a gap instead of
-  # meeting the plug flush. Detect this directly and style-agnostically: the
-  # keystone_insert() solid (flange+plug+both retention features) is meant to
-  # be ONE physical part, so if any tab doesn't actually touch the plug it
-  # will render as a disconnected island in the STL mesh -- count connected
-  # components via union-find over (rounded) shared vertices and require
-  # exactly one. This is proven to catch the bug class: with the pre-fix
-  # o[1]/2-anchored formula reintroduced locally (both tab features, both
-  # styles) this check fails with 2-3 components; against the real fix it is 1.
-  python3 - "$tmp/insert_$STYLE.stl" <<PY || { echo "insert ($STYLE) tab/plug Y-edge disconnected -- a hook/latch/fulcrum/clip tab is floating away from the plug (#28 regression)"; exit 1; }
-import struct,sys
-d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
-tris=[]
-for i in range(n):
-    tri=[]
-    for v in range(3):
-        base=off+i*50+12+v*12
-        x,y,z=struct.unpack('<3f',d[base:base+12])
-        tri.append((round(x,2), round(y,2), round(z,2)))
-    tris.append(tri)
+# Tab/plug connectivity (#28 review finding): plug_ok above only checks the
+# plug TIP cross-section (deepest Z -- unrelated to hook/latch position) and
+# noclip_ok only checks an UPPER bound against the window edge, which the
+# original mid-flight bug also satisfied (it capped at the same o[1]/2, just
+# with a gap on the PLUG side). Neither would catch a regression that
+# reintroduces the exact bug the implementer hand-caught by dumping raw STL
+# vertices: a hook/latch (or fulcrum/clip) tab anchored to a stale
+# opening-derived Y offset instead of the plug's own face-derived edge
+# (plug_h_xy/2 = (fh-2*fit)/2), leaving it floating with a gap instead of
+# meeting the plug flush. Detect this directly and style-agnostically: the
+# keystone_insert() solid (flange+plug+both retention features) is meant to
+# be ONE physical part, so if any tab doesn't actually touch the plug it
+# will render as a disconnected island in the STL mesh -- count connected
+# components via union-find over (rounded) shared vertices and require
+# exactly one.
 parent={}
 def find(x):
     while parent[x]!=x:
@@ -263,9 +263,55 @@ for tri in tris:
     for v in tri: parent.setdefault(v,v)
     a,b,c=tri; union(a,b); union(b,c)
 roots=set(find(v) for v in parent)
-if len(roots)!=1:
-    sys.stderr.write(f"insert ($STYLE) is NOT one connected solid: {len(roots)} disjoint piece(s)\n")
-sys.exit(0 if len(roots)==1 else 1)
+conn_ok = (len(roots)==1)
+if not conn_ok:
+    errs.append(f"insert ({style}) is NOT one connected solid: {len(roots)} disjoint piece(s)")
+
+# Direct per-tab inner-edge coordinate check (#28 RE-REVIEW finding): the
+# connectivity check above has a proven blind spot for "lip"'s fulcrum tab --
+# it stays welded to the body via the front flange (both touch the Z=0 plane,
+# fulcrum footprint subset of flange footprint) regardless of whether ITS OWN
+# inner Y-edge actually reaches the plug, so a fulcrum floating away from the
+# plug still counts as "1 connected component". Sidestep that confound
+# entirely: read each tab's OWN free face -- a Z-plane that belongs to no
+# other feature (not the flange, not the plug, not the other tab) -- and
+# assert its inner Y-edge sits at +/-plug_h_xy/2 directly from raw
+# coordinates. This does not depend on mesh connectivity at all, so a floating
+# fulcrum (or hook/latch/clip) is caught even when it's still touching
+# something else in the solid.
+#   face: hook tip Z=-(ledge_z+tab_th), latch tip Z=-(plate+tab_th)
+#   lip:  fulcrum tip Z=-ledge_z,       clip tip Z=-(plate+tab_th)
+# (both tips are chosen as the Z-plane FARTHEST from any shared boundary --
+# the flange only occupies Z in [0,1.2], the plug only has corners at Z=0/-6.)
+ZTOL = 0.03
+YTOL = 0.05
+def inner_edge_at(z_target, want_max):
+    pts_y = [y for x,y,z in verts if abs(z - z_target) < ZTOL]
+    if not pts_y:
+        return None
+    return max(pts_y) if want_max else min(pts_y)
+
+if style == "face":
+    tab_checks = [
+        ("hook",   -(ledge_z + tab_th), False,  plug_h_xy/2),  # +Y edge: inner = min(Y)
+        ("latch",  -(plate + tab_th),   True,  -plug_h_xy/2),  # -Y edge: inner = max(Y)
+    ]
+else:  # "lip"
+    tab_checks = [
+        ("fulcrum", -ledge_z,          True,  -plug_h_xy/2),   # -Y edge: inner = max(Y)
+        ("clip",    -(plate + tab_th), False,  plug_h_xy/2),   # +Y edge: inner = min(Y)
+    ]
+
+for name, z_target, want_max, expected in tab_checks:
+    inner = inner_edge_at(z_target, want_max)
+    if inner is None:
+        errs.append(f"insert ({style}) {name}: no vertices found at its own free face Z={z_target:.2f} (tab missing/misshapen)")
+    elif abs(inner - expected) > YTOL:
+        errs.append(f"insert ({style}) {name}: inner Y-edge {inner:.3f} != plug edge {expected:.3f} (floating gap, #28 regression)")
+
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+sys.exit(0 if (flange_ok and behind_ok and not errs) else 1)
 PY
 done
 
