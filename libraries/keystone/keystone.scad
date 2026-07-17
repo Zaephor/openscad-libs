@@ -85,3 +85,11 @@ function keystone_pitch_ok(pitch) = pitch >= keystone_min_pitch();
 function keystone_layout_ok(xs) =
     len(xs) < 2 ? true
     : min([for (i = [1:len(xs)-1]) xs[i] - xs[i-1]]) >= keystone_min_pitch();
+
+/* [Placeholder] — jack envelope: flange face at Z=0, body grows -Z. For
+   fit/interference viz only (envelope is a max keep-out, not a detailed jack). */
+module keystone_placeholder() {
+    b = keystone_body(); // [bw, bh, bd]
+    translate([-b[0]/2, -b[1]/2, -b[2]])
+        cube([b[0], b[1], b[2]]);
+}

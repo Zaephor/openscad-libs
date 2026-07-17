@@ -28,3 +28,6 @@ assert(keystone_min_pitch() == keystone_opening()[0] + keystone_min_wall(),
 assert(keystone_pitch() >= keystone_min_pitch(), "nominal pitch clears min_pitch");
 
 echo("keystone_test OK");
+
+/* [Placeholder] — smoke render; numeric bbox checked in tests/test_keystone_lib.sh */
+keystone_placeholder();
