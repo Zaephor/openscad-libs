@@ -296,3 +296,212 @@ for every other 10in-specific dimension.
   mesh or caliper cross-check.
 - The LabRax STL/3MF (brief Step 3) was not obtainable, so the mesh could not
   be measured — same class of obstacle as `rack19`'s EIA-310-D paywall.
+
+## Vendor rows — DeskPi + TecMojo (#10)
+
+Scope: additive `standard` keys `"deskpi"` and `"tecmojo"` alongside the
+existing `"labrax"`, per the locked design decision — per-vendor keying
+(not per-model), depth stored as a nominal preset with the per-model range
+documented here, and hole type kept as a per-call param (not a geom-row
+field). Same tier ceiling as the rest of this file: **[B] is the best
+reachable tier** — there is no official 10-inch rack standard either vendor
+cites. Every field below is tiered by what was actually fetched and read
+this pass; nothing is invented.
+
+### DeskPi RackMate (T0 / T1 / T1-Plus / T2)
+
+Sources:
+
+1. **DeskPi Products Wiki** — `wiki.deskpi.com/rackmate/`. Covers the T1
+   model: overall chassis "11x7.8x16 inches", 8U height, 44.45mm-equivalent
+   U pitch ("1U equaling 1.75 inches"), 10mm die-cast aluminum frame. No
+   numeric hole-spacing or hole-type text on this page (only an
+   un-OCR'd "Mounting Hole Description" image).
+2. **DeskPi T0 product page** —
+   `deskpi.com/products/deskpi-rackmate-t1-rackmount-10-inch-4u-server-cabinet-for-network-servers-audio-and-video-equipment`.
+   States, verbatim: *"External dimensions: 281mm\*200mm\*274mm"* and
+   *"Internal dimensions: 212mm\*200mm\*241mm"* and *"The maximum
+   installation depth of this 10-inch rack is 20cm"*. The constant middle
+   value (200mm) in both the external and internal triples confirms the
+   dimension order is (width, depth, height) — i.e. panel width 281mm,
+   clear width 212mm, depth 200mm, for the T0 (4U) model specifically.
+3. **DeskPi T1-Plus product page** —
+   `deskpi.com/products/deskpi-rackmate-t1-plus-rackmount-10-inch-8u-server-cabinet-for-network-servers-audio-and-video-equipment`.
+   States, verbatim: *"particularly well-suited for NAS devices with a
+   depth of 260mm"*.
+4. **GeeekPi/DeskPi T2 Amazon listing** —
+   `amazon.com/GeeekPi-Cabinet-Equipment-RackMate-Rackmount/dp/B0DT2XM22G`
+   ("GeeekPi 12U Network Rack ... DeskPi RackMate T2 Rackmount, 10.23 inch
+   Depth"); a second Amazon listing states the same model's full dimensions
+   as "11.02x10.23x23.22 inches". GeeekPi is the OEM/co-brand DeskPi
+   RackMate ships under on some marketplaces — same physical product line.
+5. **DeskPi RackMate accessory screw listing** —
+   `deskpi.com/products/deskpi-rackmate-accessories-10-32-5-16-black-screws-for-10-inch-server-cabinets`.
+   States, verbatim: *"Screw model: #10-32 Black"*, *"Function: They can be
+   used in server cabinets, T0/T1/T1-Plus/T2 Rackmount"*.
+6. **ServeTheHome, "DeskPi RackMate T0 4U 10in Rack Mini Review"** —
+   `servethehome.com/deskpi-rackmate-t0-4u-10in-rack-mini-review/`. States,
+   verbatim: *"Instead of being a cage nut-based rack, it uses screws to
+   hold equipment in."* Independent hands-on confirmation, not a DeskPi
+   marketing claim.
+7. **DeskPi "Rackmate T1 & T2: Side by Side Depth Comparison" blog** —
+   `deskpi.com/blogs/learn/deskpi-rackmate-t1-t2-side-by-side-depth-comparison`.
+   States, verbatim: *"both have a width of 10 inches and a depth of 16
+   inches"* for T1 **and** T2 alike — see the discrepancy flag below.
+8. **mini-rack.jeffgeerling.com** ("Project MINI RACK") + its GitHub
+   README (`github.com/geerlingguy/mini-rack`) — community-consensus
+   documentation of the 10-inch mini-rack convention (not DeskPi-authored):
+   states, verbatim, *"the width being 236.525mm (9.312") between screw
+   holes"*, and separately lists the **GeeekPi / DeskPi RackMate** line
+   (T0/T1/T2) as products built to this same spacing.
+
+#### DeskPi — 4 geom fields
+
+| Field | Value | Tier | Citation |
+|---|---|---|---|
+| `panel_width` | **281 mm** | **[B]** | DeskPi T0 product page, verbatim "External dimensions: 281mm\*200mm\*274mm" |
+| `hole_h_span` | **236.525 mm** | **[B]** `//VERIFY` not DeskPi's own literal wording | mini-rack.jeffgeerling.com community 10in-rack standard, which explicitly names DeskPi/GeeekPi RackMate as built to this spacing; internally plausible against DeskPi's own 281/212mm figures (implies ~22mm post material outside the hole line, ~12mm inside it — not an outrageous post cross-section) |
+| `clear_width` | **212 mm** | **[B]** | DeskPi T0 product page, verbatim "Internal dimensions: 212mm\*200mm\*241mm" |
+| `depth_ftf` | **200 mm** (T0/T1 preset) | **[B]** | DeskPi T0 product page, verbatim "maximum installation depth of this 10-inch rack is 20cm"; DeskPi wiki's T1 overall chassis "11x7.8x16 inches" (7.8in ≈ 198mm) is consistent |
+
+**Per-model depth range:** T0 and T1 ship at **200mm** (source 2, direct);
+T1-Plus is explicitly **260mm** (source 3, direct NAS-depth quote); T2 is
+**260mm / 10.23in** per the GeeekPi/DeskPi co-branded Amazon listing (source
+4). **Discrepancy flag:** DeskPi's own T1-vs-T2 blog (source 7) states both
+T1 *and* T2 share a "16 inch" (≈406mm) depth — this conflicts with the
+260mm/10.23in figure the same T2 product carries on its own retail
+listings. Both numbers cannot describe the same rail-to-rail mounting
+depth; the 16in figure most plausibly measures a different thing (overall
+external footprint including rear cable-management arms/handles) rather
+than the front-to-back equipment mounting depth. **Not resolved this
+pass** — `//VERIFY 16in-vs-260mm T2 depth conflict, DeskPi's own sources
+disagree, no mesh/caliper available to settle it`. Ship **200mm** as the
+`"deskpi"` row's `depth_ftf` preset (T0/T1, the base/most-common model),
+consistent with the plan's scoping note.
+
+**Hole-type note (documentation only, not a geom field):** DeskPi uses
+**round, tapped #10-32 threaded holes — not M6, and not square/cage-nut.**
+This corrects the plan's speculative "likely round M6" note: two
+independent sources agree — DeskPi's own accessory listing sells "#10-32"
+screws explicitly compatible with "T0/T1/T1-Plus/T2" (source 5), and
+ServeTheHome's hands-on review independently states the rack is "instead of
+being a cage nut-based rack ... uses screws to hold equipment in" directly
+(source 6, tapped holes, no cage nut). Tier **[B]**, two independent
+sources agreeing.
+
+### TecMojo (4U / 6U / 9U / 12U 10-inch Network Rack)
+
+Sources:
+
+1. **Tecmojo 6U/10in Network Rack Instruction Manual** —
+   `manuals.plus/asin/B0F4JZ9YJW` (fetched as the underlying PDF; not
+   committed — see repo rule against committing third-party manuals).
+   Contains an actual dimensioned product drawing (its own "Specifications"
+   diagram) plus a spec table. Verbatim spec-table rows: *"Width: 10 inches
+   (280mm)"*, *"Depth: 7.87 inches (200mm)"*, *"Height: 14.53 inches
+   (369.1mm)"*. The diagram itself separately labels *"Width 11.02"
+   (280mm)"*, *"Depth 7.87" (200mm)"*, a vertical U-pitch callout *"1.75"
+   (44.45mm)"* (confirming TecMojo uses the same 44.45mm U pitch as the
+   rest of this library), and a horizontal callout *"8.27" (210mm)"*
+   positioned across the equipment-bay opening at the front of the frame.
+   Package-contents table: *"10-32 Screw × 24"*, *"10-32 Cage nut × 24"*.
+   Body text, verbatim: *"pre-numbered tapped/square holes"* and *"Ensure
+   that cage nuts are correctly installed in the square holes before
+   attempting to mount equipment"* and *"use the correct screw type for the
+   corresponding hole (e.g., 10-32 for cage nuts, M-series for frame
+   assembly)"*.
+2. **Tecmojo 11120503 (12U) product page** —
+   `tecmojo.com/pages/11120503-10in-rack`. Lists *"Maximum Device Depth
+   10.23 inches"*, *"Depth 10.23 inches"*, *"Width 11.02 inches"*, and the
+   same "48× 10-32 cage nuts / 48× 10-32 screws" accessory pattern as the
+   6U manual, plus *"tapped/square holes that are pre-numbered for
+   versatile mounting"*.
+3. **Tecmojo cage-nut/screw accessories collection** —
+   `tecmojo.com/collections/cage-nuts-and-screws`. Confirms Tecmojo sells
+   both M6/10-32/12-24 cage-nut kits (square-hole use) and 10-32/12-24
+   pilot-point pan-head screws (round/tapped-hole use) as separate SKUs,
+   consistent with the manual's own "tapped/square" combo-hole description.
+
+#### TecMojo — 4 geom fields
+
+| Field | Value | Tier | Citation |
+|---|---|---|---|
+| `panel_width` | **280 mm** (11.02in) | **[B]** | Manual spec table + diagram, verbatim "Width 11.02\" (280mm)"; the same 11.02in width recurs on the 4U and 12U product pages regardless of U-height, i.e. corroborated across the vendor's own model line |
+| `hole_h_span` | **236.525 mm** | **[B]** `//VERIFY` not TecMojo's own literal wording (the manual's own diagram labels only the *vertical* 44.45mm U-pitch, never a horizontal hole-to-hole span) | mini-rack.jeffgeerling.com / ComputingForGeeks community 10in-rack standard (same source class as the DeskPi row above); internally plausible against TecMojo's own 280/210mm figures |
+| `clear_width` | **210 mm** (8.27in) | **[B]** `//VERIFY` exact measurement endpoint inferred from the diagram's callout position (front equipment-bay opening), not a captioned "clear width" label in words | Manual's own dimensioned diagram, verbatim "8.27\" (210mm)" |
+| `depth_ftf` | **200 mm** (7.87in, 4U/6U/9U preset) | **[B]** | Manual spec table, verbatim "Depth: 7.87 inches (200mm)" |
+
+**Per-model depth range:** the 4U/6U/9U models all ship at **7.87in /
+200mm** (source 1, spec table + diagram, and confirmed as a shared figure
+across those U-heights via the manual's own "Available in 4U, 6U, 9U & 12U"
+comparison chart, which varies only height, not depth); the **12U** model
+is **10.23in / 260mm** (source 2, direct). This is a fixed per-model depth,
+not a single adjustable-depth rail — the plan's scoping note phrased it as
+"some adjustable to ~260mm," but no adjustable-depth mechanism was found in
+what was fetched; each U-height ships at one fixed depth. Ship **200mm** as
+the `"tecmojo"` row's `depth_ftf` preset (4U/6U/9U, the base/most-common
+models), consistent with the plan's scoping note's headline number.
+
+**Hole-type note (documentation only, not a geom field):** TecMojo uses
+**combo tapped+square holes** — each pre-numbered hole position accepts
+either a direct 10-32 tapped screw or a 10-32 cage nut, per the manual's
+own verbatim text ("pre-numbered tapped/square holes"; ships 24× 10-32
+screws **and** 24× 10-32 cage nuts in the same box) and the troubleshooting
+section's explicit square-hole/cage-nut installation instructions. Tier
+**[B]**, strongest available (vendor's own manual, direct, both the spec
+table and the assembly/troubleshooting prose agree).
+
+### Cross-vendor `hole_h_span` note
+
+Neither DeskPi's nor TecMojo's own fetched materials state "236.525mm" (or
+its 9.312in equivalent) in so many words — unlike LabRax's own article,
+which does say it explicitly. For both new rows the figure is carried at
+tier **[B]** via the same community-consensus mechanism the value-
+confidence rule allows (`docs/LIBRARY-AUTHORING.md`'s community-consensus
+rung): `mini-rack.jeffgeerling.com` (corroborated by `computingforgeeks.com`)
+documents 236.525mm as the de facto 10-inch mini-rack hole spacing the
+whole ecosystem is built around, and explicitly names the DeskPi/GeeekPi
+RackMate line as one of the product lines built to it. This is the *same*
+class of evidence (an independent, non-vendor technical source describing
+the shared convention, not the vendor's own literal number) this file
+already used for LabRax's panel-width/per-U-offset values above — carried
+here at the same tier, not upgraded, per the locked design decision that
+`hole_h_span` is shared/universal across all three vendors rather than
+independently re-derived per row.
+
+### Summary table for Task 2 (deskpi / tecmojo rows)
+
+| Vendor | `panel_width` | `hole_h_span` | `clear_width` | `depth_ftf` (preset) | Notes |
+|---|---|---|---|---|---|
+| `deskpi` | 281 | 236.525 | 212 | 200 | panel/clear/depth [B] direct DeskPi T0 page; `hole_h_span` [B] community-consensus, not DeskPi-literal; per-model depth range 200 (T0/T1) / 260 (T1-Plus/T2) |
+| `tecmojo` | 280 | 236.525 | 210 | 200 | panel/depth [B] direct TecMojo manual; `clear_width` [B] `//VERIFY` diagram-position-inferred; `hole_h_span` [B] community-consensus, not TecMojo-literal; per-model depth range 200 (4U/6U/9U) / 260 (12U) |
+
+### Coverage / gaps for README (Task 6+, #10)
+
+- **`hole_h_span`** is not literally stated by either vendor's own fetched
+  materials — carried at [B] via the same community-consensus corroboration
+  mechanism already used elsewhere in this file for LabRax, per the locked
+  "universal across all three vendors" design decision. A future caliper or
+  mesh measurement of a physical DeskPi or TecMojo unit should supersede
+  this if it becomes available.
+- **TecMojo `clear_width` (210mm)** is read off a manual diagram's
+  dimension line whose exact measured span isn't spelled out in a caption —
+  positionally it reads as the front equipment-bay opening, consistent with
+  the community "~210mm practical usable width" figure, but flagged
+  `//VERIFY` since it's an inferred read of a diagram, not a labeled
+  sentence.
+- **DeskPi depth: T1-vs-T2 blog conflict** — DeskPi's own blog states T1
+  and T2 share a 16in (~406mm) depth, contradicting the 260mm/10.23in T2
+  figure on GeeekPi/DeskPi's own retail listings. Genuinely unresolved;
+  most likely explained by the two sources measuring different things
+  (overall exterior footprint vs. rail-to-rail mounting depth), but this
+  pass could not confirm which. Flagged, not fabricated.
+- **Hole-type corrections vs. the plan's scoping guess:** DeskPi is
+  confirmed round/tapped **#10-32** (not M6, not cage-nut — the plan's
+  "likely round M6" guess was wrong on both the hole shape and the thread).
+  TecMojo is confirmed combo tapped+square (10-32 both ways), matching the
+  plan's expectation.
+- No DeskPi or TecMojo STL/3MF was fetched or measured this pass (per the
+  brief, third-party meshes are legitimate sources but were not needed —
+  both vendors' own product pages/manual already gave direct mm figures for
+  every field except the two `//VERIFY`-flagged items above).
