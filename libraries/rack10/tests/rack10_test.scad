@@ -38,3 +38,7 @@ assert(round(rack10_device_height(1)*1e6)/1e6 == round((rack10_u() - rack10_stac
 assert(round(rack10_device_height(2)*1e6)/1e6 == round((2*rack10_u() - rack10_stack_gap())*1e6)/1e6,
     "device_height u=2");
 assert(rack10_stack_gap() > 0 && rack10_stack_gap() < 2, "stack_gap sane small value");
+
+// rack10_panel() builds at device_height (geometry checked by the .sh bbox
+// test; this pins the intent so a future refactor to raw pitch trips here too).
+assert(rack10_device_height(1) < rack10_u(), "device_height must be under 1U pitch");

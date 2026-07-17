@@ -145,11 +145,16 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_t
 }
 
 /* [Panel helper] */
-// Faceplate blank: vendor panel width × (u*pitch) tall × `thickness`, front
-// face on Y=0 (grows -Y). Consumer subtracts rack10_holes() for mounting holes.
+// Faceplate blank: vendor panel width × rack10_device_height(u) tall ×
+// `thickness`, front face on Y=0 (grows -Y). Consumer subtracts rack10_holes()
+// for mounting holes.
+// HEIGHT ADVISORY: 1U panel/faceplate exterior height is rack10_device_height(u)
+// (= u*pitch - stack_gap), NOT the raw u*rack10_u() pitch — the stacking gap
+// keeps abutting units from binding. Consumers building rack panels should use
+// this helper (or rack10_device_height()) rather than u*rack10_u().
 module rack10_panel(standard, u, thickness = 3) {
     translate([-rack10_panel_width(standard)/2, -thickness, 0])
-        cube([rack10_panel_width(standard), thickness, u * rack10_u()]);
+        cube([rack10_panel_width(standard), thickness, rack10_device_height(u)]);
 }
 
 // Rail/post envelope — informational placeholder ONLY, NOT measured (LabRax

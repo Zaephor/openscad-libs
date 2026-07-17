@@ -96,4 +96,22 @@ out="$(run "$tmp/slotbad.scad")"
 echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
   || { echo "slot dia=0 must assert"; echo "$out"; exit 1; }
 
+# Panel height uses device_height (stacking gap), NOT raw u*pitch.
+cat > "$tmp/panel_h.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_panel("labrax", 1, 3);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/panel_h.stl" "$tmp/panel_h.scad" 2>/dev/null
+python3 - "$tmp/panel_h.stl" <<'PY' || { echo "rack10_panel height is not device_height(1)=43.66"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+zs=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        zs.append(struct.unpack('<3f',d[base:base+12])[2])
+span=max(zs)-min(zs)
+sys.exit(0 if abs(span-43.66)<0.01 else 1)   # 44.45 - 0.79 = 43.66
+PY
+
 echo ok
