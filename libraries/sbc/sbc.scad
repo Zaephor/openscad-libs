@@ -231,10 +231,24 @@ function _sbc_table() = [
           ["usb_1",       [7.41,   0, 1.6], [8.89,  23.16, 13.5], "ymin"], // CN11. [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3); //VERIFY width narrow vs typical USB-A 13.6mm body — see RESEARCH.md
           ["sfp_1",       [16.3,   0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent)
           ["sfp_2",       [34.08,  0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN9+CN20+CN10. [B] width; //VERIFY depth carried over from sfp_1 (own detector pass on this cage returned no hit — symmetric-layout assumption)
-          ["rj45_1",      [60.0,   0, 1.6], [8.0,   20.0,  13.5], "ymin"], // CN1 "WAN X1". [C] //VERIFY — right edge pixel-detected (62.6-63.1), left/top read visually off gridded crop; an internal line at y~10 (pin1/polarity mark, not full box border) creates residual ambiguity — see RESEARCH.md
-          ["rj45_2",      [68.0,      0, 1.6], [18.2567, 19.05, 13.5], "ymin"], // CN21 "LAN X3" port 1 of 3, even trisection of the measured 54.77mm envelope. [B] envelope (both edges pixel-detected, shared with rj45_1/dc_power_1 boundaries) / [C] per-port split //VERIFY (no internal divider dimensioned)
-          ["rj45_3",      [86.2567,   0, 1.6], [18.2567, 19.05, 13.5], "ymin"], // CN21 port 2 of 3 — see rj45_2
-          ["rj45_4",      [104.5133,  0, 1.6], [18.2567, 19.05, 13.5], "ymin"], // CN21 port 3 of 3 — see rj45_2
+          // ONE physical 4-port ganged RJ45 block (WAN + 3x LAN); "WAN X1" silk
+          // marks port 1 of the block, NOT a separate connector (hardware owner,
+          // 2026-07-16). Refdes is CN21 (single component) — the earlier "CN1"
+          // attribution for port 1 was a misread: CN1 is a small unrelated 2-pin
+          // part (silk "+", sits under the "FAN" label) whose footprint happens
+          // to sit flush against CN21's own left edge; see RESEARCH.md. 4
+          // evenly-pitched ports, pitch/width/depth/height [A] from the exact
+          // connector datasheet bundled in BPI-R4's own DXF export
+          // (`DS/RJ45x4-HRJC-M03C01C10cNL.pdf`, Haoci "1000BASE 1X4Tab-Down
+          // RJ45", P/N HRJC-M03C01C10cNL): pitch=width=13.98mm, depth=21.45mm,
+          // height=13.60mm. block_x0=62.61 [B] re-derived from the BPI-R4
+          // assembly drawing (dark-pixel-run detector, restricted to rows below
+          // CN1's footprint so CN1's box is no longer conflated with CN21's own
+          // left edge) — see RESEARCH.md.
+          ["rj45_1",  [62.61,   0, 1.6], [13.98, 21.45, 13.60], "ymin"], // port 1 (WAN)
+          ["rj45_2",  [76.59,   0, 1.6], [13.98, 21.45, 13.60], "ymin"], // port 2 (LAN)
+          ["rj45_3",  [90.57,   0, 1.6], [13.98, 21.45, 13.60], "ymin"], // port 3 (LAN)
+          ["rj45_4",  [104.55,  0, 1.6], [13.98, 21.45, 13.60], "ymin"], // port 4 (LAN)
           ["dc_power_1",  [124.59,  0, 1.6], [10.03,  10.71, 10.0], "ymin"], // CN4 "DC12V" barrel jack. [B] x/y envelope pixel-detected (edges shared with rj45_4/usbc_pwr_1 boundaries); [C] //VERIFY height (no top-view Z dimension; generic barrel-jack estimate)
           ["usbc_pwr_1",  [134.62,  0, 1.6], [8.94,   9.95,  3.2], "ymin"], // CN5 "PD20V" USB-C PD input. [B] left edge + top edge pixel-detected; [C] //VERIFY width (generic USB-C receptacle datasheet figure, own right-edge detector pass inconclusive — see RESEARCH.md re: CN6 proximity)
           // Non-front-panel:

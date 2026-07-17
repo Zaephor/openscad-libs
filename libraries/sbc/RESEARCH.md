@@ -559,10 +559,10 @@ against the board's bottom/short edge in the drawing). Left to right by x:
 | `usb_1` | CN11 (USB) | 7.41 | 8.89 | 0 | 23.16 | 13.5 | ymin | [B] pos / [C] body h //VERIFY |
 | `sfp_1` | CN7+CN8 (SFP cage 1) | 16.3 | 16.51 | 0 | 53.98 | 13.4 | ymin | [B] |
 | `sfp_2` | CN9+CN20+CN10 (SFP cage 2) | 34.08 | 16.51 | 0 | 53.98 | 13.4 | ymin | [B] pos / [C] depth //VERIFY |
-| `rj45_1` | CN1 "WAN X1" | 60.0 | 8.0 | 0 | 20.0 | 13.5 | ymin | [C] //VERIFY |
-| `rj45_2` | CN21 "LAN X3" port 1/3 | 68.0 | 18.2567 | 0 | 19.05 | 13.5 | ymin | [B] envelope / [C] split |
-| `rj45_3` | CN21 port 2/3 | 86.2567 | 18.2567 | 0 | 19.05 | 13.5 | ymin | [B] envelope / [C] split |
-| `rj45_4` | CN21 port 3/3 | 104.5133 | 18.2567 | 0 | 19.05 | 13.5 | ymin | [B] envelope / [C] split |
+| `rj45_1` | CN21 port 1/4 "WAN X1" | 62.61 | 13.98 | 0 | 21.45 | 13.60 | ymin | [B] pos / [A] body |
+| `rj45_2` | CN21 port 2/4 "LAN X3" | 76.59 | 13.98 | 0 | 21.45 | 13.60 | ymin | [B] pos / [A] body |
+| `rj45_3` | CN21 port 3/4 | 90.57 | 13.98 | 0 | 21.45 | 13.60 | ymin | [B] pos / [A] body |
+| `rj45_4` | CN21 port 4/4 | 104.55 | 13.98 | 0 | 21.45 | 13.60 | ymin | [B] pos / [A] body |
 | `dc_power_1` | CN4 "DC12V" | 124.59 | 10.03 | 0 | 10.71 | 10.0 | ymin | [B] pos / [C] h //VERIFY |
 | `usbc_pwr_1` | CN5 "PD20V" | 134.62 | 8.94 | 0 | 9.95 | 3.2 | ymin | [B] pos / [C] width //VERIFY |
 
@@ -580,26 +580,52 @@ Notes per row:
   by the symmetric-cage-layout assumption — **//VERIFY**. 53.98mm is
   plausible against the `DS/SFP0074EP_1X1.pdf` cage datasheet's overall
   length class (cage+connector assemblies commonly run 50-56mm).
-- **`rj45_1` (CN1 "WAN X1")**: weakest of the headline set. Right edge
-  (62.6-63.1mm) was detector-confirmed; CN1 is drawn as an open
-  corner-bracket/keying symbol (like the SFP orientation marks) rather than
-  a solid rectangle, so no full-width border line exists for the detector —
-  left edge (60mm) and top edge (20mm) were read visually off a gridded
-  crop (`k_cn1_tight.png`) against exact 10mm gridlines. An internal
-  horizontal line at y~10 (likely a pin-1/polarity tick, not a box border)
-  created residual ambiguity about whether the true box depth is 10mm or
-  20mm — **20mm was kept** because the bracket's vertical side-lines visibly
-  continue past that line down to y=0. **//VERIFY** against a clearer
-  source if one becomes available.
-- **`rj45_2`/`rj45_3`/`rj45_4` (CN21 "LAN X3")**: the overall 3-port envelope
-  x=[68.0,122.77] (54.77mm) is [B] — both boundaries were independently
-  detector-confirmed from two different search windows (left edge shared
-  with CN1's right edge at x=68; right edge shared with CN4's left edge
-  cluster at 122.77/124.59). The top edge (19.05mm) was also detector-hit,
-  consistent with CN1's independently-read 20mm (same front-panel row
-  height, good cross-check). The split into three **equal** 18.2567mm ports
-  is an assumption — no internal divider is dimensioned anywhere — tier [C]
-  for the per-port boundaries specifically.
+- **`rj45_1`..`rj45_4` (CN21, single 4-port ganged block) — re-modeled Task
+  2**: hardware-owner ground truth (2026-07-16) confirms the BPI-R4 has
+  **one physical 4-port RJ45 block** (WAN + 3x LAN); the "WAN X1" silk text
+  marks port 1 of that block, not a separate connector. The prior model (an
+  8.0mm lone "WAN" jack attributed to a refdes "CN1", plus a separately
+  even-3-split "LAN X3" 3-port block attributed to "CN21") is **discredited
+  and superseded** — both were self-flagged weak reads (see the old
+  `error`/`different` verdicts in the reconcile table below, now
+  reclassified `no-peer`).
+
+  Re-examining the same assembly drawing used for the original pixel
+  detection resolved the source of the error: the box previously read as
+  "CN1 'WAN X1'" is a **different, unrelated small 2-pin part** (silkscreen
+  "+" polarity mark, sits directly under the "FAN" silk label — most likely
+  the fan power connector) whose footprint happens to sit flush against the
+  real RJ45 block's own left wall. The actual RJ45 refdes is **CN21 alone**
+  (confirmed by its own silkscreen text spanning the full block) — a single
+  component, matching the ground truth. Restricting the dark-pixel-run
+  detector to rows below CN1's own footprint (so its box no longer
+  contaminates the scan) finds CN21's true left edge at **x=62.61mm**
+  (present in all sampled rows — a solid, continuous border line), not the
+  previously-assumed 60.0mm. Right edge (122.77, shared boundary with
+  `dc_power_1`'s left edge) is unchanged and remains **[B]** — it was
+  already detector-confirmed independent of the CN1 confusion.
+
+  Per-port **pitch**, **width**, **depth**, and **height** are now sourced
+  from the exact connector datasheet bundled in the BPI-R4 vendor's own DXF
+  export zip (`DS/RJ45x4-HRJC-M03C01C10cNL.pdf` — Haoci Electronics
+  ("好磁电子"), "1000BASE 1X4 Tab-Down RJ45", P/N `HRJC-M03C01C10cNL`, Rev
+  B): the suggested-PCB-layout view dimensions a **13.98mm** pin-column
+  pitch repeated across all 4 ports (used here as both per-port width and
+  pitch, i.e. abutting equal-width cells — consistent with a single
+  injection-molded 1x4 gang housing and with the front view's 59.00mm
+  overall bezel width: 59.00 − 4×13.98 = 3.08mm total end-margin, a
+  plausible bezel overhang); the side view gives body depth **21.45mm** and
+  height **13.60mm** above the PCB (the latter corroborates, and now
+  supersedes as the exact-part tier **[A]** figure, the prior generic
+  13.5mm carried on this row). This is the real connector used on this
+  board (bundled with its own DXF, not a generic catalog pull), so position
+  is **[B]** (re-derived detector read) and body dims are **[A]** (exact
+  datasheet for the exact part).
+
+  Resulting block: x=[62.61, 118.53] (55.92mm, 4×13.98mm), comfortably
+  inside both neighbor boundaries — 12.02mm clear of `sfp_2`'s right edge
+  (50.59) and 6.06mm clear of `dc_power_1`'s left edge (124.59). No
+  board-geometry conflict.
 - **`dc_power_1` (CN4 "DC12V")**: x/y envelope pixel-detected consistently
   across two separate windowed runs (122.77/124.59/134.62 cols;
   10.71/0 rows) — tier [B] for position. Height (10.0mm) has **no top-view
@@ -772,8 +798,11 @@ within 25mm in the DXF (checked against the full TOP TEXT list). Cropped
 existing connector table: `mm_x=(px_x-60)/23.622`,
 `mm_y=100.5-(px_y-120)/23.622`) around each:
 - `(75.85, 27.21)` dia 3.32: a component footprint labeled **`FAN`** (a
-  small bracket/box shape, distinct from the neighbouring `U12` IC and the
-  `CN1 "WAN X1"` RJ45 below it) sits at approx. `x=[63,71], y=[18,27]` —
+  small bracket/box shape, distinct from the neighbouring `U12` IC) sits at
+  approx. `x=[63,71], y=[18,27]`, with a small 2-pin connector (refdes
+  `CN1`, silk "+" polarity mark — likely the fan's own power connector, per
+  Task 2's RJ45 re-model research; **not** part of the RJ45 block despite
+  sitting flush against its left edge) directly below it —
   the hole is ~4.6mm to the right of the FAN footprint's right edge, same Y
   band. Matches the brief's own fan/heatsink hypothesis. Role:
   `component-mount`, **[C]//VERIFY** (visual crop read, box edges not
@@ -1371,10 +1400,10 @@ connector's tier as tagged in `sbc.scad`/this file above.
 | usb_1 | [8.89,23.16,13.5] | usb_a_stack2 [13.66,14.6,13.88] (best h-fit; usb_a_stack2_shielded's h=16.0 fits worse) | −4.77,+8.56,−0.38 | different (unresolved, weak evidence) | h reconciles against `usb_a_stack2` (Δ−0.38, within threshold), but w/d fail by a wide margin against **every** candidate peer (usb_a and usb_a_stack2 share the same w/d, only h differs, so the peer choice doesn't change this). sbc's own w is self-flagged `//VERIFY` "narrow vs typical USB-A body"; d has no independent corroboration either. Not confidently mapped to any type — flagged for adjudication/re-verification, not a basis for a new type from one weak reading |
 | sfp_1 | [16.51,53.98,13.4] | — | n/a | no-peer | SFP cage; explicitly no generic peer per brief |
 | sfp_2 | [16.51,53.98,13.4] | — | n/a | no-peer | same as sfp_1 |
-| rj45_1 | [8.0,20.0,13.5] | rj45_shallow [21,18.75,13.5] | −13.0,+1.25,0 | error | w off by 13mm (more than half the catalog width) is well beyond plausible manufacturing/reading variance for the "same nominal part" test; sbc's own note already calls this its **weakest-sourced record** ("residual ambiguity" on an internal line at y≈10). h agrees exactly, consistent with the same physical jack family as rj45_2/3/4. Fix note: re-verify/re-measure rj45_1's width before consuming; don't treat 8.0mm as a real distinct connector width |
-| rj45_2 | [18.2567,19.05,13.5] | rj45_shallow [21,18.75,13.5] | −2.7433,+0.30,0 | different | d/h corroborate `rj45_shallow` within threshold; w fails, but sbc's own note attributes the exact port width to an **assumed equal 3-way split** of a pixel-measured 3-port envelope with no internal divider dimensioned anywhere — the divergence is an artifact of that even-split assumption, not confirmed evidence of a genuinely narrower physical jack. Not proposing a 3rd rj45 type from this |
-| rj45_3 | [18.2567,19.05,13.5] | rj45_shallow [21,18.75,13.5] | −2.7433,+0.30,0 | different | same reasoning as rj45_2 |
-| rj45_4 | [18.2567,19.05,13.5] | rj45_shallow [21,18.75,13.5] | −2.7433,+0.30,0 | different | same reasoning as rj45_2 |
+| rj45_1 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | **Task 2 reclassify (was `error`)**: re-modeled as port 1 of CN21, the BPI-R4's single 4-port ganged RJ45 block (hardware-owner ground truth), body sourced [A] from the exact bundled connector datasheet (`RJ45x4-HRJC-M03C01C10cNL.pdf`). A ganged multi-port block with its own datasheet has no meaningful 1:1 peer against `rj45_shallow` (a single-port catalog type) — same reasoning as `sfp_1`/`sfp_2`. The prior [8.0,20.0,13.5] reading (an 8mm lone "WAN" jack) is discredited/superseded — see bpir4 RJ45 section above |
+| rj45_2 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | **Task 2 reclassify (was `different`)**: same reasoning as rj45_1 — one physical ganged block, no single-port peer. The prior [18.2567,19.05,13.5] reading (an assumed even 3-way split of an unrelated 3-port envelope) is discredited/superseded |
+| rj45_3 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | same reasoning as rj45_2 |
+| rj45_4 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | same reasoning as rj45_2 |
 | dc_power_1 | [10.03,10.71,10.0] | — | n/a | no-peer | DC12V barrel power jack — no barrel-jack type exists anywhere in the catalog; a genuinely distinct connector class, not merely omitted |
 | usbc_pwr_1 | [8.94,9.95,3.2] | usb_c [8.94,6.90,3.16] | 0.00,+3.05,+0.04 | different (unresolved, weak evidence) | w/h agree closely (w exact), but d fails by 6x the threshold. sbc's own note flags this exact axis as tangled with an unresolved boundary conflict against the adjacent unmapped "CN6" component — a self-flagged-suspect reading, not confirmed evidence of a deeper USB-C variant. `usb_c` is very likely still the right nominal part; the depth reading itself needs re-verification before adopting either value |
 | uart_1 | [5.0,10.0,6.0] | — | n/a | no-peer | console/UART pin header — different pitch/pin-count class from the catalog's only header type (`gpio_2x20`, a 2x20/2.54mm-pitch part); no generic peer |
@@ -1398,15 +1427,19 @@ connector's tier as tagged in `sbc.scad`/this file above.
 | microusb_pwr | [7.4,4.6,2.8] | micro_usb [7.72,5.48,3.96] | −0.32,−0.88,−1.16 | different (unresolved) | same ambiguity as pizero's microusb_pwr |
 | csi | [3.3,16.0,1.5] | — | n/a | no-peer | camera FPC connector notch; no generic type in catalog (same class as pi5's csi_dsi_1/2) |
 
-### No-peer connectors (13 total, literal — intentional, per the brief's global constraint)
+### No-peer connectors (17 total, literal — intentional, per the brief's global constraint)
 
 `av_jack` (pi3b, pi3bplus, pi4b — 3.5mm AV/audio jack), `csi_dsi_1`/`csi_dsi_2`
 (pi5) + `csi` (pizero2w) (camera/display FPC connectors, 3 total), `pcie_fpc`
 (pi5, PCIe FFC ribbon — distinct from the catalog's card-edge `pcie_x*`
 types), `rj45`+`usb2` combo shell (pi5 — board-unique molded part, 2 records
-sharing one box), `sfp_1`/`sfp_2` (bpir4, SFP cages), `dc_power_1` (bpir4, DC
-barrel jack — no barrel-jack type exists in the catalog at all), `uart_1`
-(bpir4, console/UART header — different pin-count/pitch class from
+sharing one box), `sfp_1`/`sfp_2` (bpir4, SFP cages), `rj45_1`/`rj45_2`/
+`rj45_3`/`rj45_4` (bpir4, **Task 2**: the single 4-port ganged RJ45 block,
+CN21 — a datasheet-sourced ganged multi-port part has no meaningful 1:1
+catalog peer, same reasoning as the SFP cages; previously 1 `error` +
+3 `different` from the discredited two-connector split), `dc_power_1`
+(bpir4, DC barrel jack — no barrel-jack type exists in the catalog at all),
+`uart_1` (bpir4, console/UART header — different pin-count/pitch class from
 `gpio_2x20`). None of these have — or plausibly should get — a generic
 catalog peer; they stay as literal `[w,d,h]` on the sbc side.
 
@@ -1414,20 +1447,22 @@ catalog peer; they stay as literal `[w,d,h]` on the sbc side.
 
 **None.** Every `different`/`error` verdict above is one of:
 
-1. **A probable sbc-side data problem** (`error`) — a self-flagged
-   weakest-sourced read (bpir4 `rj45_1`) — fixing the sbc value (Task 2) is
-   the right move, not adding a new catalog type for a misreading.
-   (pi3b/pi3bplus `usb2_2` and pi4b `rj45` were previously bucketed here as
-   a suspected chain-truncated Y-span, but re-checking the source drawings
-   confirmed those readings are correct as drawn — reclassified `different
-   (confirmed by source)` above, not an sbc data problem.)
+1. **A probable sbc-side data problem** (`error`) — **none remain** as of
+   Task 2. (pi3b/pi3bplus `usb2_2` and pi4b `rj45` were previously bucketed
+   here as a suspected chain-truncated Y-span, but re-checking the source
+   drawings confirmed those readings are correct as drawn — reclassified
+   `different (confirmed by source)` above, not an sbc data problem. bpir4
+   `rj45_1` was the last `error` row — Task 2 re-modeled the whole bpir4
+   RJ45 block from a hardware-owner ground truth + the exact connector's
+   own datasheet and reclassified all 4 rj45 rows `no-peer`, not a fix
+   toward `rj45_shallow`.)
 2. **Marginal/noise** — 0.2-0.75mm past the 0.5mm cutoff on a single axis,
    with the same nominal part agreeing closely elsewhere in the family (pi4b
    `usb3`, pizero2w `minihdmi`).
 3. **Genuinely unresolved, weak-evidence pairs** — both sides tagged
    `//VERIFY`/self-flagged-ambiguous, with no confident reading on either
    side to derive a new type's dims from (all `micro_usb` mismatches;
-   bpir4 `usb_1`, `usbc_pwr_1`, `rj45_2`/`3`/`4`'s width).
+   bpir4 `usb_1`, `usbc_pwr_1`).
 
 None of these is a confirmed, well-evidenced *distinct physical part* the way
 `usb_a_stack2_shielded`/`rj45_shallow` were in SP1 (both grounded in an exact
@@ -1465,8 +1500,8 @@ future re-fetch/re-measurement pass, not a new catalog entry.
 pizero + 5 pizero2w — matches `_sbc_table()`/`_sbc_gpio()` exactly):
 
 - **same**: 21
-- **different**: 16 (1 marginal-noise-leaning + 12 unresolved/weak-evidence + 3 confirmed-by-source [pi3b/pi3bplus `usb2_2`, pi4b `rj45`] — see per-row notes; none propose a new type)
-- **error**: 1 (bpir4 `rj45_1`, probable sbc data problem, fix in Task 2 — not a new type)
-- **no-peer**: 13 (literal, intentional)
+- **different**: 13 (1 marginal-noise-leaning + 9 unresolved/weak-evidence + 3 confirmed-by-source [pi3b/pi3bplus `usb2_2`, pi4b `rj45`] — see per-row notes; none propose a new type)
+- **error**: 0 (bpir4 `rj45_1` was the last one — re-modeled and reclassified `no-peer` in Task 2, not fixed toward `rj45_shallow`)
+- **no-peer**: 17 (literal, intentional; +4 in Task 2 — bpir4 `rj45_1`..`rj45_4`, the single 4-port ganged RJ45 block, has no meaningful 1:1 catalog peer)
 
-21 + 16 + 1 + 13 = 51.
+21 + 13 + 0 + 17 = 51.

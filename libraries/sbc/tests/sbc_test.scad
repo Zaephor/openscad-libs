@@ -77,6 +77,18 @@ assert(sbc_size("bpir4") == [148.0, 100.5], "bpir4 size");
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "sfp"))  1]) == 2, "bpir4 has 2 sfp");
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) 1]) == 4, "bpir4 has 4 rj45");
 
+// bpir4 RJ45 is ONE physical 4-port ganged block (WAN + 3x LAN), not a lone WAN
+// jack + separate 3-port block. => 4 ports, uniform width, constant pitch.
+_bpr_rj45 = [for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) c];
+assert(len(_bpr_rj45) == 4, "bpir4 4 rj45 ports");
+for (c = _bpr_rj45)
+    assert(c[2][0] == _bpr_rj45[0][2][0], "bpir4 rj45 uniform port width");
+for (i = [2 : len(_bpr_rj45) - 1])
+    assert(abs((_bpr_rj45[i][1][0] - _bpr_rj45[i-1][1][0])
+             - (_bpr_rj45[1][1][0] - _bpr_rj45[0][1][0])) < 0.001,
+           "bpir4 rj45 constant pitch");
+assert(sbc_connector("bpir4", "rj45_1")[2] == [13.98, 21.45, 13.60], "bpir4 ganged rj45 port body"); // locked from datasheet; //VERIFY axes noted in RESEARCH.md
+
 // --- hole-role tagging invariants (Task 1) ---
 // Every hole on every board has a valid role and a positive diameter.
 for (b = sbc_known_boards())
