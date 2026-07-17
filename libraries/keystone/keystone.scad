@@ -24,8 +24,10 @@
 // are sourced+tiered below; body depth+W/H, min_wall, tmax, and tab numerics
 // remain //VERIFY pending stronger corroboration or a real STL/mesh
 // measurement — see RESEARCH.md.
-// NOTE: role 2 (placeholder) and role 3 (cutout/insert) are out of scope for
-// this task (data + accessors only) — added in later tasks.
+// All three roles implemented: (1) data table + accessor functions
+// (keystone_opening(), keystone_body(), keystone_plate_thickness(), keystone_pitch(),
+// keystone_min_wall(), keystone_tab()), (2) keystone_placeholder() envelope for
+// fit-check, and (3) keystone_cutout()/keystone_insert() hole-stamp/mate-reference modules.
 
 $fn = 48;
 
@@ -137,8 +139,7 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2) {
             cube([o[0] - 2*fit, o[1] - 2*fit, plug_h]);
         // top hook ledge on +Y edge, engaging just behind the front face. Z
         // driven by ledge_z (keystone_tab()[0]): top edge sits at -ledge_z,
-        // extending tab_th further back (unchanged -- Z is correct; see
-        // RESEARCH.md). Y-width clamped to `fit` (NOT the full tab_th): the
+        // extending tab_th further back. Y-width clamped to `fit` (NOT the full tab_th): the
         // hook starts at the plug's own +Y face (o[1]/2 - fit) and may only
         // protrude the same `fit` margin the plug is already narrowed by, so
         // its Y-max lands exactly at the raw opening edge o[1]/2 -- never past

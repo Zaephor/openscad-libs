@@ -14,8 +14,7 @@ fi
 
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 
-# Negative control: a bad-arity tab consumer must still compile; instead assert
-# the fit-check rejects a deliberately-too-tight pitch.
+# Negative control: assert the fit-check rejects a deliberately-too-tight pitch.
 cat > "$tmp/tight.scad" <<'EOF'
 use <keystone/keystone.scad>;
 assert(keystone_pitch_ok(keystone_min_pitch() - 0.5) == false, "too-tight pitch must fail");
