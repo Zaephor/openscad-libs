@@ -14,6 +14,7 @@ use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
 use <hardware/hardware.scad>;
+use <heatset/heatset.scad>;
 use <_honeycomb.scad>;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
@@ -218,8 +219,9 @@ module _lid_post_corner() {
         translate([-r, -r, -1])
             linear_extrude(height = Hb + 2)
                 polygon([[0, 0], [cl, 0], [0, cl]]);
-        // Insert bore, cut through the whole column so it stays open full depth.
-        translate([0, 0, -1]) cylinder(h = Hb + 2, d = lid_insert_bore());
+        // Heat-set insert pocket (lead-in + melt-relief) at the post top, replacing
+        // the plain through-bore. Datum: install face Z=0, cuts grow -Z into the column.
+        translate([0, 0, Hb]) heatset_pocket(lid_insert_size);
     }
 }
 
