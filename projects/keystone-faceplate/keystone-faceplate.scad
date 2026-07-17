@@ -25,11 +25,15 @@ ear_hole_type   = "slot";
 ear_fastener    = "m6";
 // Obround elongation along X for slot ears; rack10 default.
 slot_travel     = 4;
+// Port retention style (keystone_known_styles()): lip=taller lipped window,
+// face=flush face-plate window.
+port_style      = "lip";
 
 $fn = 48;
 
 keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
-                   port_clearance, ear_hole_type, ear_fastener, slot_travel);
+                   port_clearance, ear_hole_type, ear_fastener, slot_travel,
+                   port_style);
 
 // Ascending port X-centers, row centered on X=0. Empty when port_count<=0.
 function _kf_port_centers(port_count, port_pitch) =
@@ -38,7 +42,8 @@ function _kf_port_centers(port_count, port_pitch) =
 
 module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
                           port_clearance = 0.25, ear_hole_type = "slot",
-                          ear_fastener = "m6", slot_travel = 4) {
+                          ear_fastener = "m6", slot_travel = 4,
+                          port_style = "lip") {
     // Pitch must clear the min printable port spacing.
     keystone_pitch_assert(port_pitch);
     // Plate thickness must sit within the snap-retention range.
@@ -55,7 +60,7 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
     assert(keystone_layout_ok(xs),
         str("keystone-faceplate: port pitch ", port_pitch,
             " below min for port_count ", port_count));
-    ow = keystone_opening()[0];
+    ow = keystone_opening(port_style)[0];
     ear_col = rack10_hole_h_span(standard) / 2;
     // ear_r = ear cutout's half-width along X (the axis ear_col/outer_edge
     // measure along). "slot" elongates the clearance circle by slot_travel/2
@@ -83,6 +88,6 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
         for (x = _kf_port_centers(port_count, port_pitch))
             translate([x, 0, rack10_device_height(1) / 2])
                 rotate([-90, 0, 0])
-                    keystone_cutout(plate_thickness, port_clearance);
+                    keystone_cutout(plate_thickness, port_clearance, port_style);
     }
 }

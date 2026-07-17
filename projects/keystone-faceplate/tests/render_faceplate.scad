@@ -4,4 +4,4 @@ use <keystone/keystone.scad>;
 use <rack10/rack10.scad>;
 use <../keystone-faceplate.scad>;
 
-keystone_faceplate("labrax", 6, keystone_pitch(), 3.0);
+keystone_faceplate("labrax", 6, keystone_pitch(), 3.0, port_style = "lip");
