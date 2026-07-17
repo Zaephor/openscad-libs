@@ -128,8 +128,12 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2) {
         // through-plug: opening cross-section less `fit` per side, front to behind rear
         translate([-(o[0]/2 - fit), -(o[1]/2 - fit), -plug_h])
             cube([o[0] - 2*fit, o[1] - 2*fit, plug_h]);
-        // top hook ledge on +Y edge, engaging just behind the front face
-        translate([-(o[0]/2 - fit), o[1]/2 - fit, -tab_th])
+        // top hook ledge on +Y edge, engaging just behind the front face. Z
+        // driven by ledge_z (keystone_tab()[0]): top edge sits at -ledge_z,
+        // extending tab_th further back. Width clamped to the plug footprint
+        // (o[0]-2*fit), same narrowing rationale as the latch below -- the
+        // hook rides along the plug's surface, not the full window width.
+        translate([-(o[0]/2 - fit), o[1]/2 - fit, -(ledge_z + tab_th)])
             cube([o[0] - 2*fit, tab_th, tab_th]);
         // bottom latch bump on -Y edge, behind the plate rear
         translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])

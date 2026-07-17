@@ -90,6 +90,17 @@ ok=(abs((max(xs)-min(xs))-wx)<tol and abs((max(ys)-min(ys))-wy)<tol and
 sys.exit(0 if ok else 1)
 PY
 
+# Tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge] -- need ledge_z/
+# tab_th to sample the hook ledge's actual Z band (not a guessed midpoint).
+cat > "$tmp/tab.scad" <<'EOF'
+use <keystone/keystone.scad>;
+t = keystone_tab();
+echo(t[0]); echo(t[1]);
+EOF
+tab_out="$(run "$tmp/tab.scad")"
+ledge_z="$(echo "$tab_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+tab_th="$(echo "$tab_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+
 # Insert: flange wider than opening; plug fits window; body reaches behind plate.
 PLATE=3.0
 cat > "$tmp/insert.scad" <<EOF
@@ -98,7 +109,7 @@ keystone_insert(plate_thickness = $PLATE);
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert.stl" "$tmp/insert.scad" 2>/dev/null
 
-python3 - "$tmp/insert.stl" "$ow" "$oh" "$PLATE" <<'PY' || { echo "insert mate geometry incorrect"; exit 1; }
+python3 - "$tmp/insert.stl" "$ow" "$oh" "$PLATE" "$ledge_z" "$tab_th" <<'PY' || { echo "insert mate geometry incorrect"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
 verts=[]
@@ -106,13 +117,15 @@ for i in range(n):
     for v in range(3):
         base=off+i*50+12+v*12
         x,y,z=struct.unpack('<3f',d[base:base+12]); verts.append((x,y,z))
-ow,oh,plate=float(sys.argv[2]),float(sys.argv[3]),float(sys.argv[4]); tol=0.1
+ow,oh,plate,ledge_z,tab_th=map(float,sys.argv[2:7]); tol=0.1
 xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
 # flange: overall X span exceeds the opening width (front stop present)
 flange_ok = (max(xs)-min(xs)) > ow + 0.5
-# plug fits: sample verts in a thin Z band at mid-plate; their X span < opening (with clearance)
-midz = -plate/2
-band=[ (x,y) for x,y,z in verts if abs(z-midz) < 0.4 ]
+# plug fits: sample verts at the hook ledge's actual top edge (Z=-ledge_z, per
+# keystone_tab()[0] -- NOT a guessed midpoint); their X span must stay under
+# the raw opening, confirming the plug+hook cross-section threads the window.
+topz = -ledge_z
+band=[ (x,y) for x,y,z in verts if abs(z-topz) < 0.05 ]
 plug_ok = bool(band) and (max(x for x,y in band)-min(x for x,y in band)) <= ow - 0.05
 # body reaches behind the plate rear (latch region)
 behind_ok = min(zs) < -plate - 0.2
