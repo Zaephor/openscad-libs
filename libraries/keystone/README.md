@@ -67,28 +67,33 @@ assert(keystone_layout_ok(xs), "ports too close together");
 
 Provenance tiers (see `keystone.scad` header / `RESEARCH.md` for the full
 evidence log): **[A]** vendor datasheet / governing drawing, **[B]**
-corroborated across >=2 independent peers, **[C]** single-sourced /
-drawing-derived. `//VERIFY` marks a weak/unsourced value.
+corroborated across >=2 independent peers, **[C]** reverse-engineered from a
+public STL/SCAD mesh (cite the artifact URL). `//VERIFY` marks a weak/
+unsourced value — never a tier it didn't earn (a single, non-decomposed
+drawing reading or a single secondary source does NOT qualify as `[C]`/`[B]`).
 
 | Source | Tier | Backs |
 |---|---|---|
-| [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) | A | `keystone_opening()` (Plastic suggested panel cutout), `keystone_body()[2]` (bd, assembly depth), `keystone_plate_thickness()[0]` (tmin) |
-| [Wikipedia, "Keystone module"](https://en.wikipedia.org/wiki/Keystone_module) | B | corroborates `keystone_opening()`; backs the qualitative fixed-hook/flexing-latch asymmetry behind `keystone_tab()` |
+| [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) | A | `keystone_opening()` (Plastic suggested panel cutout), `keystone_plate_thickness()[0]` (tmin); also the sole reading behind `keystone_body()[2]` (bd, `//VERIFY`) |
+| [Wikipedia, "Keystone module"](https://en.wikipedia.org/wiki/Keystone_module) | B | corroborates `keystone_opening()`; also the sole secondary source behind the qualitative fixed-hook/flexing-latch asymmetry behind `keystone_tab()` (`//VERIFY`) |
 | [Monoprice keystone jack patch-panel listings](https://www.monoprice.com/category/networking/patch-panels/keystone-jack-panel) | B | `keystone_pitch()` (3/4in / 19.05mm de-facto port spacing) |
 
 ### Coverage / not yet covered
 
 - Sourced + tiered this pass: `keystone_opening()` [A]/[B], `keystone_pitch()`
-  [B], `keystone_plate_thickness()[0]` (tmin) [A], `keystone_body()[2]` (bd)
-  [C], and the qualitative hook/latch edge asymmetry behind `keystone_tab()`
-  [B].
+  [B], `keystone_plate_thickness()[0]` (tmin) [A].
 - Still `//VERIFY` (flagged for a future research pass, not invented):
   `keystone_body()[0]`/`[1]` (bw, bh — axis-mapping from the vendor drawing
-  unresolved), `keystone_plate_thickness()[1]` (tmax — no accepted-upper-
-  bound source found), `keystone_tab()[0]`/`[1]` (hook_ledge_z,
-  tab_thickness — no numeric latch source found). See `RESEARCH.md`'s
-  `//VERIFY` census before treating these as load-bearing for a tight-fit
-  design.
+  unresolved), `keystone_body()[2]` (bd — single, non-decomposed drawing
+  reading, not corroborated by a second source), `keystone_plate_thickness()[1]`
+  (tmax — no accepted-upper-bound source found), `keystone_min_wall()` (no
+  source at all — repo print-process convention, not a keystone-specific
+  spec), `keystone_tab()[0]`/`[1]` (hook_ledge_z, tab_thickness — no numeric
+  latch source found; both carried unchanged from the task seed), and
+  `keystone_tab()[2]`/`[3]` (hook_edge, latch_edge — asymmetric-mechanism
+  claim backed by exactly one secondary source, not the >=2 independent
+  sources `[B]` requires). See `RESEARCH.md`'s `//VERIFY` census before
+  treating these as load-bearing for a tight-fit design.
 - Not yet implemented (future tasks per the keystone-lib plan):
   `keystone_placeholder()` (role 2), `keystone_cutout()`/`keystone_insert()`
   (role 3), `keystone_pitch_assert()`.

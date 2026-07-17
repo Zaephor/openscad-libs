@@ -16,11 +16,14 @@
 //                    keystone_pitch_assert(): single-source port-spacing guard
 // Provenance legend (see RESEARCH.md for the evidence log):
 //   [A] vendor datasheet / governing drawing.  [B] >=2 independent peers agree.
-//   [C] single-sourced / mesh-derived.  //VERIFY marks a weak/unsourced value.
+//   [C] reverse-engineered from a public STL/SCAD mesh (cite the artifact
+//       URL) — NOT single-sourced/uncorroborated (that's //VERIFY).
+//   //VERIFY marks a weak/unsourced value — never a tier it didn't earn.
 //
-// Keystone is a de-facto standard; expect [B]/[C]. opening/pitch/tmin are
-// sourced+tiered below; body W/H, tmax, and tab numerics remain //VERIFY
-// pending stronger corroboration — see RESEARCH.md.
+// Keystone is a de-facto standard; expect [A]/[B]/VERIFY. opening/pitch/tmin
+// are sourced+tiered below; body depth+W/H, min_wall, tmax, and tab numerics
+// remain //VERIFY pending stronger corroboration or a real STL/mesh
+// measurement — see RESEARCH.md.
 // NOTE: role 2 (placeholder) and role 3 (cutout/insert) are out of scope for
 // this task (data + accessors only) — added in later tasks.
 
@@ -34,10 +37,14 @@ $fn = 48;
 // figure 14.5 x 16.0 [B]. See RESEARCH.md.
 function keystone_opening()         = [14.70, 16.40];
 // [bw,bh,bd] jack envelope keep-out (X,Y,Z-depth behind panel), mm. bd=28.60
-// [C] Samm Teknoloji drawing's single labelled overall-depth dimension
-// (assembled jack + rear wire cap). bw/bh //VERIFY: the drawing's orthographic
-// view callouts (~17-20mm range) could not be confidently axis-mapped this
-// pass; seeded as a conservative keep-out margin above keystone_opening().
+// //VERIFY: Samm Teknoloji drawing's single labelled overall-depth dimension
+// (assembled jack + rear wire cap) — a single, non-decomposed reading from
+// one vendor drawing, not STL/mesh-derived and not corroborated by a second
+// source, so it does not earn [C] or [B]. Confirm against a second jack's
+// drawing (or an STL/caliper measurement) before treating as load-bearing.
+// bw/bh //VERIFY: the drawing's orthographic view callouts (~17-20mm range)
+// could not be confidently axis-mapped this pass; seeded as a conservative
+// keep-out margin above keystone_opening().
 function keystone_body()            = [17.5, 19.5, 28.60];
 // [min,max] accepted faceplate thickness, mm. tmin=1.5 [A] Samm Teknoloji
 // drawing's suggested cutout-panel thickness (1.50~1.60, both Metal and
@@ -50,17 +57,24 @@ function keystone_plate_thickness() = [1.5, 3.0];
 // multiple independent retailer/community sources; some brand variance noted
 // (a few run wider to clear bulky punch-down backs). See RESEARCH.md.
 function keystone_pitch()           = 19.05;
-// Min printable material wall between adjacent openings, mm. [C] repo
-// print-process convention (2x 0.4mm nozzle line width, 2-perimeter
-// default) — not a keystone hardware spec.
+// Min printable material wall between adjacent openings, mm. //VERIFY: this
+// is the repo's generic print-process convention (2x 0.4mm nozzle line
+// width, 2-perimeter default), not a keystone-specific spec and not backed
+// by any source at all (no datasheet, no mesh, no corroboration) — confirm
+// with an actual print test (or point at a shared print-convention library
+// value, if/when one exists) before treating as load-bearing.
 function keystone_min_wall()        = 1.6;
 // tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge]. hook_edge/
-// latch_edge [B] qualitative: Wikipedia's "Keystone module" article
-// describes the current (1995 ICC patent) mechanism as one fixed angled
-// flange opposite a flexing cantilever latch — i.e. genuinely asymmetric
-// front/back edges, matching the +Y/-Y split modeled here. hook_ledge_z and
-// tab_thickness //VERIFY: no numeric source found this pass.
-function keystone_tab()             = [3.0, 1.2, "+Y", "-Y"];
+// latch_edge //VERIFY: Wikipedia's "Keystone module" article describes the
+// current (1995 ICC patent) mechanism as one fixed angled flange opposite a
+// flexing cantilever latch — i.e. genuinely asymmetric front/back edges,
+// matching the +Y/-Y split modeled here — but that's a single secondary
+// source with no second independent source corroborating it, so it does not
+// earn [B]. Confirm against a second independent source (vendor drawing or
+// patent) before relying on the asymmetry split. hook_ledge_z and
+// tab_thickness //VERIFY: no numeric source found this pass; both carried
+// unchanged from the task seed.
+function keystone_tab()             = [1.0, 1.2, "+Y", "-Y"];
 
 /* [Fit-check] — single-source port-spacing guard. min_pitch derived once here so
    no consumer re-derives it. */
