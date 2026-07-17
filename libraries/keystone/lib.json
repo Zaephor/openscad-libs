@@ -1,0 +1,10 @@
+{
+  "name": "keystone",
+  "description": "Keystone-jack snap-footprint reference: opening, body keep-out, plate-thickness range, pitch, retention-tab geometry, cutout/insert/placeholder + port-spacing fit-check.",
+  "version": "0.1.0",
+  "sources": [
+    "https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf",
+    "https://en.wikipedia.org/wiki/Keystone_module",
+    "https://www.monoprice.com/category/networking/patch-panels/keystone-jack-panel"
+  ]
+}
