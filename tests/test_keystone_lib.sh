@@ -26,6 +26,25 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "fit-check boundary wrong:"; echo "$out"; exit 1
 fi
 
+# keystone_pitch_assert must ABORT render on a too-tight pitch (stderr assert).
+cat > "$tmp/assert_tight.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_pitch_assert(keystone_min_pitch() - 0.5);
+EOF
+out="$(run "$tmp/assert_tight.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_pitch_assert failed to abort a too-tight pitch:"; echo "$out"; exit 1
+fi
+# ...and must NOT abort at exact min_pitch.
+cat > "$tmp/assert_ok.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_pitch_assert(keystone_min_pitch());
+EOF
+out="$(run "$tmp/assert_ok.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_pitch_assert wrongly aborted at min_pitch:"; echo "$out"; exit 1
+fi
+
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
 cat > "$tmp/dims.scad" <<'EOF'
 use <keystone/keystone.scad>;

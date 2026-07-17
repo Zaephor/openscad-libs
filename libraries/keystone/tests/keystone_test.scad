@@ -27,6 +27,13 @@ assert(keystone_min_pitch() == keystone_opening()[0] + keystone_min_wall(),
        "min_pitch == opening_w + min_wall");
 assert(keystone_pitch() >= keystone_min_pitch(), "nominal pitch clears min_pitch");
 
+// layout_ok: a strip at nominal pitch fits; a strip below min_pitch does not.
+mp = keystone_min_pitch();
+assert(keystone_layout_ok([0, keystone_pitch(), 2*keystone_pitch()]) == true,
+       "nominal-pitch strip fits");
+assert(keystone_layout_ok([0, mp - 0.5]) == false, "sub-min gap rejected");
+assert(keystone_layout_ok([0]) == true, "single port always fits");
+
 echo("keystone_test OK");
 
 /* [Placeholder] — smoke render; numeric bbox checked in tests/test_keystone_lib.sh */

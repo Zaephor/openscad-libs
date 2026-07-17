@@ -86,6 +86,13 @@ function keystone_layout_ok(xs) =
     len(xs) < 2 ? true
     : min([for (i = [1:len(xs)-1]) xs[i] - xs[i-1]]) >= keystone_min_pitch();
 
+// keystone_pitch_assert(pitch): hard-fail at render if a consumer's uniform
+// port pitch is below min_pitch (catch it here, not on the print bed).
+module keystone_pitch_assert(pitch) {
+    assert(keystone_pitch_ok(pitch),
+        str("keystone: pitch ", pitch, " < min_pitch ", keystone_min_pitch()));
+}
+
 /* [Placeholder] — jack envelope: flange face at Z=0, body grows -Z. For
    fit/interference viz only (envelope is a max keep-out, not a detailed jack). */
 module keystone_placeholder() {
