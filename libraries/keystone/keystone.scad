@@ -137,11 +137,19 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2) {
             cube([o[0] - 2*fit, o[1] - 2*fit, plug_h]);
         // top hook ledge on +Y edge, engaging just behind the front face. Z
         // driven by ledge_z (keystone_tab()[0]): top edge sits at -ledge_z,
-        // extending tab_th further back. Width clamped to the plug footprint
-        // (o[0]-2*fit), same narrowing rationale as the latch below -- the
-        // hook rides along the plug's surface, not the full window width.
+        // extending tab_th further back (unchanged -- Z is correct; see
+        // RESEARCH.md). Y-width clamped to `fit` (NOT the full tab_th): the
+        // hook starts at the plug's own +Y face (o[1]/2 - fit) and may only
+        // protrude the same `fit` margin the plug is already narrowed by, so
+        // its Y-max lands exactly at the raw opening edge o[1]/2 -- never past
+        // it. keystone_cutout()'s window Y-bound is always o[1]/2 + clearance
+        // with clearance >= 0, so this guarantees the hook never collides
+        // with solid frame material regardless of the consumer's clearance
+        // choice. X-width stays clamped to the plug footprint (o[0]-2*fit),
+        // same narrowing rationale as the latch below -- the hook rides along
+        // the plug's surface, not the full window width.
         translate([-(o[0]/2 - fit), o[1]/2 - fit, -(ledge_z + tab_th)])
-            cube([o[0] - 2*fit, tab_th, tab_th]);
+            cube([o[0] - 2*fit, fit, tab_th]);
         // bottom latch bump on -Y edge, behind the plate rear
         translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
             cube([o[0] - 2*fit, tab_th, tab_th]);
