@@ -290,6 +290,9 @@ brands use distinct knurl families that a single number can't serve.
   insertguide's M3 generic 4.2 is +0.2 vs the 4.0 manufacturer figure —
   exactly *at*, not *over*, the threshold, and it is a `[C]` community value
   contradicted by two `[A]` manufacturer specs, so it does not tip the
+  verdict. insertguide's M2.5 generic 3.8 is −0.21 mm from PEM's 4.01 and
+  exceeds the threshold on the low side; as a `[C]` community value
+  contradicted by `[A]` manufacturer specs, it likewise does not tip the
   verdict.
 - knurl families: PEM SI is a straight-wall opposed-knurl insert and CNC
   Kitchen/ruthex are barbed "3D-printing" inserts — technically different
