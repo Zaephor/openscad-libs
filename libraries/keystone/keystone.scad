@@ -106,3 +106,33 @@ module keystone_cutout(plate_thickness = 3.0, clearance = 0.25) {
     translate([-wx/2, -wy/2, -(plate_thickness + 1)])
         cube([wx, wy, plate_thickness + 2]);
 }
+
+/* [Insert] — geometric keystone mate-reference (NOT print-tuned; a print-ready
+   flexing-latch insert is out of scope for v1). Datum matches keystone_cutout()
+   so keystone_insert() dropped into keystone_cutout() overlays for a virtual
+   mate-check. Front flange stops at Z=0 (grows +Z); plug passes through the
+   window; top hook (+Y) engages just behind the front face; bottom latch (-Y)
+   bump sits behind the plate rear. `fit` = clearance the plug sits under the
+   opening, per side. */
+module keystone_insert(plate_thickness = 3.0, fit = 0.2) {
+    o = keystone_opening();  // [ow, oh]
+    t = keystone_tab();      // [hook_ledge_z, tab_thickness, hook_edge, latch_edge]
+    ledge_z = t[0];
+    tab_th  = t[1];
+    flange  = 1.5;   // flange lip beyond the opening, per side
+    plug_h  = plate_thickness + 3;  // through-plug reaches 3mm behind the plate rear
+    union() {
+        // front flange: front stop, Z=0..+1.2
+        translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
+            cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
+        // through-plug: opening cross-section less `fit` per side, front to behind rear
+        translate([-(o[0]/2 - fit), -(o[1]/2 - fit), -plug_h])
+            cube([o[0] - 2*fit, o[1] - 2*fit, plug_h]);
+        // top hook ledge on +Y edge, engaging just behind the front face
+        translate([-(o[0]/2 - fit), o[1]/2 - fit, -tab_th])
+            cube([o[0] - 2*fit, tab_th, tab_th]);
+        // bottom latch bump on -Y edge, behind the plate rear
+        translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
+            cube([o[0] - 2*fit, tab_th, tab_th]);
+    }
+}

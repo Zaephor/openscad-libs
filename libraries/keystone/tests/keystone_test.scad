@@ -38,3 +38,6 @@ translate([30, 0, 0]) difference() {
     translate([-15, -15, -3]) cube([30, 30, 3]); // stand-in faceplate
     keystone_cutout(plate_thickness = 3.0);
 }
+
+/* [Insert] — smoke render: mate-reference body. Numeric checks in the bash test. */
+translate([-30, 0, 0]) keystone_insert(plate_thickness = 3.0);
