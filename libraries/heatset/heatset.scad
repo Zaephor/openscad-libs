@@ -39,6 +39,17 @@ function heatset_pilot_dia(s)     = _heatset_row(s)[3];
 function heatset_boss_od(s)       = _heatset_row(s)[4];
 function heatset_lead_in(s)       = _heatset_row(s)[5];
 
+/* [Data] — minimum boss wall around the install hole (radial), mm. This is the
+   manufacturer crack-risk floor, distinct from the SPIROL-derived optimum
+   boss_od already in the table; prefer heatset_boss(size, wall=heatset_min_wall(size))
+   over the 2.5x boss_od default when packing bosses tightly.
+   M2.5/M3 = 1.6 [A]/[B] (CNC Kitchen W=1.6 + ruthex W(min.)=1.6 agree; see
+   RESEARCH.md "Cross-brand M2.5/M3 (Task #6)"). Other sizes have no researched
+   min-wall figure yet — assert rather than invent one. */
+function heatset_min_wall(s) =
+    s == "M2.5" || s == "M3" ? 1.6
+    : assert(false, str("heatset: min_wall not yet researched for '", s, "'"));
+
 /* [Placeholder] — insert envelope: top (install) face at Z=0, body grows -Z.
    Knurl approximated as a plain cylinder at nominal OD. For fit/viz only. */
 module heatset_placeholder(size) {

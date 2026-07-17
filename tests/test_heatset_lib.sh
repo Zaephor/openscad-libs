@@ -23,6 +23,16 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown size:"; echo "$out"; exit 1
 fi
 
+# Negative control: min_wall for an unresearched size must assert.
+cat > "$tmp/bad_minwall.scad" <<'EOF'
+use <heatset/heatset.scad>;
+x = heatset_min_wall("M4");
+EOF
+out="$(run "$tmp/bad_minwall.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unresearched min_wall size:"; echo "$out"; exit 1
+fi
+
 # Placeholder: M3 bbox must match insert_od x insert_length with top face at Z=0.
 cat > "$tmp/placeholder_m3.scad" <<'EOF'
 use <heatset/heatset.scad>;

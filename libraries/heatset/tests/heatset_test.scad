@@ -30,6 +30,12 @@ for (s = heatset_known_sizes())
     assert(abs(heatset_boss_od(s) - heatset_insert_od(s) * 2.5) < 0.05,
            str(s, " boss_od ~= 2.5x insert_od"));
 
+// min-wall accessor (manufacturer minimum, distinct from derived boss_od)
+assert(heatset_min_wall("M3") > 0, "M3 min_wall > 0");
+// wall-based boss OD (pilot + 2*wall) stays under the crude 2.5x boss_od proxy.
+assert(heatset_pilot_dia("M3") + 2*heatset_min_wall("M3") <= heatset_boss_od("M3"),
+    "wall-based OD within boss_od proxy");
+
 echo("heatset_test OK");
 
 /* [Placeholder] — insert envelope for fit/interference checks */
