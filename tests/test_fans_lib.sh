@@ -26,4 +26,14 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch a wrong assert:"; echo "$out"; exit 1
 fi
 
+# Negative control: an unknown hole role must assert (not silently return []).
+cat > "$tmp/bad_role.scad" <<'EOF'
+use <fans/fans.scad>;
+x = fan_mount_holes(120, "bogus");
+EOF
+out="$(run "$tmp/bad_role.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "fans: unknown hole role was not rejected:"; echo "$out"; exit 1
+fi
+
 echo ok
