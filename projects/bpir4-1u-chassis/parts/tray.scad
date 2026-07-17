@@ -234,6 +234,13 @@ module _lid_posts(enable_exhaust = enable_exhaust) {
     }
 }
 
+// Board standoff post OD. Wall-derived (was the implicit 6.0mm sbc default):
+// bore + 2x the sourced 1.6mm min wall, matching the same standard the lid
+// posts use (_lid_post_od) so the M2.5 pilot bore keeps a crack-safe seat.
+// Single-sourced here so tests/asserts.scad (which `use`s this file) guards
+// the ACTUAL OD the tray renders with, not a re-typed copy.
+function _board_standoff_od() = board_insert_bore() + 2*heatset_min_wall(board_insert_size);
+
 module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type) {
     _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
     _faceplate(ear_hole_type = ear_hole_type);
@@ -241,7 +248,8 @@ module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fa
     // Board standoff posts — only the structural-mount holes (M.2/heatsink/
     // keep-out holes are excluded; see sbc hole roles).
     translate([board_x(), board_y(), floor_th])
-        sbc_standoffs(BOARD, standoff_h, role = "structural-mount", bore = board_insert_bore());
+        sbc_standoffs(BOARD, standoff_h, role = "structural-mount",
+            dia = _board_standoff_od(), bore = board_insert_bore());
 }
 
 tray();
