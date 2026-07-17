@@ -148,7 +148,14 @@ band=[ (x,y) for x,y,z in verts if abs(z-topz) < 0.05 ]
 plug_ok = bool(band) and (max(x for x,y in band)-min(x for x,y in band)) <= ow - 0.05
 # body reaches behind the plate rear (latch region)
 behind_ok = min(zs) < -plate - 0.2
-sys.exit(0 if (flange_ok and plug_ok and behind_ok) else 1)
+# hook Y-extent regression: plug/hook region (Z<0) must not exceed raw opening
+# edge (regression check for Y-protrusion bug). Flange (Z>=0) intentionally
+# exceeds opening as a front stop, so excluded from this check.
+plug_verts = [(x,y,z) for x,y,z in verts if z < 0]
+hook_ok = all(y <= oh/2 + 0.01 for x,y,z in plug_verts)
+if not hook_ok:
+    sys.stderr.write("insert hook Y-extent exceeds opening bound (regression)\n")
+sys.exit(0 if (flange_ok and plug_ok and behind_ok and hook_ok) else 1)
 PY
 
 echo ok
