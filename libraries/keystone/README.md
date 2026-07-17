@@ -110,14 +110,14 @@ keystone_insert(plate_thickness = 3.0);
 | `keystone_plate_thickness()` | `[tmin, tmax]` — accepted faceplate thickness range, mm |
 | `keystone_pitch()` | nominal center-to-center port spacing in a strip, mm |
 | `keystone_min_wall()` | minimum printable material wall between adjacent openings, mm |
-| `keystone_tab()` | `[hook_ledge_z, tab_thickness, hook_edge, latch_edge]` — retention-tab geometry; `hook_edge`/`latch_edge` are `"+Y"`/`"-Y"` naming the fixed-hook vs. flexing-latch long edge |
+| `keystone_tab(style="lip")` | `[hook_ledge_z, tab_thickness, hook_edge, latch_edge]` — retention-tab geometry per retention style; `hook_edge`/`latch_edge` are `"+Y"`/`"-Y"` naming the two long edges. `"face"`: fixed hook (`+Y`) + flexing latch (`-Y`) grip the plate's front/rear faces. `"lip"`: fulcrum (`-Y`) + flex clip (`+Y`) grip the opening's bottom/top lips instead of the plate faces |
 | `keystone_min_pitch()` | `keystone_opening()[0] + keystone_min_wall()` — minimum center-to-center that still leaves a printable wall |
 | `keystone_pitch_ok(pitch)` | true if `pitch >= keystone_min_pitch()` |
 | `keystone_layout_ok(xs)` | true if every adjacent gap in ascending X-center list `xs` clears `keystone_min_pitch()` |
 | `keystone_pitch_assert(pitch)` | module; hard-fails render (stderr assert) if `pitch` is below `keystone_min_pitch()` |
 | `keystone_placeholder()` | module; jack envelope solid (`keystone_body()`), flange face at `Z=0`, body into `-Z` — fit/interference viz only |
 | `keystone_cutout(plate_thickness=3.0, clearance=0.25, style="lip")` | module; plain rectangular through-hole for a consumer `difference()`, sized `keystone_opening(style)` + `2*clearance` per side, overcut 1mm above/below the plate |
-| `keystone_insert(plate_thickness=3.0, fit=0.2)` | module; geometric mate-reference body (flange + through-plug + `+Y` hook + `-Y` latch bump), narrowed by `fit` per side so it threads `keystone_cutout()`'s window |
+| `keystone_insert(plate_thickness=3.0, fit=0.2, style="lip")` | module; geometric mate-reference body (flange + through-plug + two retention tabs), narrowed by `fit` per side so it threads `keystone_cutout(style)`'s window. `"face"`: `+Y` hook + `-Y` latch bump grip the plate's front/rear faces (plate-thickness squeeze). `"lip"` (default): `-Y` fulcrum + `+Y` flex clip grip the opening's bottom/top lips (rotate-and-snap) |
 
 ## Verification
 
@@ -148,29 +148,36 @@ drawing reading or a single secondary source does NOT qualify as `[C]`/`[B]`).
 
 | Source | Tier | Backs |
 |---|---|---|
-| [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) | A | `keystone_opening()` (Plastic suggested panel cutout), `keystone_plate_thickness()[0]` (tmin); also the sole reading behind `keystone_body()[2]` (bd, `//VERIFY`) |
-| [Wikipedia, "Keystone module"](https://en.wikipedia.org/wiki/Keystone_module) | B | corroborates `keystone_opening()`; also the sole secondary source behind the qualitative fixed-hook/flexing-latch asymmetry behind `keystone_tab()` (`//VERIFY`) |
+| [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) | A | `keystone_opening("face")` (Plastic suggested panel cutout), `keystone_plate_thickness()[0]` (tmin); also the sole reading behind `keystone_body()[2]` (bd, `//VERIFY`) |
+| [Wikipedia, "Keystone module"](https://en.wikipedia.org/wiki/Keystone_module) | B | `keystone_face()` (invariant jack face / plug cross-section); also corroborates `keystone_opening("face")`; also the sole secondary source behind the qualitative fixed-hook/flexing-latch asymmetry behind `keystone_tab()` (`//VERIFY`) |
 | [Monoprice keystone jack patch-panel listings](https://www.monoprice.com/category/networking/patch-panels/keystone-jack-panel) | B | `keystone_pitch()` (3/4in / 19.05mm de-facto port spacing) |
+| Community keystone-panel dimension references (uncited specific source; see `RESEARCH.md` #16) | B//VERIFY | `keystone_opening("lip")` — width `[B]` corroborated across community sources, height `20.3` `//VERIFY` (single community source, caliper-upgradeable) — this is the **default** style's provenance |
 
 ### Coverage / not yet covered
 
-- Sourced + tiered: `keystone_opening()` [A]/[B], `keystone_pitch()` [B],
+- Sourced + tiered: `keystone_opening("face")` [A] (Samm)/[B] (Wikipedia
+  corroboration), `keystone_face()` [B] (Wikipedia), `keystone_opening("lip")`
+  width [B] (community-corroborated), `keystone_pitch()` [B],
   `keystone_plate_thickness()[0]` (tmin) [A].
 - Still `//VERIFY` (flagged for a future research pass, not invented):
-  `keystone_body()[0]`/`[1]` (bw, bh — axis-mapping from the vendor drawing
-  unresolved), `keystone_body()[2]` (bd — single, non-decomposed drawing
-  reading, not corroborated by a second source), `keystone_plate_thickness()[1]`
-  (tmax — no accepted-upper-bound source found), `keystone_min_wall()` (no
-  source at all — repo print-process convention, not a keystone-specific
-  spec), `keystone_tab()[0]`/`[1]` (hook_ledge_z, tab_thickness — no numeric
-  latch source found; both carried unchanged from the task seed), and
-  `keystone_tab()[2]`/`[3]` (hook_edge, latch_edge — asymmetric-mechanism
-  claim backed by exactly one secondary source, not the >=2 independent
-  sources `[B]` requires). See `RESEARCH.md`'s `//VERIFY` census before
-  treating these as load-bearing for a tight-fit design — in particular,
-  `keystone_insert()` is a geometric mate-reference built on the
-  `//VERIFY` tab numerics, **not** print-tuned, so it should not be printed
-  as a functional latch without a real jack/drawing measurement first.
+  `keystone_opening("lip")` height (20.3 — single community source,
+  caliper-upgradeable; **this is the default retention style's opening**,
+  so the default's provenance is weaker than the original face-grip
+  cutout's), `keystone_body()[0]`/`[1]` (bw, bh — axis-mapping from the
+  vendor drawing unresolved), `keystone_body()[2]` (bd — single,
+  non-decomposed drawing reading, not corroborated by a second source),
+  `keystone_plate_thickness()[1]` (tmax — no accepted-upper-bound source
+  found), `keystone_min_wall()` (no source at all — repo print-process
+  convention, not a keystone-specific spec), `keystone_tab()[0]`/`[1]`
+  (hook_ledge_z, tab_thickness — no numeric latch source found; both
+  carried unchanged from the task seed), and `keystone_tab()[2]`/`[3]`
+  (hook_edge, latch_edge — asymmetric-mechanism claim backed by exactly
+  one secondary source, not the >=2 independent sources `[B]` requires).
+  See `RESEARCH.md`'s `//VERIFY` census before treating these as
+  load-bearing for a tight-fit design — in particular, `keystone_insert()`
+  is a geometric mate-reference built on the `//VERIFY` tab numerics,
+  **not** print-tuned, so it should not be printed as a functional latch
+  without a real jack/drawing measurement first.
 - All four roles are implemented: data, `keystone_placeholder()`,
   `keystone_cutout()`/`keystone_insert()`, and the fit-check family
   (`keystone_pitch_assert()` included). The insert's `+Y` hook Y-extent is

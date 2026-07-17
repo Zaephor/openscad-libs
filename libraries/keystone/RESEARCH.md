@@ -19,9 +19,9 @@ roles:
 - `keystone_opening(style)` — panel window size per retention style:
   - `"face"` — `[14.70, 16.40]` **[A]** (face-grip retention; preserved from
     pre-#28 default)
-  - `"lip"` — `[14.8, 20.3]` **[B]//VERIFY** (rotate-and-snap retention;
-    width corroborated by community sources, height 20.3 marked `//VERIFY` as
-    a single community source — caliper-upgradeable, see #16). The taller
+  - `"lip"` — `[14.8, 20.3]` (rotate-and-snap retention; width `[B]`
+    corroborated by community sources, height 20.3 **[B]//VERIFY** as a
+    single community source — caliper-upgradeable, see #16). The taller
     opening allows a rigid fulcrum (bottom) to catch the opening's bottom lip
     while a flex clip (top) snaps over the top lip, achieving retention by
     mechanical pivot rather than plate thickness.
@@ -37,7 +37,7 @@ See Face/Opening decomposition above. `keystone_opening()` signature changed
 from `keystone_opening()` (nullary, returning fixed `[14.70, 16.40]`) to
 `keystone_opening(style = "lip")` (unary with string parameter and default).
 
-## `keystone_opening()` — `[14.70, 16.40]` mm — **[A]** (deprecated name; use `keystone_opening("face")` or `keystone_face()`)
+## `keystone_opening("face")` — `[14.70, 16.40]` mm — **[A]** (pre-#28 nullary default; use `keystone_opening("face")` explicitly)
 
 Preserved for reference. The `"face"` style window size.
 

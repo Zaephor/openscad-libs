@@ -210,6 +210,8 @@ errs=[]
 
 # flange: overall X span exceeds the window width (front stop present)
 flange_ok = (max(xs)-min(xs)) > ow + 0.5
+if not flange_ok:
+    errs.append(f"insert ({style}) flange X-span {(max(xs)-min(xs)):.2f} does not exceed window width {ow:.2f}+0.5 (missing front stop)")
 
 # plug tip = the deepest point (through-plug always extends further back than
 # any tab feature); its cross-section must be the jack FACE minus fit per
@@ -226,6 +228,8 @@ if not plug_ok:
 
 # body reaches behind the plate rear (latch/clip region)
 behind_ok = minz < -plate - 0.2
+if not behind_ok:
+    errs.append(f"insert ({style}) min Z {minz:.2f} does not reach behind the plate rear ({-plate-0.2:.2f}) (latch/clip region missing)")
 
 # no-collision invariant: any vertex strictly WITHIN the plate's solid Z-band
 # (excludes the front flange at Z>=0 and any feature at/behind the plate rear,
