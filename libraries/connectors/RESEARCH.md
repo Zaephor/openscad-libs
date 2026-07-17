@@ -351,8 +351,10 @@ types / Upgrades lists below into `connectors.scad` (and, in SP2, `sbc.scad`).
   library's `[A]`-fetched single-port cage — plausibly a different SFP
   variant (e.g. with heatsink/light-pipe, or a belly-to-belly/stacked
   footprint misread as single-port) or a looser board-photo silhouette.
-  Verdict deferred to sbc-adoption time, per the brief; `sfp_1`/`sfp_2` are
-  NOT copied into this table.
+  Verdict (sbc-adoption, #21): **different / no 1:1 peer** — sbc's cage-pair
+  footprint (SFP0074EP-class) is not this single-port cage; sbc retains its
+  literal and `sfp_1`/`sfp_2` are NOT copied into this table (no new catalog
+  variant derived from one board).
 
 ### Upgrades / fixes to existing types (Task 2)
 - `gpio_2x20`: height `8.5` stays `8.5`, tier `[C]//VERIFY` → **`[B]`** — grounded by sbc.scad pi3b's "Z-Height=8.5" mechanical-drawing callout, independently corroborated by pi4b's own separate drawing printing the same callout (sbc/RESEARCH.md GPIO section; carried forward at `[B]` on pi3bplus/pi5). Not `[A]`: per this file's own provenance legend, `[A]` requires "fetched + read this pass" by connectors itself, which has never fetched a Raspberry Pi drawing — citing sbc's fetch as connectors' own `[A]` would be a soft, uncredited-fetch claim, the kind this file's final-review fix pass had to correct for motherboards' PCIe claim (see the `pcie_x1`/.../`pcie_x16` section above) — that claim turned out to be genuine, but only because it carried a real, checkable citation. (Corrects an earlier draft of this section that claimed `[A]`; see the note added to the pre-existing gpio_2x20 section above.) Width/depth tier unchanged (already `[A]`, 2.54mm-pitch arithmetic).

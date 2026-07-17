@@ -229,8 +229,8 @@ function _sbc_table() = [
           [3.50, 97.00,"structural-mount",3.0], [144.50, 97.00,"structural-mount",3.0] ],
         [ // Front panel, left to right, all edge="ymin" (y=0), z=1.6:
           ["usb_1",       [7.41,   0, 1.6], [8.89,  23.16, 13.5], "ymin"], // CN11. [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3); //VERIFY width narrow vs typical USB-A 13.6mm body — see RESEARCH.md
-          ["sfp_1",       [16.3,   0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent)
-          ["sfp_2",       [34.08,  0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN9+CN20+CN10. [B] width; //VERIFY depth carried over from sfp_1 (own detector pass on this cage returned no hit — symmetric-layout assumption)
+          ["sfp_1",       [16.3,   0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent) (SP2 #21: no-peer vs connectors sfp, literal retained)
+          ["sfp_2",       [34.08,  0, 1.6], [16.51, 53.98, 13.4], "ymin"], // CN9+CN20+CN10. [B] width; //VERIFY depth carried over from sfp_1 (own detector pass on this cage returned no hit — symmetric-layout assumption) (SP2 #21: no-peer vs connectors sfp, literal retained)
           // ONE physical 4-port ganged RJ45 block (WAN + 3x LAN); "WAN X1" silk
           // marks port 1 of the block, NOT a separate connector (hardware owner,
           // 2026-07-16). Refdes is CN21 (single component) — the earlier "CN1"

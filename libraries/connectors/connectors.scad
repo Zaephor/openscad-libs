@@ -48,7 +48,7 @@ function _connector_table() = [
     ["usb_a_stack2_shielded", [17,   18,   16.0], "+Y"], // [B] sbc.scad pi3b/pi3bplus/pi4b/pi5 dual-port shielded SBC housing (corroborated across multiple boards)
     ["rj45_shallow",          [21,   18.75, 13.5], "+Y"], // [B] sbc.scad pi3b/pi3bplus rj45 (corroborated on d+h by bpir4 rj45_2/3/4), no integrated-magnetics module
     // --- SFP type (#14) ---
-    ["sfp", [14.5, 48.7, 9.7], "+Y"], // [A] TE Connectivity 2007198-1, single SFP/SFP+ cage (one mechanical form factor covers both); sbc sfp_1/sfp_2 [16.51,53.98,13.4] = adoption reconcile target
+    ["sfp", [14.5, 48.7, 9.7], "+Y"], // [A] TE Connectivity 2007198-1, single SFP/SFP+ cage (one mechanical form factor covers both); sbc sfp_1/sfp_2 [16.51,53.98,13.4] reconciled #21: different (larger cage-pair footprint, not this single-port cage) — sbc retains its literal
 ];
 function connector_known_types() = [for (e = _connector_table()) e[0]];
 function _connector_row(type) =
