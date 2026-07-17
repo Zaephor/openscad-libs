@@ -1,7 +1,7 @@
 use <rack10/rack10.scad>;
 
 assert(rack10_u() == 44.45, "1U pitch");
-assert(rack10_known_standards() == ["labrax"], "known standards");
+assert(rack10_known_standards() == ["labrax", "deskpi", "tecmojo"], "known standards");
 assert(rack10_hole_h_span("labrax") == 236.525, "labrax hole span");
 // centers derived from span (compare to the derived halves, not a hand-typed
 // literal, to avoid float-noise on /2):
@@ -42,3 +42,16 @@ assert(rack10_stack_gap() > 0 && rack10_stack_gap() < 2, "stack_gap sane small v
 // rack10_panel() builds at device_height (geometry checked by the .sh bbox
 // test; this pins the intent so a future refactor to raw pitch trips here too).
 assert(rack10_device_height(1) < rack10_u(), "device_height must be under 1U pitch");
+
+// #10 vendor rows.
+assert(rack10_known_standards() == ["labrax", "deskpi", "tecmojo"], "vendor standards");
+assert(rack10_hole_h_span("deskpi")  == 236.525, "deskpi span (universal 10in)");
+assert(rack10_hole_h_span("tecmojo") == 236.525, "tecmojo span (universal 10in)");
+assert(rack10_panel_width("deskpi")   == 281,  "deskpi panel width");
+assert(rack10_clear_width("deskpi")   == 212,  "deskpi clear width");
+assert(rack10_depth_preset("deskpi")  == 200,  "deskpi depth preset");
+assert(rack10_panel_width("tecmojo")  == 280, "tecmojo panel width");
+assert(rack10_clear_width("tecmojo")  == 210, "tecmojo clear width");
+assert(rack10_depth_preset("tecmojo") == 200,   "tecmojo depth preset");
+// Hole centers derive from the shared span for the new keys.
+assert(rack10_hole_h_centers("deskpi") == [-236.525/2, 236.525/2], "deskpi centers");

@@ -48,7 +48,7 @@ function rack10_stack_gap()      = 0.79;   // [C] //VERIFY — see RESEARCH.md
 // RESEARCH.md "Device height / stacking gap (Task 1 follow-up)".
 function rack10_device_height(u) = round((u*rack10_u() - rack10_stack_gap())*1e6)/1e6;
 
-function rack10_known_standards() = ["labrax"];
+function rack10_known_standards() = ["labrax", "deskpi", "tecmojo"];
 
 // Per-vendor geometry row: [panel_width, hole_h_span, clear_width, depth_ftf] (mm).
 // labrax — see RESEARCH.md for full evidence per field, summarized here:
@@ -64,8 +64,37 @@ function rack10_known_standards() = ["labrax"];
 //                         an unaffiliated third-party remix description (not
 //                         the designer, not a mesh/caliper measurement) —
 //                         could be circular; see RESEARCH.md "Mounting depth".
+// deskpi/tecmojo — see RESEARCH.md "Vendor rows — DeskPi + TecMojo (#10)" for
+// full per-field evidence; summarized here (same [B]-ceiling framing as labrax
+// above — neither vendor states a governing 10in standard either):
+//   hole_h_span 236.525 [B] `//VERIFY` not either vendor's own literal
+//                         wording — carried via community-consensus corroboration
+//                         (mini-rack.jeffgeerling.com + computingforgeeks.com),
+//                         shared/universal across all three vendor rows per the
+//                         locked design decision (not independently re-derived).
 function _rack10_geom(standard) =
-    standard == "labrax" ? [254, 236.525, 222, 240] :
+    standard == "labrax"  ? [254, 236.525, 222, 240] :
+    // DeskPi RackMate — see RESEARCH.md "Vendor rows (#10)". span 236.525 [B]
+    // (universal 10in). depth = nominal T1 preset; per-model range in RESEARCH.
+    //   panel_width  281 [B] DeskPi T0 product page, verbatim "External
+    //                     dimensions: 281mm*200mm*274mm".
+    //   clear_width  212 [B] DeskPi T0 product page, verbatim "Internal
+    //                     dimensions: 212mm*200mm*241mm".
+    //   depth_ftf    200 [B] DeskPi T0 product page, verbatim "maximum
+    //                     installation depth of this 10-inch rack is 20cm"
+    //                     (T0/T1 preset; T1-Plus/T2 ship 260mm, see RESEARCH.md).
+    standard == "deskpi"  ? [281, 236.525, 212, 200] :
+    // TecMojo — see RESEARCH.md "Vendor rows (#10)". Hole type square/cage-nut
+    // (per-call param). depth = nominal preset; range in RESEARCH.
+    //   panel_width  280 [B] Tecmojo manual spec table + diagram, verbatim
+    //                     "Width 11.02\" (280mm)".
+    //   clear_width  210 [B] `//VERIFY` diagram-position-inferred (front
+    //                     equipment-bay opening callout), Tecmojo manual
+    //                     diagram, verbatim "8.27\" (210mm)".
+    //   depth_ftf    200 [B] Tecmojo manual spec table, verbatim "Depth: 7.87
+    //                     inches (200mm)" (4U/6U/9U preset; 12U ships 260mm,
+    //                     see RESEARCH.md).
+    standard == "tecmojo" ? [280, 236.525, 210, 200] :
     assert(false, str("rack10: unknown standard '", standard, "'"));
 
 function rack10_panel_width(standard)  = _rack10_geom(standard)[0];

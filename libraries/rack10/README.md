@@ -1,11 +1,18 @@
 # rack10 (library)
 
-10-inch mini-rack mechanical reference, **vendor-keyed** (v1 ships one
-vendor: **LabRax** — Michael Klements' 3D-printable 10-inch mini-rack
-system). Panel/clear widths, horizontal hole center-to-center span, per-U
-mounting-hole pattern (round/M6/#10-32/square), a rail-flange placeholder
-envelope, and a plain faceplate blank. Mechanical mounting geometry only (no
-electrical/thermal data). Units: **mm**.
+10-inch mini-rack mechanical reference, **vendor-keyed** — ships three
+vendors: **LabRax** (Michael Klements' 3D-printable 10-inch mini-rack
+system), **DeskPi RackMate** (T0/T1/T1-Plus/T2), and **TecMojo** (4U/6U/9U/
+12U 10-inch network rack). Panel/clear widths, horizontal hole
+center-to-center span, per-U mounting-hole pattern (round/M6/#10-32/square),
+a rail-flange placeholder envelope, and a plain faceplate blank. Mechanical
+mounting geometry only (no electrical/thermal data). Units: **mm**.
+
+DeskPi and TecMojo share LabRax's hole geometry — the same 236.525mm
+horizontal hole span and 44.45mm U pitch — since all three converge on the
+same de facto 10-inch mini-rack convention (see `RESEARCH.md`). `depth_ftf`
+and hole type (round-tapped for DeskPi, combo tapped/square cage-nut for
+TecMojo) are per-vendor/per-call choices, not shared.
 
 Datum: **X centered** on the rack width (`X=0` at the rack centerline),
 `Z=0` at the bottom of the U-stack (`+Z` = upward, stacking U-by-U), `Y=0`
@@ -31,7 +38,8 @@ use <rack10/rack10.scad>;
 Role-1 **data** + role-2 **placeholder** + role-3 **hole-stamp** library —
 `use` only (functions, no variables; see gotcha: `use` does not import
 top-level variables). Every geometry function/module takes a `standard`
-key (see `rack10_known_standards()`) — v1 ships only `"labrax"`.
+key (see `rack10_known_standards()`) — `"labrax"`, `"deskpi"`, or
+`"tecmojo"`.
 
 ## Usage
 
@@ -93,7 +101,7 @@ column (reference-envelope simplification, not post-accurate) — this is a
 | `rack10_u()` | 1U pitch, mm |
 | `rack10_stack_gap()` | stacking gap subtracted from a device's exterior height, mm |
 | `rack10_device_height(u)` | device exterior height for a `u`-unit device (`u*rack10_u() - rack10_stack_gap()`, gap subtracted once, not per-U), mm |
-| `rack10_known_standards()` | valid `standard` keys (v1: `["labrax"]`) |
+| `rack10_known_standards()` | valid `standard` keys (`["labrax", "deskpi", "tecmojo"]`) |
 | `rack10_panel_width(standard)` | full front-panel width, mm |
 | `rack10_hole_h_span(standard)` | horizontal hole center-to-center span, mm |
 | `rack10_hole_h_centers(standard)` | `[left_x, right_x]` rail hole X centers (X-centered datum) |
@@ -141,16 +149,56 @@ i.e. ≈±2mm of horizontal rackpost-spacing tolerance; ignored for every other
 | ISO 273 (metric clearance holes, close fit) — named standard, repo `hardware`/`rack19` precedent, not fetched this pass | B | M6 screw clearance (6.6mm) |
 | ANSI B18.2 (machine-screw close-fit clearance drill) — named standard, repo `rack19` precedent, cited from memory, not fetched this pass | C `//VERIFY` | #10-32 screw clearance (5.0mm) |
 | [Wikipedia: Cage nut](https://en.wikipedia.org/wiki/Cage_nut) — repo `rack19` precedent, not re-verified this pass | B `//VERIFY` | Cage-nut square hole side (9.5mm) — carried for a future non-LabRax vendor; **LabRax itself does not use cage nuts** (M6 brass threaded inserts instead) |
+| [DeskPi RackMate T0 product page](https://deskpi.com/products/deskpi-rackmate-t1-rackmount-10-inch-4u-server-cabinet-for-network-servers-audio-and-video-equipment) | B | `"deskpi"` panel width (281mm) + clear width (212mm) + depth preset (200mm), verbatim "External dimensions: 281mm\*200mm\*274mm" / "Internal dimensions: 212mm\*200mm\*241mm" / "maximum installation depth of this 10-inch rack is 20cm" |
+| [DeskPi RackMate accessory screw listing](https://deskpi.com/products/deskpi-rackmate-accessories-10-32-5-16-black-screws-for-10-inch-server-cabinets) + [ServeTHome T0 review](https://servethehome.com/deskpi-rackmate-t0-4u-10in-rack-mini-review/) | B | DeskPi hole type: round, tapped #10-32 threaded holes (not cage-nut) — documentation only, not a geom field |
+| [Tecmojo 6U/10in Network Rack Instruction Manual](https://manuals.plus/asin/B0F4JZ9YJW) | B | `"tecmojo"` panel width (280mm) + depth preset (200mm), verbatim spec-table "Width: 10 inches (280mm)" / "Depth: 7.87 inches (200mm)"; clear width (210mm) from the manual's own diagram callout "8.27\" (210mm)" (`//VERIFY` position-inferred, not a captioned "clear width" label); hole type combo tapped/square, verbatim "pre-numbered tapped/square holes" |
+| [mini-rack.jeffgeerling.com](https://mini-rack.jeffgeerling.com/) + [ComputingForGeeks 10-inch mini rack build](https://computingforgeeks.com/build-10-inch-mini-rack-homelab/) — community-consensus, not vendor-authored | B `//VERIFY` | `hole_h_span` (236.525mm) for **both** `"deskpi"` and `"tecmojo"` rows — neither vendor states this figure in its own fetched materials; carried at the same tier as LabRax's own diagram-corroborated span, shared/universal across all three vendor rows per the locked design decision |
 
 Full fetch-attempt log, closure checks, and per-value reasoning:
 `RESEARCH.md`.
 
 ## Coverage / gaps
 
-**Scope: LabRax only (v1).** Other 10-inch mini-rack designs (e.g. DeskPi,
-TecMojo) are **deferred**, not evaluated — adding one later is an additive
-row in `_rack10_geom()` plus a `rack10_known_standards()` entry, not a
-rework of this library's shape.
+**Scope: LabRax, DeskPi, and TecMojo.** Other 10-inch mini-rack designs
+are deferred — adding one later is an additive row in `_rack10_geom()`
+plus a `rack10_known_standards()` entry, not a rework of this library's
+shape.
+
+**DeskPi/TecMojo `hole_h_span` (236.525mm) is not either vendor's own
+literal wording** — neither vendor's fetched materials state this figure
+directly (DeskPi's own wiki/product pages have no numeric hole-spacing
+text; TecMojo's manual diagram labels only the vertical 44.45mm U-pitch).
+It is carried at tier `[B]` via the same community-consensus mechanism
+(`mini-rack.jeffgeerling.com` + `computingforgeeks.com`, independently
+naming DeskPi/GeeekPi RackMate and TecMojo as built to this spacing) per
+the locked design decision that hole geometry is shared/universal across
+all three vendor rows, not independently re-derived per row. A future
+caliper or mesh measurement of a physical DeskPi or TecMojo unit should
+supersede this if it becomes available.
+
+**Depth is stored as a single nominal preset per vendor; both vendors
+actually ship a per-model range.** DeskPi T0/T1 ship 200mm (shipped
+preset); T1-Plus/T2 ship 260mm. TecMojo 4U/6U/9U ship 200mm (shipped
+preset); the 12U model ships 260mm. See `RESEARCH.md`'s "Vendor rows —
+DeskPi + TecMojo (#10)" section for the full per-model breakdown,
+including an unresolved DeskPi source discrepancy (a DeskPi blog post
+states both T1 and T2 share a "16 inch" depth, conflicting with the
+260mm/10.23in figure the same T2 product carries on its own retail
+listing — flagged `//VERIFY`, not resolved this pass).
+
+**TecMojo `clear_width` (210mm) is diagram-position-inferred**, not a
+captioned "clear width" label in the manual's own words — the 8.27in/
+210mm callout sits across the equipment-bay opening in the manual's
+dimensioned diagram, tier `[B]` `//VERIFY`.
+
+**Hole type is a per-call param, not a geom-row field, for both new
+vendors:** DeskPi uses round, tapped #10-32 threaded holes (not
+cage-nut) — confirmed by two independent sources (DeskPi's own #10-32
+accessory-screw listing + ServeTheHome's independent hands-on review
+stating explicitly it is "not a cage nut-based rack"). TecMojo uses
+combo tapped/square holes — each pre-numbered position accepts either a
+direct 10-32 tapped screw or a 10-32 cage nut, per the manual's own
+verbatim spec/assembly text.
 
 **The single biggest gap: the LabRax STL/3MF mesh was never obtained.**
 MakerWorld's file delivery is behind a signed/authenticated flow, so the
