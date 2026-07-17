@@ -88,7 +88,7 @@ function _sbc_table() = [
           // chain; X depth (w) is the brief's standard USB-A body depth [B] (drawing
           // gives no top-view X-depth text), so x is derived (85.6 - w).
           ["usb2_1",       [68.6, 29,    1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", exact match — this cat type was derived from this very row in SP1)
-          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY (see RESEARCH.md re: 9mm span) — SP2 verdict "error" (chain-truncated d), left literal
+          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A] pos+body (RP-008335 Y-chain "56/47/29/10.25", drawn flush to board top edge) — SP2 verdict "different" (confirmed by source, not truncation; see RESEARCH.md), left literal
           ["rj45",         [64.6, 10.25, 1.4], connector_size("rj45_shallow"), "xmax"], // [A] pos / body sourced from connectors rj45_shallow (SP2 "same", exact match — cat type derived from this very row in SP1)
           // bottom edge (ymin): X centrelines [A] off the "3.5/10.6/32/53.5" chain,
           // converted to min-corner using standard body widths [B]/[C].
@@ -105,7 +105,7 @@ function _sbc_table() = [
          [3.5,52.5,"structural-mount",2.7],[61.5,52.5,"structural-mount",2.7]],
         [ _sbc_gpio(),
           ["usb2_1",       [68.6, 29,    1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", corroborates pi3b)
-          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A]/[B] //VERIFY — SP2 verdict "error", same truncation reasoning as pi3b, left literal
+          ["usb2_2",       [68.6, 47,    1.4], [17, 9,    16.0], "xmax"], // [A] pos+body, corroborates pi3b usb2_2 — SP2 verdict "different" (confirmed by source, not truncation), left literal
           ["rj45",         [64.6, 10.25, 1.4], connector_size("rj45_shallow"), "xmax"], // [A] pos / body sourced from connectors rj45_shallow (SP2 "same", corroborates pi3b)
           ["microusb_pwr", [6.85, 0,     1.4], [7.5, 5.5,  2.8], "ymin"], // [A] pos / [C] body //VERIFY — SP2 verdict "different", left literal
           ["hdmi",         [24.5, 0,     1.4], connector_size("hdmi"), "ymin"], // [A] pos / body sourced from connectors hdmi (SP2 "same", corroborates pi3b)
@@ -121,7 +121,7 @@ function _sbc_table() = [
           // [A] off the drawing's own "9/27/45.75/56" chain.
           ["usb2",     [68.6, 9,     1.4], connector_size("usb_a_stack2_shielded"), "xmax"], // [A] pos / body sourced from connectors usb_a_stack2_shielded (SP2 "same", matches pi3b usb2_1 exactly)
           ["usb3",     [68.6, 27,    1.4], [17, 18.75, 16.0], "xmax"], // [A]/[B] — SP2 verdict "different (marginal)", d over threshold by 0.25mm, left literal pending adjudication
-          ["rj45",     [64.6, 45.75, 1.4], [21, 10.25, 13.5], "xmax"], // [A]/[B] — SP2 verdict "error" (d short vs pi3b family by truncation-signature analogy), left literal
+          ["rj45",     [64.6, 45.75, 1.4], [21, 10.25, 13.5], "xmax"], // [A] pos+body (RP-008343 Y-chain "56/45.75/27/9", visibly shorter than the USB stacks below) — SP2 verdict "different" (confirmed by source: Pi 4B's RJ45 is genuinely a shorter jack than pi3b's, not the same part), left literal
           // bottom edge (ymin): X centrelines [A] off the "3.5/7.7/14.8/13.5/7.5"
           // chain (cumulative from the left edge: 11.2, 26.0, 39.5, 47.0).
           ["usbc_pwr", [6.7,   0, 1.4], connector_size("usb_c"), "ymin"], // [A] pos / body sourced from connectors usb_c (SP2 "same", d exactly at the 0.5mm boundary)

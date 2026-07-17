@@ -1318,7 +1318,7 @@ connector's tier as tagged in `sbc.scad`/this file above.
 |---|---|---|---|---|---|
 | gpio | [51.0,5.0,8.5] | gpio_2x20 [50.8,5.08,8.5] | +0.20,−0.08,0.00 | same | sbc h=[A] ("Z-Height=8.5" drawing callout); cat h=[B] (SP1-upgraded, citing this exact sbc evidence) — no downgrade, already the higher-provenance number on both sides |
 | usb2_1 | [17,18,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,0,0 | same | exact match — cat type was derived from this very row in SP1 (tier B); sbc pos [A]/w [B] |
-| usb2_2 | [17,9,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,−9,0 | error | sbc's own note (above, "9mm span") already flags d=9 as likely the Y-chain terminating at the board's drawn edge rather than the shell's true far boundary — same physical part as usb2_1, not a distinct connector. Fix note for Task 3: don't adopt an `[w,9,h]` reading; correct toward ~18 (usb2_1's value) or leave //VERIFY, not a new type |
+| usb2_2 | [17,9,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,−9,0 | different (confirmed by source) | confirmed via the Pi 3B mechanical drawing (`RP-008335`) — the xmax-edge Y chain ("56/47/29/10.25") dimensions the upper USB2 shell as 47→56 = 9mm, drawn flush against the board's own top edge; this is the shell's true drawn extent, not a truncated chain. Genuinely shorter than `usb2_1` (same nominal part, different position on the board, not necessarily identical footprint at the drawn corner). Not the same catalog body as `usb_a_stack2_shielded` — stays literal |
 | rj45 | [21,18.75,13.5] | rj45_shallow [21,18.75,13.5] | 0,0,0 | same | exact match — cat type derived from this very row in SP1 (tier B) |
 | microusb_pwr | [7.5,5.5,2.8] | micro_usb [7.72,5.48,3.96] | −0.22,+0.02,−1.16 | different (unresolved) | h fails by >2x threshold; w/d agree closely. sbc h=[C]//VERIFY generic guess; cat h=[A] but self-flagged in its own findings as possibly foot-ear-inclusive (ambiguous axis read on the fetched drawing) — two weak/uncertain values, not a confirmed distinct part. Flagged, not adopted |
 | hdmi | [15,11.5,6.5] | hdmi [14.50,11.06,6.17] | +0.50,+0.44,+0.33 | same | w exactly at the 0.5mm boundary — counts as same. cat=[A] (Same Sky HD05-19-TH datasheet); sbc=[A] pos+h/[B] w+d — h is an [A]→[A] tie (two independent [A] sources agree within 0.5mm; cat wins as single source of truth), while w/d is a genuine [B]→[A] upgrade from cat's datasheet-grounded value |
@@ -1330,7 +1330,7 @@ connector's tier as tagged in `sbc.scad`/this file above.
 |---|---|---|---|---|---|
 | gpio | [51.0,5.0,8.5] | gpio_2x20 [50.8,5.08,8.5] | +0.20,−0.08,0.00 | same | carried-forward [B] h, same as pi3b |
 | usb2_1 | [17,18,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,0,0 | same | corroborates pi3b usb2_1 |
-| usb2_2 | [17,9,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,−9,0 | error | same truncation reasoning as pi3b usb2_2 |
+| usb2_2 | [17,9,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,−9,0 | different (confirmed by source) | corroborates pi3b usb2_2, independently drawing-cross-checked |
 | rj45 | [21,18.75,13.5] | rj45_shallow [21,18.75,13.5] | 0,0,0 | same | corroborates pi3b rj45 |
 | microusb_pwr | [7.5,5.5,2.8] | micro_usb [7.72,5.48,3.96] | −0.22,+0.02,−1.16 | different (unresolved) | same as pi3b microusb_pwr |
 | hdmi | [15,11.5,6.5] | hdmi [14.50,11.06,6.17] | +0.50,+0.44,+0.33 | same | same as pi3b hdmi |
@@ -1343,7 +1343,7 @@ connector's tier as tagged in `sbc.scad`/this file above.
 | gpio | [51.0,5.0,8.5] | gpio_2x20 [50.8,5.08,8.5] | +0.20,−0.08,0.00 | same | sbc h=[A] own "Z-Height=8.5" callout, independently corroborates pi3b's (cat h=[B]) |
 | usb2 | [17,18,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,0,0 | same | matches pi3b usb2_1 exactly |
 | usb3 | [17,18.75,16.0] | usb_a_stack2_shielded [17,18,16.0] | 0,+0.75,0 | different (marginal) | d over threshold by only 0.25mm past the 0.5mm cutoff — plausibly same-part reading noise (pi3b/pi3bplus's own usb2_1 reads d=18, pi5's usb3 reads d=17.9), not evidence of a genuinely distinct shell. Not proposing a new type for a single marginal axis on one board — flagged for adjudication (see below) rather than either forcing "same" or inventing a type |
-| rj45 | [21,10.25,13.5] | rj45_shallow [21,18.75,13.5] | 0,−8.5,0 | error | d=10.25 short vs pi3b/pi3bplus's 18.75 for the nominally same part; by analogy to the usb2_2 truncation signature (this span also ends exactly at y=56, the board's drawn edge) — an inference, not a direct sbc citation, but the pattern matches. Fix note: use pi3b/pi3bplus's fuller 18.75 as the trusted depth for this connector family, not this row's 10.25 |
+| rj45 | [21,10.25,13.5] | rj45_shallow [21,18.75,13.5] | 0,−8.5,0 | different (confirmed by source) | confirmed via the Pi 4B mechanical drawing (`RP-008343`) — the xmax-edge Y chain ("56/45.75/27/9") dimensions the RJ45 box (Z=13.5) as 45.75→56 = 10.25mm, visibly shorter in the drawing than the two USB stacks below it (18.75mm, 18mm). Pi 4B's RJ45 (integrated Gigabit magnetics) is a genuinely different, shorter jack than Pi 3B/3B+'s RJ45 — not the same part despite sharing a name. Stays literal, not `rj45_shallow` |
 | usbc_pwr | [9,7.4,3.2] | usb_c [8.94,6.90,3.16] | +0.06,+0.50,+0.04 | same | d exactly at the 0.5mm boundary — counts as same. Both sides [A] — genuine tie, keep cat's fetched value |
 | hdmi_1 | [7.5,4.5,3.0] | micro_hdmi [7.5,4.5,3.0] | 0,0,0 | same | exact match. sbc h=[A] ("Z=3.0" drawing callout) is the actual grounding evidence behind cat's own [B] SP1 upgrade for this type — no downgrade, values already identical |
 | hdmi_2 | [7.5,4.5,3.0] | micro_hdmi [7.5,4.5,3.0] | 0,0,0 | same | same as hdmi_1 |
@@ -1414,10 +1414,13 @@ catalog peer; they stay as literal `[w,d,h]` on the sbc side.
 
 **None.** Every `different`/`error` verdict above is one of:
 
-1. **A probable sbc-side data problem** (`error`) — a chain-truncated Y-span
-   (pi3b/pi3bplus `usb2_2`, pi4b `rj45`) or a self-flagged weakest-sourced
-   read (bpir4 `rj45_1`) — fixing the sbc value (Task 3) is the right move,
-   not adding a new catalog type for a misreading.
+1. **A probable sbc-side data problem** (`error`) — a self-flagged
+   weakest-sourced read (bpir4 `rj45_1`) — fixing the sbc value (Task 2) is
+   the right move, not adding a new catalog type for a misreading.
+   (pi3b/pi3bplus `usb2_2` and pi4b `rj45` were previously bucketed here as
+   a suspected chain-truncated Y-span, but re-checking the source drawings
+   confirmed those readings are correct as drawn — reclassified `different
+   (confirmed by source)` above, not an sbc data problem.)
 2. **Marginal/noise** — 0.2-0.75mm past the 0.5mm cutoff on a single axis,
    with the same nominal part agreeing closely elsewhere in the family (pi4b
    `usb3`, pizero2w `minihdmi`).
@@ -1462,8 +1465,8 @@ future re-fetch/re-measurement pass, not a new catalog entry.
 pizero + 5 pizero2w — matches `_sbc_table()`/`_sbc_gpio()` exactly):
 
 - **same**: 21
-- **different**: 13 (1 marginal-noise-leaning + 12 unresolved/weak-evidence — see per-row notes; none propose a new type)
-- **error**: 4 (probable sbc data problems, fix in Task 3 — not new types)
+- **different**: 16 (1 marginal-noise-leaning + 12 unresolved/weak-evidence + 3 confirmed-by-source [pi3b/pi3bplus `usb2_2`, pi4b `rj45`] — see per-row notes; none propose a new type)
+- **error**: 1 (bpir4 `rj45_1`, probable sbc data problem, fix in Task 2 — not a new type)
 - **no-peer**: 13 (literal, intentional)
 
-21 + 13 + 4 + 13 = 51.
+21 + 16 + 1 + 13 = 51.
