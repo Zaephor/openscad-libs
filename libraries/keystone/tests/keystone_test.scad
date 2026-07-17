@@ -10,6 +10,10 @@ assert(keystone_opening("face") == [14.70, 16.40], "face-grip opening (Samm [A])
 assert(keystone_opening("lip")  == [14.8, 20.3],  "lip opening (taller)");
 assert(keystone_opening() == keystone_opening("lip"), "default style = lip");
 
+// Plug cross-section is the jack FACE, not the (taller, lip) opening.
+assert(keystone_tab("face")[2] == "+Y", "face tab hook edge");
+assert(keystone_tab("lip")[0]  >  0,    "lip tab ledge positive");
+
 // --- metric invariants (always hold regardless of sourced numbers) ---
 o = keystone_opening();
 assert(len(o) == 2 && o[0] > 0 && o[1] > 0, "opening [ow,oh] positive");
@@ -57,5 +61,7 @@ translate([30, 0, 0]) difference() {
     keystone_cutout(plate_thickness = 3.0);
 }
 
-/* [Insert] — smoke render: mate-reference body. Numeric checks in the bash test. */
-translate([-30, 0, 0]) keystone_insert(plate_thickness = 3.0);
+/* [Insert] — smoke render: mate-reference body, both styles. Numeric checks
+   in the bash test. */
+translate([-30, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "lip");
+translate([-60, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "face");

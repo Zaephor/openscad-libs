@@ -54,6 +54,16 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_opening(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
 fi
 
+# Negative control: keystone_tab("bogus") must abort with assert (#28 style-keying).
+cat > "$tmp/unknown_tab_style.scad" <<'EOF'
+use <keystone/keystone.scad>;
+t = keystone_tab("bogus");
+EOF
+out="$(run "$tmp/unknown_tab_style.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_tab(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
+fi
+
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
 cat > "$tmp/dims.scad" <<'EOF'
 use <keystone/keystone.scad>;
@@ -118,26 +128,66 @@ ok=(abs((max(xs)-min(xs))-wx)<tol and abs((max(ys)-min(ys))-wy)<tol and
 sys.exit(0 if ok else 1)
 PY
 
-# Tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge] -- need ledge_z/
-# tab_th to sample the hook ledge's actual Z band (not a guessed midpoint).
-cat > "$tmp/tab.scad" <<'EOF'
+# Jack face (plug cross-section) -- style-independent (#28: plug = face, not opening).
+cat > "$tmp/face.scad" <<'EOF'
 use <keystone/keystone.scad>;
-t = keystone_tab();
+f = keystone_face();
+echo(f[0]); echo(f[1]);
+EOF
+face_out="$(run "$tmp/face.scad")"
+fw="$(echo "$face_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+fh="$(echo "$face_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+
+# Per-style tab + insert mate-check (#28): keystone_tab(style)/keystone_insert(...,style).
+# Mirrors the pre-#28 single-style insert check, generalized across BOTH "lip"
+# (fulcrum/flex-clip vs the opening's lips) and "face" (grip the plate faces).
+FIT=0.2
+for STYLE in lip face; do
+  cat > "$tmp/opening_$STYLE.scad" <<EOF
+use <keystone/keystone.scad>;
+o = keystone_opening("$STYLE");
+echo(o[0]); echo(o[1]);
+EOF
+  op_out="$(run "$tmp/opening_$STYLE.scad")"
+  sow="$(echo "$op_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+  soh="$(echo "$op_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+
+  cat > "$tmp/tab_$STYLE.scad" <<EOF
+use <keystone/keystone.scad>;
+t = keystone_tab("$STYLE");
 echo(t[0]); echo(t[1]);
 EOF
-tab_out="$(run "$tmp/tab.scad")"
-ledge_z="$(echo "$tab_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-tab_th="$(echo "$tab_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+  tab_out="$(run "$tmp/tab_$STYLE.scad")"
+  ledge_z="$(echo "$tab_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+  tab_th="$(echo "$tab_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
 
-# Insert: flange wider than opening; plug fits window; body reaches behind plate.
-PLATE=3.0
-cat > "$tmp/insert.scad" <<EOF
+  # Overlay-mate render: insert dropped into the cutout window, both styles. Any
+  # non-manifold/CGAL error on the combined solid means the insert collides
+  # with (or fails to clear) the frame material this style's cutout leaves behind.
+  PLATE=3.0
+  cat > "$tmp/mate_$STYLE.scad" <<EOF
 use <keystone/keystone.scad>;
-keystone_insert(plate_thickness = $PLATE);
+union() {
+    difference() {
+        translate([-15, -15, -$PLATE]) cube([30, 30, $PLATE]);
+        keystone_cutout(plate_thickness = $PLATE, style = "$STYLE");
+    }
+    keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
+}
 EOF
-"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert.stl" "$tmp/insert.scad" 2>/dev/null
+  mate_out="$(run "$tmp/mate_$STYLE.scad")"
+  if echo "$mate_out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+    echo "keystone_insert/cutout overlay-mate ($STYLE) failed:"; echo "$mate_out"; exit 1
+  fi
 
-python3 - "$tmp/insert.stl" "$ow" "$oh" "$PLATE" "$ledge_z" "$tab_th" <<'PY' || { echo "insert mate geometry incorrect"; exit 1; }
+  # Insert alone, numeric bbox checks.
+  cat > "$tmp/insert_$STYLE.scad" <<EOF
+use <keystone/keystone.scad>;
+keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert_$STYLE.stl" "$tmp/insert_$STYLE.scad" 2>/dev/null
+
+  python3 - "$tmp/insert_$STYLE.stl" "$sow" "$soh" "$fw" "$fh" "$FIT" "$PLATE" <<'PY' || { echo "insert mate geometry incorrect ($STYLE)"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
 verts=[]
@@ -145,26 +195,33 @@ for i in range(n):
     for v in range(3):
         base=off+i*50+12+v*12
         x,y,z=struct.unpack('<3f',d[base:base+12]); verts.append((x,y,z))
-ow,oh,plate,ledge_z,tab_th=map(float,sys.argv[2:7]); tol=0.1
+ow,oh,fw,fh,fit,plate=map(float,sys.argv[2:8]); tol=0.1
 xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
-# flange: overall X span exceeds the opening width (front stop present)
+# flange: overall X span exceeds the window width (front stop present)
 flange_ok = (max(xs)-min(xs)) > ow + 0.5
-# plug fits: sample verts at the hook ledge's actual top edge (Z=-ledge_z, per
-# keystone_tab()[0] -- NOT a guessed midpoint); their X span must stay under
-# the raw opening, confirming the plug+hook cross-section threads the window.
-topz = -ledge_z
-band=[ (x,y) for x,y,z in verts if abs(z-topz) < 0.05 ]
-plug_ok = bool(band) and (max(x for x,y in band)-min(x for x,y in band)) <= ow - 0.05
-# body reaches behind the plate rear (latch region)
-behind_ok = min(zs) < -plate - 0.2
-# hook Y-extent regression: plug/hook region (Z<0) must not exceed raw opening
-# edge (regression check for Y-protrusion bug). Flange (Z>=0) intentionally
-# exceeds opening as a front stop, so excluded from this check.
-plug_verts = [(x,y,z) for x,y,z in verts if z < 0]
-hook_ok = all(y <= oh/2 + 0.01 for x,y,z in plug_verts)
-if not hook_ok:
-    sys.stderr.write("insert hook Y-extent exceeds opening bound (regression)\n")
-sys.exit(0 if (flange_ok and plug_ok and behind_ok and hook_ok) else 1)
+# plug tip = the deepest point (through-plug always extends further back than
+# any tab feature); its cross-section must be the jack FACE minus fit per
+# side -- NOT the (style-varying, taller-for-lip) opening. This is the core
+# #28 regression: plug used to be opening-derived.
+minz = min(zs)
+band = [(x,y) for x,y,z in verts if abs(z-minz) < 0.05]
+plug_w = max(x for x,y in band) - min(x for x,y in band)
+plug_h = max(y for x,y in band) - min(y for x,y in band)
+plug_ok = bool(band) and abs(plug_w-(fw-2*fit)) < tol and abs(plug_h-(fh-2*fit)) < tol
+# body reaches behind the plate rear (latch/clip region)
+behind_ok = minz < -plate - 0.2
+# no-collision invariant: any vertex strictly WITHIN the plate's solid Z-band
+# (excludes the front flange at Z>=0 and any feature at/behind the plate rear,
+# which are allowed -- by design -- to grip material outside the window) must
+# stay within the window's raw X/Y bound, i.e. never punch into solid frame.
+inband = [(x,y) for x,y,z in verts if -(plate-0.02) < z < -0.02]
+noclip_ok = all(abs(x) <= ow/2+0.05 and abs(y) <= oh/2+0.05 for x,y in inband)
+if not plug_ok:
+    sys.stderr.write(f"plug cross-section {plug_w:.2f}x{plug_h:.2f} != face-derived {fw-2*fit:.2f}x{fh-2*fit:.2f}\n")
+if not noclip_ok:
+    sys.stderr.write("insert tab protrudes into solid frame within the plate band (regression)\n")
+sys.exit(0 if (flange_ok and plug_ok and behind_ok and noclip_ok) else 1)
 PY
+done
 
 echo ok

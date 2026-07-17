@@ -9,9 +9,10 @@
 //   1. Data        — functions returning constants / lists
 //                    (expose as functions: OpenSCAD `use` does not import variables)
 //   2. Placeholder — keystone_placeholder(): jack envelope solid for fit checks
-//   3. Hole-stamp  — keystone_cutout(plate_thickness, clearance): plate window
-//                    for a consumer difference(); keystone_insert(plate_thickness):
-//                    geometric mate-reference body (NOT print-tuned in v1)
+//   3. Hole-stamp  — keystone_cutout(plate_thickness, clearance, style): plate
+//                    window for a consumer difference(); keystone_insert(
+//                    plate_thickness, fit, style): geometric mate-reference
+//                    body, plug = keystone_face() (NOT print-tuned in v1)
 //   + Fit-check    — keystone_pitch()/min_pitch()/pitch_ok()/layout_ok() +
 //                    keystone_pitch_assert(): single-source port-spacing guard
 // Provenance legend (see RESEARCH.md for the evidence log):
@@ -76,17 +77,30 @@ function keystone_pitch()           = 19.05;
 // with an actual print test (or point at a shared print-convention library
 // value, if/when one exists) before treating as load-bearing.
 function keystone_min_wall()        = 1.6;
-// tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge]. hook_edge/
-// latch_edge //VERIFY: Wikipedia's "Keystone module" article describes the
-// current (1995 ICC patent) mechanism as one fixed angled flange opposite a
-// flexing cantilever latch — i.e. genuinely asymmetric front/back edges,
-// matching the +Y/-Y split modeled here — but that's a single secondary
-// source with no second independent source corroborating it, so it does not
-// earn [B]. Confirm against a second independent source (vendor drawing or
-// patent) before relying on the asymmetry split. hook_ledge_z and
-// tab_thickness //VERIFY: no numeric source found this pass; both carried
-// unchanged from the task seed.
-function keystone_tab()             = [1.0, 1.2, "+Y", "-Y"];
+// tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge], per retention
+// style (task #28). hook_edge/latch_edge //VERIFY: Wikipedia's "Keystone
+// module" article describes the current (1995 ICC patent) mechanism as one
+// fixed angled flange opposite a flexing cantilever latch — i.e. genuinely
+// asymmetric front/back edges, matching the +Y/-Y split modeled here — but
+// that's a single secondary source with no second independent source
+// corroborating it, so it does not earn [B]. Confirm against a second
+// independent source (vendor drawing or patent) before relying on the
+// asymmetry split.
+//   "face": hook (+Y) rides just behind the front face, latch (-Y) bumps out
+//           behind the plate rear — grips the plate's flat front/rear faces
+//           (pre-#28 model, values unchanged: hook_ledge_z=1.0, tab_th=1.2).
+//   "lip":  hook (+Y) = flex clip snapping in behind the opening's TOP lip
+//           (deep, anchored off plate_thickness in keystone_insert() like
+//           face's latch); latch (-Y) = rigid fulcrum foot resting near the
+//           front at the opening's BOTTOM lip (shallow, hook_ledge_z deep,
+//           like face's hook). //VERIFY mate-reference-only numerics, kept
+//           equal to "face"'s seed pending a real jack drawing; bounded by
+//           "clean overlay both styles" (verify-scad-geometry, #28), not a
+//           fixed literal.
+function keystone_tab(style = "lip") =
+    style == "face" ? [1.0, 1.2, "+Y", "-Y"] :
+    style == "lip"  ? [1.0, 1.2, "+Y", "-Y"] :
+    assert(false, str("keystone: unknown style '", style, "'"));
 
 /* [Fit-check] — single-source port-spacing guard. min_pitch derived once here so
    no consumer re-derives it. */
@@ -127,42 +141,84 @@ module keystone_cutout(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
 }
 
 /* [Insert] — geometric keystone mate-reference (NOT print-tuned; a print-ready
-   flexing-latch insert is out of scope for v1). Datum matches keystone_cutout()
-   so keystone_insert() dropped into keystone_cutout() overlays for a virtual
-   mate-check. Front flange stops at Z=0 (grows +Z); plug passes through the
-   window; top hook (+Y) engages just behind the front face; bottom latch (-Y)
-   bump sits behind the plate rear. `fit` = clearance the plug sits under the
-   opening, per side. */
-module keystone_insert(plate_thickness = 3.0, fit = 0.2) {
-    o = keystone_opening();  // [ow, oh]
-    t = keystone_tab();      // [hook_ledge_z, tab_thickness, hook_edge, latch_edge]
+   flexing-latch insert is out of scope for v1, see backlog #22). Datum matches
+   keystone_cutout(...,style) so keystone_insert(...,style) dropped into the
+   same-style cutout overlays for a virtual mate-check. Front flange stops at
+   Z=0 (grows +Z, common bezel both styles); plug passes through the window.
+   Plug cross-section is ALWAYS the real jack face (keystone_face()), style-
+   independent — the window it must thread is the style-varying part, not the
+   jack itself (task #28 fix: previously the plug incorrectly used
+   keystone_opening(), which is taller for "lip" and doesn't represent a real
+   jack). `fit` = clearance the plug sits under the face, per side.
+   Retention geometry (keystone_tab(style)) differs per style:
+     "face": hook (+Y) rides just behind the front face; latch (-Y) bumps out
+             past the window's raw edge but entirely behind the plate rear
+             (open air there, not solid material) -- grips the plate's flat
+             front/rear faces (pre-#28 model, unchanged).
+     "lip":  fulcrum (-Y, bottom) is a shallow near-front foot filling the
+             window's bottom slack (oh is taller than the jack face) up to,
+             but never past, the bottom lip; flex clip (+Y, top) is a deep
+             behind-rear tab filling the top slack up to, but never past, the
+             top lip. Both stay within the window's raw bound -- contact is
+             modeled against the lip (the window's edge wall) rather than the
+             plate's flat faces. //VERIFY mate-reference-only numerics. */
+module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "lip") {
+    o = keystone_opening(style);  // [ow, oh] — the window THIS style's cutout leaves
+    f = keystone_face();          // [fw, fh] — the real jack, style-independent
+    t = keystone_tab(style);      // [hook_ledge_z, tab_thickness, hook_edge, latch_edge]
     ledge_z = t[0];
     tab_th  = t[1];
-    flange  = 1.5;   // flange lip beyond the opening, per side
+    flange  = 1.5;   // flange lip beyond the window, per side
+    plug_w  = f[0] - 2*fit;  // plug cross-section: jack face, less `fit` per side
+    plug_h_xy = f[1] - 2*fit;
     plug_h  = plate_thickness + 3;  // through-plug reaches 3mm behind the plate rear
+    // No separate style guard here: keystone_opening(style) above already
+    // asserts on an unknown style before this point is reached.
     union() {
         // front flange: front stop, Z=0..+1.2
         translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
             cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
-        // through-plug: opening cross-section less `fit` per side, front to behind rear
-        translate([-(o[0]/2 - fit), -(o[1]/2 - fit), -plug_h])
-            cube([o[0] - 2*fit, o[1] - 2*fit, plug_h]);
-        // top hook ledge on +Y edge, engaging just behind the front face. Z
-        // driven by ledge_z (keystone_tab()[0]): top edge sits at -ledge_z,
-        // extending tab_th further back. Y-width clamped to `fit` (NOT the full tab_th): the
-        // hook starts at the plug's own +Y face (o[1]/2 - fit) and may only
-        // protrude the same `fit` margin the plug is already narrowed by, so
-        // its Y-max lands exactly at the raw opening edge o[1]/2 -- never past
-        // it. keystone_cutout()'s window Y-bound is always o[1]/2 + clearance
-        // with clearance >= 0, so this guarantees the hook never collides
-        // with solid frame material regardless of the consumer's clearance
-        // choice. X-width stays clamped to the plug footprint (o[0]-2*fit),
-        // same narrowing rationale as the latch below -- the hook rides along
-        // the plug's surface, not the full window width.
-        translate([-(o[0]/2 - fit), o[1]/2 - fit, -(ledge_z + tab_th)])
-            cube([o[0] - 2*fit, fit, tab_th]);
-        // bottom latch bump on -Y edge, behind the plate rear
-        translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
-            cube([o[0] - 2*fit, tab_th, tab_th]);
+        // through-plug: jack FACE cross-section less `fit` per side, front to behind rear
+        translate([-plug_w/2, -plug_h_xy/2, -plug_h])
+            cube([plug_w, plug_h_xy, plug_h]);
+
+        if (style == "face") {
+            // top hook ledge on +Y edge, engaging just behind the front face. Z
+            // driven by ledge_z (keystone_tab("face")[0]): top edge sits at
+            // -ledge_z, extending tab_th further back. Y-span runs from the
+            // plug's own +Y face (plug_h_xy/2 -- so it stays CONNECTED to the
+            // face-derived plug, which is narrower than the pre-#28 opening-
+            // derived one) out to the raw window edge o[1]/2, never past it:
+            // keystone_cutout()'s window Y-bound is always o[1]/2 + clearance
+            // with clearance >= 0, so this guarantees the hook never collides
+            // with solid frame material regardless of the consumer's
+            // clearance choice. X-width o[0]-2*fit (current/unchanged) is
+            // wider than the plug, so it stays connected in X too.
+            translate([-(o[0]/2 - fit), plug_h_xy/2, -(ledge_z + tab_th)])
+                cube([o[0] - 2*fit, o[1]/2 - plug_h_xy/2, tab_th]);
+            // bottom latch bump on -Y edge, behind the plate rear: spans from
+            // the raw window edge (protruding tab_th-fit further into the
+            // open space behind the plate rear, exactly as before) in to the
+            // plug's own -Y face (connects; the pre-#28 model's plug
+            // coincided with this edge automatically since it was itself
+            // opening-derived -- now it must be spanned explicitly).
+            translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
+                cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
+        } else { // style == "lip"
+            // fulcrum foot on -Y edge (bottom): shallow, near-front (Z: 0 to
+            // -ledge_z), spanning from the window's bottom lip (inset `fit` so
+            // it never touches solid frame) up to the plug's own -Y face --
+            // fills the window's bottom slack (oh is taller than the jack face
+            // to allow rotate-and-snap insertion).
+            translate([-plug_w/2, -(o[1]/2 - fit), -ledge_z])
+                cube([plug_w, (o[1]/2 - fit) - plug_h_xy/2, ledge_z]);
+            // flex clip on +Y edge (top): deep, behind the plate rear (Z:
+            // -(plate_thickness) to -(plate_thickness+tab_th)) -- the ramp
+            // that compresses through the window on insertion and snaps back
+            // out once clear, catching the top lip from behind. Fills the
+            // window's top slack, inset `fit` from the raw edge.
+            translate([-plug_w/2, plug_h_xy/2, -(plate_thickness + tab_th)])
+                cube([plug_w, (o[1]/2 - fit) - plug_h_xy/2, tab_th]);
+        }
     }
 }
