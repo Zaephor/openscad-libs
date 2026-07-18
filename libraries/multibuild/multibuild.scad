@@ -22,11 +22,16 @@
 //   [C] single-sourced / derived, or a named part cited but not fetched.
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
 //
-// Status (v1 complete): grid pitch/mount-type table (`_multibuild_table()`)
-// and all four roles — Role 1 accessor/grid-math functions and Roles 2-4
-// modules `multibuild_mount_placeholder()` / `multibuild_mount()` /
-// `multibuild_hole()` — are fully implemented below. RESEARCH.md documents
-// the complete research evidence chain (Task 1, 1b, 1c) backing this
+// Status: grid pitch/mount-type table (`_multibuild_table()`) and all four
+// roles — Role 1 accessor/grid-math functions and Roles 2-4 modules
+// `multibuild_mount_placeholder()` / `multibuild_mount()` /
+// `multibuild_hole()` — are fully implemented below. Also implemented: the
+// MultiBin container accessors (`multibin_*` — CU-grid footprint/cavity/wall/
+// height data plus `multibin_placeholder()` / `multibin_cavity_cutout()`) and
+// the Fix-Point (Multipoint) accessory-side receiving negatives
+// (`multibuild_known_holes()`, `multibuild_hole(type)` dispatch, and
+// `multibuild_fixpoint_placeholder()` for fit-viz). RESEARCH.md documents the
+// complete research evidence chain (Task 1, 1b, 1c) backing this
 // implementation. Checkpoint findings confirm the Regular Snap mechanism
 // (plugging into a Large Hole, chosen over Threads/Peg Click/DS Snaps) fits
 // this API shape.
