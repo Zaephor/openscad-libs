@@ -113,4 +113,49 @@ span=max(zs)-min(zs)
 sys.exit(0 if abs(span-43.66)<0.01 else 1)   # 44.45 - 0.79 = 43.66
 PY
 
+
+# #7 rackpost context (parity). rack19_u()=44.45; default hole_type square.
+zbox19() { python3 - "$1" <<'PY'
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+zs=[]
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12; zs.append(struct.unpack('<3f',d[b:b+12])[2])
+print(round(min(zs),3), round(max(zs)-min(zs),3))
+PY
+}
+cat > "$tmp/r19ctx.scad" <<'EOF'
+use <rack19/rack19.scad>;
+rack19_rackpost_context(device_u=1, pad_u=1, depth_ftf=300);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/r19.stl" "$tmp/r19ctx.scad" 2>/dev/null
+read z19 s19 < <(zbox19 "$tmp/r19.stl")
+awk "BEGIN{exit !(($z19<-44.4)&&($z19>-44.5)&&($s19>133.2)&&($s19<133.5))}" \
+  || { echo "rack19 rackpost_context(1,1) Z wrong: min=$z19 span=$s19"; exit 1; }
+# Equivalence to inline pattern. Compared as a canonical (sorted) triangle SET
+# rather than raw `cmp -s` bytes: this OpenSCAD/CGAL build does not guarantee a
+# stable per-triangle export order between separate invocations of the SAME
+# .scad file (verified for rack10's parity test), so byte equality is not a
+# viable equivalence check here even though the geometry itself is deterministic.
+cat > "$tmp/r19inl.scad" <<'EOF'
+use <rack19/rack19.scad>;
+translate([0,0,-rack19_u()]) rack19_placeholder(3, 300);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/r19i.stl" "$tmp/r19inl.scad" 2>/dev/null
+python3 - "$tmp/r19.stl" "$tmp/r19i.stl" <<'PY' || { echo "rack19 rackpost_context != inline"; exit 1; }
+import struct,sys
+def tris(path):
+    d = open(path, 'rb').read()
+    n = struct.unpack('<I', d[80:84])[0]
+    off = 84
+    out = []
+    for i in range(n):
+        rec = d[off + i*50 : off + i*50 + 48]  # normal(3f) + 3 verts(3f each)
+        out.append(tuple(round(v, 4) for v in struct.unpack('<12f', rec)))
+    return sorted(out)
+a, b = tris(sys.argv[1]), tris(sys.argv[2])
+sys.exit(0 if a == b else 1)
+PY
+
 echo ok

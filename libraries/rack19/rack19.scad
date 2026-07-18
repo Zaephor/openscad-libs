@@ -179,6 +179,14 @@ module rack19_placeholder(u, depth_ftf, hole_type = "square") {
         cube([rack19_opening_width(), depth_ftf, h]);
 }
 
+// Rackpost context (rack10 parity). Datum: device bottom at Z=0; `pad_u` empty U
+// below+above the `device_u` band; total (device_u+2*pad_u) U. Caller applies `%`.
+// Integer U only (hole placement uses [0:u-1]); fractional/0.5U is future.
+module rack19_rackpost_context(device_u = 1, pad_u = 1, depth_ftf, hole_type = "square") {
+    translate([0, 0, -pad_u * rack19_u()])
+        rack19_placeholder(device_u + 2 * pad_u, depth_ftf, hole_type);
+}
+
 /* [Panel helper] */
 // Faceplate blank: full 19in panel width x rack19_device_height(u) tall x
 // `thickness`, front face on Y=0 (grows -Y). Consumer subtracts rack19_holes()

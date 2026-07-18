@@ -76,6 +76,14 @@ this is an OpenSCAD "background" (`%`) modifier, so it is **excluded from
 STL/CSG export** (including the PNG above, which is rendered from an
 exported STL) — open the `.scad` directly in the OpenSCAD GUI to see it.
 
+`rack19_rackpost_context(device_u, pad_u, depth_ftf, hole_type)` wraps
+`rack19_placeholder()` into a "device framed in a padded rack context"
+envelope: `pad_u` empty U below AND above a `device_u`-tall device band,
+datum device-bottom-at-`Z=0` (place your device at `Z=0` and call this
+alongside it for rack context) — the caller applies `%` for a background
+fit-check preview; `device_u`/`pad_u` are integer U only (fractional/0.5U
+is a future enhancement, not supported here).
+
 ## Reference
 
 | Function | Returns |
@@ -102,6 +110,7 @@ exported STL) — open the `.scad` directly in the OpenSCAD GUI to see it.
 | `rack19_holes(u, hole_type, dia, depth, slot_travel)` | mounting-hole cutter, both rail columns, `u` units (subtract from a consumer solid) |
 | `rack19_slot_profile(dia, slot_travel)` | horizontal obround cross-section (used by `rack19_holes()`'s `"slot"` branch; extrude it directly for a standalone profile) |
 | `rack19_placeholder(u, depth_ftf, hole_type)` | 4-flange rail envelope + front hole strip + `%` keep-out volume (fit-check reference) |
+| `rack19_rackpost_context(device_u, pad_u, depth_ftf, hole_type)` | `rack19_placeholder()` sized to `device_u + 2*pad_u` U and shifted so the device band's bottom sits at `Z=0` — padded rack context around a device (integer U only) |
 | `rack19_panel(u, thickness)` | plain 19in faceplate blank, `u` units tall — subtract `rack19_holes()` to mount it |
 
 `hole_type` is `"square"` (cage-nut, `dia` ignored), `"tapped"` (pass a
