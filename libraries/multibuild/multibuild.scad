@@ -10,7 +10,11 @@
 //   3. Positive    — multibuild_mount(type): the printed connector feature on
 //                    a consumer part that mates into a board hole
 //   4. Negative    — multibuild_hole(type): the board-hole profile cut into a
-//                    surface, for use inside a consumer difference()
+//                    surface, for use inside a consumer difference(). Also
+//                    dispatches Fix-Point accessory-side dovetail pockets (the
+//                    negative-only "multipoint"/"multipoint_rail" types, listed
+//                    by multibuild_known_holes(), with multibuild_fixpoint_
+//                    placeholder() as the mating positive for fit-viz).
 // Provenance legend (see RESEARCH.md for the full Task 1 evidence log +
 // checkpoint):
 //   [A] fetched + read this pass (official MultiBuild docs).
@@ -49,6 +53,42 @@ function multibuild_mount_engagement(type) = _multibuild_row(type)[3];
 function multibuild_mount_arm_count(type)  = _multibuild_row(type)[4];
 function multibuild_mount_arm_width(type)  = _multibuild_row(type)[5];
 function multibuild_mount_tip_flare(type)  = _multibuild_row(type)[6];
+
+/* [Data: Fix-Point] — accessory-side receiving negatives (Fix-Point / Multipoint).
+   PARALLEL to the mount table, deliberately SEPARATE: these are NEGATIVE-ONLY
+   types (a Fix-Point has no positive arms/flare/mount body), so they must NOT
+   be added to _multibuild_table()/multibuild_known_mounts() -- the mount test
+   suite hard-asserts full positive-mount geometry (tip_flare>0, arm_count>0,
+   2*tip_flare <= hole_dia) for EVERY mount, which a Fix-Point cannot satisfy.
+   We model the ACCESSORY side only: the dovetail pocket an accessory cuts into
+   its own face to receive a Fix-Point. The Fix-Point part's own board-side
+   thread/bolt engagement is out of scope (it belongs to the official part).
+   Row: [type, pos_throat, pos_max, pos_depth, neg_buried, neg_depth, slide_len]
+     pos_*     = the mating Fix-Point POSITIVE dovetail (drives the placeholder)
+     neg_*     = the accessory-side NEGATIVE cutter this file emits
+     slide_len = nominal pocket length along the +X slide axis (viz only; a real
+                 Rail length is per-part/variable).
+   See RESEARCH.md "MultiBin + Fix-Point (#32)". Values [C] (STL mesh),
+   caliper-upgradeable (#16); the Lite 1mm depth delta is [A]. The negative
+   throat is DERIVED (not stored) -- see _multibuild_fixpoint_neg_throat(). */
+function _multibuild_fixpoint_table() = [
+    // Regular: mates a "Multipoint Hole"; Lite: 1mm thinner, mates a "Rail Negative".
+    ["multipoint",      11.7, 15.2, 3.0, 17.0, 3.3, 16], // Regular (Multipoint Hole)
+    ["multipoint_rail", 12.8, 15.2, 2.0, 17.0, 2.3, 40], // Lite Rail Negative
+];
+function multibuild_known_holes() = [for (e = _multibuild_fixpoint_table()) e[0]];
+function _multibuild_fixpoint_row(type) =
+    let (r = [for (e = _multibuild_fixpoint_table()) if (e[0] == type) e])
+    assert(len(r) == 1, str("multibuild: unknown Fix-Point hole type '", type, "'")) r[0];
+function _multibuild_is_hole(type) =
+    len([for (e = _multibuild_fixpoint_table()) if (e[0] == type) 1]) > 0;
+// Negative dovetail throat width: preserve the positive's flank angle
+// (tan = ((pos_max - pos_throat)/2) / pos_depth) at the negative's buried width
+// and cut depth, so the emitted pocket is a true mating dovetail, not an
+// arbitrary trapezoid. neg_throat = neg_buried - neg_depth*(pos_max-pos_throat)/pos_depth.
+function _multibuild_fixpoint_neg_throat(type) =
+    let (r = _multibuild_fixpoint_row(type))
+    r[4] - r[5] * (r[2] - r[1]) / r[3];
 
 /* [Data] — grid math off multibuild_grid_pitch(). */
 function multibuild_grid_count(length) = floor(length / multibuild_grid_pitch());
@@ -125,18 +165,61 @@ module multibuild_mount(type) {
     }
 }
 
-/* [Negative] — board-hole profile cut into a surface, for use inside a
-   consumer difference() (the accessory-panel case: a face that accepts
-   standard MultiBoard connectors). */
-// Negative board-hole cutter: board face at Z=0, cut grows -Z through the
+/* [Geometry helper] — dovetail prism along the +X slide axis. Cross-section
+   lies in Y-Z: `throat_w` (Y) at the mouth near the face, widening to
+   `buried_w` (Y) at depth `depth` (-Z). `overcut` lifts the mouth +Z above the
+   face for a clean boolean when used as a cutter (0 for a solid placeholder). */
+module _multibuild_dovetail(buried_w, throat_w, depth, length, overcut) {
+    eps = 0.01;
+    hull() {
+        translate([0, 0, overcut]) cube([length, throat_w, 2 * eps], center = true);
+        translate([0, 0, -depth])  cube([length, buried_w, 2 * eps], center = true);
+    }
+}
+
+/* [Placeholder] — the mating Fix-Point POSITIVE dovetail (male), for fit-viz:
+   the solid that should nest into multibuild_hole(type). Reference geometry,
+   not a printed part, so the support-free global constraint does not apply.
+   Face at Z=0, dovetail grows -Z (narrow neck at the face, wider at the tip);
+   slides along +X. Length is set shorter than the pocket so the fit-check has
+   +X slide clearance to observe. */
+module multibuild_fixpoint_placeholder(type) {
+    r = _multibuild_fixpoint_row(type);
+    pos_throat = r[1]; pos_max = r[2]; pos_depth = r[3];
+    plen = r[6] - 4;
+    _multibuild_dovetail(pos_max, pos_throat, pos_depth, plen, 0);
+}
+
+/* [Negative] — board-hole profile OR Fix-Point accessory-side pocket, cut into
+   a surface for use inside a consumer difference(). Dispatches on `type`:
+   negative-only Fix-Point types (multibuild_known_holes()) are resolved from
+   the parallel Fix-Point table FIRST; everything else falls through to the
+   board-hole (snap) cutter, whose _multibuild_row() still asserts on an
+   unknown type. `length` (optional) sets the Fix-Point pocket length along the
+   +X slide axis; it is ignored by the board-hole cutter. */
+// Board-hole cutter (snap etc.): board face at Z=0, cut grows -Z through the
 // tile thickness. Simplified to a straight cylinder at the measured waist
 // diameter (the true profile flares wider at both mouths -- this cut is the
 // conservative narrow-point approximation, see RESEARCH.md).
-module multibuild_hole(type) {
-    d = multibuild_hole_dia(type);
-    h = multibuild_hole_depth(type);
-    translate([0, 0, -h - 0.01])
-        cylinder(h = h + 0.02, d = d, $fn = 48);
+// Fix-Point cutter (multipoint / multipoint_rail): a dovetail pocket, accessory
+// face at Z=0, cut grows -Z, undercut (wider at depth) so a seated Fix-Point
+// resists straight -Z/+Z pull-out and can only enter/leave by the +X slide.
+// ACCESSORY-side negative ONLY -- the Fix-Point's own board-side engagement is
+// out of scope. Fit-check honesty: the slide-on mate is proven for +X clearance
+// only (see tests/test_multibuild_lib.sh), not for retention/engagement.
+module multibuild_hole(type, length = undef) {
+    if (_multibuild_is_hole(type)) {
+        r = _multibuild_fixpoint_row(type);
+        neg_buried = r[4]; neg_depth = r[5];
+        neg_throat = _multibuild_fixpoint_neg_throat(type);
+        slen = (length == undef) ? r[6] : length;
+        _multibuild_dovetail(neg_buried, neg_throat, neg_depth, slen, 0.5);
+    } else {
+        d = multibuild_hole_dia(type);
+        h = multibuild_hole_depth(type);
+        translate([0, 0, -h - 0.01])
+            cylinder(h = h + 0.02, d = d, $fn = 48);
+    }
 }
 
 /* [Data: MultiBin] — 50mm CU / 50mm panel grid, DISTINCT from the 25mm MU

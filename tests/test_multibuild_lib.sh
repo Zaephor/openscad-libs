@@ -156,6 +156,84 @@ sys.exit(0 if ok else 1)
 PY
 done
 
+# --- Fix-Point (Multipoint) accessory-side negative: slide-on fit (#32) ---
+# SLIDE AXIS = +X (in-plane, lateral). The Fix-Point engages by sliding along
+# +X into the dovetail pocket, NOT by the snap's -Z pass-through -- so the
+# radial X/Y-bbox check used for "snap" above does NOT transfer here. Instead:
+# difference a project-like plate with the accessory-side negative
+# multibuild_hole(fp), then confirm the positive Fix-Point placeholder NESTS in
+# the resulting pocket (its intersection with the remaining plate material is
+# ~zero volume) and that the pocket is at least as long along +X as the
+# placeholder (room to slide in).
+# HONESTY (mirrors the snap fit-check's radial-only disclaimer above): this
+# proves clearance ALONG THE +X SLIDE only. It does NOT prove dovetail
+# retention/engagement (that the seated part resists -Z/+Z pull-out) -- a
+# bbox/volume test cannot establish that.
+for fp in multipoint multipoint_rail; do
+  cat > "$tmp/fp_fit_$fp.scad" <<EOF
+use <multibuild/multibuild.scad>;
+intersection() {
+  difference() {
+    translate([0, 0, -4]) cube([80, 50, 8], center = true); // plate top face at Z=0
+    multibuild_hole("$fp");
+  }
+  multibuild_fixpoint_placeholder("$fp");
+}
+EOF
+  cat > "$tmp/fp_place_$fp.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_fixpoint_placeholder("$fp");
+EOF
+  cat > "$tmp/fp_hole_$fp.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_hole("$fp");
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/fp_fit_$fp.stl"   "$tmp/fp_fit_$fp.scad"   2>/dev/null || true
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/fp_place_$fp.stl" "$tmp/fp_place_$fp.scad" 2>/dev/null
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/fp_hole_$fp.stl"  "$tmp/fp_hole_$fp.scad"  2>/dev/null
+
+  python3 - "$tmp/fp_fit_$fp.stl" "$tmp/fp_place_$fp.stl" "$tmp/fp_hole_$fp.stl" "$fp" <<'PY' || { echo "Fix-Point slide-fit failed for '$fp'"; exit 1; }
+import struct, sys, os
+
+def read(path):
+    if not os.path.exists(path) or os.path.getsize(path) < 84:
+        return 0, 0.0, (0, 0, 0, 0, 0, 0)
+    d = open(path, 'rb').read(); n = struct.unpack('<I', d[80:84])[0]; off = 84
+    xs = []; ys = []; zs = []; vol = 0.0
+    for i in range(n):
+        tri = []
+        for v in range(3):
+            base = off + i * 50 + 12 + v * 12
+            p = struct.unpack('<3f', d[base:base + 12]); tri.append(p)
+            xs.append(p[0]); ys.append(p[1]); zs.append(p[2])
+        (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = tri
+        vol += (x1 * (y2 * z3 - y3 * z2) - y1 * (x2 * z3 - x3 * z2) + z1 * (x2 * y3 - x3 * y2)) / 6.0
+    if not xs:
+        return n, 0.0, (0, 0, 0, 0, 0, 0)
+    return n, abs(vol), (min(xs), max(xs), min(ys), max(ys), min(zs), max(zs))
+
+fit, place, hole, fp = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+nf, vf, _ = read(fit)
+npl, vpl, bpl = read(place)
+nh, vh, bh = read(hole)
+errs = []
+# guard against a trivially-empty pass: the placeholder must be a real solid
+if not (npl >= 12 and vpl > 50):
+    errs.append("placeholder degenerate: facets=%d vol=%.3f" % (npl, vpl))
+# containment: the placeholder nests inside the pocket, so its intersection with
+# the remaining plate material is ~zero (a real interference would be many mm^3)
+if vf > 1.0:
+    errs.append("placeholder interferes with plate: intersection vol=%.3f" % vf)
+# slide clearance along +X: the pocket must be at least as long as the placeholder
+place_x = bpl[1] - bpl[0]; hole_x = bh[1] - bh[0]
+if hole_x + 1e-6 < place_x:
+    errs.append("no slide room: pocket X=%.3f < placeholder X=%.3f" % (hole_x, place_x))
+if errs:
+    sys.stderr.write("type=%s\n" % fp + "\n".join(errs) + "\n"); sys.exit(1)
+sys.exit(0)
+PY
+done
+
 # --- MultiBin container: envelope + cavity bbox / mutual alignment (#32) ---
 # Render the external envelope (multibin_placeholder) and the internal cavity
 # negative (multibin_cavity_cutout) for a seeded Simple Walls size, then verify

@@ -51,6 +51,19 @@ for (t = multibuild_known_mounts()) {
     }
 }
 
+// --- Fix-Point (Multipoint) accessory-side negatives (#32) ---
+// Negative-only types live in a PARALLEL hole table, never in the mount table:
+// a Fix-Point has no arms/flare, so it cannot satisfy the mount asserts above.
+assert(len(multibuild_known_holes()) == 2);
+for (t = multibuild_known_holes()) {
+    // hole-only types must NOT leak into the mount table (which the loop above
+    // hard-asserts full positive-mount geometry for).
+    assert(len([for (m = multibuild_known_mounts()) if (m == t) 1]) == 0);
+    // accessory-side negative cutter + its positive Fix-Point placeholder render.
+    multibuild_hole(t);
+    multibuild_fixpoint_placeholder(t);
+}
+
 // --- MultiBin container (#32) ---
 // CU / panel-pitch / tolerance: the 50mm CU grid is DISTINCT from the 25mm MU
 // board grid (multibuild_grid_pitch()) -- these must not collapse to one value.
