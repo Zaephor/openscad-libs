@@ -64,6 +64,26 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_tab(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
 fi
 
+# Negative control: keystone_latch("face") must abort -- "face" has no lip mechanism (#31).
+cat > "$tmp/latch_no_face.scad" <<'EOF'
+use <keystone/keystone.scad>;
+l = keystone_latch("face");
+EOF
+out="$(run "$tmp/latch_no_face.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_latch(\"face\") failed to abort (no lip mechanism for face):"; echo "$out"; exit 1
+fi
+
+# Negative control: keystone_boss_footprint("face") must abort -- no boss for "face" (#31).
+cat > "$tmp/boss_footprint_no_face.scad" <<'EOF'
+use <keystone/keystone.scad>;
+bf = keystone_boss_footprint("face");
+EOF
+out="$(run "$tmp/boss_footprint_no_face.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_boss_footprint(\"face\") failed to abort (no boss for face):"; echo "$out"; exit 1
+fi
+
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
 cat > "$tmp/dims.scad" <<'EOF'
 use <keystone/keystone.scad>;
@@ -235,10 +255,22 @@ if not behind_ok:
 # (excludes the front flange at Z>=0 and any feature at/behind the plate rear,
 # which are allowed -- by design -- to grip material outside the window) must
 # stay within the window's raw X/Y bound, i.e. never punch into solid frame.
-inband = [(x,y) for x,y,z in verts if -(plate-0.02) < z < -0.02]
-noclip_ok = all(abs(x) <= ow/2+0.05 and abs(y) <= oh/2+0.05 for x,y in inband)
-if not noclip_ok:
-    errs.append("insert tab protrudes into solid frame within the plate band (regression)")
+# "face" ONLY: this assumes a plain-rectangle cutout whose raw X/Y bound
+# (ow/2, oh/2) is constant through the whole plate depth -- true for "face"
+# (unchanged), but "lip"'s real cutout (#31) is Z-varying and materially
+# NARROWER than ow/2,oh/2 for most of its depth (see keystone_cutout()'s
+# ramp/pocket zones), so this same bound would false-fail a CORRECT lip
+# insert whose hook/latch legitimately reach inward past this stale flat
+# bound. keystone_insert("lip") itself is unchanged in this task (mating
+# insert geometry is backlog #31 Task 3) so there's nothing lip-shaped to
+# check against yet -- the real "does the cutout leave real lip material"
+# assertion is the standalone lip-cutout section check below, independent of
+# the insert.
+if style == "face":
+    inband = [(x,y) for x,y,z in verts if -(plate-0.02) < z < -0.02]
+    noclip_ok = all(abs(x) <= ow/2+0.05 and abs(y) <= oh/2+0.05 for x,y in inband)
+    if not noclip_ok:
+        errs.append("insert tab protrudes into solid frame within the plate band (regression)")
 
 # Tab/plug connectivity (#28 review finding): plug_ok above only checks the
 # plug TIP cross-section (deepest Z -- unrelated to hook/latch position) and
@@ -300,11 +332,13 @@ if style == "face":
         ("hook",   -(ledge_z + tab_th), False,  plug_h_xy/2),  # +Y edge: inner = min(Y)
         ("latch",  -(plate + tab_th),   True,  -plug_h_xy/2),  # -Y edge: inner = max(Y)
     ]
-else:  # "lip"
-    tab_checks = [
-        ("fulcrum", -ledge_z,          True,  -plug_h_xy/2),   # -Y edge: inner = max(Y)
-        ("clip",    -(plate + tab_th), False,  plug_h_xy/2),   # +Y edge: inner = min(Y)
-    ]
+else:  # "lip" -- keystone_insert("lip") is UNCHANGED this task (mating insert
+    # geometry for the real lip mechanism is backlog #31 Task 3); its
+    # fulcrum/clip tabs still encode the pre-#28 flat-window guess, which no
+    # longer matches the real lip cross-section this task ships, so asserting
+    # their edge position here would just be locking in a stale placeholder.
+    # Nothing to check against the new geometry yet -- skip, deferred to Task 3.
+    tab_checks = []
 
 for name, z_target, want_max, expected in tab_checks:
     inner = inner_edge_at(z_target, want_max)
@@ -318,5 +352,120 @@ if errs:
 sys.exit(0 if (flange_ok and behind_ok and not errs) else 1)
 PY
 done
+
+# --- "lip" cutout section check (#31): real lip material, not a plain
+# rectangle. The HARD assertion for this task -- render-without-CGAL-error is
+# NOT proof of correct geometry (a union()/difference() of overlapping solids
+# is still perfectly manifold), so this forces OpenSCAD to compute a REAL
+# cross-section (intersection() with a thin slab, at Z-slices inside the hook
+# ramp and the latch ramp) and reads the resulting STL's Y-extent -- the
+# cavity's edge must be PARTWAY through its transition there (real material
+# fills the gap to the max window; the old plain-rectangle cutout would show
+# the FULL max window at every Z, i.e. no material, only open air, at these
+# same slices). Raw vertex-scanning at an arbitrary interior Z would find
+# nothing (hull()'s ramp faces are flat quads between the two end slices, no
+# vertices in between) -- intersection() makes OpenSCAD compute the section
+# for real.
+section_ok() {
+  # $1 = Z center, $2 = python check name (unused, just for the temp filename)
+  local z="$1" name="$2"
+  cat > "$tmp/lip_section_$name.scad" <<EOF
+use <keystone/keystone.scad>;
+intersection() {
+    keystone_cutout(plate_thickness = 3.0, clearance = 0.25, style = "lip");
+    translate([-20, -20, $z - 0.05]) cube([40, 40, 0.1]);
+}
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/lip_section_$name.stl" "$tmp/lip_section_$name.scad" 2>/dev/null
+}
+
+section_ok "-2.0" hook
+section_ok "-6.17" latch
+
+python3 - "$tmp/lip_section_hook.stl" "$tmp/lip_section_latch.stl" <<'PY' || { echo "lip cutout section check failed (#31 real lip material)"; exit 1; }
+import struct,sys
+
+def read_verts(path):
+    d=open(path,'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+    verts=[]
+    for i in range(n):
+        for v in range(3):
+            base=off+i*50+12+v*12
+            x,y,z=struct.unpack('<3f',d[base:base+12])
+            verts.append((x,y,z))
+    return verts
+
+errs=[]
+
+# keystone_latch("lip") breakpoints, mirrored here for the expected bounds
+# (see keystone.scad keystone_latch() -- single source of truth for the
+# geometry itself; these are just the reference numbers to check against).
+front_h, hook_h, latch_h = 17.43, 21.30, 22.90
+clearance = 0.25
+front_top = front_h/2 + clearance
+max_top   = (hook_h - front_h/2) + clearance          # top edge's final value (unchanged after the hook ramp)
+front_bot = -(front_h/2 + clearance)
+max_bot   = ((hook_h - front_h/2) - latch_h) - clearance  # bottom edge's final value (after the latch ramp)
+
+# Hook ramp midpoint (Z=-2.0, between Z=0 and hook_z=-4.32): the TOP edge
+# must be PARTWAY between front_top and max_top -- neither still at the
+# front value nor already at the max (a plain rectangle sized at the max
+# window would show max_top here; a rectangle sized at the front window
+# would show front_top; only a real ramp shows something strictly between).
+hook_verts = read_verts(sys.argv[1])
+if not hook_verts:
+    errs.append("hook-ramp section (Z=-2.0) is empty -- geometry missing")
+else:
+    top_here = max(y for x,y,z in hook_verts)
+    if not (front_top + 0.3 < top_here < max_top - 0.3):
+        errs.append(f"hook-ramp slice top edge {top_here:.2f} not strictly between front ({front_top:.2f}) and max ({max_top:.2f}) -- ramp not modeled (plain-rectangle regression)")
+
+# Latch ramp midpoint (Z=-6.17, between pocket_z=-5.37 and latch_z=-6.97):
+# the BOTTOM edge must be PARTWAY between front_bot and max_bot, same logic.
+latch_verts = read_verts(sys.argv[2])
+if not latch_verts:
+    errs.append("latch-ramp section (Z=-6.17) is empty -- geometry missing")
+else:
+    bot_here = min(y for x,y,z in latch_verts)
+    if not (max_bot + 0.3 < bot_here < front_bot - 0.3):
+        errs.append(f"latch-ramp slice bottom edge {bot_here:.2f} not strictly between max ({max_bot:.2f}) and front ({front_bot:.2f}) -- ramp not modeled (plain-rectangle regression)")
+
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+sys.exit(1 if errs else 0)
+PY
+
+# --- keystone_boss() geometry check (#31): footprint + reaches the full
+# mechanism depth regardless of plate_thickness.
+cat > "$tmp/boss.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = "lip");
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/boss.stl" "$tmp/boss.scad" 2>/dev/null
+
+python3 - "$tmp/boss.stl" <<'PY' || { echo "keystone_boss geometry check failed"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[];zs=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        xs.append(x); ys.append(y); zs.append(z)
+errs=[]
+# Boss must reach the full ~8.27mm mechanism depth (independent of the
+# plate_thickness=3.0 passed above) and its front face must sit flush at Z=0
+# (never poking past the panel front into +Z).
+if max(zs) > 0.01:
+    errs.append(f"boss front face at {max(zs):.2f}, expected flush with panel front (Z<=0)")
+if min(zs) > -8.0:
+    errs.append(f"boss min Z {min(zs):.2f} does not reach the mechanism's full depth (~-8.27, plate_thickness-independent)")
+# Footprint must be wider than the raw cutout envelope (wall margin present).
+if (max(xs)-min(xs)) <= 14.90:
+    errs.append(f"boss X footprint {(max(xs)-min(xs)):.2f} does not exceed the raw cutout width 14.90 (missing wall margin)")
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+sys.exit(1 if errs else 0)
+PY
 
 echo ok
