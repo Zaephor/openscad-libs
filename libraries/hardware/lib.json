@@ -1,6 +1,0 @@
-{
-  "name": "hardware",
-  "description": "Common fastener and standard hardware dimensions (mm).",
-  "version": "0.1.0",
-  "sources": ["ISO 273 clearance holes for metric bolts"]
-}

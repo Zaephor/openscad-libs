@@ -18,12 +18,10 @@ Libraries are imported namespaced by folder once `OPENSCADPATH` points at `libra
 (the `make`/`scripts/openscad.sh` launcher sets this for you):
 
 ```scad
-use <hardware/hardware.scad>;
+use <fans/fans.scad>;
 ```
 
 ## Libraries
-
-- [hardware](libraries/hardware) — fastener and standard hardware dimensions.
 
 ## Projects
 

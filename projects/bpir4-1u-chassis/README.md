@@ -27,7 +27,7 @@ also support-free. Rack ears default to slotted mounting holes
 (`ear_hole_type`), with round options available.
 
 All hardware dimensions are pulled live from the repo libraries (`sbc`,
-`rack10`, `fans`, `hardware`).
+`rack10`, `fans`).
 
 ![assembly](renders/bpir4-1u-chassis.png)
 

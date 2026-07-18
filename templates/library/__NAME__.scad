@@ -7,7 +7,7 @@
 // Conventions: centered origin X/Y, bottom face on Z=0; clearances from named
 // functions; millimeters; central $fn. Provenance: tag each value [A]/[B]/[C]
 // with a source; use //VERIFY for weak/unconfirmed values.
-// Pure-data libraries (e.g. hardware) keep ONLY the Data functions below and
+// Pure-data libraries (data functions only, no geometry) keep ONLY the Data functions below and
 // delete the placeholder/holes modules.
 
 $fn = 48;

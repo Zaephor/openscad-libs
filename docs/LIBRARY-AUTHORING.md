@@ -56,7 +56,7 @@ Each library is `libraries/<name>/<name>.scad`, imported namespaced
 
 Conventions: centered origin in X/Y, bottom face on `Z=0`; millimeters;
 clearances only from named values; a central `$fn`. A header comment states the
-library's **default orientation**. Pure-data libraries (e.g. `hardware`) keep
+library's **default orientation**. Pure-data libraries (data functions only, no geometry) keep
 only role 1.
 
 ## Verification
