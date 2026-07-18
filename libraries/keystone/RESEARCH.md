@@ -155,8 +155,132 @@ exists yet, so this stays local to `keystone`).
   (Wikipedia); needs a second independent corroborating source to clear
   `[B]`.
 
+## Real latch geometry (#31, STL-mesh)
+
+Three public models were mesh-measured to ground the `"lip"` cutout/insert
+geometry in a real rotate-and-snap mechanism instead of a plain rectangle:
+
+- **Cutout negative** — "Keystone Jack v2 integration aide" by SimplifiedLife,
+  [Printables 1027864](https://www.printables.com/model/1027864). Ships
+  `Keystone v2.stl` (the aide frame — what a panel-mounted printed insert
+  receiving a real jack looks like internally) + `Keystone v2.step` +
+  a plain rectangular `Keystone v2 - Keystone Hole Tool.stl` (a 23.6x27.3x15mm
+  featureless block — the boolean-subtract tool for cutting the panel's outer
+  pocket that the aide frame presses into; not itself latch geometry).
+- **Insert/module A** — "Keystone blank" by pmichaud,
+  [Printables 587874](https://www.printables.com/model/587874). Ships only a
+  3MF (`keystone-blank-230920.3mf`) — no bare STL.
+- **Insert/module B** — "(Parametric) Keystone Connector" by Paul Hatcher,
+  [Printables 537480](https://www.printables.com/model/537480). Ships
+  `Keystone Connector.stl`.
+
+No STEP/STL solid-modeling reader (FreeCAD/pythonocc/cadquery) was available
+in this environment, so the cutout negative's `.step` file could not be
+cross-checked against the STL — the STL alone is the basis for the cutout
+measurements below, which is why they're `//VERIFY` (single-mesh reading, not
+solid-model-cross-checked, and no second independent cutout-negative model
+was in scope this pass).
+
+### Mechanism
+
+Confirmed by the aide frame's internal cavity shape (see below) and
+consistent with Wikipedia's "Keystone module" description already cited
+under `keystone_tab()`: a **rigid hook** near the top-front rides a ramped
+lead-in as the jack is presented at an angle, seats into a shallow pocket:
+then the jack body is rotated in, and a **flexible latch** on the bottom
+deflects down a second ramp and snaps behind the opening's bottom lip.
+Removal is a thin blade/spudger pushed through a front slot to deflect the
+latch back out of its catch.
+
+### Cutout negative (`Keystone v2.stl`, 1027864) — front-to-back cross-sections
+
+Sectioned in 0.05-0.1mm Z-steps (front face = Z=0, positive = into the part,
+overall depth 9.75mm). Width holds constant at **14.90mm** through the
+entire depth (the retention mechanism is purely a height/Y-axis effect, no
+X-axis taper) — all figures below are the window/cavity **height**, `[C]//VERIFY`
+(single mesh, this exact model not corroborated by a second cutout-negative
+source):
+
+| Zone | Z from front | Depth | Window H | Note |
+|---|---|---|---|---|
+| Front lead-in chamfer | 0 – 0.42mm | 0.42mm | 17.41 → 17.43mm | small insertion bevel |
+| Front window (stable) | ~0.42mm | – | 17.43mm | matches `keystone_face` 14.5x16.0 `[B]` + ~1.4mm clearance |
+| **Top-lip ramp** | 0.42 – 4.32mm | 3.90mm | 17.43 → 21.30mm | ~45° ramp, top edge only; thins the top wall from 5.38mm to 1.51mm |
+| **Top-lip engagement pocket** | 4.32 – 5.37mm | 1.05mm | 21.30mm (flat) | top wall holds at **1.51mm** — matches the model's own "thin top side (1.5mm)" note almost exactly, strong confirmation of Z-orientation and measurement accuracy |
+| **Bottom-lip ramp** | 5.37 – 6.97mm | 1.60mm | 21.30 → 22.90mm | ~45° ramp, bottom edge only; thins the bottom wall from 6.75mm to 5.16mm |
+| Latch-clearance plateau | 6.97 – 8.27mm | 1.30mm | 22.90mm (flat, max) | max window — clearance for the flex latch's deflection travel |
+| Rear shoulder (abrupt step) | at 8.27mm | – | 22.90 → 20.06mm | insertion-depth hard stop; both walls thicken (top 1.51→3.10mm, bottom 5.16→6.40mm) |
+| Rear window | 8.27 – 9.42mm | 1.15mm | 20.06mm (flat) | |
+| Rear chamfer | 9.42 – 9.75mm | 0.33mm | widening | mirrors front lead-in |
+
+Reading: the hook's engagement ramp is staged **before** the latch's ramp
+(top ramp starts right at the front window, bottom ramp starts ~5mm in) —
+consistent with "hook engages first (near-flush insertion), then the body
+rotates in and the latch catches second."
+
+### Insert/module front-face corroboration
+
+Both insert models' front-tip cross-sections corroborate `keystone_face`
+14.5x16.0mm `[B]` and are individually in the same range as the cutout
+negative's 14.90x17.43mm window (window is naturally larger — it's a
+clearance passage, not the jack's own solid footprint):
+
+- pmichaud blank (587874): **14.60 x 16.00mm** at the front tip (Z~0.1mm) — `[C]` (2nd+ independent model corroborating `keystone_face`)
+- Hatcher connector (537480): **14.70 x 16.40mm** at the front face (Z~0.05mm) — `[C]` (3rd independent model corroborating `keystone_face`)
+
+### Insert/module retention-flare geometry — `//VERIFY` (parametric, author-chosen, not a standard — per task rule, stays `//VERIFY` regardless of corroboration)
+
+- **pmichaud blank** (22.0mm total Z depth, front = the end whose cross-section
+  matches the jack face): a constant compact shaft (14.6x16.0mm, matching the
+  front face) runs almost the entire body length; the retention flare —
+  where the envelope widens to **17.0 x 19.5mm** (corroborates
+  `keystone_body()` bw/bh 17.5/19.5, both currently `//VERIFY` — worth a
+  future upgrade pass) to make room for the hook/latch tabs — occupies only
+  the **last ~4.8mm nearest the front face**. A long (~17mm), roughly
+  constant-cross-section rib runs from just behind the flare almost the full
+  remaining body length toward the wire-management end — the structural
+  signature of a **flexible cantilever latch arm** (long+thin = compliant),
+  as opposed to a short rigid hook stub. This pass could not cleanly isolate
+  a separate short "hook" tab from the "latch" arm by automated
+  cross-sectioning alone — both features sit inside the same 4.8mm flare
+  zone and their loops merge in places — so a hook-specific offset/size is
+  not reported here (ambiguous single-mesh reading).
+- **Hatcher connector** (9.75mm total Z depth — same order as the cutout
+  negative, not the ~22mm insert body): a single **symmetric** step (not two
+  staged ramps) at Z~1.5–1.6mm from the front face, where the window jumps
+  from the compact front size straight to a max envelope **14.7 x 22.0mm**,
+  holding flat for ~6.6mm, then stepping back down near the rear. Both top
+  and bottom edges step out *together* here — a materially different
+  parametric choice from the aide's staged top-then-bottom ramps, which is
+  expected (these are author-chosen bench dimensions, not a de-facto
+  standard).
+- **Latch travel (upper bound only, from the receiving geometry, not a
+  direct deflection measurement)**: the cutout negative's bottom-lip ramp
+  opens the window's bottom edge by **1.60mm** (see table above) — this is
+  the clearance the frame *provides* for the latch tooth's downward travel,
+  not a measurement of the latch's own spring throw (which needs the insert
+  flexed under load — not obtainable from a static, unflexed mesh).
+- These figures relate to the existing `keystone_tab()` `//VERIFY` seed
+  values (`hook_ledge_z` 1.0mm, `tab_thickness` 1.2mm, `hook_edge`/`latch_edge`
+  `"+Y"`/`"-Y"`) — orientation (`+Y` fixed hook / `-Y` flexing latch) is
+  consistent with what's measured here, but the seed's specific 1.0/1.2mm
+  numbers are not directly confirmed or refuted by this pass.
+
+### Caliper-upgradeable
+
+All figures in this section are STL-mesh reverse-engineering of *other
+people's* prints, not the user's own hardware. Per backlog #16, every number
+here should be re-measured with calipers against the user's own keystone
+jacks and printed test fits before Task 2/3 geometry is treated as
+final — this research sets the *shape* (ramp-then-pocket, staged
+hook-then-latch, ~45° engagement angles) with more confidence than it sets
+the exact millimeter values.
+
 ## Sources
 
 - [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) — tier A — backs `keystone_opening()`, `keystone_plate_thickness()[0]` (tmin); also the sole (single, non-decomposed) reading behind `keystone_body()[2]` (bd), which stays `//VERIFY` since one non-decomposed reading doesn't earn a tier
 - [Wikipedia, "Keystone module"](https://en.wikipedia.org/wiki/Keystone_module) — tier B — corroborates `keystone_opening()`; also the sole secondary source behind the qualitative asymmetric-latch claim behind `keystone_tab()` hook_edge/latch_edge, which stays `//VERIFY` since a single secondary source doesn't clear the `[B]` bar (>=2 independent agreeing sources) on its own
 - [Monoprice keystone jack patch-panel product listings](https://www.monoprice.com/category/networking/patch-panels/keystone-jack-panel) — tier B — backs `keystone_pitch()` (3/4in / 19.05mm port spacing), corroborated by independent community discussion of standard keystone-panel spacing
+- ["Keystone Jack v2 integration aide" by SimplifiedLife, Printables 1027864](https://www.printables.com/model/1027864) — tier C (single-mesh, `//VERIFY`) — cutout negative window/lip/slot geometry, front-face corroboration
+- ["Keystone blank" by pmichaud, Printables 587874](https://www.printables.com/model/587874) — tier C (front face) / `//VERIFY` (retention-flare, parametric) — front-face corroboration, insert envelope and cantilever-latch-arm evidence
+- ["(Parametric) Keystone Connector" by Paul Hatcher, Printables 537480](https://www.printables.com/model/537480) — tier C (front face) / `//VERIFY` (retention-flare, parametric) — front-face corroboration, alternate (symmetric-step) retention-flare reading
