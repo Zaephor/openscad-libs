@@ -83,7 +83,7 @@ module _keystone_insert_at_stage(plate_thickness, fit, style, stage) {
 
 // [Mated] — insert fully seated in a plate with the real cutout. The
 // correctness gate: verify-scad-geometry must show the tabs engaging the
-// lips with no solid-body interference (see task-3-report.md).
+// lips with no solid-body interference.
 module keystone_assembly_mated(plate_thickness = 3.0, clearance = 0.25, fit = 0.2, style = "lip") {
     _keystone_frame(plate_thickness, clearance, style);
     keystone_insert(plate_thickness, fit, style);

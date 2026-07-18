@@ -137,19 +137,29 @@ keystone_insert(plate_thickness = 3.0);
 | `keystone_placeholder()` | module; jack envelope solid (`keystone_body()`), flange face at `Z=0`, body into `-Z` — fit/interference viz only |
 | `keystone_cutout(plate_thickness=3.0, clearance=0.25, style="lip")` | module; `"face"`: plain rectangular through-hole for a consumer `difference()`, sized `keystone_opening(style)` + `2*clearance` per side, overcut 1mm above/below the plate (unchanged). `"lip"` (#31): the REAL lipped negative — a front window necking through a top-edge hook ramp+pocket then a bottom-edge latch ramp+plateau (`keystone_latch()`), leaving real lip material a hook/latch can engage. Its Z-extent is **plate-thickness-independent** (the ~8.3mm mechanism exceeds `keystone_plate_thickness()`'s range) — pair with `keystone_boss()` below so the cut always lands in solid material. Print orientation: panel front face **down** on the bed (pins the support-free ramp direction — see the module comment) |
 | `keystone_boss(plate_thickness=3.0, clearance=0.25, style="lip")` | module (#31); `"face"`: no-op. `"lip"`: LOCAL positive material behind a thin panel — a constant-footprint rectangular pedestal (front flush with the panel front, `Z=0`, growing `-Z` the full mechanism depth via `keystone_boss_footprint()`) so `keystone_cutout(...,"lip")` always cuts real solid regardless of `plate_thickness`. `union()` this into the plate *before* differencing the cutout (see Usage above) |
-| `keystone_insert(plate_thickness=3.0, fit=0.2, style="lip")` | module; geometric mate-reference body (flange + through-plug + two retention tabs), narrowed by `fit` per side so it threads `keystone_cutout(style)`'s window. `"face"`: `+Y` hook + `-Y` latch bump grip the plate's front/rear faces (plate-thickness squeeze). `"lip"` (default): `-Y` fulcrum + `+Y` flex clip grip the opening's bottom/top lips (rotate-and-snap) — **not yet updated for #31's real lip geometry; mating-insert rework is backlog #31 Task 3** |
+| `keystone_insert(plate_thickness=3.0, fit=0.2, style="lip")` | module; geometric mate-reference body (flange + through-plug + two retention tabs), narrowed by `fit` per side so it threads `keystone_cutout(style)`'s window. `"face"`: `+Y` hook + `-Y` latch bump grip the plate's front/rear faces (plate-thickness squeeze). `"lip"` (default, #31 Task 3): `keystone_latch(style)`-derived, not `keystone_tab()`-derived — a rigid hook on `+Y` (top, shallow) fills the hook-pocket zone and a flexible latch on `-Y` (bottom, deep) fills the latch-plateau zone, grips the opening's top/bottom lips (rotate-and-snap) |
 
 ## Verification
 
 `keystone_insert()` dropped into a plate with `keystone_cutout()` removed
 (both at default params) is the library's virtual mate-check — the plug
-should fill the window, the flange should stop flush at the front face
-(`Z=0`), the latch should clear the plate rear, and the `+Y` hook should
-sit inside the cutout window without touching solid frame material.
+should fill the window and the flange should stop flush at the front face
+(`Z=0`). For `"lip"` (default, #31 Task 3): the rigid `+Y` hook (shallow)
+should seat in the hook-pocket zone and the flexible `-Y` latch (deep)
+should seat in the latch-plateau zone, both without touching solid frame
+material. For `"face"`: the `+Y` hook should sit inside the cutout window
+without touching solid frame material, and the `-Y` latch should clear the
+plate rear.
 
 ![keystone insert/cutout overlay mate-check](renders/mate-overlay-yz.png)
 
 ![+Y hook detail, zoomed](renders/hook-detail-yz.png)
+
+**These renders predate #31** and were generated against the pre-#31
+`"face"`-style single-hook geometry; they have not been regenerated since,
+so they visually show the old mechanism even though the underlying code
+(`keystone_insert()`/`keystone_cutout()`) is current for both styles — don't
+rely on them for `"lip"`'s current hook/latch shape.
 
 The hook detail render overlays the cutout window's Y-bound (`o[1]/2 +
 clearance`, red) and the raw opening edge (`o[1]/2`, green) against the
@@ -196,18 +206,18 @@ drawing reading or a single secondary source does NOT qualify as `[C]`/`[B]`).
   `keystone_plate_thickness()[1]` (tmax — no accepted-upper-bound source
   found), `keystone_min_wall()` (no source at all — repo print-process
   convention, not a keystone-specific spec), `keystone_tab()` (all fields —
-  mate-reference-only numerics, unchanged by #31; note `keystone_tab("lip")`'s
-  hook_edge/latch_edge top/bottom assignment is now known to be the
-  *opposite* of `keystone_latch("lip")`'s measured mechanism — see
-  `keystone_latch()`'s doc comment — `keystone_tab()` itself is untouched
-  pending the mating-insert rework in backlog #31 Task 3).
+  mate-reference-only numerics, unchanged by #31; its `"lip"` branch's
+  hook_edge/latch_edge top/bottom assignment is the *opposite* of
+  `keystone_latch("lip")`'s measured mechanism, confirmed backwards by
+  `keystone_tab()`'s own doc comment (#31) — it is left as a known-stale,
+  unused-for-`"lip"` accessor. `keystone_insert(...,"lip")` no longer reads
+  it: as of #31 Task 3 it derives from `keystone_latch()` instead).
   See `RESEARCH.md`'s `//VERIFY` census before treating these as
   load-bearing for a tight-fit design — in particular, `keystone_insert()`
-  is a geometric mate-reference built on the `//VERIFY` tab numerics,
-  **not** print-tuned, so it should not be printed as a functional latch
-  without a real jack/drawing measurement first. It also does **not** yet
-  reflect #31's real lip cutout shape (still a Task 3 item) — don't rely on
-  the Verification renders above for `"lip"`'s current hook/latch geometry.
+  is a geometric mate-reference built on `//VERIFY`-tier numerics
+  (`keystone_tab()` for `"face"`, `keystone_latch()` for `"lip"`), **not**
+  print-tuned, so it should not be printed as a functional latch without a
+  real jack/drawing measurement first.
 - All four roles are implemented: data, `keystone_placeholder()`,
   `keystone_cutout()`/`keystone_boss()`/`keystone_insert()`, and the
   fit-check family (`keystone_pitch_assert()` included, style-aware since
