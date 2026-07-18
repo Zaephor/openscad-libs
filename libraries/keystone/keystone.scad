@@ -161,6 +161,15 @@ function keystone_min_wall()        = 1.6;
 //           equal to "face"'s seed pending a real jack drawing; bounded by
 //           "clean overlay both styles" (verify-scad-geometry, #28), not a
 //           fixed literal.
+//           CONFIRMED BACKWARDS (#31): the "lip" top/bottom depth assignment
+//           above (deep/flex on TOP, shallow/rigid on BOTTOM) is now known,
+//           via keystone_latch()'s real STL-mesh measurement, to be the
+//           OPPOSITE of the actual mechanism (rigid hook shallow/TOP,
+//           flexible latch deep/BOTTOM) -- see keystone_latch()'s doc
+//           comment. This function is left as-is (mate-reference numerics
+//           only; reworking keystone_insert() to match is backlog #31 Task 3)
+//           -- do not read this "lip" split as correct when reworking the
+//           mating insert.
 function keystone_tab(style = "lip") =
     style == "face" ? [1.0, 1.2, "+Y", "-Y"] :
     style == "lip"  ? [1.0, 1.2, "+Y", "-Y"] :
@@ -323,8 +332,11 @@ module keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
         mech_end = keystone_latch(style)[5] - plateau_depth; // full mechanism depth (Z, negative)
         translate([-fw[0]/2, fw[2] - fw[1]/2, mech_end])
             cube([fw[0], fw[1], -mech_end]);
+    } else if (style == "face") {
+        // no-op -- see module comment.
+    } else {
+        assert(false, str("keystone: unknown style '", style, "'"));
     }
-    // "face": no-op -- see module comment.
 }
 
 /* [Insert] — geometric keystone mate-reference (NOT print-tuned; a print-ready

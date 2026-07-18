@@ -84,6 +84,20 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_boss_footprint(\"face\") failed to abort (no boss for face):"; echo "$out"; exit 1
 fi
 
+# Negative control: keystone_boss("bogus") must abort -- an ACTUALLY unknown
+# style, distinct from "face" (a legitimate no-op, not an error). Review
+# finding (#31): keystone_boss() previously had no `else` arm, so a typo'd
+# style silently produced zero geometry instead of erroring, unlike every
+# other style-keyed accessor in this file.
+cat > "$tmp/boss_unknown_style.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_boss(style = "bogus");
+EOF
+out="$(run "$tmp/boss_unknown_style.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_boss(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
+fi
+
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
 cat > "$tmp/dims.scad" <<'EOF'
 use <keystone/keystone.scad>;
