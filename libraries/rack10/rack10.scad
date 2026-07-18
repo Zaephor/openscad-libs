@@ -232,3 +232,14 @@ module rack10_placeholder(standard, u, depth_ftf, hole_type = "round") {
     %translate([-rack10_clear_width(standard)/2, 0, 0])
         cube([rack10_clear_width(standard), depth_ftf, h]);
 }
+
+// Rackpost context: the 4-post reference envelope framing a device, with `pad_u`
+// empty U BELOW and ABOVE the device's `device_u`-tall band. Datum: device bottom
+// at Z=0 (place the device at Z=0, call this for rack context). Total height =
+// (device_u + 2*pad_u) U. The caller applies `%` for a background/keep-out preview.
+// device_u/pad_u are INTEGER U — hole placement (rack10_holes -> rack10_hole_z)
+// uses a [0:u-1] loop; fractional/0.5U is a future enhancement, not supported here.
+module rack10_rackpost_context(standard, device_u = 1, pad_u = 1, depth_ftf, hole_type = "round") {
+    translate([0, 0, -pad_u * rack10_u()])
+        rack10_placeholder(standard, device_u + 2 * pad_u, depth_ftf, hole_type);
+}

@@ -162,4 +162,61 @@ sqd="$(span_x "$tmp/sqd.stl")"; sqn="$(span_x "$tmp/sqn.stl")"
 awk "BEGIN{exit !(($sqd==$sqn))}" \
   || { echo "square honored dia (regression!): dia=5 X-span $sqd vs named $sqn — square must ignore dia"; exit 1; }
 
+# #7 rackpost context: Z-extent = (device_u+2*pad_u)*u, device band centered
+# (Z-min = -pad_u*u). Also prove equivalence to the inline placeholder pattern.
+zbox() { python3 - "$1" <<'PY'
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+zs=[]
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12; zs.append(struct.unpack('<3f',d[b:b+12])[2])
+print(round(min(zs),3), round(max(zs)-min(zs),3))
+PY
+}
+# device_u=1,pad_u=1 -> 3U, Z-min -44.45, span 133.35
+cat > "$tmp/rpctx11.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_rackpost_context("labrax", device_u=1, pad_u=1, depth_ftf=240);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/rp11.stl" "$tmp/rpctx11.scad" 2>/dev/null
+read zmin zspan < <(zbox "$tmp/rp11.stl")
+awk "BEGIN{exit !(($zmin<-44.4)&&($zmin>-44.5)&&($zspan>133.2)&&($zspan<133.5))}" \
+  || { echo "rackpost_context(1,1) Z wrong: min=$zmin span=$zspan (want -44.45 / 133.35)"; exit 1; }
+# device_u=2,pad_u=1 -> 4U, Z-min -44.45, span 177.8 (proves parametricity)
+cat > "$tmp/rpctx21.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_rackpost_context("labrax", device_u=2, pad_u=1, depth_ftf=240);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/rp21.stl" "$tmp/rpctx21.scad" 2>/dev/null
+read zmin2 zspan2 < <(zbox "$tmp/rp21.stl")
+awk "BEGIN{exit !(($zspan2>177.6)&&($zspan2<178.0))}" \
+  || { echo "rackpost_context(2,1) span wrong: $zspan2 (want 177.8)"; exit 1; }
+# Equivalence: module(1,1) == inline translate(-u) placeholder(3) (identical
+# geometry). Compared as a canonical (sorted) triangle SET rather than raw
+# `cmp -s` bytes: this OpenSCAD/CGAL build does not guarantee a stable
+# per-triangle export order between separate invocations of the SAME .scad
+# file (verified: re-exporting one unchanged file twice yields byte-different
+# but triangle-set-identical STLs), so byte equality is not a viable
+# equivalence check here even though the geometry itself is deterministic.
+cat > "$tmp/rp_inline.scad" <<'EOF'
+use <rack10/rack10.scad>;
+translate([0,0,-rack10_u()]) rack10_placeholder("labrax", 3, 240);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/rpil.stl" "$tmp/rp_inline.scad" 2>/dev/null
+python3 - "$tmp/rp11.stl" "$tmp/rpil.stl" <<'PY' || { echo "rackpost_context(1,1) != inline placeholder(3) pattern"; exit 1; }
+import struct,sys
+def tris(path):
+    d = open(path, 'rb').read()
+    n = struct.unpack('<I', d[80:84])[0]
+    off = 84
+    out = []
+    for i in range(n):
+        rec = d[off + i*50 : off + i*50 + 48]  # normal(3f) + 3 verts(3f each)
+        out.append(tuple(round(v, 4) for v in struct.unpack('<12f', rec)))
+    return sorted(out)
+a, b = tris(sys.argv[1]), tris(sys.argv[2])
+sys.exit(0 if a == b else 1)
+PY
+
 echo ok

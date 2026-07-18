@@ -94,6 +94,14 @@ directly in the OpenSCAD GUI to see it. Flanges are centered on the hole
 column (reference-envelope simplification, not post-accurate) — this is a
 **non-print-ready fit-check aid**, not a printable LabRax post.
 
+`rack10_rackpost_context(standard, device_u, pad_u, depth_ftf, hole_type)`
+wraps `rack10_placeholder()` into a "device framed in a padded rack context"
+envelope: `pad_u` empty U below AND above a `device_u`-tall device band,
+datum device-bottom-at-`Z=0` (place your device at `Z=0` and call this
+alongside it for rack context) — the caller applies `%` for a background
+fit-check preview; `device_u`/`pad_u` are integer U only (fractional/0.5U
+is a future enhancement, not supported here).
+
 ## Reference
 
 | Function | Returns |
@@ -120,6 +128,7 @@ column (reference-envelope simplification, not post-accurate) — this is a
 | `rack10_holes(standard, u, hole_type, dia, depth, slot_travel)` | mounting-hole cutter, both rail columns, `u` units (subtract from a consumer solid) |
 | `rack10_slot_profile(dia, slot_travel)` | horizontal obround cross-section (used by `rack10_holes()`'s `"slot"` branch; extrude it directly for a standalone profile) |
 | `rack10_placeholder(standard, u, depth_ftf, hole_type)` | 4-flange rail envelope + front hole strip + `%` keep-out volume (fit-check reference) |
+| `rack10_rackpost_context(standard, device_u, pad_u, depth_ftf, hole_type)` | `rack10_placeholder()` sized to `device_u + 2*pad_u` U and shifted so the device band's bottom sits at `Z=0` — padded rack context around a device (integer U only) |
 | `rack10_panel(standard, u, thickness)` | plain faceplate blank, `u` units tall — subtract `rack10_holes()` to mount it |
 
 `hole_type` is `"round"` (pass a numeric clearance dia in `dia`), `"m6"` /
