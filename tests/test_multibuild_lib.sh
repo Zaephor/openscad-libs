@@ -156,4 +156,99 @@ sys.exit(0 if ok else 1)
 PY
 done
 
+# --- MultiBin container: envelope + cavity bbox / mutual alignment (#32) ---
+# Render the external envelope (multibin_placeholder) and the internal cavity
+# negative (multibin_cavity_cutout) for a seeded Simple Walls size, then verify
+# the cavity sits measurably INSIDE the envelope, centered on both XY axes, with
+# footprint - cavity == 2*wall. Catches two placeholders that each pass their own
+# bbox but are mutually misaligned.
+mb_size="[2,2,0.5]"
+
+cat > "$tmp/mb_place.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibin_placeholder($mb_size);
+EOF
+cat > "$tmp/mb_cav.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibin_cavity_cutout($mb_size);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/mb_place.stl" "$tmp/mb_place.scad" 2>/dev/null
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/mb_cav.stl"   "$tmp/mb_cav.scad"   2>/dev/null
+
+cat > "$tmp/mb_dims.scad" <<EOF
+use <multibuild/multibuild.scad>;
+sz = $mb_size;
+echo(multibin_footprint(sz)[0]);
+echo(multibin_footprint(sz)[1]);
+echo(multibin_height(sz));
+echo(multibin_cavity(sz)[0]);
+echo(multibin_cavity(sz)[1]);
+echo(multibin_cavity(sz)[2]);
+echo(multibin_wall(sz));
+EOF
+mapfile -t mb_dims < <(run "$tmp/mb_dims.scad" | grep -oE 'ECHO: -?[0-9]+(\.[0-9]+)?' | grep -oE '\-?[0-9]+(\.[0-9]+)?')
+if [ "${#mb_dims[@]}" -ne 7 ]; then
+  echo "MultiBin: expected 7 dimension echoes, got ${#mb_dims[@]}"; exit 1
+fi
+
+python3 - "$tmp/mb_place.stl" "$tmp/mb_cav.stl" "${mb_dims[@]}" <<'PY' || { echo "MultiBin envelope/cavity bbox or alignment incorrect"; exit 1; }
+import struct, sys
+
+def bbox(path):
+    d = open(path, 'rb').read()
+    n = struct.unpack('<I', d[80:84])[0]; off = 84
+    xs=[]; ys=[]; zs=[]
+    for i in range(n):
+        for v in range(3):
+            base = off + i*50 + 12 + v*12
+            x,y,z = struct.unpack('<3f', d[base:base+12])
+            xs.append(x); ys.append(y); zs.append(z)
+    return (min(xs),max(xs),min(ys),max(ys),min(zs),max(zs))
+
+place, cav = sys.argv[1], sys.argv[2]
+fw, fl, fh, cw, cl, ch, wall = (float(a) for a in sys.argv[3:10])
+tol = 1e-3
+
+pxmin,pxmax,pymin,pymax,pzmin,pzmax = bbox(place)
+cxmin,cxmax,cymin,cymax,czmin,czmax = bbox(cav)
+
+def close(a,b): return abs(a-b) < tol
+errs = []
+# envelope: footprint x height, floor at Z=0, centered XY
+if not close(pxmax-pxmin, fw): errs.append("envelope X span %.4f != %.4f"%(pxmax-pxmin, fw))
+if not close(pymax-pymin, fl): errs.append("envelope Y span %.4f != %.4f"%(pymax-pymin, fl))
+if not close(pzmax-pzmin, fh): errs.append("envelope Z span %.4f != %.4f"%(pzmax-pzmin, fh))
+if not close(pzmin, 0):        errs.append("envelope floor %.4f != 0"%pzmin)
+if not close((pxmin+pxmax)/2, 0): errs.append("envelope not X-centered")
+if not close((pymin+pymax)/2, 0): errs.append("envelope not Y-centered")
+# cavity: cavity dims, centered XY
+if not close(cxmax-cxmin, cw): errs.append("cavity X span %.4f != %.4f"%(cxmax-cxmin, cw))
+if not close(cymax-cymin, cl): errs.append("cavity Y span %.4f != %.4f"%(cymax-cymin, cl))
+if not close(czmax-czmin, ch): errs.append("cavity Z span %.4f != %.4f"%(czmax-czmin, ch))
+if not close((cxmin+cxmax)/2, 0): errs.append("cavity not X-centered")
+if not close((cymin+cymax)/2, 0): errs.append("cavity not Y-centered")
+# wall consistency measured from the actual geometry
+if not close((fw-cw)/2, wall): errs.append("X wall %.4f != %.4f"%((fw-cw)/2, wall))
+if not close((fl-cl)/2, wall): errs.append("Y wall %.4f != %.4f"%((fl-cl)/2, wall))
+# cavity strictly inside the envelope on every axis (mutual alignment)
+if not (cxmin > pxmin - tol and cxmax < pxmax + tol): errs.append("cavity exceeds envelope in X")
+if not (cymin > pymin - tol and cymax < pymax + tol): errs.append("cavity exceeds envelope in Y")
+if not (czmin > pzmin - tol and czmax < pzmax + tol): errs.append("cavity exceeds envelope in Z")
+
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+    sys.exit(1)
+sys.exit(0)
+PY
+
+# Negative control: unknown bin size must assert.
+cat > "$tmp/bad_bin.scad" <<'EOF'
+use <multibuild/multibuild.scad>;
+x = multibin_footprint([9,9,9]);
+EOF
+out="$(run "$tmp/bad_bin.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unknown bin size:"; echo "$out"; exit 1
+fi
+
 echo ok

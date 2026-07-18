@@ -50,3 +50,44 @@ for (t = multibuild_known_mounts()) {
         multibuild_hole(t);
     }
 }
+
+// --- MultiBin container (#32) ---
+// CU / panel-pitch / tolerance: the 50mm CU grid is DISTINCT from the 25mm MU
+// board grid (multibuild_grid_pitch()) -- these must not collapse to one value.
+assert(multibin_cu() == 50);
+assert(multibin_panel_pitch() == 50);
+assert(multibin_panel_pitch() != multibuild_grid_pitch()); // 50 (CU) != 25 (MU)
+assert(multibin_tolerance() == 0.25);
+
+// Seeded Simple Walls sizes (size key = [Nx, Ny, Hz] in CU cells):
+// footprint = 50*N, cavity W/D = 50*N-6, cavity H = 50*Hz-6, wall ~= 3.0.
+sz_a = [2, 2, 0.5];
+assert(multibin_footprint(sz_a) == [100, 100]);
+assert(multibin_cavity(sz_a) == [94, 94, 19]);
+assert(multibin_wall(sz_a) == 3.0);
+assert(multibin_height(sz_a) == 30); // external = 50*Hz + 5
+
+sz_b = [3, 2, 1.5];
+assert(multibin_footprint(sz_b) == [150, 100]);
+assert(multibin_cavity(sz_b) == [144, 94, 69]);
+assert(multibin_wall(sz_b) == 3.0);
+assert(multibin_height(sz_b) == 80);
+
+// Wall-consistency: footprint - cavity == 2*wall on each XY axis (so the two
+// placeholders cannot pass while mutually misaligned).
+for (sz = [sz_a, sz_b]) {
+    f = multibin_footprint(sz);
+    c = multibin_cavity(sz);
+    w = multibin_wall(sz);
+    assert(abs((f[0] - c[0]) - 2 * w) < 1e-6);
+    assert(abs((f[1] - c[1]) - 2 * w) < 1e-6);
+    // cavity must sit strictly inside the footprint on both XY axes
+    assert(c[0] < f[0] && c[1] < f[1]);
+}
+
+// Modules render for the seeded sizes (STL bbox/alignment checks live in
+// tests/test_multibuild_lib.sh; unknown-size negative control lives there too).
+for (sz = [sz_a, sz_b]) {
+    multibin_placeholder(sz);
+    multibin_cavity_cutout(sz);
+}

@@ -138,3 +138,57 @@ module multibuild_hole(type) {
     translate([0, 0, -h - 0.01])
         cylinder(h = h + 0.02, d = d, $fn = 48);
 }
+
+/* [Data: MultiBin] — 50mm CU / 50mm panel grid, DISTINCT from the 25mm MU
+   board grid above. Do NOT reuse multibuild_grid_pitch() (=25) for CU-based
+   sizing. See RESEARCH.md "MultiBin + Fix-Point (#32)".
+   MultiBin datum differs from the mount-feature -Z convention at file top: a
+   bin's floor sits at Z=0, its opening faces +Z, and its footprint is centered
+   on the XY origin (see multibin_placeholder). */
+function multibin_cu()          = 50;   // [A] docs.multibuild.io (CU = 50mm = 2x2 MU)
+function multibin_panel_pitch() = 50;   // [A, derived from CU] Panels/Base Plates sit on the CU grid
+function multibin_tolerance()   = 0.25; // [A] official design tolerance (same value as board parts)
+function multibin_floor()       = 5;    // [C] Simple Walls base floor thickness (STL mesh)
+
+// Simple Walls (standard-depth) shell family. Row:
+//   [size=[Nx,Ny,Hz], [fw,fl], [cw,cl,ch], wall]
+// footprint fw/fl = 50*N (edge-to-edge CU cells); cavity cw/cl = 50*N-6 (rim),
+// ch = 50*Hz-6 (usable internal height to the internal rim); wall ~= 3.0mm.
+// Footprint + cavity W/D are vendor-stated [A] AND mesh-confirmed [C]; cavity H
+// and external height follow the vendor [A] per-CU rules. Micro sub-family and
+// additional sizes deferred (see RESEARCH.md). Tier: [A]/[C].
+function _multibin_table() = [
+    [[2, 2, 0.5], [100, 100], [ 94, 94, 19], 3.0], // model 974493 (mesh 100x100 / 94x94)
+    [[3, 2, 1.5], [150, 100], [144, 94, 69], 3.0], // model 974135 (mesh 150x100 / 144x94)
+];
+function _multibin_row(size) =
+    let (r = [for (e = _multibin_table()) if (e[0] == size) e])
+    assert(len(r) == 1, str("multibin: unknown bin size ", size)) r[0];
+function multibin_footprint(size) = _multibin_row(size)[1]; // [fw, fl] external W x D
+function multibin_cavity(size)    = _multibin_row(size)[2]; // [cw, cl, ch] internal W x D x H
+function multibin_wall(size)      = _multibin_row(size)[3]; // rim wall thickness
+function multibin_height(size)    = multibin_cu() * size[2] + multibin_floor(); // [A] external = 50*Hz + 5
+
+/* [Placeholder] — external envelope solid (reference/viz + fit checks). This is
+   reference geometry, not a printed part, so the support-free global constraint
+   does not apply. */
+// MultiBin datum: floor at Z=0, opening toward +Z, footprint centered on the XY
+// origin (differs from the mount features' -Z convention at file top).
+module multibin_placeholder(size) {
+    f = multibin_footprint(size);
+    h = multibin_height(size);
+    translate([0, 0, h / 2])
+        cube([f[0], f[1], h], center = true);
+}
+
+/* [Negative] — internal cavity cutter (reference negative for insert/divider
+   design). This is negative reference geometry, not a printed part, so the
+   support-free global constraint does not apply. */
+// Cavity negative for the bin above: sits INSIDE the envelope with its floor at
+// Z=multibin_floor() (the 5mm base) and centered on XY, so wall =
+// (footprint-cavity)/2 on each axis. Same +Z-opening datum as the placeholder.
+module multibin_cavity_cutout(size) {
+    c = multibin_cavity(size);
+    translate([0, 0, multibin_floor() + c[2] / 2])
+        cube([c[0], c[1], c[2]], center = true);
+}
