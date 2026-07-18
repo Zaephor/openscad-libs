@@ -172,6 +172,32 @@ face_out="$(run "$tmp/face.scad")"
 fw="$(echo "$face_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
 fh="$(echo "$face_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
 
+# echo_val: Nth (1-based) ECHO: value from OpenSCAD output, sign preserved --
+# the plain digit-grepping pattern used above can't handle keystone_latch()'s
+# negative Z breakpoints (hook_z/pocket_z/latch_z), needed below (#31 Task 3).
+echo_val() { echo "$1" | grep 'ECHO:' | sed -n "${2}p" | sed -E 's/^ECHO:[[:space:]]*//'; }
+
+# keystone_latch("lip") breakpoints (#31 Task 3): fetched once, style-agnostic
+# (only "lip" has a latch mechanism at all) -- feeds the "lip" mating-tab
+# checks in the per-style loop below, single source of truth mirrored from
+# keystone_insert()'s own "lip" branch derivation.
+cat > "$tmp/latch_lip.scad" <<'EOF'
+use <keystone/keystone.scad>;
+l = keystone_latch("lip");
+echo(l[0]); echo(l[1]); echo(l[2]); echo(l[3]); echo(l[4]); echo(l[5]); echo(l[6]);
+echo(_keystone_plateau_depth());
+EOF
+latch_out="$(run "$tmp/latch_lip.scad")"
+# Names mirror keystone_latch()'s own field doc (l[0]..l[6]) 1:1 -- NOT
+# offset/reindexed, to avoid an off-by-one between this fetch and the scad
+# source of truth. L_PLATEAU_DEPTH is fetched from the scad source too (not
+# hand-copied) so a future _keystone_plateau_depth() change can't silently
+# drift from this test's own rear_overcut/plateau-zone math.
+L_WIDTH="$(echo_val "$latch_out" 1)";   L_FRONT_H="$(echo_val "$latch_out" 2)"
+L_HOOK_Z="$(echo_val "$latch_out" 3)";  L_HOOK_H="$(echo_val "$latch_out" 4)"
+L_POCKET_Z="$(echo_val "$latch_out" 5)"; L_LATCH_Z="$(echo_val "$latch_out" 6)"
+L_LATCH_H="$(echo_val "$latch_out" 7)"; L_PLATEAU_DEPTH="$(echo_val "$latch_out" 8)"
+
 # Per-style tab + insert mate-check (#28): keystone_tab(style)/keystone_insert(...,style).
 # Mirrors the pre-#28 single-style insert check, generalized across BOTH "lip"
 # (fulcrum/flex-clip vs the opening's lips) and "face" (grip the plate faces).
@@ -199,11 +225,19 @@ EOF
   # non-manifold/CGAL error on the combined solid means the insert collides
   # with (or fails to clear) the frame material this style's cutout leaves behind.
   PLATE=3.0
+  # Frame includes keystone_boss() (no-op for "face", #31's real consumer
+  # pattern for "lip" -- see keystone_cutout()'s module comment) so the "lip"
+  # smoke check actually exercises the boss-hosted mechanism, not just a bare
+  # thin plate that the plate-thickness-independent "lip" cutout mostly
+  # overshoots into open air.
   cat > "$tmp/mate_$STYLE.scad" <<EOF
 use <keystone/keystone.scad>;
 union() {
     difference() {
-        translate([-15, -15, -$PLATE]) cube([30, 30, $PLATE]);
+        union() {
+            translate([-15, -15, -$PLATE]) cube([30, 30, $PLATE]);
+            keystone_boss(plate_thickness = $PLATE, style = "$STYLE");
+        }
         keystone_cutout(plate_thickness = $PLATE, style = "$STYLE");
     }
     keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
@@ -212,6 +246,63 @@ EOF
   mate_out="$(run "$tmp/mate_$STYLE.scad")"
   if echo "$mate_out" | grep -qiE 'ERROR:|Assertion .* failed'; then
     echo "keystone_insert/cutout overlay-mate ($STYLE) failed:"; echo "$mate_out"; exit 1
+  fi
+
+  # HARD assertion (#31 Task 3): a real geometric boolean intersection
+  # between the FRAME (remaining solid material after keystone_boss()+
+  # keystone_cutout()) and the INSERT, restricted to Z < -0.01 (strictly
+  # behind the panel front, excluding the front flange -- which is BY DESIGN
+  # coplanar/flush with the panel front at Z=0 and would otherwise register
+  # as a false-positive degenerate zero-volume "overlap"). If the insert's
+  # tabs clip solid frame material ANYWHERE behind the panel, this
+  # intersection is non-empty and OpenSCAD exports a real STL; if they truly
+  # clear the frame (just render-without-error, which a union of overlapping
+  # solids would also satisfy -- that's the whole reason this check exists
+  # instead of trusting $mate_out above), OpenSCAD reports "Current top
+  # level object is empty" and refuses to export anything (checked via
+  # absence of a non-empty STL file, not stderr text, since that message
+  # isn't guaranteed stable across OpenSCAD versions).
+  cat > "$tmp/overlap_$STYLE.scad" <<EOF
+use <keystone/keystone.scad>;
+intersection() {
+    intersection() {
+        difference() {
+            union() {
+                translate([-15, -15, -$PLATE]) cube([30, 30, $PLATE]);
+                keystone_boss(plate_thickness = $PLATE, style = "$STYLE");
+            }
+            keystone_cutout(plate_thickness = $PLATE, style = "$STYLE");
+        }
+        keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
+    }
+    translate([-20, -20, -20]) cube([40, 40, 19.99]);
+}
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/overlap_$STYLE.stl" "$tmp/overlap_$STYLE.scad" >/dev/null 2>&1
+  if [ -s "$tmp/overlap_$STYLE.stl" ]; then
+    # Non-empty doesn't necessarily mean a real clip: two solids that touch
+    # with zero gap (both styles do this by design -- "face"'s hook/latch
+    # tabs meet the raw window edge exactly, no fit inset on that side) also
+    # produce a non-empty CGAL intersection, but it's a zero-VOLUME
+    # degenerate sliver (confirmed empirically: one axis extent == 0.0),
+    # unlike a real clip which has genuine extent on all three axes. Parse
+    # the STL bbox and only fail on an actual 3D volume.
+    python3 - "$tmp/overlap_$STYLE.stl" "$STYLE" <<'PY' || exit 1
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[];zs=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        xs.append(x); ys.append(y); zs.append(z)
+ex,ey,ez=(max(xs)-min(xs)), (max(ys)-min(ys)), (max(zs)-min(zs))
+eps=0.02
+if ex > eps and ey > eps and ez > eps:
+    sys.stderr.write(f"insert/frame no-clip check ({sys.argv[2]}) FAILED: real volumetric overlap {ex:.3f}x{ey:.3f}x{ez:.3f}mm (insert tab clips solid frame material)\n")
+    sys.exit(1)
+sys.exit(0)
+PY
   fi
 
   # Insert alone, numeric bbox checks.
@@ -224,7 +315,9 @@ EOF
   # Single STL parse feeds all four checks below (bbox/plug/noclip, mesh
   # connectivity, and the direct per-tab edge-coordinate check) -- avoids
   # re-reading/re-parsing the same binary STL three times (test-only nit).
-  python3 - "$tmp/insert_$STYLE.stl" "$sow" "$soh" "$fw" "$fh" "$FIT" "$PLATE" "$ledge_z" "$tab_th" "$STYLE" <<'PY' || { echo "insert ($STYLE) geometry check failed"; exit 1; }
+  python3 - "$tmp/insert_$STYLE.stl" "$sow" "$soh" "$fw" "$fh" "$FIT" "$PLATE" "$ledge_z" "$tab_th" "$STYLE" \
+      "$L_WIDTH" "$L_FRONT_H" "$L_HOOK_Z" "$L_HOOK_H" "$L_POCKET_Z" "$L_LATCH_Z" "$L_LATCH_H" "$L_PLATEAU_DEPTH" \
+      <<'PY' || { echo "insert ($STYLE) geometry check failed"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
 verts=[]   # raw (x,y,z) per vertex, in STL order
@@ -238,6 +331,11 @@ for i in range(n):
         tri.append((round(x,2), round(y,2), round(z,2)))
     tris.append(tri)
 ow,oh,fw,fh,fit,plate,ledge_z,tab_th=map(float,sys.argv[2:10]); style=sys.argv[10]
+# keystone_latch("lip") breakpoints (#31 Task 3) -- field names match
+# keystone_latch()'s own doc 1:1 (width,front_h,hook_z,hook_h,pocket_z,
+# latch_z,latch_h). Always present (style-agnostic fetch), only used when
+# style == "lip".
+lw,lfh,lhz,lhh,lpz,llz,llh,lplateau = map(float, sys.argv[11:19])
 tol=0.1
 xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
 errs=[]
@@ -269,22 +367,64 @@ if not behind_ok:
 # (excludes the front flange at Z>=0 and any feature at/behind the plate rear,
 # which are allowed -- by design -- to grip material outside the window) must
 # stay within the window's raw X/Y bound, i.e. never punch into solid frame.
-# "face" ONLY: this assumes a plain-rectangle cutout whose raw X/Y bound
-# (ow/2, oh/2) is constant through the whole plate depth -- true for "face"
-# (unchanged), but "lip"'s real cutout (#31) is Z-varying and materially
-# NARROWER than ow/2,oh/2 for most of its depth (see keystone_cutout()'s
-# ramp/pocket zones), so this same bound would false-fail a CORRECT lip
-# insert whose hook/latch legitimately reach inward past this stale flat
-# bound. keystone_insert("lip") itself is unchanged in this task (mating
-# insert geometry is backlog #31 Task 3) so there's nothing lip-shaped to
-# check against yet -- the real "does the cutout leave real lip material"
-# assertion is the standalone lip-cutout section check below, independent of
-# the insert.
+# "face": plain-rectangle cutout, raw X/Y bound (ow/2, oh/2) constant through
+# the whole plate depth (unchanged).
 if style == "face":
     inband = [(x,y) for x,y,z in verts if -(plate-0.02) < z < -0.02]
     noclip_ok = all(abs(x) <= ow/2+0.05 and abs(y) <= oh/2+0.05 for x,y in inband)
     if not noclip_ok:
         errs.append("insert tab protrudes into solid frame within the plate band (regression)")
+
+# "lip" (#31 Task 3): the real cutout is Z-varying (front flat -> hook ramp
+# -> hook pocket -> latch ramp -> latch plateau, see keystone_cutout()), so
+# the flat ow/2,oh/2 bound above would false-fail a CORRECT lip insert whose
+# hook/latch legitimately reach inward past it. Mirror keystone_cutout()'s
+# own per-zone Y bound (raw, pre-clearance -- this module doesn't know the
+# cutout's own `clearance` param, which only ever grows the cavity further,
+# so checking the raw bound is already conservative) and confirm every
+# vertex fits inside it at its own Z. This is a real per-vertex section
+# check, not a sampled slice -- the primary "geometric section/no-clip"
+# proof for the "lip" style (the full-3D empty-intersection check above is
+# the other, style-shared half of that proof).
+if style == "lip":
+    raw_top_hook  = lhh - lfh/2
+    raw_bot_front = -lfh/2
+    raw_bot_latch = raw_top_hook - llh
+    rear_overcut  = llz - lplateau - 1  # mirrors keystone_cutout()'s own rear_overcut (_keystone_plateau_depth() fetched from source + 1mm overcut)
+    def lip_bound_at_z(z):
+        if z > -0.02:
+            return None  # front flange territory (Z>=0, outside the panel -- a bezel resting on the front face, not constrained by the cavity bound at all) -- not checked here
+        if z >= lhz:      # hook ramp: Z 0 -> hook_z, top edge interpolates front->hook
+            t = z / lhz if lhz != 0 else 0.0
+            return (raw_bot_front, (lfh/2) + t*(raw_top_hook - lfh/2))
+        if z >= lpz:      # hook pocket flat
+            return (raw_bot_front, raw_top_hook)
+        if z >= llz:      # latch ramp: bottom edge interpolates hook->latch
+            t = (z - lpz) / (llz - lpz)
+            return (raw_bot_front + t*(raw_bot_latch - raw_bot_front), raw_top_hook)
+        if z >= rear_overcut:  # latch plateau + rear overcut, flat
+            return (raw_bot_latch, raw_top_hook)
+        return None  # past the modeled cutout depth entirely -- not checked here
+    margin = 0.03  # float slop only; the real safety margin is `fit`, baked into the geometry itself
+    clip_pts = []
+    for x,y,z in verts:
+        b = lip_bound_at_z(z)
+        if b is None:
+            continue
+        bot,top = b
+        if not (bot - margin <= y <= top + margin):
+            clip_pts.append((round(x,2), round(y,2), round(z,2)))
+    if clip_pts:
+        errs.append(f"insert (lip) has {len(clip_pts)} vertex/vertices outside the real lip cavity bound (frame clip), e.g. {clip_pts[0]}")
+
+    # Interlock proof: the hook tab's outer Y edge must exceed the FRONT
+    # window's half-height (lfh/2) -- i.e. the tab is wider than the narrow
+    # front opening, so it cannot be withdrawn straight out through the
+    # front without clipping the lip standing between Z=0 and hook_z. This
+    # is what makes it a genuine hook (vs. just floating in a wide pocket).
+    hook_outer_y = raw_top_hook - fit
+    if not (hook_outer_y > lfh/2 + margin):
+        errs.append(f"insert (lip) hook tab outer Y {hook_outer_y:.2f} does not exceed the front window half-height {lfh/2:.2f} -- not a real hook (would pass straight through the front)")
 
 # Tab/plug connectivity (#28 review finding): plug_ok above only checks the
 # plug TIP cross-section (deepest Z -- unrelated to hook/latch position) and
@@ -346,13 +486,16 @@ if style == "face":
         ("hook",   -(ledge_z + tab_th), False,  plug_h_xy/2),  # +Y edge: inner = min(Y)
         ("latch",  -(plate + tab_th),   True,  -plug_h_xy/2),  # -Y edge: inner = max(Y)
     ]
-else:  # "lip" -- keystone_insert("lip") is UNCHANGED this task (mating insert
-    # geometry for the real lip mechanism is backlog #31 Task 3); its
-    # fulcrum/clip tabs still encode the pre-#28 flat-window guess, which no
-    # longer matches the real lip cross-section this task ships, so asserting
-    # their edge position here would just be locking in a stale placeholder.
-    # Nothing to check against the new geometry yet -- skip, deferred to Task 3.
-    tab_checks = []
+else:  # "lip" (#31 Task 3): keystone_latch()-derived hook/latch tabs. Each
+    # tab's own free face is one of its flat zone's own Z boundaries -- both
+    # hook_z/-4.32 (hook tab: spans pocket_z..hook_z) and latch_z/-6.97
+    # (latch tab: spans latch_z-plateau_depth..latch_z) belong to no other
+    # feature (flange only occupies Z in [0,1.2]; plug corners are only at
+    # Z=0 and Z=-plug_h), confirmed empirically against the actual STL.
+    tab_checks = [
+        ("hook",  lhz, False,  plug_h_xy/2),  # +Y edge: inner = min(Y)
+        ("latch", llz, True,  -plug_h_xy/2),  # -Y edge: inner = max(Y)
+    ]
 
 for name, z_target, want_max, expected in tab_checks:
     inner = inner_edge_at(z_target, want_max)

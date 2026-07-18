@@ -228,6 +228,13 @@ module keystone_placeholder() {
         cube([b[0], b[1], b[2]]);
 }
 
+// _keystone_plateau_depth(): RESEARCH.md's latch-clearance-plateau span (the
+// real engagement depth PAST latch_z where the flex latch's deflection
+// travel lives), mm. Single source for keystone_cutout()/keystone_boss()
+// (#31) and keystone_insert() (#31 Task 3) -- all three key off the exact
+// same constant; do not hand-copy this number elsewhere.
+function _keystone_plateau_depth() = 1.30;
+
 // _keystone_lip_flat/_keystone_lip_wedge: private helpers for the "lip"
 // cutout/boss below. A "flat" zone is a constant Y cross-section extruded
 // between two Z bounds; a "wedge" is the hull() of two thin Y cross-sections
@@ -294,7 +301,7 @@ module keystone_cutout(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
         top_front = raw_top_front + clearance;  bot_front = raw_bot_front - clearance;
         top_hook  = raw_top_hook  + clearance;  bot_hook  = raw_bot_hook  - clearance;
         top_latch = raw_top_latch + clearance;  bot_latch = raw_bot_latch - clearance;
-        plateau_depth = 1.30; // RESEARCH.md's latch-clearance-plateau span
+        plateau_depth = _keystone_plateau_depth();
         rear_overcut = l[5] - plateau_depth - 1; // 1mm past the mechanism's own rear end
         union() {
             _keystone_lip_flat(1, 0, top_front, bot_front, wx);                          // front overcut
@@ -328,7 +335,7 @@ module keystone_cutout(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
 module keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
     if (style == "lip") {
         fw = keystone_boss_footprint(style, clearance); // [w, h, y_center]
-        plateau_depth = 1.30; // RESEARCH.md's latch-clearance-plateau span (mirrors keystone_cutout())
+        plateau_depth = _keystone_plateau_depth();
         mech_end = keystone_latch(style)[5] - plateau_depth; // full mechanism depth (Z, negative)
         translate([-fw[0]/2, fw[2] - fw[1]/2, mech_end])
             cube([fw[0], fw[1], -mech_end]);
@@ -349,28 +356,53 @@ module keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = "lip") {
    jack itself (task #28 fix: previously the plug incorrectly used
    keystone_opening(), which is taller for "lip" and doesn't represent a real
    jack). `fit` = clearance the plug sits under the face, per side.
-   Retention geometry (keystone_tab(style)) differs per style:
-     "face": hook (+Y) rides just behind the front face; latch (-Y) bumps out
-             past the window's raw edge but entirely behind the plate rear
-             (open air there, not solid material) -- grips the plate's flat
-             front/rear faces (pre-#28 model, unchanged).
-     "lip":  fulcrum (-Y, bottom) is a shallow near-front foot filling the
-             window's bottom slack (oh is taller than the jack face) up to,
-             but never past, the bottom lip; flex clip (+Y, top) is a deep
-             behind-rear tab filling the top slack up to, but never past, the
-             top lip. Both stay within the window's raw bound -- contact is
-             modeled against the lip (the window's edge wall) rather than the
-             plate's flat faces. //VERIFY mate-reference-only numerics. */
+   Retention geometry differs per style:
+     "face": keystone_tab(style)-derived. hook (+Y) rides just behind the
+             front face; latch (-Y) bumps out past the window's raw edge but
+             entirely behind the plate rear (open air there, not solid
+             material) -- grips the plate's flat front/rear faces (pre-#28
+             model, unchanged).
+     "lip":  keystone_latch(style)-derived (#31 Task 3) -- keystone_tab() is
+             NOT used here (its "lip" branch is confirmed backwards, see its
+             own comment). A RIGID HOOK (+Y, shallow) fills the hook-pocket
+             flat zone (Z: pocket_z..hook_z) from the plug's own +Y face out
+             to the pocket's inner edge, inset `fit`; a FLEXIBLE LATCH (-Y,
+             deep) fills the latch-plateau flat zone (Z: latch_z-plateau_depth
+             ..latch_z -- the mechanism's real engagement span, not
+             keystone_cutout()'s further +1mm rear-overcut manufacturing
+             allowance) from the plug's own -Y face out to the plateau's
+             inner edge, inset `fit`. Both tabs are inset from the RAW
+             (pre-clearance) keystone_latch() edge, same convention as
+             "face" above (`fit` is the insert-vs-cutout slip margin; the
+             cutout's own `clearance` param is unknown to this module and
+             only ever grows the cavity further, so insetting from the raw
+             edge is already conservative). Through-plug depth for "lip" is
+             mechanism-depth-driven (plate-thickness-independent, like its
+             cutout/boss, #31) rather than plate_thickness-driven, since the
+             boss hosts the mechanism regardless of plate thickness.
+             //VERIFY mate-reference-only numerics (shape/zones are #31's
+             measured single source; exact fit margins are not jack-drawing
+             confirmed). Both styles: NOT print-tuned (a print-ready
+             flexing-latch insert is out of scope for v1, see backlog #22) --
+             this is a virtual/geometric proof the mechanism concept works,
+             not a manufacturable part. */
 module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "lip") {
     o = keystone_opening(style);  // [ow, oh] — the window THIS style's cutout leaves
     f = keystone_face();          // [fw, fh] — the real jack, style-independent
-    t = keystone_tab(style);      // [hook_ledge_z, tab_thickness, hook_edge, latch_edge]
+    t = keystone_tab(style);      // [hook_ledge_z, tab_thickness, hook_edge, latch_edge] -- "face" only (#31)
     ledge_z = t[0];
     tab_th  = t[1];
     flange  = 1.5;   // flange lip beyond the window, per side
     plug_w  = f[0] - 2*fit;  // plug cross-section: jack face, less `fit` per side
     plug_h_xy = f[1] - 2*fit;
-    plug_h  = plate_thickness + 3;  // through-plug reaches 3mm behind the plate rear
+    // through-plug depth: "face" reaches 3mm behind the plate rear (pre-#28,
+    // unchanged). "lip" (#31) is plate-thickness-independent like its
+    // cutout/boss -- reaches 0.5mm past the flex-latch tab's own rear face
+    // (mechanism-depth-driven). keystone_latch("lip") is always a valid call
+    // (never asserts) regardless of `style`, so this is safe to compute
+    // unconditionally; only USED when style == "lip".
+    lip_latch_rear_z = keystone_latch("lip")[5] - _keystone_plateau_depth();
+    plug_h  = (style == "lip") ? (-lip_latch_rear_z + 0.5) : (plate_thickness + 3);
     // No separate style guard here: keystone_opening(style) above already
     // asserts on an unknown style before this point is reached.
     union() {
@@ -403,21 +435,34 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "lip") {
             // opening-derived -- now it must be spanned explicitly).
             translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
                 cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
-        } else { // style == "lip"
-            // fulcrum foot on -Y edge (bottom): shallow, near-front (Z: 0 to
-            // -ledge_z), spanning from the window's bottom lip (inset `fit` so
-            // it never touches solid frame) up to the plug's own -Y face --
-            // fills the window's bottom slack (oh is taller than the jack face
-            // to allow rotate-and-snap insertion).
-            translate([-plug_w/2, -(o[1]/2 - fit), -ledge_z])
-                cube([plug_w, (o[1]/2 - fit) - plug_h_xy/2, ledge_z]);
-            // flex clip on +Y edge (top): deep, behind the plate rear (Z:
-            // -(plate_thickness) to -(plate_thickness+tab_th)) -- the ramp
-            // that compresses through the window on insertion and snaps back
-            // out once clear, catching the top lip from behind. Fills the
-            // window's top slack, inset `fit` from the raw edge.
-            translate([-plug_w/2, plug_h_xy/2, -(plate_thickness + tab_th)])
-                cube([plug_w, (o[1]/2 - fit) - plug_h_xy/2, tab_th]);
+        } else { // style == "lip" (#31 Task 3: keystone_latch()-derived, NOT keystone_tab())
+            l = keystone_latch(style); // [width,front_h,hook_z,hook_h,pocket_z,latch_z,latch_h]
+            plateau_depth = _keystone_plateau_depth();
+            // Raw (pre-clearance) Y edges at the hook-pocket / latch-plateau
+            // zones -- mirrors keystone_cutout()'s own derivation (same
+            // single source, keystone_latch()) so the tabs land exactly in
+            // the cavity the cutout leaves.
+            raw_top_hook  = l[3] - l[1]/2;        // hook-pocket top edge (grows across the hook ramp only)
+            raw_bot_latch = raw_top_hook - l[6];  // latch-plateau bottom edge (grows across the latch ramp only)
+
+            // rigid hook (+Y, top, shallow): fills the hook-pocket flat zone
+            // (Z: pocket_z..hook_z, keystone_latch()'s own pocket span) from
+            // the plug's own +Y face out to the pocket's inner edge, inset
+            // `fit`. This tab sits BEHIND the front lip (the material
+            // keystone_cutout() leaves standing from Z=0..hook_z, outside
+            // the ramp) -- it cannot be pulled straight out in +Z without
+            // clipping that lip, matching the real mechanism's rigid hook.
+            translate([-plug_w/2, plug_h_xy/2, l[4]])
+                cube([plug_w, (raw_top_hook - fit) - plug_h_xy/2, l[2] - l[4]]);
+
+            // flexible latch (-Y, bottom, deep): fills the latch-plateau
+            // flat zone (Z: latch_z-plateau_depth..latch_z -- the
+            // mechanism's real engagement span, NOT keystone_cutout()'s
+            // further +1mm rear-overcut manufacturing allowance) from the
+            // plug's own -Y face out to the plateau's inner edge, inset
+            // `fit`. Snaps in behind the bottom lip once past the latch ramp.
+            translate([-plug_w/2, raw_bot_latch + fit, l[5] - plateau_depth])
+                cube([plug_w, -plug_h_xy/2 - (raw_bot_latch + fit), plateau_depth]);
         }
     }
 }
