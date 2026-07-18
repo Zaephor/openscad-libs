@@ -33,8 +33,9 @@ module assembly() {
         translate([0, 0, (ext_h() - lid_th) + 30 * explode])
             lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
     if (show_rack)
-        translate([0, 0, -rack10_u()])          // chassis is the middle of 3U
-            % rack10_placeholder(STD, 3, rack_depth_eff());
+        // Rack context: chassis (1U device) centered in a 3U window (1U pad
+        // above+below) — see rack10_rackpost_context() (#7 generalize-to-core).
+        % rack10_rackpost_context(STD, 1, 1, rack_depth_eff());
 }
 
 assembly();
