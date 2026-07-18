@@ -17,7 +17,6 @@ ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
 
 include <../params.scad>;
 use <rack10/rack10.scad>;
-use <hardware/hardware.scad>;
 use <tray.scad>;   // for _lid_post_xy() (functions import via use)
 use <_honeycomb.scad>;
 
@@ -28,7 +27,8 @@ module _lid_countersink() {
     // included-angle cone, cone depth = radius delta = (cs_dia - hole_dia)/2
     // — NOT half of cs_dia (that would make the cone deeper than the lid and
     // remove the straight shank bore entirely).
-    hole_dia = m3_clearance_mm();
+    // M3 clearance — ISO 273 medium fit, 3.4mm [B]//VERIFY; inlined (#17, hardware lib removed).
+    hole_dia = 3.4;
     cs_dia   = hole_dia + csk_head_extra; // head dia approx (M3 CSK ~6mm -> generous)
     cs_depth = (cs_dia - hole_dia) / 2;
     translate([0, 0, -1]) cylinder(h = lid_th + 2, d = hole_dia);

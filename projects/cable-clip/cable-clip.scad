@@ -1,8 +1,9 @@
-// cable-clip — single-part project. Demonstrates importing the hardware library.
+// cable-clip — single-part project: a printable cable clip.
 // Render: make render P=cable-clip
-use <hardware/hardware.scad>;
 
-screw_hole = m3_clearance_mm();
+// M3 clearance — ISO 273 medium fit, 3.4mm [B]//VERIFY (named standard, not
+// fetched). Inlined: the repo `hardware` lib was removed (#17).
+screw_hole = 3.4;
 
 module cable_clip() {
     difference() {

@@ -13,7 +13,6 @@ include <../params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
-use <hardware/hardware.scad>;
 use <heatset/heatset.scad>;
 use <_honeycomb.scad>;
 
