@@ -747,8 +747,9 @@ Sources this section:
   **2×2 MU = 1×1 CU**. The MU grid (25mm) is the board hole pitch documented
   in "Grid pitch — 25mm (MU)" above; the CU grid (50mm) is the separate
   MultiBin cell size. Do not conflate them. `[A]`
-- **Panel / Base Plate pitch = 50mm** — MultiBin Panels are "50 mm grids" and
-  "each Panel cell [is] 50 mm apart". `[A]`
+- **Panel / Base Plate pitch = 50mm** — MultiBin Panels and Base Plates sit on
+  the confirmed CU grid (CU = 50mm, above); no separate Panel-pitch figure is
+  stated in the docs. `[A, derived from CU]`
 - **Design tolerance = 0.25mm** (same value the board parts use). `[A]`
 - Dimension-order convention: **Width (front) × Depth (side) × Height**. `[A]`
 
