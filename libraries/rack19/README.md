@@ -134,7 +134,7 @@ caller-supplied `depth` can under-cut a thicker target.
 | [Micropolis: Rack-mounting FAQ](https://www.micropolis.com/support/kb/rack-mounting-faq) | B | Stacking gap / device height formula, independent vendor source, exact match with Wikipedia |
 | [Wikipedia: Cage nut](https://en.wikipedia.org/wiki/Cage_nut) | B | Cage-nut square hole size (9.5mm), single-source this pass |
 | [IBM N series — Rack specifications](https://www.ibm.com/docs/en/n-series?topic=specifications-requirements) | B | Opening width, hole h center-to-center (band 464.2–465.8mm), per-U hole gaps, round rack-hole diameter (bonus) — a real vendor *installation spec* citing EIA-310-D, not the standard itself |
-| ISO 273 close-fit clearance series (named standard, not fetched this pass) | B | M6 screw clearance (6.6mm) |
+| ISO 273 medium fit clearance series (named standard, not fetched this pass) | B | M6 screw clearance (6.6mm) |
 | ANSI B18.2 close-fit clearance-drill series (named standard, cited from memory of the published series, not fetched this pass) | C `//VERIFY` | 10-32 (5.0mm) / 12-24 (5.6mm) screw clearance |
 
 EIA-310-D itself (the governing standard) was confirmed paywalled
@@ -174,7 +174,7 @@ a placeholder — see `RESEARCH.md` for the full fetch-attempt log:
   **not read off a fetched table this pass**. Flag for a caliper or
   live-table verification pass before cutting real hardware to these
   numbers. M6 (6.6mm) is tier `[B]`, cited to ISO 273 (named standard, not
-  fetched) directly, continuing that standard's published close-fit series
+  fetched) directly, continuing that standard's published medium fit series
   (M3/M4/M5/M6).
 - **Depth presets (400/600/800mm)** — illustrative common 19in mounting
   depths, **not EIA-310-D-fixed** (the standard governs the front

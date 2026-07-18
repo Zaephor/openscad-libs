@@ -64,8 +64,8 @@ function rack19_known_threads() = ["10-32", "12-24", "M6"];
 //     (#10≈0.199in=5.05mm→5.0mm; #12≈0.221in=5.61mm→5.6mm); named
 //     standard, not fetched this pass (paywalled, see
 //     RESEARCH.md fetch-attempt table).
-//   M6: [B] ISO 273 close-fit, named standard, not fetched this pass
-//     (ISO 273's published close-fit series: M3->3.4, M4->4.5, M5->5.5, M6->6.6).
+//   M6: [B] ISO 273 medium fit, named standard, not fetched this pass
+//     (ISO 273's published medium fit series: M3->3.4, M4->4.5, M5->5.5, M6->6.6).
 function rack19_screw_clearance(thread) =
     thread == "10-32" ? 5.0 :
     thread == "12-24" ? 5.6 :
