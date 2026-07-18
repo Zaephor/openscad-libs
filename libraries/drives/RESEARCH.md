@@ -143,13 +143,13 @@ pass.** SFF-8301 defines only the bottom/side mechanical envelope, not
 connector position — that would be a separate SFF spec (SFF-8482 series) not
 fetched this pass. Recorded as a gap, not fabricated.
 
-Thread: **6-32 UNC** (both bottom and side), clearance-hole diameter is a
-repo `hardware`-lib concern, not in SFF-8301 (which specifies the *tapped*
-thread, not a clearance dia — the brief's "~3.5mm clearance" seed is a
-downstream consumer's clearance-fit choice for a 6-32 screw, not a spec
-value; `hardware.scad` currently only has M-series metric clearances, so a
-`#6` (6-32 UNC) imperial clearance constant is a **gap** for that library,
-not `drives`).
+Thread: **6-32 UNC** (both bottom and side); clearance-hole diameter is not
+in SFF-8301 (which specifies the *tapped* thread, not a clearance dia — the
+brief's "~3.5mm clearance" seed is a downstream consumer's clearance-fit
+choice for a 6-32 screw, not a spec value). Imperial 6-32 clearance is not
+yet modeled in this repo (metric ISO-273 clearances are inlined
+per-consumer); a `#6` (6-32 UNC) imperial clearance constant is a **gap**,
+not fabricated into `drives`.
 
 ---
 
@@ -363,7 +363,7 @@ flagged for Task 2.
 | M.2 double-sided module height | Not covered — both fetched datasheets are single-sided variants. Gap. |
 | JEDEC MO-297 / PCI-SIG M.2 spec | Not attempted this pass (known member-paywalled specs) — a vendor datasheet was used instead per the brief's fallback instruction. Not a confirmed-paywall test like rack19's EIA-310; just not tried. |
 | Advantech / Intelligent Memory M.2 datasheets (Mouser-hosted) | Not accessed this pass — not used; Viking datasheets (digikey/vikingtechnology-hosted) substituted successfully. |
-| 3.5" fastener: imperial 6-32 UNC clearance-hole diameter | Not in the repo's `hardware.scad` (metric-only currently) — a `drives`-consumer will need this; noted as a `hardware` lib gap, not fabricated into `drives`. |
+| 3.5" fastener: imperial 6-32 UNC clearance-hole diameter | Imperial 6-32 clearance is not yet modeled in this repo (metric ISO-273 clearances are inlined per-consumer) — a `drives`-consumer will need this; noted as a gap, not fabricated into `drives`. |
 
 No values in this document were carried over from the task brief's seed
 table without being re-derived from a fetched-and-read source this pass, or

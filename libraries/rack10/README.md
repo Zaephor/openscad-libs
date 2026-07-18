@@ -155,7 +155,7 @@ i.e. ≈±2mm of horizontal rackpost-spacing tolerance; ignored for every other
 | [Wikimedia Commons: 19-inch vs 10-inch rack dimensions.svg](https://commons.wikimedia.org/wiki/File:19_inch_vs_10_inch_rack_dimensions.svg) — independent to-scale vector diagram | B | Panel outer width (254.00mm), clear width cross-check (222.25mm vs LabRax's 222mm), per-U hole gaps (15.9/15.9/12.7mm, exact SVG coordinate extraction) — **not LabRax-specific**, documents the general 10in-rack convention LabRax says it follows |
 | [Printables: 8-Bay 10" 3U Serverrack Mount for 3.5" HDD - Lab Rax](https://www.printables.com/model/1499547-8-bay-10-inch-3u-serverrack-mount-for-3-5-hdd-lab-rax) (remix 1499547) | C `//VERIFY` | Mounting depth (240mm) — third-party remixer's description text, not the designer, not a caliper/mesh measurement; links the same MakerWorld id 1294480 so it is genuinely LabRax-targeted, but is the **weakest-sourced number in this library** |
 | `rack19`'s own `RESEARCH.md` (Wikipedia `Rack_unit` + Micropolis rack-mounting FAQ, exact match) — borrowed by analogy, not re-fetched this pass | C `//VERIFY` | Stacking gap / device height (0.79mm / 43.66mm) — no LabRax-specific or 10in-specific source exists; see RESEARCH.md "Device height / stacking gap (Task 1 follow-up)" |
-| ISO 273 (metric clearance holes, close fit) — named standard, repo `hardware`/`rack19` precedent, not fetched this pass | B | M6 screw clearance (6.6mm) |
+| ISO 273 (metric clearance holes, close fit) — named standard, not fetched this pass | B | M6 screw clearance (6.6mm) |
 | ANSI B18.2 (machine-screw close-fit clearance drill) — named standard, repo `rack19` precedent, cited from memory, not fetched this pass | C `//VERIFY` | #10-32 screw clearance (5.0mm) |
 | [Wikipedia: Cage nut](https://en.wikipedia.org/wiki/Cage_nut) — repo `rack19` precedent, not re-verified this pass | B `//VERIFY` | Cage-nut square hole side (9.5mm) — carried for a future non-LabRax vendor; **LabRax itself does not use cage nuts** (M6 brass threaded inserts instead) |
 | [DeskPi RackMate T0 product page](https://deskpi.com/products/deskpi-rackmate-t1-rackmount-10-inch-4u-server-cabinet-for-network-servers-audio-and-video-equipment) | B | `"deskpi"` panel width (281mm) + clear width (212mm) + depth preset (200mm), verbatim "External dimensions: 281mm\*200mm\*274mm" / "Internal dimensions: 212mm\*200mm\*241mm" / "maximum installation depth of this 10-inch rack is 20cm" |
@@ -299,6 +299,6 @@ these and overstated the flange numbers' tier):
 Everything else (1U pitch 44.45mm, hole h center-to-center 236.525mm, M6
 clearance 6.6mm) is tier `[B]` with **no** open `//VERIFY` — either
 corroborated across two independent sources (pitch, hole span) or carried
-from this repo's own already-`[B]`-tiered `hardware`/`rack19` ISO 273
-precedent (M6 clearance), and directly confirmed as LabRax's actual chosen
-fastener by the designer's own article.
+from ISO 273 (named standard, not fetched) directly (M6 clearance), and
+directly confirmed as LabRax's actual chosen fastener by the designer's own
+article.

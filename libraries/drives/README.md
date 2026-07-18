@@ -274,9 +274,9 @@ own (now-stale) seed gap list.
 - **Imperial 6-32 UNC clearance-hole diameter** (3.5"/2.5" fastener):
   SFF-8301/8201 specify the *tapped* thread (6-32 UNC / M3), not a
   clearance-fit diameter. Every hole tuple's tagged/rendered `dia` (3.4mm) is
-  an M3 clearance figure; a 6-32 (imperial) clearance constant does not exist
-  in this repo's `hardware.scad` (metric-only currently) — noted as a
-  `hardware`-library gap, not fabricated into `drives`.
+  an M3 clearance figure; a 6-32 (imperial) clearance constant is not yet
+  modeled in this repo (metric ISO-273 clearances are inlined per-consumer) —
+  noted as a gap, not fabricated into `drives`.
 - **`drive_faceplate_cutout(type, "xmax")`**: intentional **no-op** — the
   far X wall (opposite the connector) has no distinct hole/cutout data in
   the current data model for either family. Calling it compiles and cuts

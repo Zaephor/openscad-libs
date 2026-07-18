@@ -133,17 +133,16 @@ was found this pass.
 Task 1 left this omitted (fetch-blocked). Task 4 re-attempted sourcing, then
 fell back to a documented derivation for the two sizes that still had no source.
 
-### M6 → **6.6 mm** — tier [B] ISO 273 close-fit (repo hardware-lib precedent)
+### M6 → **6.6 mm** — tier [B] ISO 273 close-fit (named standard, not fetched)
 
 No new fetch attempted for M6 specifically (ISO 273 is the same paywalled-
-standard situation as M3/M4/M5). Followed this repo's own established
-precedent instead: `libraries/hardware/hardware.scad` already ships ISO 273
-close-fit clearance holes cited to the standard by name (no live URL) as
-M3→3.4, M4→4.5, M5→5.5. The next point in that same published ISO 273
-close-fit series is **M6→6.6mm** (a widely-republished value, e.g. in
-Machinery's Handbook–style clearance-hole tables) — continuing the repo's own
-sourcing convention rather than treating M6 as a fresh unsourced claim. Tiered
-[B] (not [A]) for the same reason the repo's M3/M4/M5 are [B]: cited to the
+standard situation as M3/M4/M5). Cited directly to ISO 273's published
+close-fit clearance-hole series by name (no live URL): M3→3.4, M4→4.5,
+M5→5.5. The next point in that same published ISO 273 close-fit series is
+**M6→6.6mm** (a widely-republished value, e.g. in Machinery's Handbook–style
+clearance-hole tables) — continuing the same named-standard sourcing
+convention rather than treating M6 as a fresh unsourced claim. Tiered
+[B] (not [A]) for the same reason the M3/M4/M5 values are [B]: cited to the
 standard's name/series, not to a live fetch of the standard itself this pass.
 This also **updates** the Task 4 brief's seed value (5.0/5.5/6.5 mm were
 pre-sourcing placeholder guesses) — M6 changes from the seed's 6.5 to the
@@ -275,7 +274,7 @@ only, not a data change.
 | per-U first-offset | 6.35 (→22.225/38.1 exact) | `//VERIFY` | Wikipedia prose only |
 | cage-nut square side | 9.5 | [B], `//VERIFY` 2nd vendor | Wikipedia (Cage nut) |
 | round-hole diameter (bonus) | 7.1 ± 0.1 | [B] | IBM |
-| screw clearance M6 | 6.6 | [B] | ISO 273 close-fit (repo hardware-lib precedent) |
+| screw clearance M6 | 6.6 | [B] | ISO 273 close-fit (named standard, not fetched) |
 | screw clearance 10-32 | 5.0 | [C] `//VERIFY` | ANSI B18.2 close-fit clearance-drill (#10≈0.199in=5.05mm), named standard not fetched this pass |
 | screw clearance 12-24 | 5.6 | [C] `//VERIFY` | ANSI B18.2 close-fit clearance-drill (#12≈0.221in=5.61mm), named standard not fetched this pass |
 | rail flange thickness | — | `//VERIFY`, informational | not spec-fixed |

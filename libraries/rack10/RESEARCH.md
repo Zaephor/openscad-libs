@@ -167,8 +167,8 @@ an illustrative default, same spirit as rack19's honest
 ### M6 screw clearance — **6.6 mm** — tier [B] ISO 273 close-fit, repo precedent
 
 Not refetched this pass (same paywalled-standard situation `rack19`
-documented for ISO 273). Carried forward from `libraries/hardware/hardware.scad`
-+ `libraries/rack19/RESEARCH.md`'s own M6 derivation. Directly relevant to
+documented for ISO 273). Carried forward from ISO 273 (named standard, not
+fetched) directly + `libraries/rack19/RESEARCH.md`'s own M6 derivation. Directly relevant to
 LabRax: the article confirms M6 is LabRax's actual chosen fastener — *"I
 opted to use M6 screws over 10-32 screws because they are easier to find in
 Australia, Asia, and Europe... Lab Rax is designed to use M6x10mm screws."*
@@ -265,7 +265,7 @@ for every other 10in-specific dimension.
 | panel outer width | 254.00 | [B] `//VERIFY` LabRax's own value not stated, only the independent diagram's | Wikimedia diagram (10in nominal, closure-checked against its own 222.25 + 2×15.875) |
 | per-U hole offsets | 6.35 / 22.225 / 38.1 (gaps 15.875/15.875/12.7) | [B] `//VERIFY` LabRax-specific offsets not stated, only hole-count (BOM) + pattern-reuse (diagram) | LabRax BOM ("6 per U") + Wikimedia diagram exact SVG coordinates |
 | mounting depth | 240 (ship) | [C] `//VERIFY`, third-party remix only | Printables remix 1499547 description (2x), links same MakerWorld id 1294480 |
-| M6 clearance | 6.6 | [B] | ISO 273 close-fit, repo `hardware`/`rack19` precedent; LabRax confirms M6 is its actual fastener |
+| M6 clearance | 6.6 | [B] | ISO 273 close-fit, named standard (not fetched); LabRax confirms M6 is its actual fastener |
 | #10-32 clearance | 5.0 | [C] `//VERIFY` | ANSI B18.2, repo `rack19` precedent; LabRax confirms #10-32 as a real alternative + ships a dedicated bolt-together variant |
 | cage-nut square | 9.5 | [B] `//VERIFY`, not used by LabRax | repo `rack19` precedent (Wikipedia Cage nut), carried for future non-LabRax vendors |
 | rail flange width/thickness | — | not numerically confirmed — no tier, visual-only evidence | LabRax STL unreachable; one qualitative CDN thumbnail confirms rail shape family only, no dimension |

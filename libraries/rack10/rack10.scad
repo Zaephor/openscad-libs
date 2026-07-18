@@ -120,7 +120,7 @@ function rack10_square_size() = 9.5;
 function rack10_known_hole_types() = ["round", "m6", "10-32", "square", "slot"];
 // Screw-clearance dia per fastener, mm (values + provenance carried from rack19,
 // re-implemented locally — no cross-lib coupling). See RESEARCH.md.
-//   m6:    [B] ISO 273 close-fit (repo hardware lib series 3.4/4.5/5.5).
+//   m6:    [B] ISO 273 close-fit (ISO 273 metric clearance series, named standard).
 //   10-32: [C] //VERIFY ANSI B18.2 close-fit (#10 ~0.199in=5.05->5.0mm), named
 //          standard cited from memory, not fetched.
 function rack10_screw_clearance(fastener) =

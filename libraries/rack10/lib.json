@@ -8,7 +8,7 @@
     "https://makerworld.com/en/models/1464819-lab-rax-10-server-rack-bolted-version-5u",
     "https://commons.wikimedia.org/wiki/File:19_inch_vs_10_inch_rack_dimensions.svg",
     "https://www.printables.com/model/1499547-8-bay-10-inch-3u-serverrack-mount-for-3-5-hdd-lab-rax — third-party remix, [C] backs mounting depth 240mm //VERIFY (unaffiliated, not designer-stated)",
-    "ISO 273 (metric clearance holes, close fit) — named standard, not fetched; backs M6 screw clearance, repo hardware/rack19 precedent",
+    "ISO 273 (metric clearance holes, close fit) — named standard, not fetched; backs M6 screw clearance, cited to ISO 273 directly",
     "ANSI B18.2 (machine-screw close-fit clearance drill) — named standard, not fetched; backs #10-32 screw clearance //VERIFY, repo rack19 precedent",
     "https://en.wikipedia.org/wiki/Cage_nut — repo rack19 precedent; cage-nut square hole size, not used by LabRax, carried for future vendors",
     "rack19's own RESEARCH.md (Wikipedia Rack_unit + Micropolis rack-mounting FAQ) — [C] //VERIFY, device height/stacking gap (0.79mm) borrowed by analogy, not re-fetched this pass; no 10in-specific source exists"
