@@ -1,6 +1,13 @@
 // keystone-faceplate — parametric 1U 10-inch rack keystone faceplate.
 // Standalone; N standard keystone ports on a rack10 panel. Support-free flat
 // print. Render: make render P=keystone-faceplate
+// PRINT ORIENTATION (port_style="lip", the default): as-modeled the panel's
+// thickness (Y) is horizontal and its 1U height (Z) is vertical -- rotate
+// -90deg about X in the slicer so Y becomes vertical, front face (Y=0) DOWN
+// on the bed, matching keystone_cutout()/keystone_boss()'s own pin (see
+// keystone.scad); printing rear-face-down needs supports under the ramps.
+// port_style="face" has no such requirement (flat rectangular window, no
+// undercut) -- support-free from any flat orientation.
 // All keystone dims from the keystone lib, all rack dims from rack10 — no
 // copied literals (see docs/LIBRARY-AUTHORING.md single-source rule).
 use <keystone/keystone.scad>;
@@ -44,23 +51,36 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
                           port_clearance = 0.25, ear_hole_type = "slot",
                           ear_fastener = "m6", slot_travel = 4,
                           port_style = "lip") {
-    // Pitch must clear the min printable port spacing.
-    keystone_pitch_assert(port_pitch);
+    // Pitch must clear the min printable port spacing for this style.
+    keystone_pitch_assert(port_pitch, port_style);
     // Plate thickness must sit within the snap-retention range.
     tmin = keystone_plate_thickness()[0];
     tmax = keystone_plate_thickness()[1];
     assert(plate_thickness >= tmin && plate_thickness <= tmax,
         str("keystone-faceplate: plate_thickness ", plate_thickness,
             " outside keystone snap range [", tmin, ",", tmax, "]"));
-    // Row fits: adjacent ports clear min pitch, and the outermost port's window
-    // edge must not reach the inner ear-hole column (else a port collides with
-    // an ear slot). ear column inner X = rack10_hole_h_span/2; subtract the ear
-    // clearance radius so the port window edge stays clear of the drilled slot.
+    // Row fits: adjacent ports clear min pitch, and the outermost port's
+    // physical footprint must not reach the inner ear-hole column (else a
+    // port collides with an ear slot). ear column inner X =
+    // rack10_hole_h_span/2; subtract the ear clearance radius so the
+    // footprint stays clear of the drilled slot.
     xs = _kf_port_centers(port_count, port_pitch);
-    assert(keystone_layout_ok(xs),
+    assert(keystone_layout_ok(xs, port_style),
         str("keystone-faceplate: port pitch ", port_pitch,
             " below min for port_count ", port_count));
-    ow = keystone_opening(port_style)[0];
+    // half_w = each port's max X half-extent. "lip" is boss-driven, not
+    // opening-driven: keystone_boss(plate_thickness, port_clearance,
+    // port_style) unions in LOCAL positive material (see keystone_cutout()'s
+    // module comment for the union()+difference() pattern below) that is
+    // physically wider than the raw cutout window --
+    // keystone_boss_footprint() already bakes in port_clearance + wall
+    // margin, so its half-width IS the collision term (mirrors
+    // keystone_min_pitch()'s same lip-vs-face split). "face" has no boss
+    // (keystone_boss() no-ops for it) -- unchanged raw-opening + clearance
+    // check.
+    half_w = port_style == "lip"
+        ? keystone_boss_footprint(port_style, port_clearance)[0] / 2
+        : keystone_opening(port_style)[0] / 2 + port_clearance;
     ear_col = rack10_hole_h_span(standard) / 2;
     // ear_r = ear cutout's half-width along X (the axis ear_col/outer_edge
     // measure along). "slot" elongates the clearance circle by slot_travel/2
@@ -73,19 +93,33 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
           : ear_hole_type == "square" ? rack10_square_size() / 2
           : rack10_screw_clearance(ear_fastener) / 2;
     outer_edge = port_count <= 0 ? 0
-               : max([for (x = xs) abs(x)]) + ow / 2 + port_clearance;
+               : max([for (x = xs) abs(x)]) + half_w;
     assert(outer_edge <= ear_col - ear_r,
         str("keystone-faceplate: ", port_count, " ports at pitch ", port_pitch,
             " overflow (outer edge ", outer_edge, " reaches ear column ",
             ear_col - ear_r, ")"));
+    // "lip"'s cutout needs ~8.3mm of Z-depth (RESEARCH.md), far more than
+    // plate_thickness (1.5-3.0mm) -- keystone_boss() unions in the missing
+    // material behind the thin panel at each port FIRST, so the difference()
+    // below always lands its cutout in real solid (see keystone_cutout()'s
+    // module comment for this exact union()+difference() consumer pattern).
+    // keystone_boss() no-ops for "face" (nothing to add).
     difference() {
-        rack10_panel(standard, 1, plate_thickness);
+        union() {
+            rack10_panel(standard, 1, plate_thickness);
+            // Same per-port transform as the cutout loop below, so each
+            // boss lands directly behind its own port's cutout.
+            for (x = xs)
+                translate([x, 0, rack10_device_height(1) / 2])
+                    rotate([-90, 0, 0])
+                        keystone_boss(plate_thickness, port_clearance, port_style);
+        }
         rack10_holes(standard, 1, ear_hole_type,
             dia = rack10_screw_clearance(ear_fastener), slot_travel = slot_travel);
         // Keystone ports: row centered on X=0, vertically centered on the panel.
         // rotate([-90,0,0]) maps the cutout's oh->Z, ow->X, through-axis->+Y so
         // the window fully pierces the Y∈[-t,0] plate (see plan coordinate note).
-        for (x = _kf_port_centers(port_count, port_pitch))
+        for (x = xs)
             translate([x, 0, rack10_device_height(1) / 2])
                 rotate([-90, 0, 0])
                     keystone_cutout(plate_thickness, port_clearance, port_style);

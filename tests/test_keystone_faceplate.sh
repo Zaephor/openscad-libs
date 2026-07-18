@@ -87,4 +87,16 @@ keystone_faceplate("labrax", 40, keystone_pitch(), 3.0);
 EOF
 expect_assert "$tmp/badN.scad" "port row overflow"
 
+# Boss-driven ear-collision guard (Task 4): 12 ports at default pitch fits
+# under the raw opening half-width (7.7mm) but NOT under the "lip" boss
+# footprint half-width (9.3mm) -- the boss is physically wider than its own
+# cutout window, so a guard keyed off keystone_opening() alone under-protects
+# for "lip". Confirms outer_edge uses keystone_boss_footprint() for "lip".
+cat > "$tmp/badN_boss.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 12, keystone_pitch(), 3.0);
+EOF
+expect_assert "$tmp/badN_boss.scad" "lip boss overflow (opening-only guard would pass)"
+
 echo ok
