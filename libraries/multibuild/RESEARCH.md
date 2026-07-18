@@ -713,3 +713,110 @@ independently-authored Tile source was found this pass.**
   3 decimal places, plus the cross-validation against the independently
   measured connector) makes fabrication or gross remix-drift unlikely, but
   this is corroboration, not an official-source confirmation.
+
+## MultiBin + Fix-Point (#32)
+
+Scope: source log for the MultiBin container family (the 50mm-CU bin grid,
+distinct from the 25mm-MU board grid documented above) and the Fix-Point
+(formerly "Multipoint") accessory-side receiving negative. Populates the
+container + Fix-Point data Tasks 2/3 implement. **All values here are
+caliper-upgradeable** — the STL-mesh (`[C]`) numbers are the first-pass
+targets for a physical-measurement upgrade (backlog #16).
+
+Sources this section:
+- `https://docs.multibuild.io/beginner-section/core-parts-documentation` —
+  MU/CU unit definitions, Fix-Point/Multipoint taxonomy + rename note. `[A]`
+- `https://docs.multibuild.io/beginner-section/printing-guidelines` — 0.25mm
+  design tolerance. `[A]`
+- Official **MultiBuild** part models (vendor-authored dimension text +
+  mesh-measured geometry), by model ID:
+  - `1128566` — 4x4 CU Micro Multibin Shell.
+  - `1127745` — 2x2x2.5 CU Multipoint-Rail Multibin Shell.
+  - `974135` — 3x2x1.5 CU Simple Walls Multibin Shell.
+  - `974493` — 2x2x0.5 CU Simple Walls Multibin Shell.
+  - `1142254` — Multipoint Rails (Positive + Negative remixing set): parts
+    `Multipoint Rail - Positive`, `Multipoint Rail Slot - Negative`,
+    `Lite Multipoint Rail - Positive`, `Lite Multipoint Rail - Negative`.
+  - Vendor dimension text for further Simple Walls sizes (`974309` 4x2x1,
+    `2x3x2`, `3x1x2.5`, `3x2x4`, `1128559`/`1128561` 1x1 / 2x1 Micro) used to
+    confirm the per-CU rules below hold across ≥6 sizes.
+
+### Grid, units, tolerance — `[A]`
+
+- **MU (board grid) = 25mm; CU (bin/container grid) = 50mm**, with
+  **2×2 MU = 1×1 CU**. The MU grid (25mm) is the board hole pitch documented
+  in "Grid pitch — 25mm (MU)" above; the CU grid (50mm) is the separate
+  MultiBin cell size. Do not conflate them. `[A]`
+- **Panel / Base Plate pitch = 50mm** — MultiBin Panels are "50 mm grids" and
+  "each Panel cell [is] 50 mm apart". `[A]`
+- **Design tolerance = 0.25mm** (same value the board parts use). `[A]`
+- Dimension-order convention: **Width (front) × Depth (side) × Height**. `[A]`
+
+### MultiBin Shell family — footprint / cavity / wall / height
+
+Two shell sub-families share one CU grid: **Simple Walls** (standard depth)
+and **Micro** (shallow tray). The per-CU rules below are vendor-stated `[A]`
+**and** independently mesh-confirmed `[C]` on the model IDs noted (measured
+axis given); where both agree the value is high-confidence, tagged `[A]/[C]`.
+
+**Simple Walls (standard) — external footprint = `50·Nx × 50·Ny` mm.** `[A]/[C]`
+- Mesh-confirmed X/Y bounding box: 2×2 → 100.0×100.0, 3×2 → 150.0×100.0,
+  2×2(rail) → 100.0×100.0 (models `974493`, `974135`, `1127745`);
+  vendor text adds 4×2 → 200×100, 3×1 → 150×50. The footprint is the full
+  `50·N` cell — the bin occupies its grid cells edge-to-edge.
+- **Wall thickness ≈ 3.0mm** nominal (at the top internal rim), relieving to
+  **≈2.6mm** through the body (support-free draft). Mesh: cavity measures
+  `50·N − 6` at the rim, `≈50·N − 5.2` mid-body. `[A]/[C]`
+- **Internal cavity (W×D) = `(50·Nx − 6) × (50·Ny − 6)` mm** at the rim
+  (vendor "internal distance between walls": 2×2 → 94×94, 3×2 → 144×94;
+  mesh-confirmed 144.0×94.0 / 94.0×94.0). `[A]/[C]`
+- **External height = `50·Hz + 5` mm** (the `+5` is the base floor). Mesh +
+  vendor confirmed across Hz = 0.5 → 30, 1 → 55, 1.5 → 80, 2 → 105,
+  2.5 → 130, 4 → 205 (mesh Z: 30.0 / 80.0 / 130.0). `[A]/[C]`
+- **Floor thickness ≈ 5mm** (mesh: cavity floor of the 0.5-CU shell closes at
+  Z ≈ 5–6mm). `[C]`
+- **Internal height = `50·Hz − 6` mm usable** (to the internal rim) /
+  `50·Hz − 1` total. `[A]`
+- **Stacking pitch = `50·Hz` mm** (adds exactly one Hz of CU height per
+  stacked bin; the `+5` base is only on the bottom-most shell). `[A]`
+
+**Micro (shallow tray) sub-family** — same 50mm CU cells but a distinct
+shallow profile: `[A]/[C]`
+- External footprint = `50·N − 2` mm (vendor: 1×1 → 48, 2×1 → 98, 4×4 → 198).
+  Mesh note: the 4×4 Micro (`1128566`) walls flare with height — base outer
+  ≈193.6mm rising to a 200.0mm top rim — so the "198" is the nominal
+  mid-wall figure, not a constant envelope. `[C]`
+- Wall ≈ 2.0mm; internal cavity = `50·N − 6` (44 / 94 / 194). `[A]`
+- Fixed shallow height 11mm, internal depth 5mm, stack increment +5mm. `[A]`
+
+### Fix-Point (Multipoint) — accessory-side receiving negative
+
+Naming: **"Multipoints" have been renamed to "Fix-Points"; "Multipoint Rails"
+are now just "Rails"** (part geometry unchanged). A Fix-Point gives an
+accessory a **slide-on** attachment. Two variants: **Regular** (mates a
+"Multipoint Hole") and **Lite** (**1mm thinner**, mates a "Multipoint Rail
+Negative"). We model the **accessory side only** — the pocket/channel an
+accessory cuts into itself to receive a Fix-Point; the Fix-Point part's own
+board-side thread/bolt engagement is out of scope. `[A]` (naming/behaviour).
+
+Geometry mesh-measured from the official Positive/Negative parts in model
+`1142254` and the Multipoint Holes on the `1128566` bin base (`[C]`, axis
+noted; single-sample → caliper-upgrade #16):
+
+- **Dovetail cross-section (the slide-on rail), from the Positives:**
+  - Max (buried) width **15.2mm**; throat (exposed-face) width **≈11.7mm**
+    Regular / **≈12.8mm** Lite (X axis). `[C]`
+  - Depth into the accessory face **3.0mm** Regular / **2.0mm** Lite (Z axis)
+    — **Lite is exactly 1mm shallower**, matching the "1mm thinner" spec.
+    `[A]` (1mm delta) `/[C]` (absolute depths).
+- **Negative cutter (the tool subtracted from an accessory):**
+  - Envelope width **17.0mm** (dovetail + clearance, X). `[C]`
+  - Cut depth **3.3mm** Regular slot / **2.3mm** Lite (Z) — each ≈0.3mm
+    beyond the matching Positive, i.e. the 0.25mm design clearance. `[C]`
+- **Multipoint Hole (point receiver) on the bin base:** a **17.0mm-wide**
+  dovetail pocket, **one per 50mm CU cell** (mesh: 16 identical 17.0mm
+  features across the 4×4 CU base, on the CU grid). Confirms the point hole
+  and the rail share the 17mm receiver width. `[C]`
+- `//VERIFY`: exact throat width and dovetail flank angle are single-mesh-
+  sample derivations; the rail *length* is per-part (variable, not a fixed
+  spec). Upgrade all Fix-Point negative dims by caliper (#16).
