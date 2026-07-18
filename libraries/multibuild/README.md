@@ -1,14 +1,17 @@
 # multibuild (library)
 
-Grid math + mount-feature geometry for building parts that attach to a
-**MultiBoard** pegboard-style mounting wall (the "MultiBuild" ecosystem, which
-also includes MultiBin storage bins — see "v1 non-goals" below). MultiBoard is
+Grid math + connector geometry for building parts in the **MultiBuild**
+ecosystem: the **MultiBoard** pegboard-style mounting wall (25mm "MU" grid)
+and the **MultiBin** storage-container system (50mm "CU" grid). MultiBoard is
 a wall/panel of square Tiles on a repeating hole grid; parts snap onto it via
-small connector features that plug into the Tile's holes. This library gives
-you the grid pitch/spacing math to lay parts out on that grid, plus a modeled
-**positive** connector feature (`multibuild_mount`) and matching **negative**
-board-hole cutter (`multibuild_hole`) for one mount type ("snap"). Units:
-**mm**.
+connector features that plug into the Tile's holes. This library gives you the
+grid pitch/spacing math, a modeled **positive** connector feature
+(`multibuild_mount`) and matching **negative** board-hole cutter
+(`multibuild_hole`) for the "snap" mount, MultiBin container envelope/cavity
+accessors (`multibin_*`), and the accessory-side **Fix-Point** slide-on
+negatives (`multibuild_hole("multipoint")` / `"multipoint_rail"`). Units:
+**mm**. See [`ECOSYSTEM.md`](ECOSYSTEM.md) for the full type/relation map and
+how the families chain together.
 
 ## Datum — the canonical mount/grid frame
 
@@ -34,10 +37,11 @@ for the general boss/pocket/orientation language; it isn't duplicated here.
 use <multibuild/multibuild.scad>;
 ```
 
-Role-1 **data** (grid pitch/math + mount-type table) + role-2 **placeholder**
-+ role-3 **positive** (mount) + role-4 **negative** (hole) library — `use`
-only (functions, no variables; see gotcha: `use` does not import top-level
-variables).
+Role-1 **data** (grid pitch/math + mount / MultiBin / Fix-Point tables) +
+role-2 **placeholder** (mount, bin envelope, Fix-Point dovetail) + role-3
+**positive** (mount) + role-4 **negative** (board hole, bin cavity, Fix-Point
+pocket) library — `use` only (functions, no variables; see gotcha: `use` does
+not import top-level variables).
 
 ## Usage
 
@@ -135,6 +139,78 @@ fit/interference checks before committing to the full arm geometry:
 Valid `type` keys (`multibuild_known_mounts()`): **`snap`** — the only mount
 type modeled in v1 (see "Which mount types this models" below).
 
+## MultiBin containers (CU grid)
+
+MultiBin is the storage-container half of MultiBuild, on a **separate 50mm
+"CU" grid** — distinct from the 25mm "MU" board grid above (`2×2 MU = 1×1
+CU`). The two live in separate accessor namespaces (`multibin_*` vs
+`multibuild_grid_*`) exactly so the 25-vs-50 distinction can't be lost: **do
+not size CU bin geometry off `multibuild_grid_pitch()`**.
+
+Modeled: the Simple Walls (standard-depth) Shell family — external envelope,
+internal cavity, and the shared CU constants. `size` is `[Nx, Ny, Hz]` in CU
+cells. Datum differs from the mount features': a bin's floor sits at `Z=0`,
+its opening faces `+Z`, footprint centered on XY.
+
+| Function | Returns |
+|---|---|
+| `multibin_cu()` | CU cell size, 50mm (`[A]`) |
+| `multibin_panel_pitch()` | Panel / Base Plate pitch, 50mm (`[A]`, derived from CU) |
+| `multibin_tolerance()` | official design tolerance, 0.25mm (`[A]`) |
+| `multibin_floor()` | base floor thickness, mm (`[C]`) |
+| `multibin_footprint(size)` | external `[W, D]` = `50·[Nx, Ny]`, mm |
+| `multibin_cavity(size)` | internal `[W, D, H]` (walls/rim), mm |
+| `multibin_wall(size)` | rim wall thickness, mm |
+| `multibin_height(size)` | external height = `50·Hz + floor`, mm |
+
+Valid `size` keys are the `[Nx, Ny, Hz]` rows of the Shell table (see
+`RESEARCH.md`); an unknown size asserts.
+
+| Module | Produces |
+|---|---|
+| `multibin_placeholder(size)` | external envelope solid (reference/viz + fit checks), floor at `Z=0`, opening `+Z` |
+| `multibin_cavity_cutout(size)` | internal cavity negative (reference for insert/divider design), floor at `Z=multibin_floor()` |
+
+Bins **stack** via the CU-height pitch (`50·Hz`; the base floor is only on the
+bottom-most shell). Micro (shallow-tray) sub-family and additional sizes are
+deferred — see `RESEARCH.md`.
+
+## Fix-Point — accessory-side slide-on negatives
+
+A **Fix-Point** (formerly "Multipoint") gives an accessory a **slide-on**
+attachment that bridges a Tile/board to a MultiBin Shell. This library models
+the **accessory side only**: the dovetail pocket/channel an accessory cuts
+into its own face to receive a Fix-Point. The Fix-Point part's own board-side
+thread/bolt engagement is **out of scope** (it belongs to the official part).
+
+These are **negative-only** types — a Fix-Point has no positive
+arms/flare/mount body — so they live in a table **parallel** to the mounts
+and are keyed by `multibuild_known_holes()`, not `multibuild_known_mounts()`.
+`multibuild_hole(type, length=undef)` dispatches them; `length` sets the
+pocket length along the `+X` slide axis (ignored by the board-hole cutter).
+
+| `type` (`multibuild_known_holes()`) | Mates | Via |
+|---|---|---|
+| `"multipoint"` | Regular Fix-Point | a Multipoint Hole |
+| `"multipoint_rail"` | Lite variant (1mm thinner) | a Rail Negative |
+
+| Module | Produces |
+|---|---|
+| `multibuild_hole("multipoint" \| "multipoint_rail", length=undef)` | accessory-side dovetail pocket, face at `Z=0`, undercut (wider at depth) so a seated Fix-Point can only enter/leave by the `+X` slide |
+| `multibuild_fixpoint_placeholder(type)` | the mating positive dovetail, fit-viz reference geometry only |
+
+**Fit-check honesty.** These negatives prove **slide-on clearance only** —
+that a mating dovetail has `+X` room to slide into the pocket — **not
+retention or engagement**. Nothing here proves the seated part actually holds;
+that's a physical property of the printed dovetail's flank fit and material,
+the same rigid-static caveat as the Snap mount below. Treat the emitted
+geometry as a starting point to test-fit and tune. All Fix-Point negative
+dimensions are `[C]`//VERIFY (single STL-mesh sample), caliper-upgradeable
+(backlog #16).
+
+See [`ECOSYSTEM.md`](ECOSYSTEM.md) for how Tiles, MultiBin Shells, Snaps, and
+Fix-Points chain into a complete hang-off-board container.
+
 ## Which mount types this models — and how honestly
 
 MultiBoard officially offers several distinct connector families (Snaps in
@@ -198,9 +274,6 @@ thread pitch/profile, the exact Small-vs-Large hole grid offset).
 
 This library does **not** model, and has no near-term plan to add:
 
-- **MultiBin** — the separate storage-bin system (50mm "CU" grid unit,
-  distinct rail/clip connector family). Out of scope entirely; don't reuse
-  `multibuild_grid_pitch()` for CU-based sizing.
 - **Full Tile geometry** — no Tile/panel shape, edge profile, or
   inter-tile joining features (Dual Snaps, Offset Pillars) are modeled. Only
   the hole cutter (`multibuild_hole`) exists, for cutting into a consumer's
