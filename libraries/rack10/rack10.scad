@@ -142,7 +142,10 @@ module rack10_slot_profile(dia, slot_travel) {
 // 10in hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "round" (numeric clearance dia in `dia`), "m6"/"10-32" (dia from
 // rack10_screw_clearance), "square" (rack10_square_size), "slot" (obround,
-// dia + slot_travel along X). Cutter CENTERED on the
+// dia + slot_travel along X). dia>0 overrides the clearance for the named-fastener
+// types (m6/10-32) and round/slot; the named clearance is the default only when
+// `dia` is omitted (`round` requires `dia`). `square` always cuts
+// rack10_square_size() — it ignores `dia`. Cutter CENTERED on the
 // front-post plane Y=0 (spans y in [-d/2,+d/2]) so one stamp cuts panels (grow
 // -Y) and rail flanges (grow +Y). depth (`d`) sizes that span; default 40 =
 // -20..+20, enough for realistic panels/rails; a smaller value can under-cut.
@@ -167,7 +170,17 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_t
                     linear_extrude(d) rack10_slot_profile(dia, slot_travel);
                 }
                 else {
-                    dd = hole_type == "round" ? dia : rack10_screw_clearance(hole_type);
+                    // dia>0 overrides the named-fastener clearance for the named
+                    // types m6/10-32 (an explicit dia now wins for them too, not
+                    // just round/slot; the named clearance is the default only
+                    // when dia is omitted). round has no named clearance — it
+                    // always uses dia directly (never routed through
+                    // rack10_screw_clearance, which only knows m6/10-32).
+                    // NOTE: square is NOT here — it keeps rack10_square_size()
+                    // unconditionally (see the square branch). Fixes the silent
+                    // dia-ignored trap for m6/10-32 (#26).
+                    dd = (hole_type != "round" && dia <= 0)
+                       ? rack10_screw_clearance(hole_type) : dia;
                     cylinder(h = d, d = dd);
                 }
             }

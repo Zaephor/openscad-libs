@@ -114,4 +114,52 @@ span=max(zs)-min(zs)
 sys.exit(0 if abs(span-43.66)<0.01 else 1)   # 44.45 - 0.79 = 43.66
 PY
 
+# #26: dia>0 overrides the named clearance for m6 (was silently ignored).
+# Holes sit at ±hole_h_span/2, so STL X-span = 236.525 + hole_diameter.
+span_x() { python3 - "$1" <<'PY'
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[]
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12
+        xs.append(struct.unpack('<3f',d[b:b+12])[0])
+print(round(max(xs)-min(xs),3))
+PY
+}
+# m6 WITH dia=5 -> Ø5 -> X-span 241.525 (override honored)
+cat > "$tmp/m6_override.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_holes("labrax", 1, hole_type="m6", dia=5, depth=6);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/m6o.stl" "$tmp/m6_override.scad" 2>/dev/null
+so="$(span_x "$tmp/m6o.stl")"
+awk "BEGIN{exit !(($so>241.4)&&($so<241.7))}" \
+  || { echo "m6 dia override failed: X-span $so (expected ~241.525 for Ø5)"; exit 1; }
+# m6 WITHOUT dia -> named default Ø6.6 -> X-span 243.125 (unchanged)
+cat > "$tmp/m6_named.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_holes("labrax", 1, hole_type="m6", depth=6);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/m6n.stl" "$tmp/m6_named.scad" 2>/dev/null
+sn="$(span_x "$tmp/m6n.stl")"
+awk "BEGIN{exit !(($sn>243.0)&&($sn<243.3))}" \
+  || { echo "m6 named default changed: X-span $sn (expected ~243.125 for Ø6.6)"; exit 1; }
+# square IGNORES dia (regression guard): square WITH dia=5 must equal square
+# WITHOUT dia (both cut rack10_square_size()). Proves square is untouched — the
+# keystone-faceplate square-ear guard depends on this.
+cat > "$tmp/sq_dia.scad"   <<'EOF'
+use <rack10/rack10.scad>;
+rack10_holes("labrax", 1, hole_type="square", dia=5, depth=6);
+EOF
+cat > "$tmp/sq_named.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_holes("labrax", 1, hole_type="square", depth=6);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/sqd.stl" "$tmp/sq_dia.scad"   2>/dev/null
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/sqn.stl" "$tmp/sq_named.scad" 2>/dev/null
+sqd="$(span_x "$tmp/sqd.stl")"; sqn="$(span_x "$tmp/sqn.stl")"
+awk "BEGIN{exit !(($sqd==$sqn))}" \
+  || { echo "square honored dia (regression!): dia=5 X-span $sqd vs named $sqn — square must ignore dia"; exit 1; }
+
 echo ok
