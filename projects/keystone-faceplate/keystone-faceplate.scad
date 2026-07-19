@@ -35,12 +35,22 @@ slot_travel     = 4;
 // Port retention style (keystone_known_styles()): lip=taller lipped window,
 // face=flush face-plate window.
 port_style      = "lip";
+// Preview the surrounding 10-inch rack posts (device centered in 3U). Preview
+// ONLY — rendered with `%`, excluded from the printable STL. Default off.
+show_rack          = false;
+// Rack context front-to-back depth; 0 = the vendor's rack10_depth_preset().
+rack_context_depth = 0;
 
 $fn = 48;
 
 keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
                    port_clearance, ear_hole_type, ear_fastener, slot_travel,
                    port_style);
+
+// Optional rack-context preview (background %; not part of the print).
+if (show_rack)
+    % rack10_rackpost_context(standard, 1, 1,
+        rack_context_depth > 0 ? rack_context_depth : rack10_depth_preset(standard));
 
 // Ascending port X-centers, row centered on X=0. Empty when port_count<=0.
 function _kf_port_centers(port_count, port_pitch) =

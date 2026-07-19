@@ -16,6 +16,9 @@ Parametric 1U 10-inch rack faceplate with N standard keystone jack cutouts.
 | `ear_hole_type` | `"slot"` | Ear mount hole style: `round`/`m6`/`10-32`/`square`/`slot` |
 | `ear_fastener` | `"m6"` | Fastener sizing the ear clearance hole: `m6` \| `10-32` |
 | `slot_travel` | `4` | Obround elongation along X for slot-style ear holes |
+| `port_style` | `"lip"` | Port retention style: `lip` (taller lipped window) or `face` (flush face-plate) |
+| `show_rack` | `false` | *Preview only* — overlay a 3U rack post frame around the panel (excluded from print) |
+| `rack_context_depth` | `0` | *Preview only* — rack context front-to-back depth; `0` uses the vendor's default |
 
 ## Build
 
