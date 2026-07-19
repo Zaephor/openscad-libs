@@ -293,6 +293,234 @@ final — this research sets the *shape* (ramp-then-pocket, staged
 hook-then-latch, ~45° engagement angles) with more confidence than it sets
 the exact millimeter values.
 
+## Standard keystone latch geometry (#38, STL-mesh)
+
+Backlog #38 corrects the #31 latch geometry above, which mesh-measured the
+WRONG mechanism. #31's three source models (SimplifiedLife's cutout aide,
+pmichaud's blank, Hatcher's connector) all happened to encode a
+**rotate-and-snap** mechanism: a rigid hook near the front engages a shallow
+pocket first, then the jack rotates in and a flexible latch further back
+snaps behind a second, offset lip — the two retention features staged at
+*different* depths. That is a real, but different, real-world keystone
+mechanism from the one this pass was chartered to measure.
+
+This pass instead targeted the **de-facto standard keystone mechanism**: a
+`[`-shaped channel in the panel with wide slits cut through its top AND
+bottom walls, mated by a jack whose rear section carries a solid-bottom
+**fulcrum** (with a small triangular notch) and a flexing **top arm** (also
+carrying a triangular notch) — both notches click into their respective
+slits at essentially the *same* depth, not staged.
+
+### Naming clarification
+
+The mechanism measured here is recorded under the key **`"standard"`**
+going forward — it is the mechanism the overwhelming majority of
+commodity/generic keystone jacks and panels (the models mesh-measured
+below) actually use. A future task retargets `keystone_opening("lip")` /
+`keystone_tab()`'s current values (the #31 rotate-and-snap read) as a
+**deprecated alias**, not a second first-class style — `"lip"` is a real
+mechanism (AMP's 1979 dual-diagonal-flange design per the Wikipedia
+citation already in this file) but not the one most reference designs
+converge on. Proprietary lookalike modules (Mini-Com, HD) use their own
+incompatible latch geometry and are explicitly **out of scope** — not
+researched, not folded into `"standard"`.
+
+### Mechanism write-up
+
+The jack is presented near-flush to the panel opening and pushed straight
+in (no rotation). Two features click into place simultaneously at the same
+insertion depth:
+
+- A **fulcrum** on the jack's underside — a short, non-flexing rib — carries
+  a small triangular **notch** that rides into a slit cut through the
+  channel's **bottom** wall.
+- A **flexing arm** on the jack's top — a thin cantilever, free along most
+  of its length — carries its own triangular **notch** that rides into a
+  slit cut through the channel's **top** wall. The arm deflects down during
+  insertion and springs back once its notch reaches the slit, producing the
+  click.
+
+Because both notches seat at the same depth (confirmed independently on
+both the slot side and the insert side below), insertion is a straight
+push-to-click, not a tilt-and-rotate motion — consistent with how generic
+keystone jacks are actually handled in the field (straight-in until it
+clicks), unlike the #31 mechanism's implied tilt.
+
+Removal: general keystone-jack knowledge (deflect the flexing arm's notch
+out of its slit with a thin tool, e.g. through the channel's open front)
+was not itself STL-measured this pass — carried forward as the same
+`//VERIFY` status #31 left it in.
+
+### Slot (channel) geometry
+
+Two accepted slot models, both mesh-sectioned front-to-back (front face =
+depth 0) to find the channel and its top/bottom slits. **No staged
+hook-then-latch offset was found in either** (the #31 signature) — in both
+models, top and bottom wall relief begins at the same depth from the front
+face, which is the acceptance criterion for `"standard"`.
+
+- **Model 1** — "Ethernet RJ45 keystone socket wall plate", [Printables
+  1014552](https://www.printables.com/model/1014552). Single-port wall
+  plate; channel sectioned at 0.02mm Z-steps through its full depth.
+  - Baseline mouth (just past a short front lead-in ramp, ~2mm depth):
+    **15.3mm (W) x 18.4mm (H)** — `//VERIFY` (single model)
+  - Front lead-in: only the **top edge** ramps (16.6mm -> 18.4mm window
+    height over ~2.05mm of depth); the bottom edge holds flat — an
+    asymmetric front chamfer, not the symmetric bevel #31 found.
+  - Both slits begin **together at ~2.05mm depth from the front face**:
+    window jumps to **15.3mm (W) x 22.25mm (H)** (bottom edge opens
+    1.5mm, top edge opens 2.35mm, relative to the ramp's end value) —
+    `//VERIFY` (single model, but see cross-model corroboration below)
+  - Slit width in X does not narrow — each slit runs the **full width** of
+    the channel, not a locally narrower cut — `//VERIFY`
+  - **Bottom slit ends at ~8.55mm depth** (length ≈ 6.5mm from its 2.05mm
+    start) — window drops back to the pre-slit baseline height there.
+  - **Top slit continues to ~10.05mm depth**, i.e. essentially to the
+    channel's back wall (length ≈ 8.0mm) — **top slit is longer than
+    bottom slit** in this model.
+  - `back_wall_depth` ≈ **10.05mm** from the front face.
+  - `wall_thickness` (residual material bridging each slit, measured
+    against the surrounding boss's outer wall) ≈ **1.51mm**, and is the
+    **same value on top and bottom** — `//VERIFY` (single model)
+
+- **Model 2** — "Voron 0.2r1 Rear Skirt w/keystone", [Printables
+  533549](https://www.printables.com/model/533549) (ships as `.3mf`,
+  mesh-parsed directly — no STL export needed). Single keystone cutout in a
+  printer-frame skirt panel; sectioned the same way.
+  - Baseline mouth (near front): **15.9mm (W) x 21.5mm (H)** — `//VERIFY`
+  - Both top and bottom edges move **together at ~1.5mm depth from the
+    front face**: X narrows by ~0.6mm/side while Y widens by ~0.9mm/side,
+    landing at **14.7mm (W) x 23.3mm (H)** — a different specific motion
+    than Model 1 (which held X constant and moved Y only), but the same
+    qualitative finding that **both slits start together, at a similarly
+    shallow depth** (1.5mm here vs 2.05mm in Model 1).
+  - Window holds constant for ~8.2mm, then **all four edges taper inward
+    together** (a symmetric rear chamfer, not an asymmetric top/bottom
+    close like Model 1) until the channel closes.
+  - `back_wall_depth` ≈ **10.0-10.05mm** from the front face.
+
+**Cross-model corroboration — `[C]`:** `back_wall_depth` lands at **~10.0-10.05mm**
+independently in both models (1014552: 10.05mm, 533549: ~10.0-10.05mm) —
+close enough, from two unrelated designs, to earn `[C]` for *this specific
+value* (cite both 1014552 and 533549). The qualitative finding that **top
+and bottom slits begin at the same depth from the front face** (not staged)
+is also `[C]`, corroborated across both models — this is the key finding
+that distinguishes `"standard"` from #31's `"lip"` mechanism. Every other
+figure above (exact mouth/window mm, slit lengths, wall thickness, the
+specific top>bottom slit-length asymmetry seen only in Model 1) is
+single-model and stays `//VERIFY` — Model 2's symmetric-taper close does
+**not** corroborate Model 1's asymmetric top-longer-than-bottom close, so
+that specific asymmetry claim is weaker than the same-start-depth claim.
+
+A third slot candidate, "Super Slim 11-Port Keystone Panel for 10 inch
+Rack" ([Printables 1014587](https://www.printables.com/model/1014587)),
+was fetched but not usable this pass: its 11 ports are arranged on a
+diagonal, and multiple similarly-sized rectangular loops (screw bosses,
+ribs) sit close enough to each port that automated centroid-tracking could
+not reliably distinguish the keystone hole from adjacent structural
+features. Left as unmeasured/inconclusive, not rejected as wrong-mechanism
+— a future pass could resolve it with per-loop visual inspection rather
+than automated tracking.
+
+### Insert (module) geometry
+
+- **Model 1** — "SMA-Keystone Modul", [Printables
+  366437](https://www.printables.com/model/366437). Single STL, complete
+  jack body with both fulcrum and arm modeled — a self-contained
+  confirmation of the whole mechanism in one part.
+  - Front face (nearest the channel-facing tip): **14.5mm x 16.3mm** —
+    `[C]` (corroborates `keystone_face` `[14.5, 16.0]`, joining the two
+    `[C]` STL reads already on file from #31's pmichaud/Hatcher models)
+  - Body envelope: **~16.5mm x 21.7mm x 27.9mm** — loosely corroborates
+    `keystone_body()`'s existing `//VERIFY` `[17.5, 19.5, 28.60]` (same
+    order of magnitude on all three axes, not exact) — `//VERIFY`
+  - **Bottom fulcrum notch**: base ≈ **2.5mm**, protrusion ≈ **1.5mm**,
+    positioned **~6.0-8.5mm behind the front face** — `//VERIFY`
+    (single-model mm; shape+position-range corroborated below)
+  - **Top arm**: a root block (~5.9mm tall) folds back on itself (a
+    hairpin turn, likely a print-orientation/compactness choice by this
+    author) into a thin cantilever, thickness ≈ **2.9mm**, running from
+    the root toward the front. It carries its own triangular **notch**:
+    base ≈ **2.5mm**, protrusion ≈ **1.0mm** — positioned at essentially
+    the **same ~6.0-8.5mm-behind-front depth range as the bottom notch**.
+    This mirrors the slot side's same-depth finding: the insert's two
+    notches seat at the same depth the channel's two slits open at,
+    exactly as the push-to-click (not rotate-in) mechanism requires.
+
+- **Model 2** — "SFP+ Cable Keystone Jack", [Printables
+  314383](https://www.printables.com/model/314383). Ships as three
+  separate parts (`Left.stl` + `Right.stl` body halves, `Hook.stl` a
+  standalone flexing-arm insert) — `Hook.stl` sits in its own
+  print-bed coordinate frame, not co-registered with Left/Right, so only
+  shape/relative dimensions (not cross-part positions) are read from it.
+  - Assembled body envelope (Left+Right, no wire-management cap): **~16.9mm
+    x 17.3mm x 22mm** — `//VERIFY`, same-order-of-magnitude corroboration
+    of `keystone_body()` alongside Model 1.
+  - **Bottom fulcrum notch** (visible as an internal pocket wall feature in
+    `Left.stl`): base ≈ **2.0mm**, protrusion ≈ **1.25mm**, positioned
+    **~6.4-8.4mm behind the front face** — `//VERIFY` (single-model mm)
+  - **Top arm** (`Hook.stl`, a separate clip-in part): a root block (~7.1mm
+    tall) transitions into a thin cantilever, thickness ≈ **0.90mm**,
+    running its free length to a triangular **notch at the arm's tip**:
+    base ≈ **2.0mm**, protrusion ≈ **1.2mm**. Unlike Model 1, this notch
+    sits at the arm's free end rather than near its root — a
+    parametric/author-specific placement choice along the arm, analogous
+    to the retention-flare variation #31 already found between its two
+    insert models.
+
+**Cross-model corroboration — `[C]`:** both models independently show (a)
+a small triangular notch on a solid bottom fulcrum, positioned in the same
+~6-8.5mm-behind-front-face range, and (b) a flexing top arm carrying its
+own triangular notch. Both findings are corroborated in **shape and
+position order-of-magnitude** across two unrelated designs (SMA 366437,
+SFP+ 314383) — `[C]`. The **exact** base/protrusion millimeter values
+differ per model (2.5/1.5mm and 2.5/1.0mm vs 2.0/1.25mm and 2.0/1.2mm) and
+are **not** numerically identical, so each model's specific mm figures stay
+`//VERIFY`. The notch's position *along* the arm (near-root in Model 1 vs
+at-the-free-tip in Model 2) is explicitly **not** corroborated — treat as
+an open, author-specific parameter, not a standard.
+
+Two further insert candidates were fetched and found inconclusive, not
+rejected as wrong-mechanism:
+
+- **"Keystone-Blank"**, [Printables
+  557655](https://www.printables.com/model/557655) — a centerline
+  (mid-X) depth section shows a constant 21.86mm x 18.95mm envelope
+  through nearly the entire body, with no taper toward the 14.5x16 face
+  anywhere along that line, and no notch. Two small 1.5mm x 1.85mm
+  off-center features exist near one end but could not be confidently
+  read as the fulcrum/arm mechanism from a centerline slice alone. This
+  model's latch geometry (if any) is evidently off the X centerline;
+  resolving it needs an X-offset slice pass, left for a future task.
+- **"Keystone Blank Insert Pass-Through"**, [Printables
+  1327671](https://www.printables.com/model/1327671) — `plug.stl`'s
+  profile is a stepped barrel with a triangular groove that reads as a
+  coupler-body retention feature (joining two barrel halves through the
+  wall for a pass-through cable), not a panel latch; `insert.stl` (its
+  smaller companion STL) is a plain rectangular sleeve with no notch on
+  its centerline. Read as a pass-through coupler that rides inside a
+  separate, off-the-shelf keystone jack shell rather than modeling its own
+  panel-latching geometry — excluded from the notch/arm measurements.
+
+### Datasheet hunt
+
+No vendor datasheet or mechanical drawing was found this pass that
+dimensions the slot slits or module notches specifically (the existing
+Samm Teknoloji drawing on file dimensions the face-opening and overall
+depth only, not this latch's internal features). All latch-geometry values
+above are STL-mesh-sourced; none earn `[A]`.
+
+### Caliper-upgradeable
+
+Every millimeter figure in this section is STL-mesh reverse-engineering of
+other people's prints, not the user's own hardware — per backlog #16, all
+of it should be re-measured with calipers against physical keystone jacks
+and printed test fits before Task 2/3 geometry is treated as final. This
+research is strongest on *shape and mechanism* (push-to-click, same-depth
+top/bottom engagement, triangular notch-in-slit) and weakest on *exact
+millimeter values*, where only `back_wall_depth` (~10mm) and the
+same-depth-start finding cleared the `[C]` bar this pass.
+
 ## Sources
 
 - [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) — tier A — backs `keystone_opening()`, `keystone_plate_thickness()[0]` (tmin); also the sole (single, non-decomposed) reading behind `keystone_body()[2]` (bd), which stays `//VERIFY` since one non-decomposed reading doesn't earn a tier
@@ -301,3 +529,7 @@ the exact millimeter values.
 - ["Keystone Jack v2 integration aide" by SimplifiedLife, Printables 1027864](https://www.printables.com/model/1027864) — tier C (single-mesh, `//VERIFY`) — cutout negative window/lip/slot geometry (the cutout window itself is a clearance passage, not the jack's solid footprint, so it is not counted toward the `keystone_face` front-face corroboration)
 - ["Keystone blank" by pmichaud, Printables 587874](https://www.printables.com/model/587874) — tier C (front face) / `//VERIFY` (retention-flare, parametric) — front-face corroboration, insert envelope and cantilever-latch-arm evidence
 - ["(Parametric) Keystone Connector" by Paul Hatcher, Printables 537480](https://www.printables.com/model/537480) — tier C (front face) / `//VERIFY` (retention-flare, parametric) — front-face corroboration, alternate (symmetric-step) retention-flare reading
+- ["Ethernet RJ45 keystone socket wall plate", Printables 1014552](https://www.printables.com/model/1014552) — tier C (`back_wall_depth`, same-depth top/bottom slit start, jointly with 533549) / `//VERIFY` (mouth/window/slit-length/wall-thickness specifics, single-model) — `"standard"` slot/channel geometry (#38)
+- ["Voron 0.2r1 Rear Skirt w/keystone", Printables 533549](https://www.printables.com/model/533549) — tier C (`back_wall_depth`, same-depth top/bottom slit start, jointly with 1014552) / `//VERIFY` (mouth/window specifics, single-model) — `"standard"` slot/channel geometry (#38), 3mf-sourced mesh
+- ["SMA-Keystone Modul", Printables 366437](https://www.printables.com/model/366437) — tier C (front face; fulcrum-notch and arm-notch shape+position, jointly with 314383) / `//VERIFY` (exact notch/arm mm, body envelope, single-model) — `"standard"` insert/module geometry (#38), single-STL whole-mechanism read
+- ["SFP+ Cable Keystone Jack", Printables 314383](https://www.printables.com/model/314383) — tier C (fulcrum-notch and arm-notch shape+position, jointly with 366437) / `//VERIFY` (exact notch/arm mm, body envelope, single-model) — `"standard"` insert/module geometry (#38), split Left/Right/Hook parts
