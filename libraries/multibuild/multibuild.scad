@@ -227,6 +227,88 @@ module multibuild_hole(type, length = undef) {
     }
 }
 
+/* [Data: Tile] — MultiBoard Tile (25mm MU accessory panel). Multihole
+   dia/depth and tile thickness are ALIASED from the existing snap-row data
+   (single source of truth -- see the file-level "Single source of truth"
+   convention); only the Small Hole dims/offset below are new literals. All
+   holes are threaded on the real part -> modeled here as simplified straight
+   cylinders (real thread profile deferred to #35), the same conservative
+   convention as the existing "snap" board-hole negative above. See
+   RESEARCH.md "Tile geometry (#33)". */
+function multibuild_tile_thickness() = multibuild_hole_depth("snap"); // 6.4, aliased -- re-confirmed no drift (#33)
+function multibuild_large_hole_dia() = multibuild_hole_dia("snap");   // 22.2, aliased -- re-confirmed no drift (#33)
+// Small Hole dims: [C]//VERIFY, STL mesh (Printables #1277707 Tile), single
+// community source, caliper-upgradeable (#16). RESEARCH.md "Tile geometry (#33)".
+function multibuild_small_hole_dia() = 6.53; // waist/main-bore diameter
+// Depth was measured INDEPENDENTLY (Z-profile scan), not assumed equal to
+// multibuild_tile_thickness() -- the Small Hole was confirmed to be a
+// through-hole spanning the full tile thickness, not a blind/partial pocket.
+// It happens to equal the tile thickness value (6.4), but is left as its own
+// literal (not an alias) so that fact stays visible and re-checkable.
+function multibuild_small_hole_depth() = 6.4;
+// Vector from a Multihole grid point to its nearest diagonally up-and-right
+// Small Hole (measured, not idealized to the exact half-cell [12.5,12.5]).
+function multibuild_small_hole_offset() = [12.61, 12.59];
+
+// Small Hole lattice: half-pitch-diagonal-offset sublattice sharing the
+// Multihole grid's pitch/orientation. Cardinality depends on the panel's
+// footprint (RESEARCH.md): a Tile with flange/tab material past the nominal
+// edge (Core piece) fits a full cols x rows count, while a flush-cut panel
+// (Corner piece) only fits the interior (cols-1) x (rows-1) count. The
+// accessory panel modeled by multibuild_tile_placeholder() below is a flush
+// slab (no flange overhang) -- the Corner-piece / flush case -- so this
+// implements the interior (cols-1) x (rows-1) cell-centered sublattice: one
+// small hole per Multihole grid position that has a neighbor both to its
+// right and above, placed at that Multihole's [x,y] plus the measured offset.
+// Reuses multibuild_grid_points()'s own x0/y0/pitch/row-major convention
+// rather than re-deriving grid math.
+function multibuild_tile_small_points(cols, rows) =
+    let (p  = multibuild_grid_pitch(),
+         x0 = -(cols - 1) * p / 2,
+         y0 = -(rows - 1) * p / 2,
+         off = multibuild_small_hole_offset())
+    [for (r = [0 : rows - 2]) for (c = [0 : cols - 2])
+        [x0 + c * p + off[0], y0 + r * p + off[1]]];
+
+/* [Placeholder] — Tile accessory-panel envelope for fit checks. Datum matches
+   the board-hole cutter below: top (mount) face at Z=0, slab grows -Z through
+   the tile thickness; footprint centered on XY like multibuild_grid_points(). */
+module multibuild_tile_placeholder(cols, rows) {
+    p = multibuild_grid_pitch();
+    w = cols * p;
+    d = rows * p;
+    h = multibuild_tile_thickness();
+    difference() {
+        translate([0, 0, -h / 2])
+            cube([w, d, h], center = true);
+        multibuild_tile_holes(cols, rows, "both");
+    }
+}
+
+/* [Negative] — Tile accessory-panel hole-stamp: Multiholes at
+   multibuild_grid_points(cols,rows) plus the Small Hole sublattice at
+   multibuild_tile_small_points(cols,rows), for use inside a consumer
+   difference() (e.g. multibuild_tile_placeholder() above). `which` selects
+   "large" (Multiholes only), "small" (Small Holes only), or "both" (default).
+   Same straight-cylinder simplification and translate/cylinder cutting style
+   as multibuild_hole()'s board-hole cutter -- real thread deferred to #35. */
+module multibuild_tile_holes(cols, rows, which = "both") {
+    if (which == "large" || which == "both") {
+        d = multibuild_large_hole_dia();
+        h = multibuild_tile_thickness();
+        for (pt = multibuild_grid_points(cols, rows))
+            translate([pt[0], pt[1], -h - 0.01])
+                cylinder(h = h + 0.02, d = d, $fn = 48);
+    }
+    if (which == "small" || which == "both") {
+        d = multibuild_small_hole_dia();
+        h = multibuild_small_hole_depth();
+        for (pt = multibuild_tile_small_points(cols, rows))
+            translate([pt[0], pt[1], -h - 0.01])
+                cylinder(h = h + 0.02, d = d, $fn = 48);
+    }
+}
+
 /* [Data: MultiBin] — 50mm CU / 50mm panel grid, DISTINCT from the 25mm MU
    board grid above. Do NOT reuse multibuild_grid_pitch() (=25) for CU-based
    sizing. See RESEARCH.md "MultiBin + Fix-Point (#32)".

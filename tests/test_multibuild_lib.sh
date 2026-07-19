@@ -329,4 +329,112 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown bin size:"; echo "$out"; exit 1
 fi
 
+# --- Tile (MultiBoard accessory panel): hole-stamp + placeholder (#33) ---
+# Verify STL-rendered geometry that the scad-level asserts (multibuild_test.scad)
+# can't reach: large/small hole COUNTS (via volume ratio against a single
+# straight-cylinder reference -- the two hole families never overlap at this
+# pitch/diameter, see multibuild.scad's Tile section) and the placeholder
+# envelope's bbox/datum (top face at Z=0, slab grows -Z through the tile
+# thickness, footprint cols*25 x rows*25, XY-centered like multibuild_grid_points).
+tile_cols=3; tile_rows=3
+
+cat > "$tmp/tile_dims.scad" <<EOF
+use <multibuild/multibuild.scad>;
+echo(multibuild_tile_thickness());
+echo(multibuild_large_hole_dia());
+echo(multibuild_small_hole_dia());
+echo(multibuild_small_hole_depth());
+EOF
+mapfile -t tile_dims < <(run "$tmp/tile_dims.scad" | grep -oE 'ECHO: -?[0-9]+(\.[0-9]+)?' | grep -oE '\-?[0-9]+(\.[0-9]+)?')
+tile_h="${tile_dims[0]}"; large_d="${tile_dims[1]}"; small_d="${tile_dims[2]}"; small_h="${tile_dims[3]}"
+
+cat > "$tmp/tile_large.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_tile_holes($tile_cols, $tile_rows, "large");
+EOF
+cat > "$tmp/tile_small.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_tile_holes($tile_cols, $tile_rows, "small");
+EOF
+cat > "$tmp/tile_both.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_tile_holes($tile_cols, $tile_rows, "both");
+EOF
+cat > "$tmp/tile_placeholder.scad" <<EOF
+use <multibuild/multibuild.scad>;
+multibuild_tile_placeholder($tile_cols, $tile_rows);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tile_large.stl" "$tmp/tile_large.scad" 2>/dev/null
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tile_small.stl" "$tmp/tile_small.scad" 2>/dev/null
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tile_both.stl" "$tmp/tile_both.scad" 2>/dev/null
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tile_placeholder.stl" "$tmp/tile_placeholder.scad" 2>/dev/null
+
+python3 - "$tmp/tile_large.stl" "$tmp/tile_small.stl" "$tmp/tile_both.stl" "$tmp/tile_placeholder.stl" \
+  "$tile_cols" "$tile_rows" "$tile_h" "$large_d" "$small_d" "$small_h" <<'PY' || { echo "Tile hole-stamp/placeholder geometry incorrect"; exit 1; }
+import struct, sys, math
+
+def read(path):
+    d = open(path, 'rb').read(); n = struct.unpack('<I', d[80:84])[0]; off = 84
+    xs = []; ys = []; zs = []; vol = 0.0
+    for i in range(n):
+        tri = []
+        for v in range(3):
+            base = off + i * 50 + 12 + v * 12
+            p = struct.unpack('<3f', d[base:base + 12]); tri.append(p)
+            xs.append(p[0]); ys.append(p[1]); zs.append(p[2])
+        (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = tri
+        vol += (x1 * (y2 * z3 - y3 * z2) - y1 * (x2 * z3 - x3 * z2) + z1 * (x2 * y3 - x3 * y2)) / 6.0
+    return n, abs(vol), (min(xs), max(xs), min(ys), max(ys), min(zs), max(zs))
+
+large_path, small_path, both_path, place_path = sys.argv[1:5]
+cols, rows = int(sys.argv[5]), int(sys.argv[6])
+th, ld, sd, sh = (float(x) for x in sys.argv[7:11])
+
+n_large_exp = cols * rows
+n_small_exp = (cols - 1) * (rows - 1)
+
+_, v_large, _ = read(large_path)
+_, v_small, _ = read(small_path)
+_, v_both, _  = read(both_path)
+n_place, v_place, b_place = read(place_path)
+
+vol_cyl = lambda d, h: math.pi * (d / 2) ** 2 * h
+exp_large = n_large_exp * vol_cyl(ld, th)
+exp_small = n_small_exp * vol_cyl(sd, sh)
+
+errs = []
+tol_rel = 0.03  # $fn=48 faceting underestimate, a couple % on small cylinders
+def close_rel(a, b, tol=tol_rel):
+    return abs(a - b) <= tol * max(abs(b), 1.0)
+
+if not close_rel(v_large, exp_large):
+    errs.append("large-hole volume %.3f != expected %.3f (n=%d)" % (v_large, exp_large, n_large_exp))
+if not close_rel(v_small, exp_small):
+    errs.append("small-hole volume %.3f != expected %.3f (n=%d)" % (v_small, exp_small, n_small_exp))
+# "both" == large + small (the two families never overlap at this pitch/offset)
+if not close_rel(v_both, v_large + v_small):
+    errs.append("both-hole volume %.3f != large+small %.3f" % (v_both, v_large + v_small))
+
+# Placeholder envelope: footprint cols*25 x rows*25, top face at Z=0, slab
+# grows -Z through the tile thickness, XY-centered on the origin.
+w_exp, d_exp = cols * 25, rows * 25
+xmin, xmax, ymin, ymax, zmin, zmax = b_place
+tol = 0.05
+if abs((xmax - xmin) - w_exp) > tol: errs.append("placeholder X span %.4f != %.4f" % (xmax - xmin, w_exp))
+if abs((ymax - ymin) - d_exp) > tol: errs.append("placeholder Y span %.4f != %.4f" % (ymax - ymin, d_exp))
+if abs((zmax - zmin) - th) > tol: errs.append("placeholder Z span %.4f != %.4f" % (zmax - zmin, th))
+if abs(zmax) > tol: errs.append("placeholder top face not at Z=0 (zmax=%.4f)" % zmax)
+if abs((xmin + xmax) / 2) > tol: errs.append("placeholder not X-centered")
+if abs((ymin + ymax) / 2) > tol: errs.append("placeholder not Y-centered")
+slab_vol = w_exp * d_exp * th
+exp_place = slab_vol - (v_large + v_small)
+if not close_rel(v_place, exp_place, tol=0.05):
+    errs.append("placeholder volume %.3f != slab-holes %.3f" % (v_place, exp_place))
+
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+    sys.exit(1)
+sys.exit(0)
+PY
+
 echo ok

@@ -104,3 +104,35 @@ for (sz = [sz_a, sz_b]) {
     multibin_placeholder(sz);
     multibin_cavity_cutout(sz);
 }
+
+// --- Tile (MultiBoard accessory panel) (#33) ---
+// Multihole dia/depth/thickness must be ALIASED from the snap row (single
+// source of truth), never re-literal'd.
+assert(multibuild_tile_thickness() == multibuild_hole_depth("snap"));
+assert(multibuild_large_hole_dia() == multibuild_hole_dia("snap"));
+// Small Hole dims -- new literals, [C]//VERIFY, RESEARCH.md "Tile geometry (#33)".
+assert(multibuild_small_hole_dia() == 6.53);
+assert(multibuild_small_hole_depth() == 6.4);
+assert(multibuild_small_hole_offset() == [12.61, 12.59]);
+
+// Small Hole lattice: interior (cols-1) x (rows-1) cell-centered sublattice
+// (this lib's Tile accessory panel is a flush slab, no flange/tab overhang --
+// see RESEARCH.md's Corner-piece case, not the flanged Core-piece cols x rows
+// case). Verify count + that every small point is a Multihole grid point
+// plus the measured offset.
+tp = multibuild_tile_small_points(3, 3);
+assert(len(tp) == 2 * 2); // (cols-1)*(rows-1)
+mh_33 = multibuild_grid_points(3, 3);
+sh_off = multibuild_small_hole_offset();
+for (sp = tp) {
+    assert(len([for (m = mh_33)
+        if (abs(sp[0] - (m[0] + sh_off[0])) < 1e-6 && abs(sp[1] - (m[1] + sh_off[1])) < 1e-6) 1]) == 1);
+}
+
+// Placeholder + hole-stamp: render for a couple sizes (STL bbox/volume/count
+// checks live in tests/test_multibuild_lib.sh).
+for (sz = [[2, 2], [3, 3]]) {
+    multibuild_tile_placeholder(sz[0], sz[1]);
+    for (which = ["large", "small", "both"])
+        multibuild_tile_holes(sz[0], sz[1], which);
+}
