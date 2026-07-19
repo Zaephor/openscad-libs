@@ -24,3 +24,4 @@
 - `make check` — conventions + compile must pass.
 - `make render P=<project>` — refresh renders (CI also regenerates on `main`).
 - `make test` — tooling test suite.
+- If you add or remove a library or project — or materially change a library's public API or Sources — update the top-level `README.md` Libraries/Projects lists and that library's own `README.md` in the same change. (The top README is the repo's index; keep it in sync so it doesn't drift.)
