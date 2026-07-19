@@ -103,6 +103,16 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_boss(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
 fi
 
+# Negative control: keystone_insert(...,flex_side="bogus") must abort (#38 Task 3).
+cat > "$tmp/bad_flex_side.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "bogus");
+EOF
+out="$(run "$tmp/bad_flex_side.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_insert(flex_side=\"bogus\") failed to abort with unknown flex_side:"; echo "$out"; exit 1
+fi
+
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
 cat > "$tmp/dims.scad" <<'EOF'
 use <keystone/keystone.scad>;
@@ -550,5 +560,141 @@ if errs:
     sys.stderr.write("\n".join(errs) + "\n")
 sys.exit(1 if errs else 0)
 PY
+
+# --- #38 Task 3: standard insert seated-mate + insertion-motion no-collision ---
+# The mate-reference insert (fulcrum + flexing arm, keystone_notch()-derived)
+# dropped into the real channel frame must INTERLOCK (both triangular notches
+# seated inside their respective slit VOID, plate wall material adjacent) with
+# NO solid-body interference, and the insertion sweep must never clip -- this
+# is the check the superseded #31 rotate-and-snap motion FAILED (its swinging
+# body solid-overlapped the frame mid-sweep). render-without-CGAL-error is NOT
+# sufficient (a union of overlapping solids is still manifold); every check
+# below forces a REAL boolean intersection and reads the resulting STL bbox.
+
+# real_overlap FILE LABEL: fail iff the intersection STL has genuine extent on
+# all three axes (a real volumetric clip). Two solids that merely touch produce
+# a zero-VOLUME degenerate sliver (>=1 axis extent ~0), which is allowed.
+real_overlap() {
+  local f="$1" label="$2"
+  [ -s "$f" ] || return 0   # empty export => no intersection => no clip
+  python3 - "$f" "$label" <<'PY'
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[];zs=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); ys.append(y); zs.append(z)
+ex,ey,ez=(max(xs)-min(xs)),(max(ys)-min(ys)),(max(zs)-min(zs))
+eps=0.05
+if ex>eps and ey>eps and ez>eps:
+    sys.stderr.write(f"{sys.argv[2]}: real volumetric insert/frame overlap {ex:.2f}x{ey:.2f}x{ez:.2f}mm\n")
+    sys.exit(1)
+sys.exit(0)
+PY
+}
+
+# Seated mate for BOTH flex_side orientations: intersection of the frame
+# (plate+boss-cutout) with the seated insert, restricted to Z < -0.01 (behind
+# the panel -- the front flange is BY DESIGN flush at Z=0 and excluded), must
+# be a zero-volume sliver. The notches live in the slit voids; the plug in the
+# mouth void; nothing punches solid frame.
+for FS in top bottom; do
+  cat > "$tmp/std_seat_$FS.scad" <<EOF
+use <keystone/keystone.scad>;
+intersection() {
+    intersection() {
+        difference() {
+            union() {
+                translate([-15, -15, -3]) cube([30, 30, 3]);
+                keystone_boss(plate_thickness = 3.0, style = "standard");
+            }
+            keystone_cutout(plate_thickness = 3.0, style = "standard");
+        }
+        keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "$FS");
+    }
+    translate([-20, -20, -20]) cube([40, 40, 19.99]);
+}
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_seat_$FS.stl" "$tmp/std_seat_$FS.scad" 2>/dev/null
+  real_overlap "$tmp/std_seat_$FS.stl" "standard seated mate (flex_side=$FS)" \
+    || { echo "standard insert seated-mate clips solid frame (#38 Task 3)"; exit 1; }
+done
+
+# Positive interlock: section the SEATED insert with a thin Z-slab at the top
+# notch's CATCH face (~6.3mm behind the front face = topnotch_z 7.4 - base/2
+# 1.3, where the triangular notch is at ~full protrusion). BOTH notches must
+# reach OUT past the mouth's own Y half-height (into their slit bands) --
+# proving the notches genuinely engage the slit voids, not float inside the
+# mouth. (mouth_h/2 = 9.2; both notch tips should clear it.)
+cat > "$tmp/std_notch_engage.scad" <<'EOF'
+use <keystone/keystone.scad>;
+intersection() {
+    keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "top");
+    translate([-20, -20, -6.3 - 0.05]) cube([40, 40, 0.1]);
+}
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_notch_engage.stl" "$tmp/std_notch_engage.scad" 2>/dev/null
+python3 - "$tmp/std_notch_engage.stl" <<'PY' || { echo "standard insert notches do not engage the slits (#38 Task 3)"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+ys=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); ys.append(y)
+if not ys:
+    sys.stderr.write("no insert material at the notch depth (-6.3mm) -- notches missing\n"); sys.exit(1)
+mouth_half=18.4/2  # keystone_slot() mouth_h/2
+if max(ys) <= mouth_half + 0.3:
+    sys.stderr.write(f"top (flex-arm) notch tip {max(ys):.2f} does not clear the mouth half-height {mouth_half:.2f} -- not seated in the slit\n"); sys.exit(1)
+if min(ys) >= -(mouth_half + 0.3):
+    sys.stderr.write(f"bottom (fulcrum) notch tip {min(ys):.2f} does not clear the mouth half-height {-mouth_half:.2f} -- not seated in the slit\n"); sys.exit(1)
+sys.exit(0)
+PY
+
+# Insertion-motion no-collision (standard): sample the sweep at >=4 stages via
+# the assembly's own stage helper. The corrected push-to-click model deflects
+# the notches inward while travelling (they clear the wall bridges) and springs
+# them into the slits only at seat, so the insert never solid-overlaps the
+# frame at ANY stage. This is the direct regression guard against #31's clip.
+for ST in 0 0.33 0.66 1.0; do
+  name="std_${ST//./_}"
+  cat > "$tmp/mot_$name.scad" <<EOF
+use <keystone/keystone.scad>;
+use <keystone/assembly.scad>;
+intersection() {
+    difference() {
+        union() {
+            translate([-15, -15, -3]) cube([30, 30, 3]);
+            keystone_boss(plate_thickness = 3.0, style = "standard");
+        }
+        keystone_cutout(plate_thickness = 3.0, style = "standard");
+    }
+    _keystone_insert_at_stage(3.0, 0.2, "standard", $ST);
+}
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/mot_$name.stl" "$tmp/mot_$name.scad" 2>/dev/null
+  real_overlap "$tmp/mot_$name.stl" "standard insertion motion (stage $ST)" \
+    || { echo "standard insertion-motion CLIPS the frame at stage $ST (#38 Task 3 -- the #31 bug)"; exit 1; }
+done
+
+# Face motion must still render at every stage (keep-working guard). Face
+# retention is plate-thickness front/rear grip and its viz is a straight
+# push-fit (pre-#28, out of #38 scope); its wide snap latch is modeled passing
+# through the window plane during travel (an accepted simplification, NOT a
+# swinging-body collision), so face is NOT held to the strict no-clip bar
+# above -- only that the sweep compiles/renders without a CGAL error.
+for ST in 0 0.33 0.66 1.0; do
+  cat > "$tmp/face_mot.scad" <<EOF
+use <keystone/keystone.scad>;
+use <keystone/assembly.scad>;
+keystone_assembly_motion(plate_thickness = 3.0, style = "face", stage = $ST);
+EOF
+  fmo="$(run "$tmp/face_mot.scad")"
+  if echo "$fmo" | grep -qiE 'ERROR:|Assertion .* failed'; then
+    echo "face insertion-motion failed to render at stage $ST:"; echo "$fmo"; exit 1
+  fi
+done
 
 echo ok

@@ -291,11 +291,6 @@ module keystone_placeholder() {
         cube([b[0], b[1], b[2]]);
 }
 
-// _keystone_plateau_depth(): carried forward from #31 -- still used by
-// keystone_insert()'s placeholder branch below (Task 3 will remove this
-// dependency when it rebuilds that branch from keystone_notch()).
-function _keystone_plateau_depth() = 1.30;
-
 // _keystone_chamfer_margin(): print-safety factor (NOT a measured value --
 // a repo print-process choice, same spirit as keystone_min_wall()) applied
 // to the bare 45deg self-support minimum for keystone_cutout("standard")'s
@@ -437,80 +432,136 @@ module keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = undef) {
     }
 }
 
-/* [Insert] — geometric keystone mate-reference (NOT print-tuned; a print-ready
-   flexing-latch insert is out of scope for v1, see backlog #22). Datum matches
-   keystone_cutout(...,style) so keystone_insert(...,style) dropped into the
-   same-style cutout overlays for a virtual mate-check. Front flange stops at
-   Z=0 (grows +Z, common bezel both styles); plug passes through the window.
-   Plug cross-section is ALWAYS the real jack face (keystone_face()), style-
-   independent — the window it must thread is the style-varying part, not the
-   jack itself. `fit` = clearance the plug sits under the face, per side.
-   Retention geometry differs per style:
-     "face": keystone_tab(style)-derived. hook (+Y) rides just behind the
-             front face; latch (-Y) bumps out past the window's raw edge but
-             entirely behind the plate rear (open air there, not solid
-             material) -- grips the plate's flat front/rear faces (pre-#28
-             model, unchanged).
-     "standard" (#38): TODO Task 3 -- this branch is a COMPILING PLACEHOLDER
-             only, derived from keystone_slot()'s slit Z-ranges (a rough
-             hook-shaped box in each slit's span), NOT the real
-             fulcrum/flex-arm mechanism keystone_notch() describes. It keeps
-             keystone_insert() rendering (needed so consumers/tests that
-             smoke-render it don't break) without claiming to be a correct
-             mate-check for the standard mechanism -- Task 3 replaces this
-             entirely with keystone_notch()-derived geometry. */
-module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard") {
-    o = keystone_opening(style);  // [ow, oh] — the window THIS style's cutout leaves
-    f = keystone_face();          // [fw, fh] — the real jack, style-independent
-    t = keystone_tab(style);      // [hook_ledge_z, tab_thickness, hook_edge, latch_edge] -- "face" only
-    ledge_z = t[0];
-    tab_th  = t[1];
-    flange  = 1.5;   // flange lip beyond the window, per side
-    plug_w  = f[0] - 2*fit;  // plug cross-section: jack face, less `fit` per side
-    plug_h_xy = f[1] - 2*fit;
-    // through-plug depth: "face" reaches 3mm behind the plate rear (pre-#28,
-    // unchanged). "standard" is plate-thickness-independent like its
-    // cutout/boss -- reaches past keystone_slot()'s back_wall_depth.
-    // TODO(#38 Task 3): placeholder depth, see module comment.
-    std_slot = keystone_slot("standard");
-    std_rear_z = -std_slot[0] - _keystone_plateau_depth();
-    plug_h  = (style == "face") ? (plate_thickness + 3) : (-std_rear_z + 0.5);
-    union() {
-        // front flange: front stop, Z=0..+1.2
-        translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
-            cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
-        // through-plug: jack FACE cross-section less `fit` per side, front to behind rear
-        translate([-plug_w/2, -plug_h_xy/2, -plug_h])
-            cube([plug_w, plug_h_xy, plug_h]);
+// _keystone_std_notch(width, base, prot, surf, zc): one triangular retention
+// notch for keystone_insert("standard"). Protrudes +Y from a carrier surface
+// at Y=surf, rising `prot` beyond it, `base` long in Z (centred at zc), `width`
+// wide in X (centred). The vertical CATCH face is toward the front (+Z, shallow
+// end); a ramp descends toward the rear (deep, -Z) so a straight push-in cams
+// past the wall. Caller mirrors in Y for the bottom (fulcrum) side.
+module _keystone_std_notch(width, base, prot, surf, zc) {
+    z_catch = zc + base / 2;   // toward front: vertical catch face
+    z_ramp  = zc - base / 2;   // toward rear: ramp down to the surface
+    hull() {
+        translate([-width / 2, surf, z_catch - 0.01]) cube([width, prot, 0.02]);
+        translate([-width / 2, surf, z_ramp])         cube([width, 0.01, 0.01]);
+    }
+}
 
-        if (style == "face") {
-            // top hook ledge on +Y edge, engaging just behind the front face. Z
-            // driven by ledge_z (keystone_tab("face")[0]): top edge sits at
-            // -ledge_z, extending tab_th further back. Y-span runs from the
-            // plug's own +Y face (plug_h_xy/2 -- so it stays CONNECTED to the
-            // face-derived plug) out to the raw window edge o[1]/2, never past
-            // it.
+/* [Insert] — geometric keystone mate-reference (NOT print-tuned; a print-ready
+   flexing-latch snap insert is out of scope for v1, see backlog #22). Datum
+   matches keystone_cutout(...,style) so keystone_insert(...,style) dropped into
+   the same-style cutout overlays for a virtual mate-check. Front flange stops
+   at Z=0 (grows +Z, common bezel both styles); plug passes through the window.
+   Plug cross-section is ALWAYS the real jack face (keystone_face()), style-
+   independent — the window it threads is the style-varying part, not the jack.
+   `fit` = clearance the plug sits under the face, per side.
+   Retention geometry differs per style:
+     "face": keystone_tab(style)-derived. hook (+Y) rides just behind the front
+             face; latch (-Y) bumps out past the window's raw edge but entirely
+             behind the plate rear (open air there, not solid material) -- grips
+             the plate's flat front/rear faces (pre-#28 model, unchanged;
+             flex_side/deflect are ignored for "face").
+     "standard" (#38): the real push-to-click mechanism (RESEARCH.md "Standard
+             keystone latch geometry (#38)"). A solid FULCRUM rib (default
+             bottom) carries a triangular notch seating in keystone_slot()'s
+             bottom wall-slit; a thin cantilever FLEXING ARM (default top),
+             separated from the plug by a relief gap so it can deflect, carries
+             its own triangular notch seating in the top wall-slit. Both notch
+             tips sit at the SAME depth (keystone_notch()'s fulcrum_z/topnotch_z,
+             ~7.1-7.4mm behind the front face) INSIDE their slit voids -- the
+             seated notches never touch solid frame (a mate, not interference).
+             `flex_side` in "top"(default)/"bottom" swaps which surface is the
+             rigid fulcrum vs the flexing arm (a Y-mirror). `deflect` in 0..1
+             (motion-viz only; 0 = relaxed/seated, assembly.scad drives it)
+             pulls both notches inward toward the mouth centre so they clear the
+             channel's wall bridges during the straight push-in sweep -- the
+             flexing arm's inward travel is real spring deflection, the rigid
+             fulcrum notch's is a non-kinematic stand-in for its triangular ramp
+             camming past the wall (documented viz simplification; the STATIC
+             seated fulcrum is geometrically rigid). The notch base/protrusion/
+             depth values are keystone_notch()-tiered //VERIFY (single-model,
+             366437) and used verbatim; the arm's own thickness/free-length/root
+             (keystone_notch()[3..5], //VERIFY) are NOT used verbatim -- 366437's
+             arm_root_z=20 / arm_length=14 are that author's compact hairpin
+             fold and are physically incompatible with this frame's ~10mm-deep
+             channel (they would punch through the back wall), so the arm here is
+             rooted at the plug rear and sized to fit (a mate-reference/print
+             convention choice, //VERIFY, same spirit as keystone_min_wall()).
+             The support-free printable snap version owns real arm/relief tuning
+             (#22). */
+module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard",
+                       flex_side = "top", deflect = 0) {
+    s = _keystone_resolve_style(style);
+    f = keystone_face();            // [fw, fh] — the real jack, style-independent
+    flange  = 1.5;                  // flange lip beyond the window, per side
+    plug_w  = f[0] - 2 * fit;       // plug cross-section: jack face, less `fit` per side
+    plug_h_xy = f[1] - 2 * fit;
+    if (s == "face") {
+        o = keystone_opening(s);    // [ow, oh] — the window "face"'s cutout leaves
+        t = keystone_tab(s);        // [hook_ledge_z, tab_thickness, hook_edge, latch_edge]
+        ledge_z = t[0];
+        tab_th  = t[1];
+        plug_h  = plate_thickness + 3;   // reaches 3mm behind the plate rear (pre-#28)
+        union() {
+            // front flange: front stop, Z=0..+1.2
+            translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
+                cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
+            // through-plug: jack FACE cross-section less `fit` per side
+            translate([-plug_w/2, -plug_h_xy/2, -plug_h])
+                cube([plug_w, plug_h_xy, plug_h]);
+            // top hook ledge on +Y edge, engaging just behind the front face.
             translate([-(o[0]/2 - fit), plug_h_xy/2, -(ledge_z + tab_th)])
                 cube([o[0] - 2*fit, o[1]/2 - plug_h_xy/2, tab_th]);
             // bottom latch bump on -Y edge, behind the plate rear.
             translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
                 cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
-        } else { // "standard"
-            // TODO(#38 Task 3): placeholder tabs, see module comment.
-            sl = keystone_slot("standard"); // [back_wall_depth,wall_thickness,mouth_w,mouth_h,top_slit_w,top_slit_len,top_slit_depth,bot_slit_w,bot_slit_len,bot_slit_depth]
-            mh2 = sl[3] / 2; wt = sl[1];
-            top_outer = mh2 + wt;
-            top_z0 = -sl[6];           // top_slit_depth
-            top_z1 = -(sl[6] + sl[5]); // top_slit_depth + top_slit_len
-            bot_z0 = -sl[9];           // bot_slit_depth
-            bot_z1 = -(sl[9] + sl[8]); // bot_slit_depth + bot_slit_len
-            // rough "hook" occupying the top slit's Z-range, connected to the
-            // plug's own +Y face out to (short of) the slit's outer edge.
-            translate([-plug_w/2, plug_h_xy/2, top_z1])
-                cube([plug_w, (top_outer - fit) - plug_h_xy/2, top_z0 - top_z1]);
-            // mirrored on the bottom slit's Z-range.
-            translate([-plug_w/2, -(top_outer - fit), bot_z1])
-                cube([plug_w, (top_outer - fit) - plug_h_xy/2, bot_z0 - bot_z1]);
+        }
+    } else { // "standard" (#38)
+        assert(flex_side == "top" || flex_side == "bottom",
+            str("keystone_insert: flex_side must be \"top\" or \"bottom\", got \"", flex_side, "\""));
+        o  = keystone_opening(s);   // [ow, oh] — flange bezel size
+        sl = keystone_slot(s);      // [bwd,wt,mw,mh,tsw,tsl,tsd,bsw,bsl,bsd]
+        nt = keystone_notch(s);     // [fb,fp,fz,at,al,arz,tb,tp,tz]
+        mh2  = sl[3] / 2;           // mouth half-height (frame void boundary)
+        surf = mh2 - fit;           // carrier outer surface, just inside the mouth
+        nw   = plug_w;              // notch/rib width (within the full-width slit)
+        plug_front = 0.5;           // plug fuses into the flange (Z 0..1.2)
+        plug_rear  = -(sl[0] - 0.5);// plug tip stops just short of the back wall
+        fb = nt[0]; fp = nt[1]; fz = -nt[2];   // fulcrum notch: base, protrusion, depth
+        tb = nt[6]; tp = nt[7]; tz = -nt[8];   // arm notch:     base, protrusion, depth
+        arm_th   = 0.7;             // arm bar thickness (adapted to fit the mouth)
+        arm_in   = surf - arm_th;   // arm underside
+        arm_front = tz + tb / 2 + 1.0;         // arm free tip, just forward of its notch
+        root_len = 1.5;            // deep root block joining arm to plug
+        rib_front = -4.0;          // fulcrum rib front (stays behind the wall bridge)
+        // inward deflection (motion-viz only): pull each notch tip to mouth-0.3
+        d_top = deflect * (surf + tp - (mh2 - 0.3));
+        d_bot = deflect * (surf + fp - (mh2 - 0.3));
+        // canonical build: flexing arm on +Y (top), rigid fulcrum on -Y (bottom).
+        // flex_side == "bottom" mirrors the whole assembly in Y (scale -1).
+        scale([1, flex_side == "bottom" ? -1 : 1, 1])
+        union() {
+            // front flange bezel (front stop, Z 0..1.2)
+            translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
+                cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
+            // through-plug: jack FACE cross-section, flange front to plug_rear
+            translate([-plug_w/2, -plug_h_xy/2, plug_rear])
+                cube([plug_w, plug_h_xy, plug_front - plug_rear]);
+            // --- rigid fulcrum (bottom, -Y): solid rib (static, always inside
+            // the mouth) + triangular notch (retracts +d_bot during the sweep) ---
+            translate([-nw/2, -surf, plug_rear])
+                cube([nw, surf - plug_h_xy/2, rib_front - plug_rear]);
+            translate([0, d_bot, 0])
+                mirror([0, 1, 0]) _keystone_std_notch(nw, fb, fp, surf, fz);
+            // --- flexing arm (top, +Y): cantilever bar + deep root block +
+            // triangular notch. Bar+notch deflect -d_top; the root stays put ---
+            translate([0, -d_top, 0])
+                translate([-nw/2, arm_in, plug_rear])
+                    cube([nw, arm_th, arm_front - plug_rear]);
+            translate([-nw/2, plug_h_xy/2, plug_rear])
+                cube([nw, surf - plug_h_xy/2, root_len]);
+            translate([0, -d_top, 0])
+                _keystone_std_notch(nw, tb, tp, surf, tz);
         }
     }
 }

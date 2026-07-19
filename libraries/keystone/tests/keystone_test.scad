@@ -126,12 +126,16 @@ translate([30, 0, 0]) difference() {
     keystone_cutout(plate_thickness = 3.0);
 }
 
-/* [Insert] — smoke render: mate-reference body, both styles. "standard"'s
-   branch is a Task-3 placeholder (see keystone_insert()'s own comment) --
-   this only confirms it still compiles/renders, not that it's the correct
-   mechanism (Task 3 owns that rework). Numeric checks in the bash test. */
-translate([-30, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "standard");
-translate([-60, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "face");
+/* [Insert] — smoke render: mate-reference body, both styles + both flex_side
+   orientations + a mid-insertion deflected pose (#38 Task 3: "standard" is now
+   the real fulcrum + flexing-arm push-to-click mechanism, no longer a
+   placeholder -- see keystone_insert()'s own comment). Seated-mate, notch
+   engagement, and motion-no-collision are asserted numerically in
+   tests/test_keystone_lib.sh. */
+translate([-30,  0, 0]) keystone_insert(plate_thickness = 3.0, style = "standard");
+translate([-30, 30, 0]) keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "bottom");
+translate([-30, 60, 0]) keystone_insert(plate_thickness = 3.0, style = "standard", deflect = 1); // notches retracted (mid-sweep pose)
+translate([-60,  0, 0]) keystone_insert(plate_thickness = 3.0, style = "face");
 
 /* [Boss] (#38) — smoke render: local material behind a thin 3mm plate,
    hosting the "standard" channel's full ~10mm+ depth. Numeric checks
