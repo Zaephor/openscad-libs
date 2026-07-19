@@ -3,43 +3,75 @@
 // (assert failures surface on stderr; OpenSCAD exit code on assert files is unreliable.)
 use <keystone/keystone.scad>;
 
-// --- style/decomposition invariants (task #28) ---
-assert(keystone_known_styles() == ["lip", "face"], "styles list");
+// --- style/decomposition invariants (#38: "standard" replaces #31's wrong
+// ramped-window "lip" guess as the canonical retention mechanism; "lip"
+// becomes a deprecated alias resolving to "standard") ---
+assert(keystone_known_styles() == ["standard", "face"], "styles list");
 assert(keystone_face() == [14.5, 16.0], "jack face invariant");
 assert(keystone_opening("face") == [14.70, 16.40], "face-grip opening (Samm [A])");
-assert(keystone_opening("lip")  == [14.90, 22.90], "lip opening (#31 measured max window)");
-assert(keystone_opening() == keystone_opening("lip"), "default style = lip");
 
-// Plug cross-section is the jack FACE, not the (taller, lip) opening.
+// keystone_slot("standard") -- measured channel/slit geometry (#38,
+// RESEARCH.md "Standard keystone latch geometry", Model 1: "Ethernet RJ45
+// keystone socket wall plate", Printables 1014552), values verbatim.
+sl = keystone_slot("standard");
+assert(len(sl) == 10,
+       "slot [back_wall_depth,wall_thickness,mouth_w,mouth_h,top_slit_w,top_slit_len,top_slit_depth,bot_slit_w,bot_slit_len,bot_slit_depth]");
+assert(sl[0] == 10.05, "back_wall_depth [C] (1014552+533549 cross-model corroboration)");
+assert(sl[1] == 1.51,  "wall_thickness //VERIFY (1014552, single-model)");
+assert(sl[2] == 15.3,  "mouth_w //VERIFY (1014552)");
+assert(sl[3] == 18.4,  "mouth_h //VERIFY (1014552)");
+assert(sl[4] == sl[2], "top_slit_w == mouth_w (slit runs the full channel width, no local narrowing -- 1014552)");
+assert(sl[5] == 8.0,   "top_slit_len //VERIFY (1014552)");
+assert(sl[6] == 2.05,  "top_slit_depth //VERIFY mm (same-start-depth finding is [C] jointly w/ 533549, see keystone.scad)");
+assert(sl[7] == sl[2], "bot_slit_w == mouth_w (same full-width finding)");
+assert(sl[8] == 6.5,   "bot_slit_len //VERIFY (1014552)");
+assert(sl[9] == sl[6], "bot_slit_depth == top_slit_depth (both slits start together, [C] jointly w/ 533549 -- the finding that distinguishes \"standard\" from #31's staged \"lip\" mechanism)");
+
+// keystone_notch("standard") -- measured jack-side fulcrum/arm geometry
+// (#38, RESEARCH.md "Insert (module) geometry", Model 1: "SMA-Keystone
+// Modul", Printables 366437), values verbatim.
+nt = keystone_notch("standard");
+assert(len(nt) == 9,
+       "notch [fulcrum_base,fulcrum_protrusion,fulcrum_z,arm_thickness,arm_length,arm_root_z,topnotch_base,topnotch_protrusion,topnotch_z]");
+assert(nt[0] == 2.0 && nt[1] == 1.5, "fulcrum base/protrusion //VERIFY (366437)");
+assert(nt[2] == 7.1, "fulcrum_z //VERIFY (366437; midpoint of the measured 6.1-8.1mm range)");
+assert(nt[3] == 1.7 && nt[4] == 14.0, "arm thickness/free-length //VERIFY (366437)");
+assert(nt[5] == 20.0, "arm_root_z //VERIFY (366437; unmeasurable in 314383's unregistered Hook.stl)");
+assert(nt[6] == 2.6 && nt[7] == 1.0, "topnotch base/protrusion //VERIFY (366437)");
+assert(nt[8] == 7.4, "topnotch_z //VERIFY (366437; midpoint of the measured 6.1-8.7mm range)");
+// Push-to-click, same-depth mechanism (RESEARCH.md "Mechanism write-up"):
+// both notches must seat within their respective slit's Z-range.
+assert(nt[2] >= sl[9] && nt[2] <= sl[9] + sl[8], "fulcrum_z falls inside the bottom slit's Z-range");
+assert(nt[8] >= sl[6] && nt[8] <= sl[6] + sl[5], "topnotch_z falls inside the top slit's Z-range");
+
+// --- alias resolution: "lip" is now a DEPRECATED ALIAS for "standard" (not
+// a second first-class style); nullary/undefined also resolves to "standard" ---
+assert(keystone_opening("lip") == keystone_opening("standard"), "opening: lip aliases to standard");
+assert(keystone_opening() == keystone_opening("standard"), "opening: nullary defaults to standard");
+assert(keystone_slot("lip") == keystone_slot("standard"), "slot: lip aliases to standard");
+assert(keystone_notch("lip") == keystone_notch("standard"), "notch: lip aliases to standard");
+
+// keystone_opening("standard") is derived from keystone_slot() (single
+// source of truth) -- the max window at the slits' outer edge.
+assert(keystone_opening("standard") == [sl[2], sl[3] + 2 * sl[1]],
+       "standard opening = [mouth_w, mouth_h + 2*wall_thickness]");
+
+// Plug cross-section is the jack FACE, not the (taller) opening.
 assert(keystone_tab("face")[2] == "+Y", "face tab hook edge");
-assert(keystone_tab("lip")[0]  >  0,    "lip tab ledge positive");
+assert(keystone_tab("standard")[0] > 0, "standard tab ledge positive (mate-reference placeholder numerics, unchanged by #38 -- Task 3 reworks keystone_insert() itself)");
 
-// --- keystone_latch() (#31): measured hook/flex-latch retention profile ---
-lt = keystone_latch("lip");
-assert(len(lt) == 7,
-       "latch [width,front_h,hook_z,hook_h,pocket_z,latch_z,latch_h]");
-assert(lt[0] == keystone_opening("lip")[0] && lt[6] == keystone_opening("lip")[1],
-       "latch width/max-height are keystone_opening(\"lip\")'s single source");
-// Z breakpoints get monotonically deeper (more negative) front-to-back.
-assert(lt[2] < 0 && lt[4] < lt[2] && lt[5] < lt[4],
-       "latch Z breakpoints (hook_z, pocket_z, latch_z) monotonically deeper");
-// Window height grows monotonically: front (narrowest) < hook pocket < latch plateau (widest).
-assert(lt[3] > lt[1] && lt[6] > lt[3],
-       "window height grows: front_h < hook_h < latch_h");
-assert(lt[3] > 0 && lt[6] > 0, "hook_h/latch_h positive");
-
-// --- keystone_boss_footprint() / style-aware min_pitch (#31) ---
-bf = keystone_boss_footprint("lip");
+// --- keystone_boss_footprint() / style-aware min_pitch (#38 update of the
+// #31 pattern to the "standard" channel) ---
+bf = keystone_boss_footprint("standard");
 assert(len(bf) == 3 && bf[0] > 0 && bf[1] > 0,
        "boss footprint [w,h,y_center] positive w/h");
-// Footprint must be wider (X) than the raw cutout envelope alone (wall margin added).
-assert(bf[0] > keystone_opening("lip")[0], "boss footprint adds wall margin beyond the raw opening");
-assert(keystone_min_pitch("lip") == bf[0],
-       "lip min_pitch is boss-footprint-driven (#31), not the old opening+wall formula");
+assert(bf[0] > keystone_opening("standard")[0], "boss footprint adds wall margin beyond the raw opening");
+assert(keystone_min_pitch("standard") == bf[0],
+       "standard min_pitch is boss-footprint-driven, not the plain opening+wall formula");
 assert(keystone_min_pitch("face") == keystone_opening("face")[0] + keystone_min_wall(),
        "face min_pitch formula unchanged");
-assert(keystone_pitch() >= keystone_min_pitch("lip"),
-       "nominal keystone pitch (19.05mm) still clears the boss-aware lip min_pitch");
+assert(keystone_pitch() >= keystone_min_pitch("standard"),
+       "nominal keystone pitch (19.05mm) still clears the boss-aware standard min_pitch");
 
 // --- metric invariants (always hold regardless of sourced numbers) ---
 o = keystone_opening();
@@ -47,9 +79,9 @@ assert(len(o) == 2 && o[0] > 0 && o[1] > 0, "opening [ow,oh] positive");
 
 b = keystone_body();
 assert(len(b) == 3 && b[0] > 0 && b[1] > 0 && b[2] > 0, "body [bw,bh,bd] positive");
-// Body (jack keep-out) must cover the FACE in X,Y. The "lip" opening is
-// intentionally taller than the jack (rotate-and-snap margin), so it may exceed
-// the body height — compare the body to the face, not the oversized opening.
+// Body (jack keep-out) must cover the FACE in X,Y. The "standard" opening is
+// intentionally taller than the jack (slit clearance margin), so it may
+// exceed the body height -- compare the body to the face, not the opening.
 f = keystone_face();
 assert(b[0] >= f[0] && b[1] >= f[1], "body at least as large as jack face in X,Y");
 
@@ -65,18 +97,13 @@ assert(t[0] > 0 && t[1] > 0, "tab ledge_z & thickness positive");
 assert(t[2] == "+Y" && t[3] == "-Y", "tab hook edge +Y, latch edge -Y");
 
 // --- fit-check identity (locks the single-source spacing rule) ---
-// "face" has no boss (plain rectangle): min_pitch is still opening_w + wall.
-// "lip" (#31) has a boss (see keystone_boss_footprint()): min_pitch is
-// boss-footprint-driven instead -- checked in the keystone_boss_footprint()
-// block above, not re-asserted here to avoid duplicating the same identity
-// against two different formulas under one style-less default.
 assert(keystone_min_pitch("face") == keystone_opening("face")[0] + keystone_min_wall(),
        "min_pitch(\"face\") == opening_w + min_wall");
-assert(keystone_pitch() >= keystone_min_pitch(), "nominal pitch clears default-style (lip) min_pitch");
+assert(keystone_pitch() >= keystone_min_pitch(), "nominal pitch clears default-style (standard) min_pitch");
 
 // layout_ok: a strip at nominal pitch fits; a strip below min_pitch does not.
 mp = keystone_min_pitch();
-assert(keystone_layout_ok([0, keystone_pitch(), 2*keystone_pitch()]) == true,
+assert(keystone_layout_ok([0, keystone_pitch(), 2 * keystone_pitch()]) == true,
        "nominal-pitch strip fits");
 assert(keystone_layout_ok([0, mp - 0.5]) == false, "sub-min gap rejected");
 assert(keystone_layout_ok([0]) == true, "single port always fits");
@@ -93,29 +120,31 @@ translate([30, 0, 0]) difference() {
     keystone_cutout(plate_thickness = 3.0);
 }
 
-/* [Insert] — smoke render: mate-reference body, both styles. Numeric checks
-   in the bash test. */
-translate([-30, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "lip");
+/* [Insert] — smoke render: mate-reference body, both styles. "standard"'s
+   branch is a Task-3 placeholder (see keystone_insert()'s own comment) --
+   this only confirms it still compiles/renders, not that it's the correct
+   mechanism (Task 3 owns that rework). Numeric checks in the bash test. */
+translate([-30, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "standard");
 translate([-60, 0, 0]) keystone_insert(plate_thickness = 3.0, style = "face");
 
-/* [Boss] (#31) — smoke render: local material behind a thin 3mm plate,
-   hosting the "lip" mechanism's full ~8.3mm depth. Numeric checks (footprint,
-   cutout section) in tests/test_keystone_lib.sh. */
+/* [Boss] (#38) — smoke render: local material behind a thin 3mm plate,
+   hosting the "standard" channel's full ~10mm+ depth. Numeric checks
+   (footprint, cutout section) in tests/test_keystone_lib.sh. */
 translate([60, 0, 0]) union() {
     translate([-15, -15, -3]) cube([30, 30, 3]); // stand-in thin faceplate
-    keystone_boss(plate_thickness = 3.0, style = "lip");
+    keystone_boss(plate_thickness = 3.0, style = "standard");
 }
 
-/* [Boss+Cutout assembly] (#31) — smoke render: the real consumer pattern
+/* [Boss+Cutout assembly] (#38) — smoke render: the real consumer pattern
    (union the boss into the plate, then difference the cutout through both)
-   -- confirms the full lip mechanism forms in solid material even though the
-   plate alone (3mm) is far thinner than the ~8.3mm mechanism depth. */
+   -- confirms the full standard channel forms in solid material even though
+   the plate alone (3mm) is far thinner than the channel's own depth. */
 translate([90, 0, 0]) difference() {
     union() {
         translate([-15, -15, -3]) cube([30, 30, 3]);
-        keystone_boss(plate_thickness = 3.0, style = "lip");
+        keystone_boss(plate_thickness = 3.0, style = "standard");
     }
-    keystone_cutout(plate_thickness = 3.0, style = "lip");
+    keystone_cutout(plate_thickness = 3.0, style = "standard");
 }
 
 // keystone_boss() is a no-op for "face" (plain-rectangle cutout already fits
