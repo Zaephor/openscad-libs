@@ -821,3 +821,102 @@ noted; single-sample → caliper-upgrade #16):
 - `//VERIFY`: exact throat width and dovetail flank angle are single-mesh-
   sample derivations; the rail *length* is per-part (variable, not a fixed
   spec). Upgrade all Fix-Point negative dims by caliper (#16).
+
+## Tile geometry (#33)
+
+Scope: resolve the "Open detail" flagged under Grid pitch above (the relative
+offset between the Small-Hole and Multihole lattices within one 25mm cell) by
+mesh-measuring the Tile's Small Hole (diameter, depth, lattice offset) and
+re-confirming the existing Multihole diameter / tile thickness values against
+the same source.
+
+### Source
+
+- Same Tile artifact as "Large Hole dimension (Task 1c)" above: Printables
+  model **1277707** ("Multiboard 8x8 Tiles - Corner, Core, Side" by
+  `blaise1092`, self-reporting official multiboard.io mesh origin via
+  embedded copyright metadata), the packaged `8x8+Multiboard+Tiles.3mf`
+  containing 3 separate tile-piece meshes (Core / Side / Corner, per the
+  model's own part naming). `[C]` — same tier and provenance caveat as
+  Task 1c (community reupload, self-reporting official origin; not
+  independently verified against multiboard.io directly).
+- `https://docs.multibuild.io/beginner-section/core-parts-documentation` —
+  Small Hole / Large Hole (Multihole) taxonomy and the independent "25 mm
+  apart" statements for both hole families, already established at `[A]` in
+  the "Board hole profile" and "Grid pitch" sections above; not re-fetched
+  this pass.
+
+### Findings — `[C]`/`//VERIFY` (STL-mesh-measured, single community-reupload
+source per Source above; caliper-upgradeable, #16) unless noted otherwise
+
+- **Small Hole diameter: 6.53mm** at the waist/main bore. Measured
+  independently on 64 Small Holes (Core tile piece) and 49 Small Holes
+  (Corner tile piece), agreeing to better than 0.001mm — the geometry is
+  evidently identical (copy-pasted) at every grid position, a
+  high-confidence single-source reading. Like the Multihole, the bore flares
+  slightly wider at both tile faces (a lead-in chamfer), asymmetrically
+  (wider at one face than the other) — the same waisted/chamfered
+  construction pattern as the Multihole's profile (see Task 1c above), just
+  at a smaller scale.
+- **Small Hole depth: full tile thickness (through-hole, not blind).**
+  Z-profile scanning shows a consistent ring cross-section spanning the
+  whole panel (z ≈ -3.2mm to +3.2mm, i.e. the same 6.4mm span as the tile
+  thickness), not a partial-depth pocket. This was directly measured, not
+  assumed — the task brief specifically flagged that small/pegboard holes on
+  comparable systems are sometimes blind or shallower than the panel.
+- **Multihole (Large Hole) diameter, re-confirmed: 22.11mm** (std <0.001mm
+  across all 64 Multiholes measured on the Core tile piece) — matches the
+  existing `_multibuild_table()` `"snap"` value (22.2mm, from Task 1c) to
+  within 0.1mm / <0.5%. **No meaningful drift; the existing value stands.**
+- **Tile thickness, re-confirmed: 6.4mm** (Z bounding-box span, both tile
+  pieces measured) — matches the existing value exactly. **No drift.**
+- **Small-Hole lattice offset from the Multihole grid: (+12.61, +12.59) mm**
+  in X/Y (magnitude 17.82mm), measured from each Multihole to the
+  diagonally-adjacent Small Hole immediately up-and-right of it. Reproduced
+  to within 0.001mm independently on the Core tile piece (64 hole-pairs) and
+  the Corner tile piece (49 hole-pairs) — a high-confidence, cross-validated
+  reading. This is very close to, but measurably about 0.1mm more than, an
+  exact half-cell diagonal (12.50, 12.50mm / 17.68mm) of the 25mm Multihole
+  grid pitch.
+- **Lattice topology: half-pitch, cell-centered sublattice — resolves the
+  open question from the Grid pitch section above.** The Small Hole grid
+  shares the Multihole grid's exact 25mm pitch and orientation, offset by
+  very close to half a cell diagonally in both X and Y — each Small Hole
+  sits at (or extremely close to) the geometric center of the 25mm × 25mm
+  cell bounded by 4 neighboring Multiholes, not on a separately-phased or
+  coincident grid. **Cardinality is not fixed at `(cols−1)×(rows−1)`**: it
+  depends on how much tile material extends past the outermost Multihole
+  ring at each edge. On the Core tile piece (which has flange/tab material
+  extending ~3.7mm beyond the nominal 200mm edge on all 4 sides, for
+  inter-tile joining), the outermost half-cell has room for one extra Small
+  Hole beyond the strict interior grid, yielding the *same* `cols×rows`
+  count as the Multihole grid (measured 8×8 = 64 Small Holes for an 8×8
+  Multihole grid). On the Corner tile piece (flush, un-tabbed on the 2
+  outward-facing edges), that outermost half-cell position is cut off by the
+  flush boundary, yielding the classic `(cols−1)×(rows−1)` count (measured
+  7×7 = 49). A future consumer should treat this as "same-pitch grid, offset
+  by a fixed half-cell-diagonal vector, clipped to the tile's actual
+  footprint" rather than hard-coding an `(N−1)×(N−1)` sublattice count — the
+  count is a footprint-clipping consequence of the shift, not an independent
+  design parameter.
+
+### What this resolves vs. what remains open
+
+- Small Hole diameter, depth, and its lattice relationship to the Multihole
+  grid: **resolved at `[C]`/`//VERIFY`** — sufficient to populate
+  `_multibuild_table()`'s Small-Hole dims and a small-hole point-generator
+  directly from the numbers above.
+- Multihole diameter (22.2mm) and tile thickness (6.4mm): **re-confirmed
+  against this same mesh, no drift** — the existing `_multibuild_table()`
+  values stand unchanged.
+- Whether the measured (+12.61, +12.59) offset (rather than an exact
+  half-pitch (12.5, 12.5)) is an intentional design tolerance or an artifact
+  of this specific reupload's mesh: **not resolved** — flagged `//VERIFY`,
+  caliper-upgradeable (#16). The magnitude and reproducibility (matching to
+  <0.001mm across two independently-meshed tile pieces from the same source)
+  make it very unlikely to be measurement noise, but this remains a single
+  external source overall (per the Task 1c tier caveat, both tile pieces
+  come from the same upload/author).
+- Whether this specific 3MF's geometry is bit-for-bit identical to the
+  current official multiboard.io Tile files: same residual uncertainty
+  already noted in Task 1c — not independently re-verified this pass.
