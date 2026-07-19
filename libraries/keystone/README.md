@@ -32,9 +32,12 @@ The library supports two retention styles — **pass `style=` to
   plate-thickness squeeze. Original Samm Teknoloji suggested panel cutout
   [A]. Use for face-plate panels where the latch mechanism relies on plate
   clamping.
-- **`"standard"` (push-to-click channel, **default**)** — `[15.3, 21.42]` mm
-  (#38, measured from two independent real panel/skirt STLs — see Sources
-  below). A `[`-shaped channel (back wall + top/bottom walls) with a wide
+- **`"standard"` (push-to-click channel, **default**)** — `[15.3, 22.25]` mm
+  (#38, the directly measured max window at slit onset from one of two
+  independently mesh-sectioned panel/skirt STLs — see Sources below; the
+  cross-model corroboration between the two covers the *shape*, not this
+  exact figure, which stays `//VERIFY`, single-model). A `[`-shaped channel
+  (back wall + top/bottom walls) with a wide
   slit cut clean through EACH of the top and bottom walls. The jack is
   presented near-flush and pushed straight in (no rotation): a solid
   **fulcrum** on its underside and a flexing **arm** on its top each carry a
@@ -59,10 +62,22 @@ style; existing code passing `style="lip"` keeps working unchanged.
 **Backward-compatibility note:** Pre-#28 code called `keystone_opening()`
 with no arguments and got `[14.70, 16.40]` (the face-grip window). As of
 #28, the default changed to the taller/snap-retention style; as of #38, that
-default style is `"standard"` and its value is `[15.3, 21.42]` (previously
+default style is `"standard"` and its value is `[15.3, 22.25]` (previously
 `[14.90, 22.90]` under the now-superseded `"lip"` reading — see Sources
 below). If your design relies on the original behavior, pass
 `style="face"` explicitly to `keystone_opening()` and `keystone_cutout()`.
+
+**Accessor vs. physical cut, `"standard"` only:** `keystone_opening()`'s
+height (22.25mm) is RESEARCH.md's directly measured max window and is
+deliberately a bit larger than what `keystone_cutout()`/`keystone_boss()`
+actually cut (21.42mm, `keystone_slot()`'s `mouth_h + 2*wall_thickness` —
+see that module's comment). The real slit opens asymmetrically
+(bottom +1.5mm, top +2.35mm) while `wall_thickness` is a separate,
+symmetric, residual-material quantity — the two aren't interchangeable, and
+`keystone_slot()` doesn't carry a distinct asymmetric-opening field. Using
+the true measured max for `keystone_opening()` keeps it a safe (if slightly
+conservative) upper bound for consumers like a flange, without changing the
+already-verified, self-consistent cutout/boss geometry.
 
 ## Import
 
@@ -93,7 +108,7 @@ use <keystone/keystone.scad>;
 
 // Basic data
 f = keystone_face();                  // [14.5, 16.0] invariant jack face
-o = keystone_opening("standard");     // [15.3, 21.42] standard channel+slit (default; #38)
+o = keystone_opening("standard");     // [15.3, 22.25] standard channel+slit (default; #38)
 o = keystone_opening("face");         // [14.70, 16.40] face-grip (original)
 b = keystone_body();                  // [17.5, 19.5, 28.60]
 pt = keystone_plate_thickness();      // [1.5, 3.0]
@@ -137,7 +152,7 @@ keystone_insert(plate_thickness = 3.0);
 |---|---|
 | `keystone_known_styles()` | `["standard", "face"]` — list of supported retention styles. `"lip"` is a deprecated alias for `"standard"`, not a third style |
 | `keystone_face()` | `[14.5, 16.0]` — invariant jack face / plug cross-section, mm |
-| `keystone_opening(style="standard")` | `[ow, oh]` — plate window (X width, Y height) per retention style, mm. `"standard"` is derived from `keystone_slot()` (single source of truth): `[mouth_w, mouth_h + 2*wall_thickness]` |
+| `keystone_opening(style="standard")` | `[ow, oh]` — plate window (X width, Y height) per retention style, mm. `"standard"`: width reuses `keystone_slot()`'s `mouth_w`; height (22.25mm) is RESEARCH.md's directly measured max window at slit onset, a conservative upper bound slightly larger than the physical cutout (21.42mm, `mouth_h + 2*wall_thickness` — see `keystone_cutout()`'s comment and the "Accessor vs. physical cut" note above) |
 | `keystone_body()` | `[bw, bh, bd]` — jack envelope keep-out (X, Y, Z-depth behind panel), mm |
 | `keystone_plate_thickness()` | `[tmin, tmax]` — accepted faceplate thickness range, mm |
 | `keystone_pitch()` | nominal center-to-center port spacing in a strip, mm |

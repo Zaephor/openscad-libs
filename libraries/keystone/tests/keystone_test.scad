@@ -51,10 +51,16 @@ assert(keystone_opening() == keystone_opening("standard"), "opening: nullary def
 assert(keystone_slot("lip") == keystone_slot("standard"), "slot: lip aliases to standard");
 assert(keystone_notch("lip") == keystone_notch("standard"), "notch: lip aliases to standard");
 
-// keystone_opening("standard") is derived from keystone_slot() (single
-// source of truth) -- the max window at the slits' outer edge.
-assert(keystone_opening("standard") == [sl[2], sl[3] + 2 * sl[1]],
-       "standard opening = [mouth_w, mouth_h + 2*wall_thickness]");
+// keystone_opening("standard") -- width reuses keystone_slot()'s mouth_w
+// (single source, no discrepancy: the slit doesn't narrow in X); height is
+// RESEARCH.md's DIRECTLY measured max window at slit onset (22.25mm,
+// //VERIFY, single-model 1014552) -- NOT mouth_h + 2*wall_thickness, which
+// was tried and found wrong in review: the real opening is asymmetric
+// (bottom +1.5mm, top +2.35mm) and wall_thickness is a separate,
+// symmetric, residual-material quantity, not the opening amount.
+assert(keystone_opening("standard") == [sl[2], 22.25],
+       "standard opening = [mouth_w, measured max window height @ slit onset]");
+assert(keystone_opening("standard")[1] > sl[3], "standard opening height exceeds the plain (pre-slit) mouth height");
 
 // Plug cross-section is the jack FACE, not the (taller) opening.
 assert(keystone_tab("face")[2] == "+Y", "face tab hook edge");

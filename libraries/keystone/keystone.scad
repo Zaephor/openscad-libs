@@ -174,14 +174,25 @@ function keystone_notch(style = undef) =
     assert(false, str("keystone: keystone_notch has no notch data for style '", s, "'"));
 
 // Panel WINDOW to cut, per retention style [ow,oh], mm:
-//   "standard" = the channel's max window: mouth width x (mouth height + 2x
-//                the wall thickness the slits open through) -- derived from
-//                keystone_slot() (single source of truth), not hand-copied.
+//   "standard" = the channel's max window at slit onset, DIRECTLY measured
+//                (RESEARCH.md "Standard keystone latch geometry (#38)" >
+//                "Slot (channel) geometry", Model 1/1014552): width
+//                (15.3mm) matches keystone_slot()'s mouth_w (single source,
+//                reused here); height (22.25mm) is NOT derived from
+//                mouth_h + 2*wall_thickness -- that formula was tried and
+//                found wrong in review: the slit's Y-opening is measured as
+//                ASYMMETRIC (bottom edge opens 1.5mm, top edge opens
+//                2.35mm, relative to the baseline mouth), and
+//                wall_thickness is a different, separately-measured
+//                quantity (residual material bridging each slit, symmetric
+//                top/bottom) -- doubling it does not reconstruct the real
+//                (asymmetric) opening. 22.25mm is RESEARCH.md's literal
+//                measured figure, //VERIFY (single-model, 1014552).
 //   "face"     = face-grip (retention by plate-thickness front/rear grip):
 //                [14.70, 16.40] [A] Samm Teknoloji "Suggested Panel Cutout" (pre-#28 value).
 function keystone_opening(style = undef) =
     let(s = _keystone_resolve_style(style))
-    s == "standard" ? let(sl = keystone_slot(s)) [sl[2], sl[3] + 2 * sl[1]] :
+    s == "standard" ? [keystone_slot(s)[2], 22.25] :
     [14.70, 16.40];
 
 // [bw,bh,bd] jack envelope keep-out (X,Y,Z-depth behind panel), mm. bd=28.60
@@ -421,10 +432,8 @@ module keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = undef) {
         z_bottom = -(bwd + ramp + 0.05); // small safety margin past the taper's apex
         translate([-fw[0]/2, fw[2] - fw[1]/2, z_bottom])
             cube([fw[0], fw[1], -z_bottom]);
-    } else if (s == "face") {
+    } else { // s == "face" (the only other value _keystone_resolve_style() can return)
         // no-op -- see module comment.
-    } else {
-        assert(false, str("keystone: unknown style '", s, "'"));
     }
 }
 
@@ -460,9 +469,9 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard") {
     plug_w  = f[0] - 2*fit;  // plug cross-section: jack face, less `fit` per side
     plug_h_xy = f[1] - 2*fit;
     // through-plug depth: "face" reaches 3mm behind the plate rear (pre-#28,
-    // unchanged). "standard" (#38, Task-3 placeholder) is plate-thickness-
-    // independent like its cutout/boss -- reaches past keystone_slot()'s
-    // back_wall_depth.
+    // unchanged). "standard" is plate-thickness-independent like its
+    // cutout/boss -- reaches past keystone_slot()'s back_wall_depth.
+    // TODO(#38 Task 3): placeholder depth, see module comment.
     std_slot = keystone_slot("standard");
     std_rear_z = -std_slot[0] - _keystone_plateau_depth();
     plug_h  = (style == "face") ? (plate_thickness + 3) : (-std_rear_z + 0.5);
@@ -486,7 +495,8 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard") {
             // bottom latch bump on -Y edge, behind the plate rear.
             translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
                 cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
-        } else { // "standard" (#38 Task-3 placeholder, see module comment)
+        } else { // "standard"
+            // TODO(#38 Task 3): placeholder tabs, see module comment.
             sl = keystone_slot("standard"); // [back_wall_depth,wall_thickness,mouth_w,mouth_h,top_slit_w,top_slit_len,top_slit_depth,bot_slit_w,bot_slit_len,bot_slit_depth]
             mh2 = sl[3] / 2; wt = sl[1];
             top_outer = mh2 + wt;
