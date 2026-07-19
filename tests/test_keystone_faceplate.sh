@@ -104,7 +104,6 @@ out="$(run "$proj/keystone-faceplate.scad")"
 echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' && { echo "default faceplate errored"; exit 1; } || true
 # Print STL (default entry) triangle count is the faceplate only — record it.
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/fp_def.stl" "$proj/keystone-faceplate.scad" 2>/dev/null
-tri() { python3 -c "import struct,sys;d=open(sys.argv[1],'rb').read();print(struct.unpack('<I',d[80:84])[0])" "$1"; }
 def_tris="$(tri "$tmp/fp_def.stl")"
 # The main entry with show_rack toggled true must export the SAME facet count
 # (the % context is excluded from STL) — proves zero print impact.
