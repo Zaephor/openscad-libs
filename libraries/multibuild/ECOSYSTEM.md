@@ -123,6 +123,7 @@ What mates what. **Bold** = an end this library models.
 | Multihole | Fix-Point *board-side* screw | out of scope (official part only) |
 | **Small / pegboard hole** (`multibuild_tile_holes(cols, rows, "small")`) | Peg-Click (#36) | Small-Hole side: **yes**; Peg-Click: deferred |
 | Small / pegboard hole | Small Thread (#35) | Small-Hole side: **yes**; Thread: deferred |
+| Small / pegboard hole | non-printed pegboard accessories (hooks, bins, etc.) | out of scope (generic hardware, not modeled) |
 
 | Accessory-side feature | Bridges | Modeled here? |
 |---|---|---|

@@ -343,9 +343,12 @@ Concretely, per `multibuild.scad`'s provenance legend:
 See `RESEARCH.md` for the full evidence log: the Task 1 checkpoint (which
 confirmed the 2-piece positive/negative API shape fits the real mechanism
 before any geometry was written), the STL mesh-measurement method for the
-connector (Task 1b) and the Tile/hole (Task 1c), and the complete list of
-gaps that were left unresolved rather than fabricated (Small-Hole dimensions,
-thread pitch/profile, the exact Small-vs-Large hole grid offset).
+connector (Task 1b) and the Tile/hole (Task 1c), the Small-Hole
+dimension/offset measurement (Task "Tile geometry (#33)" — now shipped as
+`multibuild_small_hole_dia()`/`multibuild_small_hole_depth()`/
+`multibuild_small_hole_offset()`, still `[C]//VERIFY`), and the remaining
+gaps left unresolved rather than fabricated (thread pitch/profile, still
+needed for backlog #35).
 
 ## v1 non-goals
 
