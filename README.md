@@ -23,9 +23,23 @@ use <fans/fans.scad>;
 
 ## Libraries
 
+- [connectors](libraries/connectors) — connector body/shell envelope dimensions for PC/SBC panel + slot connectors.
+- [drives](libraries/drives) — storage-drive mechanical envelopes.
+- [embedded](libraries/embedded) — ESP32/ESP8266 dev-board mounting reference.
+- [fans](libraries/fans) — PC fan frame sizes + mount hole geometry.
+- [heatset](libraries/heatset) — brass heat-set insert data + geometry (M2–M6).
+- [keystone](libraries/keystone) — keystone-jack snap footprint (opening/cutout/insert).
+- [motherboards](libraries/motherboards) — mini-ITX/microATX/ATX mounting reference.
+- [multibuild](libraries/multibuild) — MultiBoard-compatible mount/hole interface + MultiBin/Fix-Point accessory geometry.
+- [rack10](libraries/rack10) — 10-inch mini-rack reference (LabRax/DeskPi/TecMojo).
+- [rack19](libraries/rack19) — 19-inch EIA-310-D rack reference.
+- [sbc](libraries/sbc) — SBC mechanical reference (Raspberry Pi B/Zero families + BPI-R4).
+
 ## Projects
 
+- [bpir4-1u-chassis](projects/bpir4-1u-chassis) — 1U 10-inch rack chassis for the BananaPi BPI-R4.
 - [cable-clip](projects/cable-clip) — single-part M3-mounted cable clip.
+- [keystone-faceplate](projects/keystone-faceplate) — parametric 1U 10-inch N-port keystone faceplate.
 - [two-piece-box](projects/two-piece-box) — multipart box with exploded view.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.

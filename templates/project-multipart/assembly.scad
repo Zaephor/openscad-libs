@@ -1,7 +1,7 @@
 // __NAME__ — multipart assembly with tuneable exploded view.
 // Render: make render P=__NAME__
 
-// use <hardware/screws.scad>;   // import libraries as needed
+// use <fans/fans.scad>;   // import libraries as needed
 use <parts/body.scad>;
 
 /* [Exploded View] */
