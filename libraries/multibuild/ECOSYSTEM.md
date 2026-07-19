@@ -38,12 +38,27 @@ independent hole families:
 - **Small / pegboard holes** — mate with Peg Click hooks, Small Threads, and
   non-printed pegboard accessories.
 
-**Deferred / not-yet-modeled** (backlog **#33**): full Tile geometry — the
-Tile body, edge profile, and inter-tile joining features (Dual Snaps, Offset
-Pillars) are not modeled. Only the board-hole *cutter* exists today
-(`multibuild_hole("snap")`), for cutting a Multihole into a consumer's own
-panel. Where a chain below starts at a Tile, treat that Tile as the official
-part (or a #33-pending model), not something this lib emits.
+**Modeled-in-lib** (this branch, backlog **#33**): both hole *patterns*, as
+an accessory-panel hole-stamp a project differences into its **own** panel —
+`multibuild_tile_holes(cols, rows, which)` (`which` = `"large"` for
+Multiholes, `"small"` for Small Holes, `"both"` for the combined stamp,
+default) — plus a reference envelope, `multibuild_tile_placeholder(cols,
+rows)`, a flush `cols*25 x rows*25` slab pre-cut with both patterns for
+fit-check/viz. The Multihole dia/tile-thickness values are **aliased** from
+the existing `"snap"` row (`multibuild_large_hole_dia()` /
+`multibuild_tile_thickness()`, no new numbers); the Small Hole dia/depth/
+offset (`multibuild_small_hole_dia()` / `multibuild_small_hole_depth()` /
+`multibuild_small_hole_offset()`) are new `[C]//VERIFY` mesh measurements —
+see RESEARCH.md "Tile geometry (#33)".
+
+**Still deferred / not-yet-modeled** (remaining **#33** scope): the Tile's
+own body — its edge profile, flange/tab geometry, and inter-tile joining
+features (Dual Snaps, Offset Pillars) — is not modeled. The hole-stamp and
+placeholder above are for stamping a *project's own* panel or for
+reference/viz only, not a substitute for the official Tile part. Where a
+chain below starts at a Tile, treat that Tile as the official part (or
+`multibuild_tile_placeholder()` for viz only), not something this lib emits
+as a printable body.
 
 ### MultiBin Panels / bins / shells (CU grid) — **modeled-in-lib**
 
@@ -103,10 +118,11 @@ What mates what. **Bold** = an end this library models.
 
 | Board-side feature | Mates with | Modeled here? |
 |---|---|---|
-| Multihole (Tile, #33-pending body) | **Snap** (`multibuild_mount("snap")`) | Snap side: **yes** |
-| Multihole | Large Thread (#35) | deferred |
+| **Multihole** (`multibuild_tile_holes(cols, rows, "large")`) | **Snap** (`multibuild_mount("snap")`) | both sides: **yes** |
+| Multihole | Large Thread (#35) | Multihole side: **yes**; Thread: deferred |
 | Multihole | Fix-Point *board-side* screw | out of scope (official part only) |
-| Small / pegboard hole | Peg-Click (#36) | deferred |
+| **Small / pegboard hole** (`multibuild_tile_holes(cols, rows, "small")`) | Peg-Click (#36) | Small-Hole side: **yes**; Peg-Click: deferred |
+| Small / pegboard hole | Small Thread (#35) | Small-Hole side: **yes**; Thread: deferred |
 
 | Accessory-side feature | Bridges | Modeled here? |
 |---|---|---|
@@ -121,14 +137,17 @@ of that same Fix-Point is the official part's job, not modeled here.
 
 ## Chains
 
-Concrete X→Y→Z assemblies, using the real accessor names. `#33-pending`
-marks a Tile body that isn't modeled yet (use the official part or a #33
-model); `project-composed` marks a shape you author yourself.
+Concrete X→Y→Z assemblies, using the real accessor names. `Tile body:
+#33-pending` marks that the Tile's own body/edge profile isn't modeled (use
+the official part, or `multibuild_tile_placeholder()` for reference/viz
+only) — separate from the Tile's *hole pattern*, which is modeled
+(`multibuild_tile_holes()`); `project-composed` marks a shape you author
+yourself.
 
 **1. Hang a custom container off the board via a Fix-Point:**
 
 ```
-MultiBoard Tile (board Multiholes, #33-pending)
+MultiBoard Tile (holes modeled, body #33-pending)
   → Fix-Point            multibuild_hole("multipoint")   (accessory-side pocket)
   → MultiBin Shell       multibin_placeholder(size)      (the hung container envelope)
   → custom Insert        multibin_cavity_cutout(size)    (insert's outer-fit negative)
@@ -137,7 +156,7 @@ MultiBoard Tile (board Multiholes, #33-pending)
 **2. Snap a project part straight onto the board:**
 
 ```
-MultiBoard Tile (board Multiholes, #33-pending)
+MultiBoard Tile (holes modeled, body #33-pending)
   → Snap                 multibuild_mount("snap") / multibuild_hole("snap")
   → our project part     (union the mount onto the part body at Z=0)
 ```
@@ -145,10 +164,28 @@ MultiBoard Tile (board Multiholes, #33-pending)
 **3. Slide-mount via a Rail (Lite) instead of a point:**
 
 ```
-MultiBoard Tile (#33-pending)
+MultiBoard Tile (holes modeled, body #33-pending)
   → Rail                 multibuild_hole("multipoint_rail", length=<part-specific>)
   → project accessory    (the accessory carries the rail channel; slides on +X)
 ```
+
+**4. Make a custom panel MultiBoard-compatible:**
+
+```
+custom project panel   (your own shape, sized to multibuild_grid_snap())
+  → hole-stamp          multibuild_tile_holes(cols, rows, which)   (cut into the panel)
+  → Snap                multibuild_mount("snap") / multibuild_hole("snap")   (via the large holes)
+  → our project part    (union the mount onto another part; snaps into the now-Multihole panel)
+```
+
+`multibuild_tile_holes(cols, rows, which)` stamps the Multihole and/or Small
+Hole pattern into a **project's own panel** — not the official Tile.
+`which` = `"large"` (Multiholes only, for Snaps/Large Thread), `"small"`
+(Small Holes only, for Peg-Click/Small Thread once #36/#35 exist), or
+`"both"` (default). Once stamped, the panel accepts whatever connector this
+library already models the board-facing half of — Snap today; Fix-Point
+pockets/rails are themselves accessory-side (not board-side) negatives, so
+they aren't part of this stamp.
 
 ## Compose recipe — a hang-off-board container
 
@@ -168,6 +205,28 @@ composing them against the bin cavity and the Fix-Point pocket, is the
 consuming project's job. This library supplies the MultiBuild-side geometry
 (the bin envelope/cavity and the attachment negative); the project supplies
 the payload.
+
+## Compose recipe — make a project panel MultiBoard-compatible
+
+To turn a project's own panel into something that accepts MultiBoard
+connectors, instead of sourcing an official Tile:
+
+```
+project panel            your own shape (cube(), or any custom profile)
+  - hole-stamp            multibuild_tile_holes(cols, rows, which)
+  → difference() into a MultiBoard-compatible custom board
+```
+
+`cols`/`rows` set the stamped Multihole grid extent
+(`multibuild_grid_points(cols, rows)`'s own centered-origin convention); the
+Small-Hole sublattice (`multibuild_tile_small_points(cols, rows)`) rides
+along at the same pitch, offset by `multibuild_small_hole_offset()`. `which`
+picks `"large"` (Multiholes, for Snaps/Large Thread), `"small"` (Small
+Holes, for Peg-Click/Small Thread — connector side deferred, #36/#35), or
+`"both"` (default). The stamped panel is **not** the official Tile: no edge
+profile, flange, or inter-tile joining feature is added — only the hole
+pattern, so the panel's own footprint must be sized/centered to match
+whatever `cols`/`rows` the stamp uses (e.g. via `multibuild_grid_snap()`).
 
 ## Fit-check honesty
 

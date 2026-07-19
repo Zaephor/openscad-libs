@@ -7,11 +7,13 @@ a wall/panel of square Tiles on a repeating hole grid; parts snap onto it via
 connector features that plug into the Tile's holes. This library gives you the
 grid pitch/spacing math, a modeled **positive** connector feature
 (`multibuild_mount`) and matching **negative** board-hole cutter
-(`multibuild_hole`) for the "snap" mount, MultiBin container envelope/cavity
-accessors (`multibin_*`), and the accessory-side **Fix-Point** slide-on
-negatives (`multibuild_hole("multipoint")` / `"multipoint_rail"`). Units:
-**mm**. See [`ECOSYSTEM.md`](ECOSYSTEM.md) for the full type/relation map and
-how the families chain together.
+(`multibuild_hole`) for the "snap" mount, the MultiBoard **Tile**
+accessory-panel hole-stamp (`multibuild_tile_holes`) for stamping the
+Multihole/Small-Hole patterns into a project's own panel, MultiBin container
+envelope/cavity accessors (`multibin_*`), and the accessory-side **Fix-Point**
+slide-on negatives (`multibuild_hole("multipoint")` / `"multipoint_rail"`).
+Units: **mm**. See [`ECOSYSTEM.md`](ECOSYSTEM.md) for the full type/relation
+map and how the families chain together.
 
 ## Datum — the canonical mount/grid frame
 
@@ -138,6 +140,81 @@ fit/interference checks before committing to the full arm geometry:
 
 Valid `type` keys (`multibuild_known_mounts()`): **`snap`** — the only mount
 type modeled in v1 (see "Which mount types this models" below).
+
+## MultiBoard Tile — accessory-panel hole-stamp
+
+A MultiBoard **Tile** carries two independent hole families on the 25mm MU
+grid: **Multiholes (Large Holes)**, which mate with Snaps and Large Threads,
+and **Small / pegboard holes**, which mate with Peg-Click hooks and Small
+Threads. This library does not model the Tile's own body (see "v1
+non-goals" below) — it models the **hole patterns**, as an accessory-panel
+hole-stamp a project differences into its **own** panel to make that panel
+accept MultiBoard connectors, plus a reference placeholder slab for
+fit-check/viz.
+
+Both hole families ride the same `multibuild_grid_pitch()` (25mm) lattice:
+the Multihole pattern sits directly on `multibuild_grid_points(cols, rows)`;
+the Small-Hole pattern is a half-pitch-diagonal-offset sublattice sharing
+that grid's pitch/orientation, one Small Hole per interior cell (`(cols-1) x
+(rows-1)` points — the flush-panel/Corner-piece case; see RESEARCH.md "Tile
+geometry (#33)" for why a flanged panel fits a different count).
+
+```scad
+use <multibuild/multibuild.scad>;
+
+cols = 4; rows = 3;
+h = multibuild_tile_thickness();
+
+// A project panel, stamped so it accepts MultiBoard connectors: top face at
+// Z=0 (matching the hole-stamp's own datum), panel grows -Z.
+difference() {
+    translate([0, 0, -h / 2])
+        cube([cols * multibuild_grid_pitch(), rows * multibuild_grid_pitch(), h], center = true);
+    multibuild_tile_holes(cols, rows, "both");
+}
+```
+
+`multibuild_tile_placeholder(cols, rows)` does exactly this (flush slab,
+both patterns stamped) as a ready-made reference envelope for fit-check/viz.
+
+| Function | Returns |
+|---|---|
+| `multibuild_tile_thickness()` | Tile thickness / board-hole cutter depth, mm — **aliased** from `multibuild_hole_depth("snap")` (no new number), re-confirmed against the Tile mesh this pass with no drift |
+| `multibuild_large_hole_dia()` | Multihole (Large Hole) diameter, mm — **aliased** from `multibuild_hole_dia("snap")` (no new number), re-confirmed with no drift |
+| `multibuild_small_hole_dia()` | Small Hole waist/main-bore diameter, mm (`[C]//VERIFY`, new) |
+| `multibuild_small_hole_depth()` | Small Hole depth, mm — independently measured, confirmed through-hole (not a blind pocket) (`[C]//VERIFY`, new) |
+| `multibuild_small_hole_offset()` | `[dx, dy]` vector from a Multihole grid point to its nearest diagonally up-and-right Small Hole (`[C]//VERIFY`, new) |
+| `multibuild_tile_small_points(cols, rows)` | list of `[x, y]` Small-Hole lattice coords, `(cols-1) * (rows-1)` points (interior, flush-panel case) |
+
+| Module | Produces |
+|---|---|
+| `multibuild_tile_placeholder(cols, rows)` | reference envelope: a flush `cols*25 x rows*25 x tile_thickness` slab pre-cut with both hole patterns, top face at `Z=0`, grows `-Z` (fit-check/viz) |
+| `multibuild_tile_holes(cols, rows, which="both")` | accessory-panel hole-stamp (subtract from a project's own panel): `which` = `"large"` (Multiholes only), `"small"` (Small Holes only), or `"both"` |
+
+**Threaded-hole simplification.** Like the existing `"snap"` board-hole
+cutter, both hole families here are modeled as **straight, simplified
+cylinders** at the measured waist diameter — the real Tile holes are
+threaded (and the true profile flares slightly wider at both faces, a
+lead-in chamfer), but this library does not model helical thread geometry.
+Real thread profile is deferred to backlog **#35**; treat the emitted holes
+as the conservative narrow-point clearance cut, not a thread-matched
+fastener bore.
+
+**Value confidence.** `multibuild_tile_thickness()` and
+`multibuild_large_hole_dia()` are **not new numbers** — they alias
+`multibuild_hole_depth("snap")` / `multibuild_hole_dia("snap")`, the same
+already-documented `[C]//VERIFY` snap-row values (single source of truth;
+re-confirmed against the Tile mesh this pass with no drift).
+`multibuild_small_hole_dia()`, `multibuild_small_hole_depth()`, and
+`multibuild_small_hole_offset()` are genuinely new `[C]//VERIFY` values:
+single STL-mesh source (Printables 1277707, the same Tile artifact backing
+the existing Multihole/thickness values), caliper-upgradeable per backlog
+**#16**. See `RESEARCH.md`'s "Tile geometry (#33)" for the full measurement
+notes.
+
+See [`ECOSYSTEM.md`](ECOSYSTEM.md) for how a stamped panel fits into the
+wider chain (Snap, Fix-Point, MultiBin), and for the still-deferred Tile
+body/edge-profile scope.
 
 ## MultiBin containers (CU grid)
 
@@ -274,10 +351,13 @@ thread pitch/profile, the exact Small-vs-Large hole grid offset).
 
 This library does **not** model, and has no near-term plan to add:
 
-- **Full Tile geometry** — no Tile/panel shape, edge profile, or
-  inter-tile joining features (Dual Snaps, Offset Pillars) are modeled. Only
-  the hole cutter (`multibuild_hole`) exists, for cutting into a consumer's
-  own panel.
+- **Tile body / edge profile** — no Tile/panel shape, edge profile, or
+  inter-tile joining features (Dual Snaps, Offset Pillars) are modeled. Both
+  hole *patterns* (`multibuild_tile_holes(cols, rows, which)` — Multihole and
+  Small Hole) and a reference placeholder slab
+  (`multibuild_tile_placeholder(cols, rows)`) are modeled (see "MultiBoard
+  Tile" above), for stamping a project's own panel or for fit-check/viz —
+  neither is a substitute for the official Tile's body.
 - **Cord channels** — MultiBoard's cable-routing features are not modeled.
 - **A vendor parts catalog** — this library does not attempt to reproduce
   the multiboard.io parts library (Threads, Peg Click, DS Snaps, Locking
@@ -303,7 +383,7 @@ corroboration.
 | ["Multiboard Common Connections" diagram](https://docs.multibuild.io/assets/images/multiboard_common-connections-4b433970f396897c7f5d5432da71b3f1.png) | A | visual confirmation of the official Snap/Locking-Bolt/Insert accessory chain (out of v1 scope) |
 | [Printables 716558, "MultiConnect — generic connector for multiboard"](https://www.printables.com/model/716558-multiconnect-generic-connector-for-multiboard) | C //VERIFY | `mount_engagement`, `mount_arm_count`, `mount_arm_width`, `mount_tip_flare` — STL mesh-measured, single community source |
 | [Printables 767851, "MultiBolt — Multiboard Bolt Connector System"](https://www.printables.com/model/767851-multibolt-multiboard-bolt-connector-system) | C, pitch corroboration only | independent 25mm pitch confirmation; its own bolt/nut mechanism is a non-official community workaround, not modeled |
-| [Printables 1277707, "Multiboard 8x8 Tiles - Corner, Core, Side"](https://www.printables.com/model/1277707-multiboard-8x8-tiles-corner-core-side) | C //VERIFY | `hole_dia`, `hole_depth` — 3MF mesh-measured (self-reported repackaging of official multiboard.io Tile geometry, not fetched directly from multiboard.io) |
+| [Printables 1277707, "Multiboard 8x8 Tiles - Corner, Core, Side"](https://www.printables.com/model/1277707-multiboard-8x8-tiles-corner-core-side) | C //VERIFY | `hole_dia`, `hole_depth` (re-confirmed, no drift, #33) — 3MF mesh-measured; also backs `multibuild_small_hole_dia()`, `multibuild_small_hole_depth()`, `multibuild_small_hole_offset()` (#33, new values) — same artifact, same tier/provenance caveat (self-reported repackaging of official multiboard.io Tile geometry, not fetched directly from multiboard.io) |
 
 Full evidence log, measurement/analysis notes (3MF/STL mesh-measurement
 technique), and the complete Gaps list are in `RESEARCH.md`.
