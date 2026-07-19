@@ -434,18 +434,32 @@ than automated tracking.
   - Body envelope: **~16.5mm x 21.7mm x 27.9mm** — loosely corroborates
     `keystone_body()`'s existing `//VERIFY` `[17.5, 19.5, 28.60]` (same
     order of magnitude on all three axes, not exact) — `//VERIFY`
-  - **Bottom fulcrum notch**: base ≈ **2.5mm**, protrusion ≈ **1.5mm**,
-    positioned **~6.0-8.5mm behind the front face** — `//VERIFY`
+  - **Bottom fulcrum notch**: base ≈ **2.0mm**, protrusion ≈ **1.5mm**,
+    positioned **~6.1-8.1mm behind the front face** — `//VERIFY`
     (single-model mm; shape+position-range corroborated below)
-  - **Top arm**: a root block (~5.9mm tall) folds back on itself (a
-    hairpin turn, likely a print-orientation/compactness choice by this
-    author) into a thin cantilever, thickness ≈ **2.9mm**, running from
-    the root toward the front. It carries its own triangular **notch**:
-    base ≈ **2.5mm**, protrusion ≈ **1.0mm** — positioned at essentially
-    the **same ~6.0-8.5mm-behind-front depth range as the bottom notch**.
-    This mirrors the slot side's same-depth finding: the insert's two
-    notches seat at the same depth the channel's two slits open at,
-    exactly as the push-to-click (not rotate-in) mechanism requires.
+  - **Top arm**: a root block (~5.9mm tall) folds back on itself at
+    **`root_z` ≈ 20.0mm behind the front face** (a hairpin turn, likely a
+    print-orientation/compactness choice by this author) into a thin
+    cantilever, thickness ≈ **1.7mm** — `//VERIFY` (corrected from an
+    earlier, less precise centerline-bbox read of this same model; a
+    vertex-level re-trace of the ordered section polyline found the true
+    arm thickness band, which sits ~1.2mm below where the coarser read had
+    placed it). The cantilever's **free length** (root fold to where the
+    notch begins) ≈ **14.0mm** — `//VERIFY`. It carries its own triangular
+    **notch at the arm's free tip** (the last ~2.6mm of the 14.0mm free
+    length, immediately before the front face): base ≈ **2.6mm**,
+    protrusion ≈ **1.0mm** above the arm's local shoulder (a further
+    ~1.2mm step separates the arm's own thickness band from that
+    shoulder — the notch's total rise above the arm's own top surface is
+    closer to 2.2mm; **1.0mm** is the triangular ramp itself) —
+    `//VERIFY`, positioned **~6.1-8.7mm behind the front face**,
+    essentially the **same depth range as the bottom notch**. This
+    mirrors the slot side's same-depth finding: the insert's two notches
+    seat at the same depth the channel's two slits open at, exactly as
+    the push-to-click (not rotate-in) mechanism requires. (Earlier
+    reading of this section wrongly placed the notch near the arm's
+    root rather than at its tip — corrected via an ordered-vertex
+    re-trace, see report.)
 
 - **Model 2** — "SFP+ Cable Keystone Jack", [Printables
   314383](https://www.printables.com/model/314383). Ships as three
@@ -460,25 +474,42 @@ than automated tracking.
     `Left.stl`): base ≈ **2.0mm**, protrusion ≈ **1.25mm**, positioned
     **~6.4-8.4mm behind the front face** — `//VERIFY` (single-model mm)
   - **Top arm** (`Hook.stl`, a separate clip-in part): a root block (~7.1mm
-    tall) transitions into a thin cantilever, thickness ≈ **0.90mm**,
-    running its free length to a triangular **notch at the arm's tip**:
-    base ≈ **2.0mm**, protrusion ≈ **1.2mm**. Unlike Model 1, this notch
-    sits at the arm's free end rather than near its root — a
-    parametric/author-specific placement choice along the arm, analogous
-    to the retention-flare variation #31 already found between its two
-    insert models.
+    tall) transitions into a thin cantilever, thickness ≈ **0.90mm**
+    — `//VERIFY`. Free length ≈ **8.8mm** measured along the constant-
+    thickness run alone (from where the root's fillet ends to where the
+    notch begins), or ≈ **10.8mm** if measured from the root block's own
+    vertical face through the fillet transition to the notch — `//VERIFY`
+    (both readings given since the root-to-arm transition is a rounded
+    fillet, not a sharp corner, so "where the arm starts" is a judgment
+    call). It runs to a triangular **notch at the arm's tip**: base ≈
+    **2.0mm**, protrusion ≈ **1.2mm** — `//VERIFY`. **`root_z`
+    (depth-from-front-face of the root) could not be determined for this
+    part**: `Hook.stl` ships as a standalone, unassembled STL sitting in
+    its own arbitrary print-bed position/orientation, not co-registered
+    with `Left.stl`/`Right.stl`'s coordinate frame, so there is no
+    reliable way to map its local axes onto the assembled body's
+    front-to-back depth without an assumed (not measured) alignment —
+    left unmeasured rather than guessed. This notch sits at the arm's
+    free end, matching Model 1's (corrected) tip placement — see
+    cross-model corroboration below.
 
 **Cross-model corroboration — `[C]`:** both models independently show (a)
 a small triangular notch on a solid bottom fulcrum, positioned in the same
-~6-8.5mm-behind-front-face range, and (b) a flexing top arm carrying its
-own triangular notch. Both findings are corroborated in **shape and
+~6-8.7mm-behind-front-face range, and (b) a flexing top arm carrying its
+own triangular notch **at the arm's free tip** (not partway along it, in
+either model — this was miscalled as near-root in an earlier pass over
+Model 1's data; a precise ordered-vertex re-trace of that section's
+polyline corrected it to tip-positioned, matching Model 2). Both findings
+— notch-on-fulcrum and notch-at-arm-tip — are corroborated in **shape and
 position order-of-magnitude** across two unrelated designs (SMA 366437,
 SFP+ 314383) — `[C]`. The **exact** base/protrusion millimeter values
-differ per model (2.5/1.5mm and 2.5/1.0mm vs 2.0/1.25mm and 2.0/1.2mm) and
-are **not** numerically identical, so each model's specific mm figures stay
-`//VERIFY`. The notch's position *along* the arm (near-root in Model 1 vs
-at-the-free-tip in Model 2) is explicitly **not** corroborated — treat as
-an open, author-specific parameter, not a standard.
+differ per model (2.0/1.5mm fulcrum and 2.6/1.0mm arm-notch vs 2.0/1.25mm
+fulcrum and 2.0/1.2mm arm-notch) and are **not** numerically identical, so
+each model's specific mm figures stay `//VERIFY`. Arm length and thickness
+also differ substantially per model (14.0mm/1.7mm vs 8.8-10.8mm/0.9mm) —
+same qualitative role (a long, thin cantilever), not corroborated
+numerically — `//VERIFY`, an author-specific parametric choice akin to the
+retention-flare variation #31 already found between its two insert models.
 
 Two further insert candidates were fetched and found inconclusive, not
 rejected as wrong-mechanism:
