@@ -260,8 +260,9 @@ function multibuild_small_hole_offset() = [12.61, 12.59];
 // implements the interior (cols-1) x (rows-1) cell-centered sublattice: one
 // small hole per Multihole grid position that has a neighbor both to its
 // right and above, placed at that Multihole's [x,y] plus the measured offset.
-// Reuses multibuild_grid_points()'s own x0/y0/pitch/row-major convention
-// rather than re-deriving grid math.
+// Re-derives the same x0/y0/pitch/row-major convention as
+// multibuild_grid_points() (kept inline rather than composing through it,
+// since only two of the four grid-corner points are needed here).
 function multibuild_tile_small_points(cols, rows) =
     let (p  = multibuild_grid_pitch(),
          x0 = -(cols - 1) * p / 2,
