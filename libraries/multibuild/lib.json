@@ -1,7 +1,7 @@
 {
   "name": "multibuild",
-  "description": "MultiBoard-compatible mount/hole interface (grid pitch + mount feature geometry), MultiBin container accessors (CU-grid footprint/cavity/wall/height + placeholder/cavity-cutout), and Fix-Point (Multipoint) accessory-side receiving negatives, for parametric interop with the MultiBuild ecosystem. See RESEARCH.md for per-value evidence and the Task 1 checkpoint.",
-  "version": "0.2.0",
+  "description": "MultiBoard-compatible mount/hole interface (grid pitch + mount feature geometry), MultiBin container accessors (CU-grid footprint/cavity/wall/height + placeholder/cavity-cutout), Fix-Point (Multipoint) accessory-side receiving negatives, and the MultiBoard Tile reference placeholder + accessory-panel hole-stamp (Multihole + Small/pegboard hole), for parametric interop with the MultiBuild ecosystem. See RESEARCH.md for per-value evidence and the Task 1 checkpoint.",
+  "version": "0.3.0",
   "sources": [
     "https://multiboard.io/multiboard",
     "https://docs.multibuild.io/beginner-section/core-parts-documentation",
