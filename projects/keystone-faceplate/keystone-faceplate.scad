@@ -112,8 +112,9 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
         str("keystone-faceplate: ", port_count, " ports at pitch ", port_pitch,
             " overflow (outer edge ", outer_edge, " reaches ear column ",
             ear_col - ear_r, ")"));
-    // "lip"'s cutout needs ~8.3mm of Z-depth (RESEARCH.md), far more than
-    // plate_thickness (1.5-3.0mm) -- keystone_boss() unions in the missing
+    // "standard"'s cutout needs ~10mm+ of Z-depth (back_wall_depth + taper,
+    // RESEARCH.md/#38), far more than plate_thickness (1.5-3.0mm) --
+    // keystone_boss() unions in the missing
     // material behind the thin panel at each port FIRST, so the difference()
     // below always lands its cutout in real solid (see keystone_cutout()'s
     // module comment for this exact union()+difference() consumer pattern).
