@@ -36,8 +36,9 @@
 //                    panel thickness (no-op for "face");
 //                    keystone_insert(plate_thickness, fit, style): geometric
 //                    mate-reference body, plug = keystone_face() (NOT
-//                    print-tuned in v1; "standard"'s tabs are a Task-3
-//                    placeholder as of #38, see its own comment)
+//                    print-tuned in v1; "standard"'s real fulcrum/arm
+//                    mechanism is keystone_notch()-derived, see its own
+//                    comment)
 //   + Fit-check    — keystone_pitch()/min_pitch(style)/pitch_ok(pitch,style)/
 //                    layout_ok(xs,style) + keystone_pitch_assert(pitch,style):
 //                    single-source port-spacing guard, boss-footprint-driven
@@ -224,16 +225,15 @@ function keystone_pitch()           = 19.05;
 // value, if/when one exists) before treating as load-bearing.
 function keystone_min_wall()        = 1.6;
 // tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge] — mate-reference
-// placeholder numerics for keystone_insert()'s "face" branch (unchanged
-// since #28) and, for now, its "standard" branch too (#38 renamed the style
-// key this applies under; the NUMBERS were never "lip"-mechanism-derived in
-// the first place -- keystone_insert()'s real retention shape for "standard"
-// comes from keystone_notch(), see keystone_insert()'s own comment; this
-// function stays a compiling placeholder until Task 3 replaces its
-// "standard" usage). hook_edge/latch_edge //VERIFY: Wikipedia's "Keystone
-// module" article describes a fixed angled flange opposite a flexing
-// cantilever latch -- a single secondary source, not independently
-// corroborated, so it does not earn [B].
+// placeholder numerics for keystone_insert()'s "face" branch ONLY (unchanged
+// since #28). "standard"'s real retention shape comes from keystone_notch()
+// instead -- #38 Task 3 rebuilt keystone_insert()'s "standard" branch on
+// keystone_notch()'s fulcrum/arm geometry, and it no longer reads this
+// function at all (see keystone_insert()'s own comment). hook_edge/
+// latch_edge //VERIFY: Wikipedia's "Keystone module" article describes a
+// fixed angled flange opposite a flexing cantilever latch -- a single
+// secondary source, not independently corroborated, so it does not earn
+// [B].
 function keystone_tab(style = undef) =
     let(s = _keystone_resolve_style(style)) [1.0, 1.2, "+Y", "-Y"];
 

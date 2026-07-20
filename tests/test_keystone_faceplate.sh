@@ -99,6 +99,19 @@ keystone_faceplate("labrax", 12, keystone_pitch(), 3.0);
 EOF
 expect_assert "$tmp/badN_boss.scad" "lip boss overflow (opening-only guard would pass)"
 
+# Same boss-collision guard, but with port_style explicitly passed as the
+# canonical "standard" string rather than relying on the "lip" default param.
+# Regression for the final-review fix (#38): half_w used to branch on the
+# literal "lip" string, so an explicit "standard" fell through to the
+# opening-only check (7.9mm half-width) and would NOT have caught this
+# overflow -- confirms the boss branch is now keyed off the resolved style.
+cat > "$tmp/badN_boss_standard.scad" <<EOF
+use <keystone/keystone.scad>;
+use <$proj/keystone-faceplate.scad>;
+keystone_faceplate("labrax", 12, keystone_pitch(), 3.0, port_style = "standard");
+EOF
+expect_assert "$tmp/badN_boss_standard.scad" "standard boss overflow (opening-only guard would pass)"
+
 # show_rack preview toggle test: default entry (show_rack=false) renders clean
 out="$(run "$proj/keystone-faceplate.scad")"
 echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' && { echo "default faceplate errored"; exit 1; } || true

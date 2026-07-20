@@ -6,7 +6,7 @@
 //         (or via .claude/skills/verify-scad-geometry)
 //
 // STAGE PARAM (motion view only): `stage` is a 0..1 scalar (or one of the
-// keywords "hook"/"rotate"/"seated", mapped to 0/0.5/1 waypoints). This is a
+// keywords "hook"/"mid"/"seated", mapped to 0/0.5/1 waypoints). This is a
 // SIMPLIFIED, non-kinematic pose lerp -- enough to SEE the motion and confirm
 // no solid-body interference along the way, not a physical spring simulation.
 //   "standard" (#38, push-to-click -- RESEARCH.md "Standard keystone latch
@@ -37,7 +37,7 @@ use <keystone/keystone.scad>;
 
 function _stage_t(stage) =
     stage == "hook"   ? 0 :
-    stage == "rotate" ? 0.5 :
+    stage == "mid"    ? 0.5 :
     stage == "seated" ? 1 :
     stage; // assume numeric 0..1
 function _lerp(a, b, t) = a + (b - a) * t;
@@ -85,7 +85,7 @@ module keystone_assembly_mated(plate_thickness = 3.0, clearance = 0.25, fit = 0.
 }
 
 // [Motion] — insert at an arbitrary insertion `stage` (see header), same frame.
-// Sweep `stage` 0->1 (or pass "hook"/"rotate"/"seated") to visualize the
+// Sweep `stage` 0->1 (or pass "hook"/"mid"/"seated") to visualize the
 // insertion sequence one static render at a time.
 module keystone_assembly_motion(plate_thickness = 3.0, clearance = 0.25, fit = 0.2, style = "standard", stage = 1, flex_side = "top") {
     _keystone_frame(plate_thickness, clearance, style);
@@ -109,7 +109,7 @@ fit = 0.2;
 flex_side = "top"; // ["top", "bottom"]
 
 /* [Insertion Motion — motion view only] */
-stage = 1; // 0..1, or "hook"/"rotate"/"seated" via -D 'stage="hook"'
+stage = 1; // 0..1, or "hook"/"mid"/"seated" via -D 'stage="hook"'
 
 if (view == "mated") keystone_assembly_mated(plate_thickness, clearance, fit, style, flex_side);
 else if (view == "motion") keystone_assembly_motion(plate_thickness, clearance, fit, style, stage, flex_side);

@@ -78,19 +78,23 @@ module keystone_faceplate(standard, port_count, port_pitch, plate_thickness,
     assert(keystone_layout_ok(xs, port_style),
         str("keystone-faceplate: port pitch ", port_pitch,
             " below min for port_count ", port_count));
-    // half_w = each port's max X half-extent. "lip" is boss-driven, not
-    // opening-driven: keystone_boss(plate_thickness, port_clearance,
-    // port_style) unions in LOCAL positive material (see keystone_cutout()'s
-    // module comment for the union()+difference() pattern below) that is
-    // physically wider than the raw cutout window --
-    // keystone_boss_footprint() already bakes in port_clearance + wall
-    // margin, so its half-width IS the collision term (mirrors
-    // keystone_min_pitch()'s same lip-vs-face split). "face" has no boss
+    // half_w = each port's max X half-extent. "standard" (incl. its "lip"
+    // alias, and undef) is boss-driven, not opening-driven:
+    // keystone_boss(plate_thickness, port_clearance, port_style) unions in
+    // LOCAL positive material (see keystone_cutout()'s module comment for the
+    // union()+difference() pattern below) that is physically wider than the
+    // raw cutout window -- keystone_boss_footprint() already bakes in
+    // port_clearance + wall margin, so its half-width IS the collision term
+    // (mirrors keystone_min_pitch()'s same style split). "face" has no boss
     // (keystone_boss() no-ops for it) -- unchanged raw-opening + clearance
-    // check.
-    half_w = port_style == "lip"
-        ? keystone_boss_footprint(port_style, port_clearance)[0] / 2
-        : keystone_opening(port_style)[0] / 2 + port_clearance;
+    // check. Branch on style == "face" (matching keystone.scad's own
+    // internal convention, e.g. keystone_boss()'s if/else) rather than the
+    // literal "lip" string, so an explicit port_style="standard" also
+    // resolves to the boss branch instead of silently under-guarding via the
+    // opening-only check.
+    half_w = port_style == "face"
+        ? keystone_opening(port_style)[0] / 2 + port_clearance
+        : keystone_boss_footprint(port_style, port_clearance)[0] / 2;
     ear_col = rack10_hole_h_span(standard) / 2;
     // ear_r = ear cutout's half-width along X (the axis ear_col/outer_edge
     // measure along). "slot" elongates the clearance circle by slot_travel/2

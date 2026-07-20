@@ -141,8 +141,11 @@ difference() {
 }
 
 // Virtual mate-check: drop the insert into the cutout (see renders/ below).
-// NOTE: keystone_insert()'s "standard" branch is a Task-3 placeholder as of
-// #38 -- it compiles/renders but is not yet the real fulcrum/arm mechanism.
+// NOTE: keystone_insert()'s "standard" branch (#38 Task 3) is the real
+// fulcrum+flexing-arm mechanism -- a solid fulcrum rib and a flexing arm
+// each carry a keystone_notch()-derived notch that seats in keystone_slot()'s
+// top/bottom wall-slits at the same insertion depth. It's a geometric
+// mate-reference, not yet print-tuned (backlog #22).
 keystone_insert(plate_thickness = 3.0);
 ```
 
@@ -157,9 +160,9 @@ keystone_insert(plate_thickness = 3.0);
 | `keystone_plate_thickness()` | `[tmin, tmax]` — accepted faceplate thickness range, mm |
 | `keystone_pitch()` | nominal center-to-center port spacing in a strip, mm |
 | `keystone_min_wall()` | minimum printable material wall between adjacent openings, mm |
-| `keystone_tab(style="standard")` | `[hook_ledge_z, tab_thickness, hook_edge, latch_edge]` — mate-reference placeholder numerics for `keystone_insert()`'s tabs (same values both styles; not derived from `keystone_slot()`/`keystone_notch()`) |
+| `keystone_tab(style="standard")` | `[hook_ledge_z, tab_thickness, hook_edge, latch_edge]` — mate-reference placeholder numerics for `keystone_insert()`'s `"face"` branch ONLY (#38 Task 3: `"standard"` no longer reads this, see `keystone_notch()` instead) |
 | `keystone_slot(style="standard")` | `[back_wall_depth, wall_thickness, mouth_w, mouth_h, top_slit_w, top_slit_len, top_slit_depth, bot_slit_w, bot_slit_len, bot_slit_depth]` (#38) — REAL measured `[`-channel/slit geometry (RESEARCH.md, STL-mesh, `[C]`/`//VERIFY` per field); `"standard"` only (`"face"` has no channel). Single source of truth for `keystone_opening("standard")`, `keystone_cutout(...,"standard")`, and `keystone_boss(...,"standard")` |
-| `keystone_notch(style="standard")` | `[fulcrum_base, fulcrum_protrusion, fulcrum_z, arm_thickness, arm_length, arm_root_z, topnotch_base, topnotch_protrusion, topnotch_z]` (#38) — REAL measured jack-side fulcrum/flex-arm geometry (RESEARCH.md, STL-mesh, `[C]`/`//VERIFY` per field); `"standard"` only. Consumed by Task 3's `keystone_insert()` rework, not yet wired up (see that module's comment) |
+| `keystone_notch(style="standard")` | `[fulcrum_base, fulcrum_protrusion, fulcrum_z, arm_thickness, arm_length, arm_root_z, topnotch_base, topnotch_protrusion, topnotch_z]` (#38) — REAL measured jack-side fulcrum/flex-arm geometry (RESEARCH.md, STL-mesh, `[C]`/`//VERIFY` per field); `"standard"` only. Consumed by `keystone_insert()`'s real `"standard"` branch (#38 Task 3, see that module's comment) for its fulcrum/arm notch geometry |
 | `keystone_boss_footprint(style="standard", clearance=0.25)` | `[w, h, y_center]` — rectangular footprint for `keystone_boss()`: the `"standard"` channel's max envelope (from `keystone_slot()`) + `keystone_min_wall()` margin per side; `y_center == 0` (the standard channel's top/bottom slits are symmetric, unlike #31's superseded asymmetric "lip" reading). `"standard"` only |
 | `keystone_min_pitch(style="standard")` | minimum center-to-center that still leaves a printable wall. `"face"`: `keystone_opening(style)[0] + keystone_min_wall()` (unchanged). `"standard"`: `keystone_boss_footprint(style)[0]` — boss-footprint-driven, since two adjacent bosses (not just the raw openings) must clear each other |
 | `keystone_pitch_ok(pitch, style="standard")` | true if `pitch >= keystone_min_pitch(style)` |
@@ -168,7 +171,7 @@ keystone_insert(plate_thickness = 3.0);
 | `keystone_placeholder()` | module; jack envelope solid (`keystone_body()`), flange face at `Z=0`, body into `-Z` — fit/interference viz only |
 | `keystone_cutout(plate_thickness=3.0, clearance=0.25, style="standard")` | module; `"face"`: plain rectangular through-hole for a consumer `difference()`, sized `keystone_opening(style)` + `2*clearance` per side, overcut 1mm above/below the plate (unchanged). `"standard"` (#38): the REAL channel negative — a mouth void plus a slit cut clean through each of the top and bottom walls (`keystone_slot()`), closed at the back by a pyramidal, self-supporting taper (print-safety addition, see the module comment). Its Z-extent is **plate-thickness-independent** (the ~10mm+ channel exceeds `keystone_plate_thickness()`'s range) — pair with `keystone_boss()` below so the cut always lands in solid material. Print orientation: panel front face **down** on the bed (pins the support-free taper direction — see the module comment) |
 | `keystone_boss(plate_thickness=3.0, clearance=0.25, style="standard")` | module (#38); `"face"`: no-op. `"standard"`: LOCAL positive material behind a thin panel — a constant-footprint rectangular pedestal (front flush with the panel front, `Z=0`, growing `-Z` past the full channel depth + taper via `keystone_boss_footprint()`) so `keystone_cutout(...,"standard")` always cuts real solid regardless of `plate_thickness`. `union()` this into the plate *before* differencing the cutout (see Usage above) |
-| `keystone_insert(plate_thickness=3.0, fit=0.2, style="standard")` | module; geometric mate-reference body (flange + through-plug + two retention tabs), narrowed by `fit` per side so it threads `keystone_cutout(style)`'s window. `"face"`: `+Y` hook + `-Y` latch bump grip the plate's front/rear faces (plate-thickness squeeze), unchanged. `"standard"` (#38): **Task-3 placeholder only** — rough tab boxes derived from `keystone_slot()`'s slit Z-ranges so this module keeps compiling/rendering; NOT yet the real `keystone_notch()`-derived fulcrum/flex-arm mechanism (Task 3 rebuilds this branch) |
+| `keystone_insert(plate_thickness=3.0, fit=0.2, style="standard")` | module; geometric mate-reference body (flange + through-plug + retention geometry), narrowed by `fit` per side so it threads `keystone_cutout(style)`'s window. `"face"`: `+Y` hook + `-Y` latch bump grip the plate's front/rear faces (plate-thickness squeeze), unchanged. `"standard"` (#38 Task 3): the real push-to-click mechanism — a solid fulcrum rib (default bottom) and a flexing cantilever arm (default top, swappable via `flex_side`), each carrying a `keystone_notch()`-derived triangular notch that seats in `keystone_slot()`'s respective wall-slit at the same insertion depth; `deflect` (0..1) is a motion-viz parameter (assembly.scad drives it) pulling both notches inward for the push-in sweep. Geometric mate-reference only, not print-tuned (backlog #22) |
 
 ## Verification
 
@@ -177,10 +180,11 @@ keystone_insert(plate_thickness = 3.0);
 should fill the window and the flange should stop flush at the front face
 (`Z=0`). For `"face"`: the `+Y` hook should sit inside the cutout window
 without touching solid frame material, and the `-Y` latch should clear the
-plate rear. For `"standard"` (default, #38): `keystone_insert()`'s current
-branch is a **Task-3 placeholder** (see that module's comment) — it is not
-yet the real `keystone_notch()`-derived mechanism, so its mate-check is not
-meaningful evidence of fit yet. The channel/slit geometry itself
+plate rear. For `"standard"` (default, #38 Task 3): `keystone_insert()`'s branch is the
+real `keystone_notch()`-derived fulcrum/flexing-arm mechanism (see that
+module's comment) — its mate-check is meaningful evidence for the notch/slit
+engagement geometry, though the mechanism itself remains a geometric
+mate-reference, not yet print-tuned (backlog #22). The channel/slit geometry itself
 (`keystone_cutout()`/`keystone_boss()`) is instead verified directly by
 real geometric section checks in `tests/test_keystone_lib.sh` (a slab
 `intersection()` at a Z inside the slit's range shows a void reaching the
@@ -256,7 +260,8 @@ drawing reading or a single secondary source does NOT qualify as `[C]`/`[B]`).
   fit-check family (`keystone_pitch_assert()` included, style-aware). The
   channel/slit geometry (`keystone_cutout()`/`keystone_boss()`, #38) is the
   real, verified mechanism (see Verification above); `keystone_insert()`'s
-  `"standard"` branch is a **known, explicitly-marked Task-3 placeholder**
-  (see that module's comment) — it compiles and renders but does not yet
-  derive from `keystone_notch()`, so it should not be treated as evidence of
-  fit, nor printed as a functional latch, until Task 3 replaces it.
+  `"standard"` branch (#38 Task 3) is the real `keystone_notch()`-derived
+  fulcrum/flexing-arm mechanism (see that module's comment) — it is a
+  geometric mate-reference, not yet print-tuned, so it should not be printed
+  as a functional latch until backlog #22 (the print-ready flexing-latch
+  insert) lands.
