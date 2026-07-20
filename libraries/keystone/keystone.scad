@@ -502,6 +502,14 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard",
         ledge_z = t[0];
         tab_th  = t[1];
         plug_h  = plate_thickness + 3;   // reaches 3mm behind the plate rear (pre-#28)
+        // inward deflection (motion-viz only, deflect 0=seated): retract the
+        // retention tabs to within the raw window so they clear the plate during
+        // the straight push-in sweep, springing to their seated grip at deflect
+        // 0. Only the -Y latch bump actually protrudes past the window (the +Y
+        // hook already sits inside it), but both retract for symmetry. d_face
+        // brings the latch's outer edge to o[1]/2 - 0.3 (inside the window).
+        // 0.3mm margin //VERIFY (print-convention clearance, as elsewhere here).
+        d_face = deflect * ((o[1]/2 + tab_th - fit) - (o[1]/2 - 0.3));
         union() {
             // front flange: front stop, Z=0..+1.2
             translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
@@ -510,11 +518,13 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard",
             translate([-plug_w/2, -plug_h_xy/2, -plug_h])
                 cube([plug_w, plug_h_xy, plug_h]);
             // top hook ledge on +Y edge, engaging just behind the front face.
-            translate([-(o[0]/2 - fit), plug_h_xy/2, -(ledge_z + tab_th)])
-                cube([o[0] - 2*fit, o[1]/2 - plug_h_xy/2, tab_th]);
+            translate([0, -d_face, 0])
+                translate([-(o[0]/2 - fit), plug_h_xy/2, -(ledge_z + tab_th)])
+                    cube([o[0] - 2*fit, o[1]/2 - plug_h_xy/2, tab_th]);
             // bottom latch bump on -Y edge, behind the plate rear.
-            translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
-                cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
+            translate([0, d_face, 0])
+                translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
+                    cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
         }
     } else { // "standard" (#38)
         assert(flex_side == "top" || flex_side == "bottom",
@@ -525,16 +535,21 @@ module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard",
         mh2  = sl[3] / 2;           // mouth half-height (frame void boundary)
         surf = mh2 - fit;           // carrier outer surface, just inside the mouth
         nw   = plug_w;              // notch/rib width (within the full-width slit)
-        plug_front = 0.5;           // plug fuses into the flange (Z 0..1.2)
-        plug_rear  = -(sl[0] - 0.5);// plug tip stops just short of the back wall
+        // Construction literals below are mate-reference/print-convention
+        // choices (//VERIFY, same spirit as keystone_min_wall() -- not measured
+        // hardware dims; the load-bearing measured values are the keystone_notch()
+        // notch base/protrusion/depth used verbatim above/below, and keystone_slot()).
+        plug_front = 0.5;           // plug fuses into the flange (Z 0..1.2) //VERIFY
+        plug_rear  = -(sl[0] - 0.5);// plug tip stops 0.5mm short of the back wall //VERIFY (0.5 margin)
         fb = nt[0]; fp = nt[1]; fz = -nt[2];   // fulcrum notch: base, protrusion, depth
         tb = nt[6]; tp = nt[7]; tz = -nt[8];   // arm notch:     base, protrusion, depth
-        arm_th   = 0.7;             // arm bar thickness (adapted to fit the mouth)
+        arm_th   = 0.7;             // arm bar thickness, adapted to fit the mouth //VERIFY
         arm_in   = surf - arm_th;   // arm underside
-        arm_front = tz + tb / 2 + 1.0;         // arm free tip, just forward of its notch
-        root_len = 1.5;            // deep root block joining arm to plug
-        rib_front = -4.0;          // fulcrum rib front (stays behind the wall bridge)
+        arm_front = tz + tb / 2 + 1.0;         // arm free tip, 1.0mm forward of its notch //VERIFY (1.0)
+        root_len = 1.5;            // deep root block joining arm to plug //VERIFY
+        rib_front = -4.0;          // fulcrum rib front, stays behind the wall bridge //VERIFY
         // inward deflection (motion-viz only): pull each notch tip to mouth-0.3
+        // (0.3mm clearance margin past the mouth boundary //VERIFY)
         d_top = deflect * (surf + tp - (mh2 - 0.3));
         d_bot = deflect * (surf + fp - (mh2 - 0.3));
         // canonical build: flexing arm on +Y (top), rigid fulcrum on -Y (bottom).

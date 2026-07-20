@@ -635,7 +635,7 @@ intersection() {
 }
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_notch_engage.stl" "$tmp/std_notch_engage.scad" 2>/dev/null
-python3 - "$tmp/std_notch_engage.stl" <<'PY' || { echo "standard insert notches do not engage the slits (#38 Task 3)"; exit 1; }
+python3 - "$tmp/std_notch_engage.stl" "$slot_mh" <<'PY' || { echo "standard insert notches do not engage the slits (#38 Task 3)"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
 ys=[]
@@ -645,7 +645,7 @@ for i in range(n):
         x,y,z=struct.unpack('<3f',d[base:base+12]); ys.append(y)
 if not ys:
     sys.stderr.write("no insert material at the notch depth (-6.3mm) -- notches missing\n"); sys.exit(1)
-mouth_half=18.4/2  # keystone_slot() mouth_h/2
+mouth_half=float(sys.argv[2])/2  # keystone_slot()[3] (mouth_h) / 2 -- single-sourced
 if max(ys) <= mouth_half + 0.3:
     sys.stderr.write(f"top (flex-arm) notch tip {max(ys):.2f} does not clear the mouth half-height {mouth_half:.2f} -- not seated in the slit\n"); sys.exit(1)
 if min(ys) >= -(mouth_half + 0.3):
@@ -653,48 +653,72 @@ if min(ys) >= -(mouth_half + 0.3):
 sys.exit(0)
 PY
 
-# Insertion-motion no-collision (standard): sample the sweep at >=4 stages via
-# the assembly's own stage helper. The corrected push-to-click model deflects
-# the notches inward while travelling (they clear the wall bridges) and springs
-# them into the slits only at seat, so the insert never solid-overlaps the
-# frame at ANY stage. This is the direct regression guard against #31's clip.
-for ST in 0 0.33 0.66 1.0; do
-  name="std_${ST//./_}"
-  cat > "$tmp/mot_$name.scad" <<EOF
+# Connectivity: the "standard" insert (flange + plug + fulcrum rib/notch +
+# flexing arm/root/notch) must be ONE physical solid -- the deflected arm stays
+# joined to the plug only by its root block, so lock in single-component-ness
+# so a future edit can't silently sever the arm.
+cat > "$tmp/std_conn.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "top");
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_conn.stl" "$tmp/std_conn.scad" 2>/dev/null
+python3 - "$tmp/std_conn.stl" <<'PY' || { echo "standard insert connectivity check failed (#38 Task 3)"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+parent={}
+def find(x):
+    while parent[x]!=x: parent[x]=parent[parent[x]]; x=parent[x]
+    return x
+def uni(a,b):
+    ra,rb=find(a),find(b)
+    if ra!=rb: parent[ra]=rb
+for i in range(n):
+    tri=[]
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); tri.append((round(x,2),round(y,2),round(z,2)))
+    for vtx in tri: parent.setdefault(vtx,vtx)
+    a,b,c=tri; uni(a,b); uni(b,c)
+roots=set(find(v) for v in parent)
+if len(roots)!=1:
+    sys.stderr.write(f"standard insert is NOT one connected solid: {len(roots)} disjoint piece(s)\n"); sys.exit(1)
+sys.exit(0)
+PY
+
+# Insertion-motion no-collision (BOTH styles): sample the sweep at >=4 stages
+# (including the 0.85-1.0 spring/click window) via the assembly's own stage
+# helper. Both styles now share one collision-free model -- the retention
+# features (standard's fulcrum/arm notches; face's hook + latch bump) deflect
+# inward while travelling and engage only at seat -- so the insert never
+# solid-overlaps the frame BEHIND the panel at any stage. Restricted to
+# Z < -0.01 (the front flange is BY DESIGN flush at Z=0 against the panel
+# front and would otherwise register as a degenerate coplanar sliver -- same
+# exclusion as the seated-mate checks). This is the strict pairwise-intersection
+# regression guard against #31's swinging-body clip, applied to BOTH styles.
+for STYLE in standard face; do
+  for ST in 0 0.33 0.66 0.9 1.0; do
+    name="mot_${STYLE}_${ST//./_}"
+    cat > "$tmp/$name.scad" <<EOF
 use <keystone/keystone.scad>;
 use <keystone/assembly.scad>;
 intersection() {
-    difference() {
-        union() {
-            translate([-15, -15, -3]) cube([30, 30, 3]);
-            keystone_boss(plate_thickness = 3.0, style = "standard");
+    intersection() {
+        difference() {
+            union() {
+                translate([-15, -15, -3]) cube([30, 30, 3]);
+                keystone_boss(plate_thickness = 3.0, style = "$STYLE");
+            }
+            keystone_cutout(plate_thickness = 3.0, style = "$STYLE");
         }
-        keystone_cutout(plate_thickness = 3.0, style = "standard");
+        _keystone_insert_at_stage(3.0, 0.2, "$STYLE", $ST);
     }
-    _keystone_insert_at_stage(3.0, 0.2, "standard", $ST);
+    translate([-20, -20, -20]) cube([40, 40, 19.99]);
 }
 EOF
-  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/mot_$name.stl" "$tmp/mot_$name.scad" 2>/dev/null
-  real_overlap "$tmp/mot_$name.stl" "standard insertion motion (stage $ST)" \
-    || { echo "standard insertion-motion CLIPS the frame at stage $ST (#38 Task 3 -- the #31 bug)"; exit 1; }
-done
-
-# Face motion must still render at every stage (keep-working guard). Face
-# retention is plate-thickness front/rear grip and its viz is a straight
-# push-fit (pre-#28, out of #38 scope); its wide snap latch is modeled passing
-# through the window plane during travel (an accepted simplification, NOT a
-# swinging-body collision), so face is NOT held to the strict no-clip bar
-# above -- only that the sweep compiles/renders without a CGAL error.
-for ST in 0 0.33 0.66 1.0; do
-  cat > "$tmp/face_mot.scad" <<EOF
-use <keystone/keystone.scad>;
-use <keystone/assembly.scad>;
-keystone_assembly_motion(plate_thickness = 3.0, style = "face", stage = $ST);
-EOF
-  fmo="$(run "$tmp/face_mot.scad")"
-  if echo "$fmo" | grep -qiE 'ERROR:|Assertion .* failed'; then
-    echo "face insertion-motion failed to render at stage $ST:"; echo "$fmo"; exit 1
-  fi
+    "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/$name.stl" "$tmp/$name.scad" 2>/dev/null
+    real_overlap "$tmp/$name.stl" "$STYLE insertion motion (stage $ST)" \
+      || { echo "$STYLE insertion-motion CLIPS the frame at stage $ST (#38 Task 3 -- the #31 bug)"; exit 1; }
+  done
 done
 
 echo ok

@@ -26,11 +26,13 @@
 //   The rigid fulcrum notch's modeled inward deflection is a non-kinematic
 //   stand-in for its triangular ramp camming past the wall (see
 //   keystone_insert()'s "standard" comment).
-//   "face" (straight push-fit, no rotation; pre-#28, unchanged): stage is a
-//   pure -Z insertion depth lerp (0 = tip just clear of the front flange plane,
-//   1 = fully seated flush). Its wide snap latch is modeled passing through the
-//   window plane during travel (an accepted viz simplification, not a
-//   swinging-body collision).
+//   "face" (straight push-fit, no rotation): the SAME collision-free model --
+//   straight -Z push (0 = backed off clear of the panel, 1 = seated flush) with
+//   the +Y hook / -Y latch bump deflected inward during travel (clearing the
+//   plate) and springing to their plate-thickness grip at seat. The retention
+//   SHAPE is the pre-#28 model, unchanged; only the motion now retracts the
+//   tabs so the sweep is collision-free (matching "standard"'s strict no-clip
+//   bar, per the #38 Task-3 review).
 use <keystone/keystone.scad>;
 
 function _stage_t(stage) =
@@ -58,24 +60,20 @@ module _keystone_frame(plate_thickness = 3.0, clearance = 0.25, style = "standar
 }
 
 // _keystone_insert_at_stage(): insert positioned per `stage` (see header).
-// "standard" = straight -Z push-to-click with the notches deflected inward
-// during travel, springing into their slits at seat -- collision-free at every
-// stage. "face" = the pre-#28 straight push-fit (unchanged).
+// BOTH styles share one collision-free model: a straight -Z push-in with the
+// retention features (standard's fulcrum/arm notches; face's hook + latch bump)
+// deflected inward during travel so they clear the panel, springing to their
+// seated grip only at the end. Differs from the superseded #31 rotate-and-snap
+// arc, whose swinging body clipped the frame mid-sweep.
 module _keystone_insert_at_stage(plate_thickness, fit, style, stage, flex_side = "top") {
     t = _stage_t(stage);
     s = _keystone_resolve_style(style);
-    if (s == "standard") {
-        z_start = 11;                              // backed off clear of the panel at stage 0
-        p_ins   = min(t / 0.85, 1);                // straight-in progress (done by ~0.85)
-        z_off   = _lerp(z_start, 0, p_ins);
-        defl    = t <= 0.85 ? 1 : _lerp(1, 0, (t - 0.85) / 0.15); // spring at the end
-        translate([0, 0, z_off])
-            keystone_insert(plate_thickness, fit, s, flex_side, defl);
-    } else { // "face": straight push-fit, no rotation (unchanged)
-        depth = _lerp(8, 0, t); // 0=tip just clear of the flange plane, 1=seated flush
-        translate([0, 0, depth])
-            keystone_insert(plate_thickness, fit, s);
-    }
+    z_start = (s == "standard") ? 11 : 8;      // backed-off distance at stage 0
+    p_ins   = min(t / 0.85, 1);                // straight-in progress (done by ~0.85)
+    z_off   = _lerp(z_start, 0, p_ins);
+    defl    = t <= 0.85 ? 1 : _lerp(1, 0, (t - 0.85) / 0.15); // spring/click at the end
+    translate([0, 0, z_off])
+        keystone_insert(plate_thickness, fit, s, flex_side, defl);
 }
 
 // [Mated] — insert fully seated in a plate with the real cutout. The
