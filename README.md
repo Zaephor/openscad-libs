@@ -35,6 +35,7 @@ use <fans/fans.scad>;
 - [rack10](libraries/rack10) — 10-inch mini-rack reference (LabRax/DeskPi/TecMojo).
 - [rack19](libraries/rack19) — 19-inch EIA-310-D rack reference.
 - [sbc](libraries/sbc) — SBC mechanical reference (Raspberry Pi B/Zero families + BPI-R4).
+- [vesa](libraries/vesa) — VESA FDMI (MIS) display-mount hole patterns.
 
 ## Projects
 

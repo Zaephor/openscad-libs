@@ -1,0 +1,11 @@
+{
+  "name": "vesa",
+  "description": "VESA FDMI/MIS flat-display mounting hole patterns (MIS-D 75x75, MIS-D 100x100, MIS-E 200x100), M4 fastener + ISO-273-referenced clearance dia. See RESEARCH.md for per-pattern evidence and tiering.",
+  "version": "0.1.0",
+  "sources": [
+    "https://en.wikipedia.org/wiki/VESA_mount",
+    "https://www.oeveo.com/content/320-all-about-the-vesa-pattern",
+    "https://www.vesa-standard.com/vesa-mis-d.html",
+    "VESA FDMI/MIS mounting standard — named standard, not fetched (member-paywalled); backs MIS spacings [B] via published peers"
+  ]
+}
