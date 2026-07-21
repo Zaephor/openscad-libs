@@ -107,8 +107,13 @@ function din_clip_catch_span(type, clearance = 0.4) =
 // the other is an unbraced FLEXING cantilever that deflects inward to snap over
 // its lip and springs back — the standard fixed-hook-one-edge /
 // flexing-latch-other-edge DIN pattern. Physical snap tension is bench-tuned by
-// the caller via `clearance`, `wall`, and `flex_len` (NOT validated here — the
-// CI gate is geometric engagement only; see README "Coverage").
+// the caller via `clearance` and `wall` (`wall` sets the cantilever's
+// stiffness — thinner wall = softer snap). `flex_len` does NOT affect snap
+// tension: the catch barb's load point is pinned at apex_z = lip_h, near the
+// prong's fixed root, regardless of flex_len — raising flex_len only adds
+// guide-wall height ABOVE the barb (see `lead_in`), not flex between the root
+// and the load point. (NOT validated here — the CI gate is geometric
+// engagement only; see README "Coverage").
 //
 // Params:
 //   type      rail key (din_known_rails()).
@@ -116,9 +121,15 @@ function din_clip_catch_span(type, clearance = 0.4) =
 //   clearance per-side running gap between barb tip and leg inner face, mm
 //             (free/running band; larger = looser snap).
 //   wall      prong / back-plate thickness, mm.
-//   flex_len  Z height of the flexing cantilever from the back plate to the
-//             barb top; undef => auto (just tall enough to carry the barb).
-//             Raise it (deep ts35-15 channel has room) for a softer snap.
+//   flex_len  Z height of the flexing cantilever's prong WALL, from the back
+//             plate up to the wall top; undef => auto (just tall enough to
+//             carry the barb + lead_in). Does NOT soften the snap: the catch
+//             barb's load point is pinned at apex_z = lip_h regardless of
+//             flex_len, so this only sets the guide-wall height above the
+//             barb (rail lead-in / insertion alignment). Must be >= the
+//             barb's top (asserted below) so the barb stays wall-backed. To
+//             soften the snap, reduce `wall` instead (thinner wall = more
+//             flexible cantilever).
 //   lead_in   extra prong-wall height above the barb, a straight guide lip
 //             that funnels the rail into the mouth, mm. (The barb's own lower
 //             45° face is the actual snap lead-in.)
@@ -145,6 +156,10 @@ module din_clip(type = "ts35-7.5", width = 15, clearance = 0.4,
             type, "' (", max_h, "mm) — reduce lead_in/clearance"));
 
     flen = is_undef(flex_len) ? prong_h : min(flex_len, max_h);
+    assert(flen >= barb_hi,
+        str("din_clip: flex_len (", flen, "mm) is below the catch barb's top (",
+            barb_hi, "mm) — the barb would go unbacked by the prong wall; ",
+            "raise flex_len or omit it"));
 
     back_y = w / 2 + 2;               // back plate half-width (past the rail edge)
 

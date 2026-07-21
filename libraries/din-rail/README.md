@@ -49,7 +49,7 @@ color("orange") din_clip("ts35-7.5", width = 15);
 | Module | Does |
 |---|---|
 | `din_rail_profile(type, length=100)` | Reference hat-profile solid (outer envelope − inner cavity + two return lips). Fit/context geometry, not itself print-oriented |
-| `din_clip(type="ts35-7.5", width=15, clearance=0.4, wall=2.4, flex_len=undef, lead_in=1.0)` | Support-free snap clip. **Inner-grip** catch: two prongs enter the hat channel and hook the inward return lips with outward 45° barbs — one **rigid gusset-braced fixed hook**, one **unbraced flexing cantilever latch**. Prints back-plate-flat-on-bed, prongs up, every overhang ≤45° by construction (no supports). The back-plate **outer (−Z) face is the mounting face** that bonds to the consumer's part; its inner face seats against the rail front. Snap tension is bench-tuned via `clearance`/`wall`/`flex_len` |
+| `din_clip(type="ts35-7.5", width=15, clearance=0.4, wall=2.4, flex_len=undef, lead_in=1.0)` | Support-free snap clip. **Inner-grip** catch: two prongs enter the hat channel and hook the inward return lips with outward 45° barbs — one **rigid gusset-braced fixed hook**, one **unbraced flexing cantilever latch**. Prints back-plate-flat-on-bed, prongs up, every overhang ≤45° by construction (no supports). The back-plate **outer (−Z) face is the mounting face** that bonds to the consumer's part; its inner face seats against the rail front. Snap tension is bench-tuned via `clearance`/`wall` (`wall` sets cantilever stiffness — thinner = softer); `flex_len` does **not** affect tension — the catch barb's load point is pinned at `lip_h` regardless of it, so it only sets the guide-wall height above the barb (rail lead-in / insertion alignment) |
 
 ## Verification
 
@@ -90,9 +90,13 @@ weak value pending stronger corroboration.
 - **Physical snap tension is NOT modeled or CI-validated** — it depends on
   print material/settings and the un-dimensioned lip geometry (`[C]//VERIFY`).
   The CI gate checks geometric *engagement* only; retention force is
-  **bench-tuned by the user** via the exposed `clearance`, `wall`, and
-  `flex_len` parameters. Re-measure `din_rail_lip()` against a physical rail
-  with calipers to upgrade its tier before treating the snap as final.
+  **bench-tuned by the user** via the exposed `clearance` and `wall`
+  parameters (thinner `wall` = softer cantilever). `flex_len` does **not**
+  tune tension — the catch barb's load point is pinned at `lip_h` near the
+  prong's fixed root regardless of `flex_len`, so it only sets the guide-wall
+  height above the barb (rail lead-in / insertion alignment), not the flex
+  between root and load point. Re-measure `din_rail_lip()` against a physical
+  rail with calipers to upgrade its tier before treating the snap as final.
 
 **Unify audit:** No existing in-repo DIN consumer; first is a future homelab
 tray — retrofit deferred.
