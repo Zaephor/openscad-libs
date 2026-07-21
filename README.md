@@ -24,6 +24,7 @@ use <fans/fans.scad>;
 ## Libraries
 
 - [connectors](libraries/connectors) — connector body/shell envelope dimensions for PC/SBC panel + slot connectors.
+- [din-rail](libraries/din-rail) — EN 60715 TS35 rail profile + support-free snap clip.
 - [drives](libraries/drives) — storage-drive mechanical envelopes.
 - [embedded](libraries/embedded) — ESP32/ESP8266 dev-board mounting reference.
 - [fans](libraries/fans) — PC fan frame sizes + mount hole geometry.
