@@ -1,6 +1,9 @@
-// pcie-bracket library test — Task 2.
+// pcie-bracket library test — Task 2 (data accessors) + Task 3 (geometry).
 // pcie_bracket_size(t) field order: [height, foot_width, thickness]
 // (see pcie-bracket.scad header for why tab_len/card_off are NOT fields here.)
+// Coarse geometry checks (bounding-height, blank-vs-windowed solid-volume)
+// live in tests/test_pcie_bracket_lib.sh (STL-bbox/volume, since plain
+// OpenSCAD asserts can't introspect a rendered mesh) -- not in this file.
 use <pcie-bracket/pcie-bracket.scad>;
 
 assert(pcie_known_brackets() == ["full-height", "low-profile"], "bracket list");

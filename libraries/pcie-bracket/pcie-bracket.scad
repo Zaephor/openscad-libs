@@ -1,10 +1,70 @@
 // pcie-bracket — PCIe/PCI expansion-slot I/O bracket geometry (low-profile +
-// full-height card classes). Pure-data library: only Data functions below
-// (no placeholder/holes geometry modules yet — see README "Status").
+// full-height card classes). Data + geometry (Task 3 adds pcie_bracket() /
+// pcie_bracket_mount_holes()) — see README "Status".
 // Datum (per RESEARCH.md's canonical frame, Task 1): bracket back face (mates
 // the chassis rear-panel plane) on Y=0, centered on X=0 at the card-slot
 // centerline, bracket foot (fold, screws to chassis) at low Z, growing +Z up
 // the faceplate. mm. central $fn.
+//
+// Geometry frame (Task 3, derived from the header above + the plan brief's
+// own pcie_bracket_mount_holes() skeleton, which cuts a hole cylinder from
+// z=-depth to z=+0.02 with depth=thickness+1 -- i.e. the cut is designed to
+// fully perforate material that sits in Z=[-thickness, 0], not [0,thickness]):
+//   - foot (chassis-mounting flange): Z = [-thickness, 0] (bottom face at
+//     -thickness, TOP face flush with the Z=0 fold datum), X = [-fw/2, fw/2],
+//     Y = [0, tab_depth] (extends away from the Y=0 back plane into the
+//     chassis interior, toward the rail it screws down onto).
+//   - faceplate (main plate): Z = [0, height] (bottom edge at the Z=0 fold
+//     datum, growing up), X = [-fw/2, fw/2], Y = [0, thickness] (thin wall at
+//     the back plane).
+//   These two boxes share the Z=0 fold-line plane and touch/overlap over
+//   X=[-fw/2,fw/2], Y=[0,thickness] -- a real (non-zero-volume) union, no
+//   coincident-face CSG risk.
+//
+// design-for-print pass (Task 3, per the `design-for-print` skill):
+//   - Support-free technique chosen: **"printed-in-plane"** (one of the three
+//     options the plan brief names: angled buttress / <=45 deg / printed-in-
+//     plane). Recommended print orientation is a 90 deg rotation about X from
+//     this module's modeled/reference frame above: rotate([-90,0,0]) so the
+//     tall, thin faceplate (thickness-only in Y, up to 120mm in Z) lies FLAT
+//     on the print bed (broad Y=0 back face down) instead of standing on a
+//     0.8mm-thin edge for its full height -- printing it standing up would be
+//     a tipping/warp/snap risk (thin + tall on a tiny footprint) even though
+//     it is not technically an unsupported overhang either way.
+//   - Under that same rotation, the foot -- modeled here extending away from
+//     the back plane in +Y, thin in Z -- becomes a wall rising straight up
+//     from the now-flat faceplate in the print's vertical axis: every layer
+//     sits directly on solid material below it (the flat faceplate), so it
+//     is trivially support-free by construction, not because of a chamfer or
+//     an angle trick. This is the "printed-in-plane" pattern: reorient so
+//     the feature that was perpendicular in the reference frame becomes an
+//     in-plane vertical extrusion in the print frame, instead of a
+//     cantilevered horizontal shelf that would need support underneath it.
+//   - The reference/installed frame above (foot in the XY plane, faceplate
+//     standing in Z) is kept for the *modeled* geometry because that is the
+//     natural frame for hole placement + the header's existing datum
+//     conventions; the print-orientation rotation is a slicing note, not
+//     baked into the module, matching how other libraries in this repo
+//     separate "reference frame" from "how you'd actually orient it on the
+//     bed" (see README "Print orientation").
+//   - The foot/faceplate corner is a plain right-angle box join (no added
+//     fillet/gusset): unlike a real 0.8mm sheet-metal fold, this reference
+//     geometry is a solid box union at that corner (fully filled, not a thin
+//     cantilever), so it is not a stress-riser the way a folded sheet would
+//     be, and the printed-in-plane rotation above already removes the
+//     overhang concern -- adding a gusset here would be decorative, not
+//     load-bearing, for a solid printed reference part.
+//
+// Two Task-3 print-design constants below are NOT researched/tabulated data
+// (RESEARCH.md's gap list, and the pcie-bracket.scad header's own note above
+// pcie_bracket_size()) -- they are this task's own reasoned choices, tagged
+// //VERIFY, not [B]/[C] tiered claims:
+//   - _pcie_tab_depth(): the foot's Y-extent (how far it reaches into the
+//     chassis from the back plane before the screw hole).
+//   - _pcie_cutout_*_frac(): the card-slot cutout's size as a fraction of
+//     this bracket's OWN envelope (sz[0] height / sz[1] foot_width) -- NOT
+//     derived from motherboards.scad's `setback` (RESEARCH.md: different
+//     measurement, see header note above pcie_bracket_size()).
 //
 // pcie_bracket_size(t) field order: [height, foot_width, thickness]
 //   height      — bracket overall height, chassis-foot to top edge (tab-to-tab). [B]
@@ -109,3 +169,85 @@ function pcie_bracket_holes(t, role = undef) =
       [for (h = all) if (h[2] == role) h];
 
 function pcie_bracket_holes_xy(t, role = undef) = [for (h = pcie_bracket_holes(t, role)) [h[0], h[1]]];
+
+/* [Geometry] */
+
+// Foot/tab Y-depth (how far the chassis-mounting flange reaches away from
+// the Y=0 back plane before folding flat) -- NOT a researched dimension
+// (RESEARCH.md gap: "Tab/notch geometry ... not resolved to numeric
+// detail"). Chosen here as a print-design constant (design-for-print pass,
+// see header): must clear the structural-mount screw's Y position with a
+// real edge margin on both classes -- the farther screw sits at
+// _pcie_screw_y_fh()=10mm -- so 15mm leaves >=5mm of material beyond the
+// hole (comfortably more than the M3/6-32 clearance hole's own radius +
+// wall), and is the same order of magnitude as typical chassis expansion-
+// slot rail depths. Shared across both bracket classes, same rationale as
+// the shared foot_width field. //VERIFY -- design choice, not sourced data;
+// do not present as [B]/[C] tiered.
+function _pcie_tab_depth() = 15;
+
+// Card-slot cutout size, as a FRACTION of this bracket's own envelope
+// (sz[0] height, sz[1] foot_width) -- deliberately not derived from
+// motherboards.scad's `setback` (RESEARCH.md: that is a different,
+// motherboard-side measurement -- see header note above pcie_bracket_size()).
+// 0.65 width / 0.55 height leave a solid margin on all four sides (X margin
+// for the vertical card-guide material either side of the slot; Z margin
+// so the window stays clear of both the top edge and the Z=0 fold datum/
+// foot region). //VERIFY -- design choice, not sourced data.
+function _pcie_cutout_width_frac() = 0.65;
+function _pcie_cutout_height_frac() = 0.55;
+
+// Small Z epsilon so the faceplate box volumetrically overlaps the foot box
+// at the Z=0 fold datum (both boxes otherwise only share a zero-volume
+// face) -- avoids a coincident-face CGAL edge case in the union(). Print-
+// irrelevant (0.01mm, far under nozzle resolution).
+function _pcie_z_eps() = 0.01;
+
+// Mount-hole stamp: one vertical (Z-axis) cylinder per hole entry, cut
+// through the foot's thickness. Matches the plan brief's skeleton exactly:
+// h[0]/h[1] are the hole's X/Y position (foot lies in the XY plane per the
+// geometry-frame note above), translate(...,-depth) + height depth+0.02
+// fully perforates foot material at Z=[-thickness,0] when depth=thickness+1
+// (the default call site below), with epsilon clearance past both faces.
+module pcie_bracket_mount_holes(type, dia = -1, depth = 6) {
+    for (h = pcie_bracket_holes(type)) {
+        r = (dia < 0 ? h[3] : dia) / 2;
+        translate([h[0], h[1], -depth]) cylinder(h = depth + 0.02, r = r);
+    }
+}
+
+// pcie_bracket(type, blank=false) -- L-bracket faceplate + chassis-mounting
+// foot, in the reference/installed frame documented in the header (Z=0 fold
+// datum; see header for the recommended print-orientation rotation).
+// blank=true ships a solid faceplate (no card-slot cutout) -- e.g. a filler
+// panel for an unused slot; blank=false (default) cuts the card-slot window.
+module pcie_bracket(type, blank = false) {
+    sz = pcie_bracket_size(type); // [height, foot_width, thickness]
+    h = sz[0];
+    fw = sz[1];
+    th = sz[2];
+    td = _pcie_tab_depth();
+    eps = _pcie_z_eps();
+
+    difference() {
+        union() {
+            // Foot: chassis-mounting flange, flat in the XY plane, Z=[-th,0].
+            translate([-fw / 2, 0, -th]) cube([fw, td, th]);
+            // Faceplate: main plate, standing in Z=[0,h] (recommended print
+            // orientation lays this flat -- see header design-for-print note).
+            translate([-fw / 2, 0, -eps]) cube([fw, th, h + eps]);
+        }
+        if (!blank) {
+            // Card-slot cutout: sized from THIS bracket's own envelope only
+            // (see _pcie_cutout_*_frac() above), centered in X, sitting
+            // within the faceplate's Z=[0,h] span with margin top/bottom so
+            // it never reaches the Z=0 fold datum / foot region.
+            cw = fw * _pcie_cutout_width_frac();
+            ch = h * _pcie_cutout_height_frac();
+            cz = (h - ch) / 2;
+            translate([-cw / 2, -1, cz]) cube([cw, th + 2, ch]);
+        }
+        // Screw hole through the foot (Z axis, per pcie_bracket_mount_holes()).
+        pcie_bracket_mount_holes(type, depth = th + 1);
+    }
+}
