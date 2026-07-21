@@ -1,0 +1,16 @@
+{
+  "name": "din-rail",
+  "description": "EN 60715 top-hat (TS35) DIN-rail profile dimensions for both standard (35x7.5mm) and deep (35x15mm) depth variants, plus a support-free printable rail-mounting snap clip. See RESEARCH.md for per-dimension evidence and tiering.",
+  "version": "0.1.0",
+  "sources": [
+    "EN 60715 (TS35 top-hat rail) — named standard, not fetched (paywalled); dims [B] via published peers",
+    "https://www.wago.com/global/accessories/steel-carrier-rail/p/210-112",
+    "https://www.wago.com/us/accessories/steel-carrier-rail/p/210-197",
+    "https://www.phoenixcontact.com/en-us/products/din-rail-ns-35-75-perf-955mm-1207653",
+    "https://www.phoenixcontact.com/en-pc/products/din-rail-perforated-ns-35-15-perf-2000mm-1201730",
+    "https://en.wikipedia.org/wiki/DIN_rail",
+    "Schneider Electric \"Top Hat Section Rail (DIN rail)\" technical documentation (product-help.se.com, Machine Expert)",
+    "https://www.rastro.ai/resources/din-rail-dimensions-ts-35-ts-32-ts-15-chart",
+    "https://tps-eleus.com/blog-detail/iec-60715-din-rail-ts35-th35-standard-%E2%80%94-dimensions,-hole-pitch-cabinet-layout-tips"
+  ]
+}
