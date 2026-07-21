@@ -18,10 +18,8 @@ Import/Usage/Reference sections once Task 2 lands.
 - **MIS-E** — 200x100mm rectangle, M4.
 
 **MIS-F** (200x200mm and larger, M6/M8, big-TV class) is intentionally NOT
-modeled — no in-repo consumer needs it yet (YAGNI). See the design spec
-(`docs/superpowers/specs/2026-07-21-vesa-mount-lib-design.md`, gitignored
-working notes) for the reasoning; a future pass can add MIS-F rows if a
-consumer needs >200mm.
+modeled — no in-repo consumer needs it yet (YAGNI). A future pass can add
+MIS-F rows if a consumer needs >200mm.
 
 ## Import
 

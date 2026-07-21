@@ -148,14 +148,13 @@ found (as opposed to the bracket-side protrusion allowance above).
 
 ## MIS-F (not modeled — context only)
 
-Per the design spec, MIS-F (200x200mm and larger, M6/M8, big-TV class) is
-explicitly out of scope for this pass (YAGNI, no current consumer). Recorded
-here only because both fetched sources mention it in passing: Wikipedia's
-same table extends the B-F letter classes up through 200x200mm+ with M6/M8
-screws; the aggregate web-search summary consulted alongside the two direct
-fetches above also independently states "with a VESA of 200x200 mostly M6
-screws instead of M4 screws are used." Not consumed by any value in this
-library — no MIS-F row is added to `vesa_known_patterns()`.
+MIS-F (200x200mm and larger, M6/M8, big-TV class) is out of scope for this
+pass (YAGNI, no current consumer). Wikipedia's same FDMI table extends the
+B-F letter classes up through 200x200mm+ with M6/M8 screws, consistent with
+the general industry understanding that larger displays step up to M6/M8 —
+not independently corroborated to `[B]` this pass, and not needed to be:
+it backs no value in this library. Not consumed by any value here — no
+MIS-F row is added to `vesa_known_patterns()`.
 
 ## Summary table
 
