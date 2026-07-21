@@ -1,10 +1,10 @@
-# din-rail — evidence source log (Task 1)
+# din-rail — evidence source log
 
-Scope: Task 1 only — scaffold + evidence-sourced value log for the EN 60715
-top-hat (TS35) DIN-rail profile, both standard (7.5mm) and deep (15mm) depth
-variants. **No data table or modules are implemented in `din-rail.scad` yet**
-(that is Task 2/3). This file is the evidence Task 2/3 will read to fill in
-the profile-data functions.
+Evidence/provenance log for the EN 60715 top-hat (TS35) DIN-rail profile,
+both standard (7.5mm) and deep (15mm) depth variants. The dimensional data
+sourced here is implemented in `din-rail.scad`'s `_din_table()` (width,
+depth, material thickness, slot pitch) and `din_rail_lip()` (return-edge lip
+geometry).
 
 EN 60715 itself is a paywalled IEC/CENELEC standard and was not fetched
 directly. Every dimension below is instead corroborated across independent
@@ -14,7 +14,7 @@ named-but-unfetched standard caps a value at `[B]`, not `[A]`, however many
 peers agree.
 
 Provenance legend (per `docs/LIBRARY-AUTHORING.md`):
-- `[A]` fetched + read this pass (vendor datasheet or governing standard).
+- `[A]` the authoritative governing standard/spec itself fetched and read directly.
 - `[B]` corroborated across >=2 independent peers.
 - `[C]` single-sourced / derived, or a named standard cited but not fetched.
 - `//VERIFY` marks a weak/single-sourced value pending stronger corroboration.

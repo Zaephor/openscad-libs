@@ -65,10 +65,10 @@ both depth variants.
 ## Sources
 
 Provenance tiers (see `din-rail.scad` header / `RESEARCH.md` for the full
-evidence log): **[A]** governing standard / vendor datasheet fetched + read,
-**[B]** corroborated across ≥2 independent peers (or a named-but-paywalled
-standard cited by them), **[C]** single-sourced / derived. `//VERIFY` marks a
-weak value pending stronger corroboration.
+evidence log): **[A]** the authoritative governing standard/spec itself
+fetched and read directly, **[B]** corroborated across ≥2 independent peers
+(or a named-but-paywalled standard cited by them), **[C]** single-sourced /
+derived. `//VERIFY` marks a weak value pending stronger corroboration.
 
 | Source | Tier | Backs |
 |---|---|---|
