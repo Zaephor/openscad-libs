@@ -1,0 +1,13 @@
+{
+  "name": "pcie-bracket",
+  "description": "PCIe/PCI card I/O bracket (faceplate) geometry for low-profile (MD1/MD2) and full-height card classes — overall height, chassis-foot width, screw position, and card-length classes. See RESEARCH.md for per-value evidence and tiering.",
+  "version": "0.1.0",
+  "sources": [
+    "PCI-SIG \"Low Profile PCI\" Engineering Change Notice (ECN) to the PCI Local Bus Specification — named standard, not fetched (member-paywalled); backs low-profile bracket height (79.2mm), card height (64.41mm), and MD1/MD2 card-length classes [B] via secondary corroboration",
+    "PCI-SIG PCI Express Card Electromechanical (CEM) Spec — named standard, not fetched (member-paywalled, per existing libraries/connectors/RESEARCH.md precedent); backs full-height bracket height (120.65mm) [B] via secondary corroboration",
+    "https://www.brackets.nl/images/producten/pcb2.gif (PL-Tronic BV distributor guideline drawing, full-height bracket)",
+    "https://www.brackets.nl/images/producten/pcb3.gif (PL-Tronic BV distributor guideline drawing, low-profile bracket)",
+    "https://www.accio.com/plp/pcie-bracket-dimensions",
+    "https://www.flykantech.com/blog-detail/standard-profile-vs-low-profile-pcie-card-bracket-specifications"
+  ]
+}
