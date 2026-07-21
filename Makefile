@@ -1,6 +1,6 @@
 SHELL := /usr/bin/env bash
 
-.PHONY: help run test render render-all new-lib new-project check list
+.PHONY: help run test render render-all render-dind render-dind-all new-lib new-project check list
 help: ## Show available targets
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN{FS=":.*?## "}{printf "  %-22s %s\n", $$1, $$2}'
@@ -25,6 +25,13 @@ render-all: ## Render every project
 	  p="$$(basename "$$d")"; \
 	  scripts/render.sh "$$p" || exit 1; \
 	done
+
+render-dind: ## Render a project via the dind sidecar: make render-dind P=<project>
+	@test -n "$(P)" || { echo "Usage: make render-dind P=<project>"; exit 1; }
+	@scripts/render-dind.sh "$(P)"
+
+render-dind-all: ## Render every project via the dind sidecar
+	@scripts/render-dind.sh --all
 
 new-lib: ## Scaffold a library: make new-lib NAME=<x>
 	@test -n "$(NAME)" || { echo "Usage: make new-lib NAME=<x>"; exit 1; }
