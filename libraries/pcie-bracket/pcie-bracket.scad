@@ -21,39 +21,37 @@
 //   X=[-fw/2,fw/2], Y=[0,thickness] -- a real (non-zero-volume) union, no
 //   coincident-face CSG risk.
 //
-// design-for-print pass (Task 3, per the `design-for-print` skill):
-//   - Support-free technique chosen: **"printed-in-plane"** (one of the three
-//     options the plan brief names: angled buttress / <=45 deg / printed-in-
-//     plane). Recommended print orientation is a 90 deg rotation about X from
-//     this module's modeled/reference frame above: rotate([-90,0,0]) so the
-//     tall, thin faceplate (thickness-only in Y, up to 120mm in Z) lies FLAT
-//     on the print bed (broad Y=0 back face down) instead of standing on a
-//     0.8mm-thin edge for its full height -- printing it standing up would be
-//     a tipping/warp/snap risk (thin + tall on a tiny footprint) even though
-//     it is not technically an unsupported overhang either way.
-//   - Under that same rotation, the foot -- modeled here extending away from
-//     the back plane in +Y, thin in Z -- becomes a wall rising straight up
-//     from the now-flat faceplate in the print's vertical axis: every layer
-//     sits directly on solid material below it (the flat faceplate), so it
-//     is trivially support-free by construction, not because of a chamfer or
-//     an angle trick. This is the "printed-in-plane" pattern: reorient so
-//     the feature that was perpendicular in the reference frame becomes an
-//     in-plane vertical extrusion in the print frame, instead of a
-//     cantilevered horizontal shelf that would need support underneath it.
-//   - The reference/installed frame above (foot in the XY plane, faceplate
-//     standing in Z) is kept for the *modeled* geometry because that is the
-//     natural frame for hole placement + the header's existing datum
-//     conventions; the print-orientation rotation is a slicing note, not
-//     baked into the module, matching how other libraries in this repo
-//     separate "reference frame" from "how you'd actually orient it on the
-//     bed" (see README "Print orientation").
+// design-for-print pass (Task 3, per the `design-for-print` skill;
+// CORRECTED post-Task-3-review -- an earlier version of this note was wrong,
+// see below):
+//   - Support-free orientation: this module's own modeled/reference frame
+//     above (foot flat in the XY plane at Z=[-th,0], faceplate rising from
+//     the shared Z=0 seam) IS the recommended print orientation -- print
+//     un-rotated, straight off this header's datum, no rotate() needed. The
+//     faceplate's footprint (fw x th, thin -- only `th`=0.8mm deep in Y --
+//     though up to 120.65mm tall in Z) sits entirely WITHIN the foot's wider
+//     footprint (fw x td=15mm deep in Y) at their shared Z=0 seam: every
+//     faceplate layer has solid foot material directly below it in Y, so
+//     there is no overhang and no cantilever, so the part prints support-free
+//     in this un-rotated frame with no rotate() needed.
+//   - An EARLIER version of this note recommended rotate([-90,0,0]) before
+//     slicing, reasoning that it would lay the tall faceplate flat and turn
+//     the foot into a self-supporting vertical wall ("printed-in-plane").
+//     That reasoning was WRONG and was disproven by rendering it: under that
+//     rotation the wide, long faceplate (up to 120.65mm) ends up balanced on
+//     top of the foot's narrow 0.8mm-thin post -- a severe unsupported
+//     cantilever, not a support-free print. Do NOT rotate this part before
+//     slicing.
+//   - The tall faceplate's tip/warp/snap risk when standing in Z (tall,
+//     moderate footprint) is a real slicer-level concern, but it is not a
+//     geometry problem and does not change the support-free verdict above;
+//     address it at the slicer if needed (brim, orientation lock) rather
+//     than by rotating the geometry.
 //   - The foot/faceplate corner is a plain right-angle box join (no added
 //     fillet/gusset): unlike a real 0.8mm sheet-metal fold, this reference
 //     geometry is a solid box union at that corner (fully filled, not a thin
 //     cantilever), so it is not a stress-riser the way a folded sheet would
-//     be, and the printed-in-plane rotation above already removes the
-//     overhang concern -- adding a gusset here would be decorative, not
-//     load-bearing, for a solid printed reference part.
+//     be.
 //
 // Two Task-3 print-design constants below are NOT researched/tabulated data
 // (RESEARCH.md's gap list, and the pcie-bracket.scad header's own note above
@@ -218,7 +216,8 @@ module pcie_bracket_mount_holes(type, dia = -1, depth = 6) {
 
 // pcie_bracket(type, blank=false) -- L-bracket faceplate + chassis-mounting
 // foot, in the reference/installed frame documented in the header (Z=0 fold
-// datum; see header for the recommended print-orientation rotation).
+// datum; this un-rotated frame IS the recommended print orientation -- see
+// header for the design-for-print reasoning).
 // blank=true ships a solid faceplate (no card-slot cutout) -- e.g. a filler
 // panel for an unused slot; blank=false (default) cuts the card-slot window.
 module pcie_bracket(type, blank = false) {
@@ -233,8 +232,10 @@ module pcie_bracket(type, blank = false) {
         union() {
             // Foot: chassis-mounting flange, flat in the XY plane, Z=[-th,0].
             translate([-fw / 2, 0, -th]) cube([fw, td, th]);
-            // Faceplate: main plate, standing in Z=[0,h] (recommended print
-            // orientation lays this flat -- see header design-for-print note).
+            // Faceplate: main plate, standing in Z=[0,h] -- its footprint
+            // (fw x th) sits within the wider foot footprint (fw x td)
+            // below it, so this un-rotated frame prints support-free as-is
+            // (see header design-for-print note).
             translate([-fw / 2, 0, -eps]) cube([fw, th, h + eps]);
         }
         if (!blank) {

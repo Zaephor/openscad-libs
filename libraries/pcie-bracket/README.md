@@ -32,17 +32,28 @@ use <pcie-bracket/pcie-bracket.scad>;
 ## Print orientation
 
 The reference frame above (foot lying in the XY plane, faceplate standing up
-in Z) is the natural frame for hole placement, but is **not** the recommended
-print orientation: printing the tall, 0.8mm-thin faceplate standing up on its
-thin edge for its full 79–120mm height is a tipping/warp/snap risk. Per the
-`design-for-print` skill pass (Task 3), rotate the part **90° about X**
-(`rotate([-90,0,0])`) before slicing: the faceplate then lies flat on the
-bed, and the foot — which was perpendicular to it in the reference frame —
-rises as a short (15mm), self-supporting vertical wall directly off the flat
-plate ("printed-in-plane": no overhang, no chamfer/angle trick needed). See
-`pcie-bracket.scad`'s header comment for the full design-for-print reasoning
-and a `verify-scad-geometry` side-view confirmation of the rotated
-orientation (short vertical rise off a flat base — no unsupported overhang).
+in Z) **is** the recommended print orientation — print un-rotated, straight
+off this frame, no `rotate()` needed. The faceplate's footprint (`foot_width`
+x `thickness`, only 0.8mm deep in Y) sits entirely within the wider foot's
+footprint (`foot_width` x 15mm tab depth in Y) at their shared Z=0 seam, so
+every faceplate layer has solid foot material directly below it — no
+overhang, no cantilever.
+
+An earlier version of this note recommended rotating the part **90° about
+X** (`rotate([-90,0,0])`) before slicing, on the theory that it would lay the
+faceplate flat and turn the foot into a self-supporting wall
+("printed-in-plane"). That was **wrong** and was disproven by rendering it:
+under that rotation the wide, up-to-120.65mm faceplate ends up balanced on
+top of the foot's narrow 0.8mm-thin post — a severe unsupported cantilever.
+Do not rotate this part before slicing.
+
+The tall faceplate's tip/warp/snap risk when standing in Z is a real
+slicer-level concern (use a brim or an orientation lock in the slicer if
+needed) but is not a geometry problem and does not change the support-free
+verdict above. See `pcie-bracket.scad`'s header comment for the full
+design-for-print reasoning: in the un-rotated orientation the faceplate
+footprint sits fully within the foot footprint, so there is no unsupported
+overhang.
 
 ## Sources
 
