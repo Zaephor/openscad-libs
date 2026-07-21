@@ -1,6 +1,6 @@
 // vesa — VESA FDMI (MIS) display-mount hole patterns.
 // Data are FUNCTIONS (use<> does not import variables). Default orientation:
-// pattern plane in X/Y, origin centered, holes cut along -Z; mm; central $fn.
+// pattern plane in X/Y, origin centered in X/Y, bottom face on Z=0; mm; central $fn.
 // Provenance: [A] fetched spec/datasheet | [B] >=2 independent peers |
 //             [C] single/derived or named-not-fetched | //VERIFY weak, confirm.
 $fn = 48;
@@ -47,7 +47,7 @@ function vesa_holes_xy(name, role=undef) = [for (h=vesa_holes(name,role)) [h[0],
 module vesa_mount_holes(name, dia=-1, depth=6) {
     for (h = vesa_holes(name)) {
         r = (dia<0 ? h[3] : dia)/2;
-        translate([h[0], h[1], -depth]) cylinder(h=depth+0.02, r=r);
+        translate([h[0], h[1], -1]) cylinder(h=depth+2, r=r);
     }
 }
 
@@ -56,7 +56,7 @@ module vesa_mount_holes(name, dia=-1, depth=6) {
 module vesa_placeholder(name, margin=10, thickness=3) {
     s = vesa_spacing(name);
     difference() {
-        translate([0,0,0]) linear_extrude(thickness)
+        linear_extrude(thickness)
             square([s[0]+2*margin, s[1]+2*margin], center=true);
         vesa_mount_holes(name, depth=thickness);
     }
