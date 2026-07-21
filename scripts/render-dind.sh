@@ -30,7 +30,7 @@ if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   docker build -t "$IMAGE" - >&2 <<'DOCKERFILE'
 FROM debian:bookworm-slim
 RUN apt-get update \
- && apt-get install -y --no-install-recommends openscad xvfb libgl1-mesa-dri make ca-certificates \
+ && apt-get install -y --no-install-recommends openscad xvfb xauth libgl1-mesa-dri make ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /w
 DOCKERFILE
