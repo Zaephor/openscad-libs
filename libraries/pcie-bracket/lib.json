@@ -1,6 +1,6 @@
 {
   "name": "pcie-bracket",
-  "description": "PCIe/PCI card I/O bracket (faceplate) geometry for low-profile (MD1/MD2) and full-height card classes — overall height, chassis-foot width, screw position, and card-length classes. See RESEARCH.md for per-value evidence and tiering.",
+  "description": "PCIe/PCI card I/O bracket (faceplate) geometry for the low-profile and full-height bracket classes — overall height, chassis-foot/flange width, sheet-metal thickness, and one structural-mount screw hole (selectable M3 or 6-32 clearance). Card-length/card-envelope data (e.g. MD1/MD2) is documented in RESEARCH.md as reference only and is not exposed by the shipped API. See RESEARCH.md for per-value evidence and tiering.",
   "version": "0.1.0",
   "sources": [
     "PCI-SIG \"Low Profile PCI\" Engineering Change Notice (ECN) to the PCI Local Bus Specification — named standard, not fetched (member-paywalled); backs low-profile bracket height (79.2mm), card height (64.41mm), and MD1/MD2 card-length classes [B] via secondary corroboration",

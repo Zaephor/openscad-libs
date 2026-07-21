@@ -1,9 +1,13 @@
 # pcie-bracket (library)
 
 PCIe/PCI card I/O bracket (faceplate) mechanical reference + printable
-geometry — low-profile (MD1/MD2) and full-height bracket/card envelopes,
-screw hole-stamp, and a support-free `pcie_bracket()` module (faceplate +
-chassis-mounting foot, with an optional card-slot cutout or solid blank).
+geometry — low-profile and full-height bracket classes (overall height,
+chassis-foot/flange width, sheet-metal thickness), a structural-mount screw
+hole (selectable M3 or 6-32 clearance), and a support-free `pcie_bracket()`
+module (faceplate + chassis-mounting foot, with an optional card-slot cutout
+or solid blank). Card-length/card-envelope data (e.g. MD1/MD2) is recorded in
+`RESEARCH.md` as reference only and is **not** part of the shipped API — see
+"Coverage" below.
 Units: **mm**.
 
 ## Import
@@ -18,16 +22,18 @@ use <pcie-bracket/pcie-bracket.scad>;
 |---|---|---|
 | `pcie_known_brackets()` | `["full-height", "low-profile"]` | valid `type` keys |
 | `pcie_known_hole_roles()` | `["structural-mount", "component-mount", "keep-out", "alignment"]` | full repo-standard hole-role vocab (only `"structural-mount"` is populated today) |
+| `pcie_known_screws()` | `["m3", "6-32"]` | valid `screw` keys, see `pcie_screw_clearance()` |
+| `pcie_screw_clearance(screw="m3")` | clearance dia, mm | `"m3"` = `3.4` (ISO 273 medium fit, inlined per repo precedent); `"6-32"` = `mobo_hole_dia()` from `libraries/motherboards/motherboards.scad` (`3.96mm`, single source of truth, not re-literaled). RESEARCH.md's "Screw" section: 6-32 UNC is the **more common** bracket retention screw, with M3 a named alternative — a plain M3/3.4mm hole will **not** reliably clear a 6-32 screw's ~3.5mm major diameter. `"m3"` stays the default here only for backward compatibility with existing call sites, not because it's the more common screw. |
 | `pcie_bracket_size(t)` | `[height, foot_width, thickness]` | see `pcie-bracket.scad` header for the field-order docs and for the two fields (tab length, card-edge offset) deliberately NOT carried as data fields |
-| `pcie_bracket_holes(t, role=undef)` | `[[x, y, role, dia], ...]` | one `"structural-mount"` screw hole per type; `role="all"` is a synonym for `undef`; an unknown `role` (not in the vocab) asserts, a known-but-absent role legally returns `[]` |
-| `pcie_bracket_holes_xy(t, role=undef)` | `[[x, y], ...]` | `pcie_bracket_holes()` coordinate pairs only |
+| `pcie_bracket_holes(t, role=undef, screw="m3")` | `[[x, y, role, dia], ...]` | one `"structural-mount"` screw hole per type; `role="all"` is a synonym for `undef`; an unknown `role` (not in the vocab) asserts, a known-but-absent role legally returns `[]`; `screw="m3"` (default) or `"6-32"` selects the hole's clearance dia via `pcie_screw_clearance()` |
+| `pcie_bracket_holes_xy(t, role=undef, screw="m3")` | `[[x, y], ...]` | `pcie_bracket_holes()` coordinate pairs only |
 
 ## Modules
 
 | Module | Signature | Notes |
 |---|---|---|
-| `pcie_bracket_mount_holes` | `(type, dia=-1, depth=6)` | vertical (Z-axis) hole-stamp for the structural-mount screw(s); `dia<0` uses each hole's own tabulated clearance diameter |
-| `pcie_bracket` | `(type, blank=false)` | faceplate + chassis-mounting foot, in the reference/installed frame (see header: `Y=0` back plane, `X=0` card-slot centerline, foot at `Z<0`, faceplate growing `+Z`); `blank=false` (default) cuts a card-slot window sized from this bracket's own envelope, `blank=true` ships a solid filler panel; the screw hole from `pcie_bracket_mount_holes()` is always cut |
+| `pcie_bracket_mount_holes` | `(type, dia=-1, depth=6, screw="m3")` | vertical (Z-axis) hole-stamp for the structural-mount screw(s); `dia<0` (default) uses each hole's own tabulated clearance diameter for the given `screw` (`"m3"` or `"6-32"`); `dia>=0` overrides with an explicit diameter (`screw` then ignored) |
+| `pcie_bracket` | `(type, blank=false, screw="m3")` | faceplate + chassis-mounting foot, in the reference/installed frame (see header: `Y=0` back plane, `X=0` card-slot centerline, foot at `Z<0`, faceplate growing `+Z`); `blank=false` (default) cuts a card-slot window sized from this bracket's own envelope, `blank=true` ships a solid filler panel; the screw hole from `pcie_bracket_mount_holes()` is always cut, with clearance selected by `screw` (`"m3"` default or `"6-32"`) |
 
 ## Print orientation
 
@@ -92,6 +98,11 @@ design-for-print/design choices tagged `//VERIFY` in `pcie-bracket.scad`, not
 - Both bracket classes (low-profile, full-height): overall height, shared
   foot/flange width, sheet-metal thickness gauge, one structural-mount screw
   hole (position is a reasoned placeholder, not sourced — see header).
+  Clearance dia is selectable via `screw="m3"` (default, `3.4mm`) or
+  `screw="6-32"` (`mobo_hole_dia()` = `3.96mm`, from `motherboards.scad`) —
+  see `pcie_screw_clearance()` above; 6-32 UNC is the more common bracket
+  screw per `RESEARCH.md`, so a caller with a 6-32 screw in hand must pass
+  `screw="6-32"` explicitly (the M3 default will not clear it).
 - `pcie_bracket()` models the faceplate + chassis-mounting foot and cuts
   either a card-slot window (sized from this bracket's own envelope, a
   design choice — NOT derived from `motherboards.scad`'s `setback`, a

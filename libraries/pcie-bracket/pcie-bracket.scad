@@ -53,6 +53,17 @@
 //     cantilever), so it is not a stress-riser the way a folded sheet would
 //     be.
 //
+// Finding 1 fix (final-review): pcie_bracket_holes()/pcie_bracket_mount_holes()/
+// pcie_bracket() now take an optional screw="m3"|"6-32" param (see
+// pcie_screw_clearance() below) so callers can get either thread family's
+// clearance from THIS library's own API. "m3" stays the default for
+// backward compatibility with existing 2-arg call sites (this repo's tests
+// among them) -- NOT because it's the more common bracket screw; RESEARCH.md's
+// "Screw" section is explicit that 6-32 UNC is more common, with M3 as a
+// named alternative (e.g. Lian-Li). A plain M3 hole will NOT reliably clear a
+// 6-32 screw's ~3.5mm major diameter -- pass screw="6-32" when that's the
+// hardware in hand.
+//
 // Two Task-3 print-design constants below are NOT researched/tabulated data
 // (RESEARCH.md's gap list, and the pcie-bracket.scad header's own note above
 // pcie_bracket_size()) -- they are this task's own reasoned choices, tagged
@@ -70,6 +81,13 @@
 //                 screws to the case's expansion-slot rail); same figure for
 //                 both bracket classes. [B]
 //   thickness   — sheet-metal gauge. [C] //VERIFY
+// NOTE (final-review fix, Finding 2): the table above and this whole file
+// expose overall height, foot/flange width, thickness, and one
+// structural-mount screw hole ONLY -- no card-length/card-envelope data
+// (MD1/MD2 etc.) is carried anywhere in this .scad; RESEARCH.md's card
+// height/length figures are reference/context, not shipped API. lib.json
+// and README.md were corrected to stop claiming "card-length classes"/
+// "card envelopes" as coverage.
 // Two fields from the plan's original skeleton row shape are DELIBERATELY
 // OMITTED from this table (not silently guessed, not silently borrowed from
 // another library) — see RESEARCH.md:
@@ -84,21 +102,42 @@
 //     not card-edge-to-bracket) — copying it here would misrepresent someone
 //     else's measurement as this bracket's own data, so it is left out of
 //     the table entirely rather than faked or mislabeled.
+//
+// use'd for pcie_screw_clearance("6-32") below (mobo_hole_dia()) -- single
+// source of truth, per CLAUDE.local.md, rather than re-literaling 3.96.
+use <motherboards/motherboards.scad>;
+
 $fn = 48;
 
 /* [Data] */
 
-// M3 screw clearance — ISO 273 medium-fit series, single source of truth
-// (repo convention: rack19_screw_clearance("M3") in libraries/rack19/rack19.scad's
-// own comment "M3->3.4", inlined the same way in libraries/drives/RESEARCH.md).
-// No shared m3_clearance() accessor exists yet repo-wide; every consumer to
-// date inlines 3.4, so pcie-bracket does the same rather than invent a third
-// value. [B] ISO 273 (community sources agree 6-32 UNC is more common for
-// PCI/PCIe brackets, with M3 as a named alternative — RESEARCH.md "Screw"
-// section; this repo has no PCIe-bracket-specific screw caliper measurement,
-// so the established M3-clearance literal is used, matching the plan brief's
-// own skeleton choice).
-function _pcie_screw_clear() = 3.4;
+// Screw clearance dia by thread family, mm (repo convention: mirrors
+// rack19_screw_clearance(thread) in libraries/rack19/rack19.scad). RESEARCH.md's
+// "Screw" section: 6-32 UNC is the MORE COMMON bracket retention screw
+// (most ATX/US-market cases), with M3 a named alternative (e.g. Lian-Li) —
+// "record both, don't force a single winner." Both are exposed here so a
+// caller can get either clearance from this library's own API (final-review
+// Finding 1 fix — a plain 3.4mm/M3 hole will NOT reliably clear a 6-32
+// screw's ~3.5mm major diameter).
+//   "m3"   — [B] ISO 273 medium-fit series ("M3->3.4"), inlined per repo
+//            precedent (rack19.scad's own comment; libraries/drives/RESEARCH.md
+//            "3.4 = M3 clearance"). No shared m3_clearance() accessor exists
+//            yet repo-wide; every consumer to date inlines 3.4, so
+//            pcie-bracket does the same rather than invent a third value.
+//            Stays the DEFAULT screw here for backward compatibility with
+//            existing 2-arg pcie_bracket_holes(t, role) call sites — NOT
+//            because it's the more common screw (6-32 is).
+//   "6-32" — #6-32 UNC clearance, NOT re-literaled: calls this repo's own
+//            `mobo_hole_dia()` (libraries/motherboards/motherboards.scad),
+//            tagged [B] there for #6-32 standoff/screw clearance
+//            (3.96mm / Ø.156in) — single source of truth per
+//            CLAUDE.local.md, rather than copying the number here.
+function pcie_known_screws() = ["m3", "6-32"];
+function pcie_screw_clearance(screw = "m3") =
+    screw == "m3"   ? 3.4 :
+    screw == "6-32" ? mobo_hole_dia() :
+    assert(false, str("pcie-bracket: unknown screw type '", screw,
+                       "' (expected one of ", pcie_known_screws(), ")"));
 
 // Flange/foot width — shared by both bracket classes. [B] accio.com
 // (attributed to PCI-SIG), corroborated by flykantech.com's "~19mm"
@@ -159,14 +198,19 @@ function pcie_bracket_size(t) = [_pcie_row(t)[1], _pcie_row(t)[2], _pcie_row(t)[
 // (see _pcie_screw_y_fh()/_pcie_screw_y_lp() above); role vocab is the full
 // repo-standard list even though only "structural-mount" is populated
 // (parity with the sbc/drives hole-role sweep — see drives.scad precedent).
-function pcie_bracket_holes(t, role = undef) =
-    let (p = _pcie_row(t)[4], all = [[p[0], p[1], "structural-mount", _pcie_screw_clear()]])
+// screw="m3" (default, backward-compatible with existing 2-arg call sites)
+// or "6-32" selects the hole's clearance dia via pcie_screw_clearance()
+// above — see that function's comment for why 6-32 is actually the more
+// common bracket screw despite not being the default here.
+function pcie_bracket_holes(t, role = undef, screw = "m3") =
+    let (p = _pcie_row(t)[4], all = [[p[0], p[1], "structural-mount", pcie_screw_clearance(screw)]])
     role == undef || role == "all" ? all
     : assert(len([for (r = pcie_known_hole_roles()) if (r == role) r]) > 0,
              str("pcie-bracket: unknown role '", role, "'"))
       [for (h = all) if (h[2] == role) h];
 
-function pcie_bracket_holes_xy(t, role = undef) = [for (h = pcie_bracket_holes(t, role)) [h[0], h[1]]];
+function pcie_bracket_holes_xy(t, role = undef, screw = "m3") =
+    [for (h = pcie_bracket_holes(t, role, screw)) [h[0], h[1]]];
 
 /* [Geometry] */
 
@@ -207,8 +251,12 @@ function _pcie_z_eps() = 0.01;
 // geometry-frame note above), translate(...,-depth) + height depth+0.02
 // fully perforates foot material at Z=[-thickness,0] when depth=thickness+1
 // (the default call site below), with epsilon clearance past both faces.
-module pcie_bracket_mount_holes(type, dia = -1, depth = 6) {
-    for (h = pcie_bracket_holes(type)) {
+// dia=-1 (default) uses each hole's own tabulated clearance for the given
+// screw type ("m3" default, "6-32" via pcie_screw_clearance("6-32") ->
+// mobo_hole_dia()); pass dia>=0 to override with an explicit diameter
+// instead (screw is then ignored).
+module pcie_bracket_mount_holes(type, dia = -1, depth = 6, screw = "m3") {
+    for (h = pcie_bracket_holes(type, screw = screw)) {
         r = (dia < 0 ? h[3] : dia) / 2;
         translate([h[0], h[1], -depth]) cylinder(h = depth + 0.02, r = r);
     }
@@ -220,7 +268,10 @@ module pcie_bracket_mount_holes(type, dia = -1, depth = 6) {
 // header for the design-for-print reasoning).
 // blank=true ships a solid faceplate (no card-slot cutout) -- e.g. a filler
 // panel for an unused slot; blank=false (default) cuts the card-slot window.
-module pcie_bracket(type, blank = false) {
+// screw="m3" (default) or "6-32" -- forwarded to pcie_bracket_mount_holes()
+// -- selects the structural-mount screw hole's clearance dia; see
+// pcie_screw_clearance() above.
+module pcie_bracket(type, blank = false, screw = "m3") {
     sz = pcie_bracket_size(type); // [height, foot_width, thickness]
     h = sz[0];
     fw = sz[1];
@@ -249,6 +300,6 @@ module pcie_bracket(type, blank = false) {
             translate([-cw / 2, -1, cz]) cube([cw, th + 2, ch]);
         }
         // Screw hole through the foot (Z axis, per pcie_bracket_mount_holes()).
-        pcie_bracket_mount_holes(type, depth = th + 1);
+        pcie_bracket_mount_holes(type, depth = th + 1, screw = screw);
     }
 }

@@ -30,4 +30,18 @@ assert(pcie_bracket_holes("full-height", "keep-out") == [], "keep-out is a legal
 // holes_xy mirrors holes() coordinate pairs only.
 assert(pcie_bracket_holes_xy("full-height") == [for (h = hf) [h[0], h[1]]], "holes_xy matches holes");
 
+// Screw-type option (final-review Finding 1): "m3" stays the default (backward
+// compatible with the 2-arg call sites above); "6-32" clearance must come from
+// this repo's own motherboards.scad accessor (mobo_hole_dia() == 3.96), never
+// a re-literaled number, and the M3 default must not silently equal it.
+assert(pcie_known_screws() == ["m3", "6-32"], "screw vocab");
+assert(pcie_screw_clearance() == 3.4, "default screw clearance is m3/3.4");
+assert(pcie_screw_clearance("m3") == 3.4, "m3 clearance");
+assert(pcie_screw_clearance("6-32") == 3.96, "6-32 clearance == motherboards.scad's mobo_hole_dia()");
+hf_632 = pcie_bracket_holes("full-height", screw = "6-32");
+assert(hf_632[0][3] == 3.96, "FH hole dia switches to 6-32 clearance");
+assert(hf_632[0][0] == hf[0][0] && hf_632[0][1] == hf[0][1], "screw choice does not move the hole position");
+assert(pcie_bracket_holes("full-height", role = "structural-mount", screw = "6-32")[0][3] == 3.96,
+       "role + screw compose correctly");
+
 echo("pcie-bracket_test OK");
