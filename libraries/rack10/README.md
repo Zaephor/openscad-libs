@@ -27,6 +27,10 @@ accepted dimensions."* So `[A]` is not reachable for anything in this
 library; the ceiling is `[B]`. See `RESEARCH.md` for the full evidence log
 and fetch-attempt history.
 
+See [`ECOSYSTEM.md`](ECOSYSTEM.md) for the item-type / interconnection /
+compose map — how the panel, holes, placeholders, and consumers chain
+together, and how rack10 relates to `rack19`.
+
 ![rack10 placeholder render](renders/rack10-placeholder.png)
 
 ## Import
@@ -101,6 +105,11 @@ datum device-bottom-at-`Z=0` (place your device at `Z=0` and call this
 alongside it for rack context) — the caller applies `%` for a background
 fit-check preview; `device_u`/`pad_u` are integer U only (fractional/0.5U
 is a future enhancement, not supported here).
+
+See [`ECOSYSTEM.md`](ECOSYSTEM.md) for how the panel + holes idiom and the
+fit-check placeholders compose into a real 1U faceplate (the keystone-faceplate
+and bpir4 chains), and for the keystone-meets-rack10-only-at-the-project-layer
+note.
 
 ## Reference
 
