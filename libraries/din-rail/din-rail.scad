@@ -71,3 +71,113 @@ module din_rail_profile(type, length = 100) {
         translate([0, w - t - lip_r, 0])  cube([length, lip_r, lip_h]);
     }
 }
+
+/* [Clip] — support-free TS35 snap clip. */
+// din_clip_catch_span(type, clearance): outer-tip-to-outer-tip Y span of the two
+// catch barbs the clip presents to the rail. The modeled rail's retention
+// feature is an INWARD return lip (din_rail_lip), so the clip catches from
+// INSIDE the hat channel: the span must exceed the gap between the two lips'
+// inner edges (din_rail_size[0] - 2*t - 2*lip_return) so each barb overlaps its
+// lip, yet stay under the gap between the leg inner faces (…- 2*t) so the barb
+// clears the leg on entry. Single source of truth for the clip's catch width
+// and the mate assert in tests/din-rail_test.scad.
+function din_clip_catch_span(type, clearance = 0.4) =
+    din_rail_size(type)[0] - 2 * din_rail_size(type)[2] - 2 * clearance;
+
+// din_clip(): printable snap clip that mates with din_rail_profile(type).
+//
+// PRINT ORIENTATION (support-free, Bambu P1S / PETG, no supports): the flat
+// BACK PLATE lies on the bed and the two catch prongs point straight UP (+Z).
+// Every face is then support-free by construction: the back plate is the first
+// layer; the prongs are vertical walls (0° overhang); each catch barb is a
+// SYMMETRIC 45° triangular wedge, so both its lead-in (upper) face and its
+// retention (under) face sit at 45° — the steepest self-supporting angle for
+// PETG (design-for-print: overhangs-supports.md / house-rules.md). No bridges,
+// no undercut steeper than 45°.
+//
+// MOUNTING FACE: the OUTER face of the back plate (the -Z face, farthest from
+// the rail) is the face that BONDS to the consumer's part — glue it, or union
+// din_clip() into a host body so this face is co-planar with the host's
+// mounting surface. The +Z (inner) face of the back plate seats flush against
+// the rail's open front face.
+//
+// ENGAGEMENT: an inner-grip catch (see din_clip_catch_span). Two prongs enter
+// the hat channel; each carries an outward barb that hooks the rail's inward
+// return lip (din_rail_lip). One prong is a rigid, gusset-braced FIXED hook;
+// the other is an unbraced FLEXING cantilever that deflects inward to snap over
+// its lip and springs back — the standard fixed-hook-one-edge /
+// flexing-latch-other-edge DIN pattern. Physical snap tension is bench-tuned by
+// the caller via `clearance`, `wall`, and `flex_len` (NOT validated here — the
+// CI gate is geometric engagement only; see README "Coverage").
+//
+// Params:
+//   type      rail key (din_known_rails()).
+//   width     clip extent along the rail length (X), mm.
+//   clearance per-side running gap between barb tip and leg inner face, mm
+//             (free/running band; larger = looser snap).
+//   wall      prong / back-plate thickness, mm.
+//   flex_len  Z height of the flexing cantilever from the back plate to the
+//             barb top; undef => auto (just tall enough to carry the barb).
+//             Raise it (deep ts35-15 channel has room) for a softer snap.
+//   lead_in   extra prong-wall height above the barb, a straight guide lip
+//             that funnels the rail into the mouth, mm. (The barb's own lower
+//             45° face is the actual snap lead-in.)
+module din_clip(type = "ts35-7.5", width = 15, clearance = 0.4,
+                wall = 2.4, flex_len = undef, lead_in = 1.0) {
+    sz  = din_rail_size(type);        // [w, d, t, pitch]
+    w = sz[0]; d = sz[1]; t = sz[2];
+    lp = din_rail_lip(type);          // [lip_h, lip_return]
+    lip_h = lp[0]; lip_r = lp[1];
+
+    // Barb geometry (symmetric 45° wedge => support-free both faces).
+    apex_y = w / 2 - t - clearance;   // outer barb tip: just inside the leg face
+    reach  = lip_r + clearance;       // barb protrusion from the prong outer face
+    prong_out = apex_y - reach;       // prong outer face Y
+    apex_z  = lip_h;                  // catch tip at the lip TOP plane (hooks over the lip)
+    barb_lo = apex_z - reach;         // barb inner-base bottom (45°; may dip <0 into back plate)
+    barb_hi = apex_z + reach;         // barb inner-base top (45° lead-in face down to apex)
+    prong_h = barb_hi + lead_in;      // prong rises to carry barb + guide-lip mouth
+
+    // Keep the prong under the rail's top bridge (Z in [d-t, d]) — no clip-thru.
+    max_h = d - t - clearance;
+    assert(prong_h <= max_h,
+        str("din_clip: prong (", prong_h, "mm) exceeds channel depth for '",
+            type, "' (", max_h, "mm) — reduce lead_in/clearance"));
+
+    flen = is_undef(flex_len) ? prong_h : min(flex_len, max_h);
+
+    back_y = w / 2 + 2;               // back plate half-width (past the rail edge)
+
+    // One prong: vertical wall + outward 45° catch barb, built at +Y and
+    // mirrored for -Y. The barb's LOWER 45° face is the insertion lead-in (the
+    // rail lip cams on it); its UPPER 45° face is the retention catch. The
+    // `lead_in` param raises the prong wall above the barb as a guide lip that
+    // funnels the rail into the mouth. `braced` adds an inner 45° gusset
+    // (=> rigid fixed hook); unbraced => flexing cantilever latch. `h` is the
+    // prong height (barb top + lead_in).
+    module _prong(braced, h) {
+        // vertical prong wall, rooted on the back plate top (Z=0)
+        translate([-width/2, prong_out - wall, 0]) cube([width, wall, h]);
+        // outward catch barb: symmetric 45° wedge, apex at the lip top plane
+        // (apex_y, apex_z). Underside (apex->barb_lo) is the retention catch that
+        // hooks over the lip; upper face (apex->barb_hi) is the insertion lead-in.
+        // Fully supported from below by its own triangle (no floating edge).
+        rotate([0, 90, 0]) translate([0, 0, -width/2]) linear_extrude(width)
+            polygon([[-barb_lo, prong_out], [-apex_z, apex_y], [-barb_hi, prong_out]]);
+        // fixed hook: inner 45° gusset bracing the prong against inward flex
+        if (braced)
+            rotate([0, 90, 0]) translate([0, 0, -width/2]) linear_extrude(width)
+                polygon([[0, prong_out - wall], [0, prong_out - wall - h],
+                         [-h, prong_out - wall]]);
+    }
+
+    union() {
+        // back plate: flat on the bed (mounting face at Z=-wall), spanning the
+        // rail front. Seats against the rail front plane at Z=0.
+        translate([-width/2, -back_y, -wall]) cube([width, 2 * back_y, wall]);
+        // +Y prong = rigid FIXED hook (gusset-braced)
+        _prong(true, prong_h);
+        // -Y prong = FLEXING cantilever latch (unbraced), height = flen
+        mirror([0, 1, 0]) _prong(false, flen);
+    }
+}
