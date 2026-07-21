@@ -25,3 +25,15 @@
 - `make render P=<project>` — refresh renders (CI also regenerates on `main`).
 - `make test` — tooling test suite.
 - If you add or remove a library or project — or materially change a library's public API or Sources — update the top-level `README.md` Libraries/Projects lists and that library's own `README.md` in the same change. (The top README is the repo's index; keep it in sync so it doesn't drift.)
+
+### Rendering locally without a GPU (dind)
+
+`make render` uses OpenSCAD's GL preview and needs an X/GL stack; it segfaults in
+GL-less sandboxes. To render there, use the dind sidecar:
+
+    make render-dind P=<project>     # one project
+    make render-dind-all             # every project
+
+This runs the same pipeline inside a Docker container (OpenSCAD 2021.01 + xvfb +
+software GL), matching CI output. CI (`render.yml`) renders natively with its own
+xvfb and does not use this path.
