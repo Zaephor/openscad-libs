@@ -15,6 +15,11 @@ TARGET="${1:-}"
 
 [ -n "$TARGET" ] || { echo "Usage: render-dind.sh <project>|--all" >&2; exit 2; }
 
+if [ "$TARGET" != "--all" ] && ! [[ "$TARGET" =~ ^[A-Za-z0-9_-]+$ ]]; then
+  echo "render-dind: invalid project name '$TARGET' (expected --all or [A-Za-z0-9_-]+)" >&2
+  exit 2
+fi
+
 command -v docker >/dev/null 2>&1 || {
   echo "render-dind: docker not found — render via CI or a display machine." >&2; exit 3; }
 docker version >/dev/null 2>&1 || {

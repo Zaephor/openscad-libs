@@ -46,5 +46,12 @@ ck "unreachable daemon exits 3"    "[ $rc -eq 3 ]"
 PATH="$tmp/bin:$PATH" bash "$ROOT/scripts/render-dind.sh" >/dev/null 2>&1
 ck "missing arg exits 2"           "[ $? -eq 2 ]"
 
+# 5) shell-metacharacter target rejected before any docker interaction
+: > "$log"
+PATH="$tmp/bin:$PATH" bash "$ROOT/scripts/render-dind.sh" 'foo;bar' >/dev/null 2>&1
+rc=$?
+ck "injection-shaped target exits 2"   "[ $rc -eq 2 ]"
+ck "rejected before docker invoked"    "[ ! -s '$log' ]"
+
 echo "-- $pass passed, $fail failed --"
 [ "$fail" -eq 0 ]
