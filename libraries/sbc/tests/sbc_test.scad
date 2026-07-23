@@ -36,6 +36,12 @@ function _near(a, b, tol = 0.6) =
                   len([for (i = [0:len(a)-1]) if (!(abs(a[i]-b[i]) <= tol)) 1]) == 0)
                : abs(a - b) <= tol;
 _lateral_edges = ["xmin", "xmax", "ymin", "ymax"];
+// bpir4 dip_1 (Task 2): caliper-confirmed to physically overhang the board's
+// xmax edge by 2mm ("+2mm overhang off x=148") — a real, deliberately-modeled
+// exception to the generic within-envelope check below, not a data bug.
+_overhang_exceptions = [["bpir4", "dip_1"]];
+function _is_overhang_exception(b, name) =
+    len([for (x = _overhang_exceptions) if (x[0] == b && x[1] == name) x]) > 0;
 module _check_connectors(b) {
     sz = sbc_size(b);
     for (c = sbc_connectors(b)) {
@@ -49,9 +55,10 @@ module _check_connectors(b) {
                   : false;
             assert(touch, str(b, " connector ", c[0], " must touch edge ", e));
         }
-        assert(p[0] >= -0.6 && p[0] + s[0] <= sz[0] + 0.6 &&
-               p[1] >= -0.6 && p[1] + s[1] <= sz[1] + 0.6,
-               str(b, " connector ", c[0], " within envelope"));
+        if (!_is_overhang_exception(b, c[0]))
+            assert(p[0] >= -0.6 && p[0] + s[0] <= sz[0] + 0.6 &&
+                   p[1] >= -0.6 && p[1] + s[1] <= sz[1] + 0.6,
+                   str(b, " connector ", c[0], " within envelope"));
     }
 }
 for (b = sbc_known_boards()) _check_connectors(b);
@@ -71,11 +78,71 @@ for (b = sbc_known_boards())
 // String prefix helper for connector name checks.
 function _starts(s, p) = len(s) >= len(p) && [for (i=[0:len(p)-1]) s[i]] == [for (i=[0:len(p)-1]) p[i]];
 
+// --- Task 2: "bottom" edge convention ---
+// sbc_known_edges() must enumerate the full vocabulary including "bottom"
+// (added Task 2 for underside-mounted sockets: [x,y] on board bottom, z=0 at
+// the board-bottom plane, h = downward protrusion).
+assert(len([for (e = sbc_known_edges()) if (e == "bottom") e]) == 1,
+    "sbc_known_edges includes bottom");
+assert(len([for (e = sbc_known_edges()) if (e == "top") e]) == 1,
+    "sbc_known_edges includes top");
+
 // --- BPI-R4 ---
 assert(sbc_size("bpir4") == [148.0, 100.5], "bpir4 size");
 // The 2xSFP + 4xRJ45 variant: exactly 2 sfp_* and 4 rj45_* connectors.
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "sfp"))  1]) == 2, "bpir4 has 2 sfp");
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) 1]) == 4, "bpir4 has 4 rj45");
+// Thickness caliper-revised Task 2: 1.6 -> 1.4.
+assert(sbc_thickness("bpir4") == 1.4, "bpir4 thickness caliper-revised Task 2");
+
+// --- Task 2: new bpir4 components ---
+assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "sim_")) 1]) == 3,
+    "bpir4 has 3 sim_2ff (reference-only)");
+assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "led_")) 1]) == 7,
+    "bpir4 has 7 LEDs");
+for (n = ["reset_1", "wps_1", "microsd_1", "dip_1", "gpio26_1", "m2modem_1"])
+    assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,
+        str("bpir4 has exactly one ", n));
+// sim_2ff/microsd bodies sourced from connectors (SSOT), not literals.
+assert(sbc_connector("bpir4", "sim_1")[2] == connector_size("sim_2ff"),
+    "bpir4 sim_1 body sourced from connectors sim_2ff");
+assert(sbc_connector("bpir4", "microsd_1")[2] == connector_size("microsd"),
+    "bpir4 microsd_1 body sourced from connectors microsd");
+assert(sbc_connector("bpir4", "m2modem_1")[2] == connector_size("m2_key_b"),
+    "bpir4 m2modem_1 body sourced from connectors m2_key_b");
+// dip_1 deliberately overhangs the board's xmax edge by 2mm (caliper-confirmed);
+// gpio26_1 is NOT the Pi-family "gpio" name (distinct 26-pin/13-col part).
+assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == "gpio") 1]) == 0,
+    "bpir4 has no Pi-style 40-pin gpio (gpio26_1 is a distinct, smaller part)");
+_dip = sbc_connector("bpir4", "dip_1");
+assert(_dip[1][0] + _dip[2][0] == 150.0, "bpir4 dip_1 overhangs xmax by 2mm as caliper-specified");
+
+// --- Task 2: underside ("bottom" edge) sockets ---
+_bpr_bottom = [for (c = sbc_connectors("bpir4")) if (c[3] == "bottom") c];
+assert(len(_bpr_bottom) == 3, "bpir4 has 3 bottom-face sockets (2x mpcie + m2_ssd)");
+// Bottom convention: z=0 at the board-bottom plane for every bottom connector.
+for (c = _bpr_bottom)
+    assert(c[1][2] == 0, str("bpir4 ", c[0], " bottom connector z must be 0 (board-bottom plane)"));
+for (n = ["mpcie_1", "mpcie_2", "m2_ssd_1"])
+    assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,
+        str("bpir4 has exactly one ", n));
+assert(sbc_connector("bpir4", "mpcie_1")[2] == connector_size("mpcie"),
+    "bpir4 mpcie_1 body sourced from connectors mpcie");
+assert(sbc_connector("bpir4", "mpcie_2")[2] == connector_size("mpcie"),
+    "bpir4 mpcie_2 body sourced from connectors mpcie");
+assert(sbc_connector("bpir4", "m2_ssd_1")[2] == connector_size("m2_key_m"),
+    "bpir4 m2_ssd_1 body sourced from connectors m2_key_m");
+// mpcie_1/mpcie_2 share the same (mirrored) x — two parallel underside slots.
+assert(sbc_connector("bpir4", "mpcie_1")[1][0] == sbc_connector("bpir4", "mpcie_2")[1][0],
+    "bpir4 mpcie_1/mpcie_2 share the same x column");
+// "a bottom connector's protrusion reads correctly" (Task 2 TDD ask): the
+// placeholder cube for a "bottom" connector must occupy z in [-h, 0], i.e.
+// its far (most-negative) corner is exactly -h below the board-bottom plane
+// — verify the general formula sbc_placeholder() uses (translate z by
+// c[1][2]-c[2][2], i.e. 0-h) independent of any single connector's own values.
+_m2ssd = sbc_connector("bpir4", "m2_ssd_1");
+assert(_m2ssd[1][2] - _m2ssd[2][2] == -_m2ssd[2][2],
+    "bpir4 m2_ssd_1 bottom protrusion far corner is exactly -h (z=0 minus h)");
 
 // bpir4 RJ45 is ONE physical 4-port ganged block (WAN + 3x LAN), not a lone WAN
 // jack + separate 3-port block. => 4 ports, uniform width, constant pitch.
@@ -166,9 +233,11 @@ assert(sbc_connector("pi3b", "usb2_2")[2] == [17, 9, 16.0],
     "pi3b usb2_2 (error verdict) stays literal");
 assert(sbc_connector("pi4b", "usb3")[2] == [17, 18.75, 16.0],
     "pi4b usb3 (different, marginal) stays literal");
-assert(sbc_connector("bpir4", "usb_1")[2] == [8.89, 23.16, 13.5],
-    "bpir4 usb_1 (different, weak) stays literal");
-assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 53.98, 13.4],
-    "bpir4 sfp_1 (no-peer) stays literal");
+// Task 2: h revised from caliper bottom->top figures (thickness now 1.4) —
+// w/d unchanged, still literal (no catalog peer), just the height reconciled.
+assert(sbc_connector("bpir4", "usb_1")[2] == [8.89, 23.16, 14.1],
+    "bpir4 usb_1 (different, weak) stays literal, h caliper-revised Task 2");
+assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 53.98, 10.4],
+    "bpir4 sfp_1 (no-peer) stays literal, h caliper-revised Task 2");
 assert(sbc_connector("pi3b", "av_jack")[2] == [6, 6, 6.0],
     "pi3b av_jack (no-peer) stays literal");

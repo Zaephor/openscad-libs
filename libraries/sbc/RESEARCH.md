@@ -1023,6 +1023,267 @@ including all 7 `M2`-adjacent holes and both larger-dia holes — confirmed
 none of the `M2`-proximate holes or either larger-dia hole ended up
 `structural-mount`.
 
+### Task 2 caliper revision — bottom-face convention + bpir4 update
+
+A physical BPI-R4 board (the hardware owner's own unit) was caliper-measured
+directly, superseding several DXF/assembly-drawing-derived figures above with
+a stronger [B] source (a direct measurement of the real part beats a pixel
+read of a vendor drawing). This section documents every value the caliper
+pass changed, plus the new "bottom" edge convention it required.
+
+**Thickness**: 1.6mm [C] nominal placeholder -> **1.4mm [B] caliper**. This
+changes `z` for every existing top-face/lateral bpir4 connector (all were
+`z = sbc_thickness("bpir4")`, now 1.4 not 1.6) and feeds the height
+reconciliation below.
+
+**Bottom-face connector convention (new).** `sbc_known_edges()` now includes
+`"bottom"` alongside the existing `"xmin"/"xmax"/"ymin"/"ymax"/"top"`. For a
+`"bottom"` connector: `[x,y]` is still the board-frame position, but `z=0`
+sits at the board's BOTTOM plane (not top), and `h` is a downward protrusion
+— the component occupies `z` in `[-h, 0]`, the mirror image of a `"top"`
+connector (which occupies `[thickness, thickness+h]`). `sbc_placeholder()`
+special-cases `c[3]=="bottom"` to translate the cube down by its own height
+before growing +Z, so the geometry actually lands in `[-h,0]` rather than
+growing the wrong direction into the board. `sbc_port_cutout()` gained a
+symmetric `"bottom"` branch (mirroring the existing `"top"` branch, extruding
+further -Z with the same `SBC_OVERLAP` convention) so a future consumer isn't
+blocked by the previous `assert(false, ...)` catch-all — no current consumer
+calls it with `edge="bottom"` today (`sbc_faceplate_cutouts` filters by
+`c[3]==edge` and nothing in this repo passes `"bottom"` to it), but the
+generic single-connector cutout module now supports it directly rather than
+leaving it as a deliberate footgun-guard, since a bottom-face part is a
+completely reasonable thing for a future chassis-floor-cutout consumer to
+want (e.g. a later chassis-geometry task needing to expose an M.2/mPCIe slot
+from underneath).
+
+**Front-connector height reconciliation.** The caliper gave two figures per
+connector: the component's own body height ("alone") and the total height
+measured from the board's BOTTOM face to the top of the connector
+("bottom->top"). Since this library's connector model places `z=thickness`
+(top face) and grows `h` in `+Z`, the modeled top-of-connector is
+`thickness+h`; for the faceplate cutout to actually reach the connector's
+true physical top, `h` must equal `(bottom->top) - thickness`, not the
+"alone" figure (which isn't board-bottom-referenced and disagrees with
+`bottom->top` by ~1mm in every case — plausible measurement-datum slop
+between "this part's own spec height" and "total stack height as caliper'd
+on the assembled board", not treated as an error, just not the number to
+store):
+
+| connector | alone | bottom->top | thickness | h = bottom->top − thickness | prior h | action |
+|---|---|---|---|---|---|---|
+| `usb_1` (USB3) | 13.0 | 15.5 | 1.4 | 14.1 | 13.5 [C] | **replaced**, tier -> [B] caliper |
+| `sfp_1`/`sfp_2` | 9.5 | 11.8 | 1.4 | 10.4 | 13.4 [C] | **replaced**, tier -> [B] caliper |
+| `rj45_1..4` | 13.2 | 15.1 | 1.4 | 13.7 | 13.60 [A] datasheet | **kept** (see below) |
+
+`rj45`'s caliper-implied h (13.7) is within 0.1mm of the existing exact-part
+datasheet figure (13.60, `HRJC-M03C01C10cNL.pdf`) already stored on that row
+— read as corroboration, not a correction. Per this repo's value-confidence
+rule (never downgrade a tier without cause), the [A] datasheet figure is kept
+unchanged; the caliper cross-check is noted here rather than used to
+overwrite a higher-tier value that already agrees within noise.
+
+**RJ45 4-port block overall envelope (58.3mm x 20.9mm caliper).** This is the
+*outer* physical envelope of the whole ganged block, not a new per-port
+literal — per-port pitch/width (13.98mm, exact datasheet) and depth
+(21.45mm) are unchanged; the plan's own instruction was explicit that this
+figure is corroborating context, not a schema change. It DOES narrow (does
+not fully resolve) the "unreconciled gap" flagged earlier in this file
+(the pure pitch-math block end at 118.53 vs. the drawing-detector-confirmed
+right edge at 122.77): `block_x0 (62.61) + 58.3 = 120.91` sits between the
+two prior estimates, a third independent data point landing in the
+plausible middle rather than at either extreme. Depth (20.9mm caliper vs.
+21.45mm stored) agrees within 0.55mm, consistent with the stored depth. No
+row values changed from this figure; it's recorded here as the resolving
+context for a previously-open gap.
+
+**New bpir4 components (Task 2).** Bodies sourced from connectors' T1 types
+(`sim_2ff`, `microsd`, `m2_key_b`) per SSOT wherever a type fits; literal
+board-specific values (with why-comments in sbc.scad) where none does
+(reset/WPS buttons, LEDs, DIP switch, the 26-pin GPIO header — connectors.scad
+is out of scope/closed for this task per Task 1).
+
+- **`reset_1`/`wps_1`** (rear-actuated buttons, ymax): x/w caliper [B]
+  (8.3/18.3, both w=7.5); d/h have no caliper figure (only x+width were
+  given) — generic small tactile-switch keep-out estimate, [C]//VERIFY.
+- **`sim_1`/`sim_2`/`sim_3`** (mini-SIM 2FF trays, ymax): explicitly flagged
+  **reference-only** by the caliper pass itself (weaker confidence than the
+  rest of this data) — kept as real connector rows per the brief's explicit
+  instruction to add them, but flagged //VERIFY throughout. Caliper w=15
+  matches `connector_size("sim_2ff")`'s own w=15 exactly — corroborates the
+  T1 type as the right body to source from.
+- **`microsd_1`** (ymax): caliper x=81.8 [B]; caliper's own "w=14.6" figure
+  matches `connector_size("microsd")`'s **depth** field (14.5, within
+  0.1mm) much more closely than its width field (16.44, off by 1.84mm) —
+  read as an axis-labeling ambiguity in the caliper note (which axis
+  "width" refers to isn't stated in the raw reading), resolved by trusting
+  the full 3-axis datasheet-sourced catalog type over a single
+  ambiguous-axis figure rather than inventing a rotated literal to
+  force-fit one axis. Per SSOT, body comes from `connector_size("microsd")`
+  unchanged.
+- **`led_1`..`led_7`** (ymax): x0=99.2, pitch=6.4, w=3.2 each, all caliper
+  [B]; block spans x=[99.2,140.8] (41.6mm), consistent with the caliper's
+  own "~40wide" approximation. No connector type fits a point-indicator LED
+  (connectors.scad's catalog is panel/socket bodies, not indicator lights) —
+  board-literal with a why-comment. d/h have no caliper figure — generic
+  visible-lens-protrusion estimate, [C]//VERIFY.
+- **`dip_1`** (DIP switch bank, "top" face — actuated from above, not a
+  lateral edge, despite sitting near the right/xmax wall): x reconstructed
+  from the caliper's own explicit overhang note ("+2mm overhang off x=148"):
+  `x_max = 150`, `x_min = 150-10.4 = 139.6` — this connector is a
+  **deliberate, caliper-confirmed exception** to the generic
+  within-board-envelope test check (see `sbc_test.scad`'s
+  `_overhang_exceptions`), not a data error. y computed from "48.6-rear"
+  read as *distance from the rear wall to the box's own rear-facing edge*
+  (the same directional convention as the X-axis "distance from left wall
+  to the box's own left-facing edge" used everywhere else in this row):
+  `y_max = 100.5-48.6 = 51.9`, `y_min = 51.9-6.5 = 45.4`. This
+  near-vs-far-edge reading is **not disambiguated by the caliper note
+  itself** — flagged //VERIFY for the interpretation, though x/y/w/d
+  themselves are [B] caliper. h (2.5mm, generic slide-switch actuator
+  height) has no caliper figure, [C]//VERIFY.
+- **`gpio26_1`** (26-pin/2.54mm header, "top" face near the right wall):
+  distinct from the Pi-family 40-pin `"gpio"` name/type (this is 13 columns,
+  not 20 — NOT Pi-HAT-compatible) to avoid a misleading name collision.
+  w=13*2.54=33.02 (13-column pin-field span, the same `nCols*pitch`
+  convention `gpio_2x20` itself uses), d=2*2.54=5.08 (2-row spacing,
+  identical across every 2.54mm header on this board). h=6.0 reused from
+  `uart_1`'s own generic 2.54mm-pitch pin-header datasheet
+  (`DS/Header_PIN 2.54mm.pdf`) rather than `gpio_2x20`'s h=8.5 (that figure
+  is grounded specifically in the Raspberry-Pi-HAT mechanical spec; `uart_1`
+  is the more relevant same-board, same-generic-header-family evidence for
+  a non-HAT header). y computed from the caliper's "10-rear" the same way
+  as `dip_1` above: `y_max=100.5-10=90.5`, `y_min=90.5-5.08=85.42`, [B]
+  caliper + //VERIFY interpretation. x has **no caliper figure** at all
+  ("right wall" without a number) — placed flush to the right edge
+  (`148-33.02=114.98`) as the most literal reading available, [C]//VERIFY,
+  not caliper-measured.
+- **`m2modem_1`** (M.2 Key-B modem socket, "top" face): x=3.4 (left edge,
+  direct per the "x=left-edge" convention), y computed from "14 rear" the
+  same directional convention as `dip_1`/`gpio26_1`
+  (`y_max=100.5-14=86.5`, `y_min=86.5-8.7=77.8` using the catalog type's own
+  depth). Body from `connector_size("m2_key_b")` per SSOT. **Open
+  discrepancy, not silently reconciled**: this position (x=3.4, near the
+  board's LEFT edge) does not spatially match the DXF-era
+  "(47.60,75.69)/(57.60,75.69) M2-silkscreen-text-proximity hole pair"
+  documented above in "bpi-r4 hole roles" as a candidate M.2-socket
+  standoff pair — that pair sits 44-54mm away at x=47.6-57.6. Both readings
+  come from independent evidence (DXF silkscreen proximity vs. direct
+  caliper measurement of the real board) and are left unreconciled here
+  rather than picking one to silently override the other; a future pass
+  with the physical board in hand could resolve which (if either) hole
+  pair is this modem's actual standoff.
+
+### Task 2 underside-x reconstruction (mPCIe x2 + M.2 Key-M SSD)
+
+These 3 sockets were caliper-measured on the **flipped (underside) board**,
+confirmed source: `.superpowers/sdd/bpir4/component-measurements.md` line
+34-35, "Left/right flips between TOP and BOTTOM measurements (board flipped
+to see underside)." Every other bpir4 dimension in this file (DXF, assembly
+drawing, front-panel caliper figures) is read in the TOP-view frame this
+whole row uses; these 3 are the only ones needing an X-mirror before they're
+usable board-frame coordinates. Y ("rear" readings) is NOT mirrored — the
+flip that swaps left/right does not swap front/rear, corroborated by "rear"
+being used consistently for top-face and bottom-face items alike elsewhere
+in this caliper pass.
+
+**Transform**: a flipped-frame "X right" reading -> `x_board = X`
+(flipped-right = board-frame LEFT); a flipped-frame "X left" reading ->
+`x_board = 148 - X` (flipped-left = board-frame RIGHT). This is a pure
+X-mirror (`x' = 148 - x`) applied consistently regardless of which edge word
+labels the reading — "right"/"left" describe which edge the *caliper user*
+was measuring from in their own (flipped) view, not the board frame.
+
+**Worked math, mPCIe #1/#2** ("41.9 rear/4.5 right" and "9.2 rear/4.5
+right"): applying the transform, `x_board = 4.5` for both (mirror of a
+"right" reading = board-left). **Board-fit sanity check confirms the
+direction**: the only two readings of "x_board=4.5" are (a) it's the box's
+MIN corner (extends +X to 4.5+29.90=34.4, fits comfortably) or (b) it's the
+MAX corner (extends -X to 4.5-29.90=-25.4, off the board entirely —
+impossible). This rules out interpretation (b) outright, confirming (a) and,
+by extension, confirming the mirror direction itself (the un-mirrored
+alternative, `x_board=148-4.5=143.5`, was the FIRST hypothesis considered and
+rejected — see the team discussion that resolved this ambiguity). y from each
+own "N rear" (unmirrored, same "distance from rear to the box's own
+rear-facing edge" convention as `dip_1`/`gpio26_1`/`m2modem_1` above):
+`y_max = 100.5-N`, `y_min = y_max - d` (connectors' own `mpcie` depth, 8.20).
+mPCIe #1: y=[50.4,58.6]. mPCIe #2: y=[83.1,91.3]. Both fit comfortably within
+the board's 100.5mm Y span; both share the same X column (two parallel
+underside Mini-PCIe slots near the left edge), consistent with a
+Wi-Fi-radio-pair layout.
+
+**Worked math, M.2 Key-M SSD** ("7.6 left/~2 rear/key-right"): applying the
+transform to a "left" reading, `x_board = 148-7.6 = 140.4` — the OPPOSITE
+mirror direction from mPCIe's "right" readings (flipped-left and
+flipped-right mirror to opposite board sides; this is expected, not an
+inconsistency). **Cross-check against the plan's own anchor note** ("SSD
+opposite `dc_power_1`", x=124.59, a right-side front-panel part): 140.4
+lands in that same right-side region of the board (dc_power_1/usbc_pwr_1
+span x=124.59-143.56); the un-mirrored alternative (x_board=7.6, near the
+LEFT edge) would NOT be "opposite" a right-side part at all — this
+independently confirms that "left" readings mirror too, not just "right"
+ones, and that the mirror is a true X-reflection applied uniformly. "key
+right" is read as: the connector's own key/insertion edge is the box's +X
+side, so 140.4 is the MAX corner: `x_min = 140.4 - 21.9 (connector_size
+("m2_key_m") width) = 118.5`. **Independent corroboration**: this box's
+center, `(118.5+140.4)/2 = 129.45`, matches the x=129.54 multi-length
+standoff hole column (see hole-list comment + the section below) to within
+0.1mm — strong confirmation the reconstruction landed in the right place,
+found without having used that hole's x as an input to this calculation.
+y from "~2 rear" (unmirrored, same convention): `y_max=100.5-2=98.5`,
+`y_min = 98.5 - 8.7 (connectors' own m2_key_m depth) = 89.8`.
+
+### Task 2: x=129.54 hole column re-interpreted as SSD multi-length standoffs
+
+The user directly confirmed (relayed via the team lead) that the x=129.54
+column (y=15.25/35.25/53.25/65.25) is **one socket's multi-length standoff
+set** for the M.2 Key-M SSD above — like a standard M.2 socket that supports
+2242/2260/2280/22110-length cards by providing a screw-boss at each length,
+only one of which is populated depending on which physical card is
+installed. This **does not erase** the prior per-hole IC-proximity notes in
+"bpi-r4 hole roles" above (kept on record: a standoff can sit near an IC
+cluster incidentally AND serve this role — both facts are true simultaneously,
+this is a role clarification, not a correction of the proximity observations
+themselves). Role stays `component-mount` for all 4 (unchanged).
+
+**Attempted length-to-hole mapping** (best-effort, explicitly NOT asserted
+as confirmed — flagged per the team's own guidance that guessing without
+evidence is worse than leaving it open): using the SSD connector's own
+derived rear-facing edge (y_max=98.5) as the length-measurement reference,
+distances to each hole are 98.5-65.25=33.25, 98.5-53.25=45.25,
+98.5-35.25=63.25, 98.5-15.25=83.25. Standard M.2 nominal lengths are
+42/60/80/110mm (2242/2260/2280/22110). **A clean 4-way mapping does not
+work**: a 110mm-long card physically cannot fit this orientation at all (the
+board's own Y span is only 100.5mm total, well under 110mm), so at most 3 of
+these 4 holes correspond to standard lengths, and the consecutive gaps
+(20, 18, 12mm going from the 15.25 hole toward 65.25) only partially match
+the standard consecutive-length deltas (18, 20, 30mm) — two of three
+approximately match (18, 20) but not in a clean one-to-one order, and the
+third (12mm) doesn't match the remaining standard delta (30mm) at all.
+**Not resolved cleanly from spacing alone.** Tentative, low-confidence best
+guess: the y=35.25 hole (63.25mm from the reference edge) is the closest
+plausible candidate for a 2280 (80mm) card, allowing for a plausible
+~15-20mm offset between the measurement reference used here and the
+standard's own datum point — but this is NOT asserted as fact anywhere in
+sbc.scad or the test suite, only recorded here as a documented, flagged
+guess for a future pass with the physical board in hand to confirm or
+correct.
+
+**Task 2: no new mount holes added.** The brief allows adding mount holes
+"where relevant." One new component DOES have an associated existing hole
+group after the user's clarification above — the M.2 Key-M SSD's multi-length
+standoff options are the already-present x=129.54 column (re-interpreted, not
+newly added). For every OTHER new component (modem, mPCIe x2, GPIO26, DIP,
+buttons, LEDs, SIM, microSD), the caliper pass gathered zero mounting-hole/
+standoff position data — every caliper figure for those is a
+connector/component *position*, not a screw-hole coordinate. Inventing a
+plausible-looking standoff position for any of them would be exactly the
+kind of guess this library's provenance rules exist to prevent (see
+`m2modem_1`'s discrepancy above — even an existing, independently-sourced
+candidate hole pair doesn't spatially line up with the new caliper position).
+No new hole ROWS were added; the existing 16-hole set is unchanged in count,
+position, and role by this task — only the x=129.54 column's documented
+*purpose* was clarified.
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps
