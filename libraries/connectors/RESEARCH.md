@@ -399,19 +399,18 @@ is out of scope (a later task consumes these types for the bpir4 board row).
   "25.00mm Mini / 15.00mm Micro / 12.30mm Nano" comparison diagrams — those
   two datasheets are themselves Nano-SIM (4FF) connectors, not 2FF holders,
   so they do not supply this type's own depth/height).
-- **Depth/height**: not resolvable from the two GCT Nano-SIM datasheets in
-  this repo's `DS/` scratch (both are 4FF-specific connector bodies, ~12-14mm
-  envelopes — a different physical part class from a 2FF holder). Searched
-  for a dedicated 2FF holder datasheet: TE Connectivity's 2FF SIM connector
-  family (part `2-1705300-7`, "SIM CONNECTOR, Compatible Card: 2FF mini SIM",
-  2.54mm pitch, "Profile Height from PCB" 2.7mm) and a related TE 6-way
-  mini-SIM connector listing (Length 16.3mm, Width 14.8mm, Depth 2.02mm) —
-  two independent TE catalog listings for the 2FF format, agreeing with each
-  other on scale (profile height 2.02-2.7mm) and with the plan's 15mm width
-  (their 14.8mm, -0.2mm). Primary TE/RS-Online PDF fetches timed out /
-  403'd this pass, so this is a search-engine-surfaced secondary read, not a
-  directly-fetched-and-read primary PDF — tiered **[B]** (corroborated
-  across >=2 independent TE listings), not [A].
+- **Depth/height**: not resolvable from the two GCT Nano-SIM datasheets
+  (both are 4FF-specific connector bodies, ~12-14mm envelopes — a different
+  physical part class from a 2FF holder). GCT SIM8055/SIM8066 datasheets
+  (reference-diagram card-width comparison only, not this connector's own
+  body) + TE Connectivity's 2FF SIM connector family (part `2-1705300-7`,
+  "SIM CONNECTOR, Compatible Card: 2FF mini SIM", 2.54mm pitch, "Profile
+  Height from PCB" 2.7mm) and a related TE 6-way mini-SIM connector listing
+  (Length 16.3mm, Width 14.8mm, Depth 2.02mm) — two independent TE catalog
+  listings for the 2FF format, agreeing with each other on scale (profile
+  height 2.02-2.7mm) and with the plan's 15mm width (their 14.8mm, -0.2mm).
+  Tiered **[B]** (corroborated across the two TE listings, not independently
+  verified against a primary vendor drawing), not [A].
 - **Confirmed**: `[15, 16.3, 2.7]` (w [B] caliper per plan, d/h [B] TE 2FF
   family cross-check), opening `+Y` (card holder, panel-edge insertion).
   Depth uses the 16.3mm reading (TE 6-way listing's "Length", the
