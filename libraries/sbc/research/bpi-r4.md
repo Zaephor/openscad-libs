@@ -34,7 +34,7 @@ provenance, electrical/GPIO map, GPIO-usability guidance) where applicable.
   the exact-part datasheet height (13.60mm above board-top, tier **[A]**,
   kept per this library's never-downgrade-without-cause rule).
 - **Expansion-slot map**: 4 sockets total — **2x M.2 + 2x mini-PCIe**, tier
-  **[A]** (BPI-R4 block diagram, device-tree, and the Banana Pi wiki agree).
+  **[A]** (BPI-R4 block diagram and device-tree agree).
   One M.2 (Key-B) carries a WWAN 4G/5G modem (2242/3042/3052-length,
   top-face); the other M.2 (Key-M) carries a 2280 NVMe SSD (underside). The
   two mini-PCIe sockets (both underside, full-size 30x50.95mm) form a matched
@@ -43,15 +43,12 @@ provenance, electrical/GPIO map, GPIO-usability guidance) where applicable.
   drawing alone.
 - **"Key-E" mislabel**: the BPI-R4 block diagram labels the WWAN modem M.2
   slot "Key-E". This is wrong — the device tree's own source comment
-  (`/* M.2 key-B SIM1 */` above the `&pcie2` node) and the Banana Pi wiki both
-  confirm the slot is **Key-B**, tier **[A]**. The device-tree/wiki reading
-  overrides the block diagram's label for this one field.
-- **Nano-SIM vs. mini-SIM conflict**: the Banana Pi wiki describes the
-  board's 3 SIM sockets as nano-SIM. Direct caliper measurement of the
-  physical board found 3x 2FF **mini-SIM** card holders (15mm width, matching
-  `connector_size("sim_2ff")` exactly), tier **[B]**. The caliper reading
-  overrides the wiki text for this field; this is an unresolved
-  documentation gap on the vendor/wiki side, not a library data error.
+  (`/* M.2 key-B SIM1 */` above the `&pcie2` node) confirms the slot is
+  **Key-B**, tier **[A]**. The device-tree reading overrides the block
+  diagram's label for this one field.
+- **SIM card holder type**: Direct caliper measurement of the physical
+  board found 3x 2FF **mini-SIM** card holders (15mm width, matching
+  `connector_size("sim_2ff")` exactly), tier **[B]**.
 
 ## Electrical / GPIO map
 
