@@ -49,6 +49,12 @@ function _connector_table() = [
     ["rj45_shallow",          [21,   18.75, 13.5], "+Y"], // [B] sbc.scad pi3b/pi3bplus rj45 (corroborated on d+h by bpir4 rj45_2/3/4), no integrated-magnetics module
     // --- SFP type (#14) ---
     ["sfp", [14.5, 48.7, 9.7], "+Y"], // [A] TE Connectivity 2007198-1, single SFP/SFP+ cage (one mechanical form factor covers both); sbc sfp_1/sfp_2 [16.51,53.98,13.4] reconciled #21: different (larger cage-pair footprint, not this single-port cage) — sbc retains its literal
+    // --- Task 1 additions ---
+    ["microsd",  [16.44, 14.5, 1.40], "+Y"], // [A] GCT MEM2075 (Micro SD Memory Card Connector, 1.40mm Profile, SMT push-push)
+    ["sim_2ff",  [15, 16.3, 2.7], "+Y"],     // w [B] caliper (2FF mini-SIM card width); d/h [B] TE 2FF SIM connector family (2-1705300-7 / 6-way mini-SIM variant, corroborated across 2 TE listings)
+    ["m2_key_b", [21.9, 8.7, 3.2], "+Z"],    // [A] TE 2199119-5 (M.2 NGFF, 0.5mm pitch, 3.2mm height, Key B, 67-position, board-to-board)
+    ["m2_key_m", [21.9, 8.7, 3.2], "+Z"],    // [B] TE 2199119 series Key M variant (1-2199119-5, "M.2 0.5PITCH 3.2H KEY M"), same family as m2_key_b; envelope not independently re-fetched for the M-key part's own dimension table
+    ["mpcie",    [29.90, 8.20, 5.2], "+Z"],  // [A] "0.80mm Pitch Mini PCI Express H=5.2mm Connector" customer drawing (DWG S650S5281XXXXM431XX); X cross-checked against the industry-standard Mini Card form factor 30x50.95mm [A] (card width agrees within 0.1mm; card's 50.95mm length is not part of the connector's own envelope)
 ];
 function connector_known_types() = [for (e = _connector_table()) e[0]];
 function _connector_row(type) =

@@ -3,8 +3,10 @@
 Connector body (housing/shell) envelope dimensions for common PC/SBC panel
 and slot connectors: USB Type-A / Type-A-stacked / Type-C / Micro-B, RJ45 /
 RJ45-stacked, HDMI Type-A / mini / micro, PCIe x1/x4/x8/x16 card-edge slot,
-a 2.54mm-pitch 2x20 GPIO header, and a single-port SFP/SFP+ cage. Mechanical
-envelope only (no electrical/signal data). Units: **mm**.
+a 2.54mm-pitch 2x20 GPIO header, a single-port SFP/SFP+ cage, micro SD /
+mini-SIM (2FF) card holders, M.2 (NGFF) Key B / Key M board-to-board slots,
+and a mini-PCI Express card-edge socket. Mechanical envelope only (no
+electrical/signal data). Units: **mm**.
 
 This library answers one question per connector type: "how big a box (and
 which way does it open) do I need to reserve or cut a hole for this part?"
@@ -99,7 +101,8 @@ choice in the example script, not a modeled union or geometry defect.
 Valid `type` keys (`connector_known_types()`): `usb_a`, `usb_a_stack2`,
 `usb_a_stack2_shielded`, `usb_c`, `micro_usb`, `rj45`, `rj45_stack2`,
 `rj45_shallow`, `hdmi`, `mini_hdmi`, `micro_hdmi`, `pcie_x1`, `pcie_x4`,
-`pcie_x8`, `pcie_x16`, `gpio_2x20`, `sfp`.
+`pcie_x8`, `pcie_x16`, `gpio_2x20`, `sfp`, `microsd`, `sim_2ff`, `m2_key_b`,
+`m2_key_m`, `mpcie`.
 
 ## Sources
 
@@ -124,6 +127,11 @@ pending stronger corroboration.
 | `libraries/sbc/sbc.scad` pi3b/pi3bplus/pi4b/pi5 `usb2_1`/`usb2_2`/`usb2`/`usb3` (peer-reconciled, SP1) | B | `usb_a_stack2_shielded` |
 | `libraries/sbc/sbc.scad` pi3b/pi3bplus `rj45`, corroborated on d+h by bpir4 `rj45_2`/`rj45_3`/`rj45_4` (peer-reconciled, SP1) | B | `rj45_shallow` |
 | [TE Connectivity 2007198-1](https://www.te.com/en/product-2007198-1.html) "SFP+ 1X1 Cage Assembly, Press-Fit, EMI Springs" (Customer Drawing 2007198, Rev C1) | A | `sfp` |
+| GCT MEM2075 "Micro SD Memory Card Connector, 1.40mm Profile" datasheet | A | `microsd` |
+| GCT SIM8055/SIM8066 Nano-SIM connector drawings (reference-diagram card-size comparison only) + TE 2FF SIM connector family (`2-1705300-7` / 6-way mini-SIM listing) | B | `sim_2ff` |
+| TE Connectivity `2199119-5` "M.2 NGFF... B Keying Code... 67 Position" product page | A | `m2_key_b` |
+| TE Connectivity `2199119` series, Key M variant (`1-2199119-5`, same-series cross-reference) | B | `m2_key_m` |
+| "0.80mm Pitch Mini PCI Express H=5.2mm Connector" customer drawing (DWG S650S5281XXXXM431XX) | A | `mpcie` (X-axis cross-checked against the industry-standard Mini Card 30x50.95mm form factor, also A) |
 
 `sbc.scad` and `motherboards.scad` rows (`hdmi`, `usb_c`/`usbc_pwr`,
 `gpio`, `rj45*`, `mobo_pcie_ports()`) were read as **read-only
@@ -161,9 +169,16 @@ from the derived-doubling `usb_a_stack2` — both stay, no type removed),
 `rj45_shallow` (no-integrated-magnetics SBC RJ45 jack, distinct from the
 fetched Bel Fuse MagJack `rj45` — both stay, no type removed).
 
-**Task 1 addition (1, `[A]`, see Sources above):** `sfp` (single-port
+**SFP addition (1, `[A]`, see Sources above):** `sfp` (single-port
 SFP/SFP+ cage; sbc's own `sfp_1`/`sfp_2` remain a deferred adoption target,
-see `RESEARCH.md`). `connector_known_types()` now returns 17 types total.
+see `RESEARCH.md`).
+
+**Task 1 additions (5, see Sources above and `RESEARCH.md`'s "Task 1
+additions" section):** `microsd` (`[A]` GCT MEM2075), `sim_2ff` (`[B]`,
+width per caliper / depth+height per TE 2FF family cross-check), `m2_key_b`
+(`[A]` TE 2199119-5), `m2_key_m` (`[B]`, same TE series as `m2_key_b`),
+`mpcie` (`[A]` mini-PCIe connector customer drawing). `connector_known_types()`
+now returns 22 types total.
 
 **Deferred types (not in this library at all):** DB9, DB25, VGA,
 DisplayPort, SATA (data + power). No slot exists for these yet — a future

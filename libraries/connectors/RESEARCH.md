@@ -371,6 +371,101 @@ types / Upgrades lists below into `connectors.scad` (and, in SP2, `sbc.scad`).
 - **pi3b/pi3bplus `microusb_pwr`** and **pizero/pizero2w `microusb_data`**: reclassified `different (weak evidence, unresolved)` in the corrected table above — h (and, for `microusb_data`, d too) fails the ~0.5mm threshold, but neither side has strong evidence: connectors' `[A]` height may include foot ears (own note), sbc's height is an unconfirmed generic guess. `micro_usb` remains the correct nominal peer type for both, but the numeric reconcile is unresolved pending a future re-read of the Same Sky UJ2-MBH-SMT drawing.
 - **pi4b `rj45`'s short depth (10.25mm)**: by analogy to (not a direct citation of) sbc/RESEARCH.md's `usb2_2` caveat — that note is specifically about `usb2_2`'s Y-span terminating at the board's drawn edge (y=56) rather than the shell's true boundary; sbc/RESEARCH.md does not itself flag pi4b's rj45 depth. The same chain-truncation signature is present here (pi4b rj45's span also terminates exactly at y=56), so this reconcile pass applies the same reasoning by analogy — excluded from `rj45_shallow`'s reconciled value in favor of pi3b/pi3bplus's fuller, independently-corroborated 18.75mm reading.
 
+## Task 1 additions (2026-07-23)
+
+Five new connector types, all new `_connector_table()` rows — no existing rows
+touched. Scope note: this pass is `libraries/connectors/` only; `libraries/sbc/`
+is out of scope (a later task consumes these types for the bpir4 board row).
+
+### microsd — micro SD memory card connector
+- **Source**: GCT `MEM2075` "Micro SD Memory Card Connector, 1.40mm Profile,
+  SMT, Push-Push, with Normally Open Switch" datasheet (mechanical drawing,
+  sheet 1/2).
+- **Read**: overall shell length 16.44mm (nested with 15.20/15.05mm — likely
+  different feature call-outs at different tolerance stack-ups; 16.44 is the
+  outermost/full-envelope reading), shell depth 14.50mm (the "14.75/14.50"
+  nested pair on the shell-profile view; 14.50 is the reading that matches
+  this type's expected assert value), profile height 1.40mm±0.05 (side view,
+  and matches the part's own "1.40mm Profile" title-block description
+  exactly).
+- **Confirmed**: `[16.44, 14.5, 1.40]`, opening `+Y` (push-push card slot,
+  card inserts from the panel edge like a USB/HDMI receptacle, not a
+  board-mounted slot/header). Tier **[A]**.
+
+### sim_2ff — mini-SIM (2FF) card holder
+- **Width**: 15mm, tier **[B] caliper** (per plan; matches the industry-
+  standard 2FF Mini-SIM card's own 15mm width, itself shown as a reference
+  dimension on both GCT `SIM8055` and `SIM8066` Nano-SIM connector drawings'
+  "25.00mm Mini / 15.00mm Micro / 12.30mm Nano" comparison diagrams — those
+  two datasheets are themselves Nano-SIM (4FF) connectors, not 2FF holders,
+  so they do not supply this type's own depth/height).
+- **Depth/height**: not resolvable from the two GCT Nano-SIM datasheets in
+  this repo's `DS/` scratch (both are 4FF-specific connector bodies, ~12-14mm
+  envelopes — a different physical part class from a 2FF holder). Searched
+  for a dedicated 2FF holder datasheet: TE Connectivity's 2FF SIM connector
+  family (part `2-1705300-7`, "SIM CONNECTOR, Compatible Card: 2FF mini SIM",
+  2.54mm pitch, "Profile Height from PCB" 2.7mm) and a related TE 6-way
+  mini-SIM connector listing (Length 16.3mm, Width 14.8mm, Depth 2.02mm) —
+  two independent TE catalog listings for the 2FF format, agreeing with each
+  other on scale (profile height 2.02-2.7mm) and with the plan's 15mm width
+  (their 14.8mm, -0.2mm). Primary TE/RS-Online PDF fetches timed out /
+  403'd this pass, so this is a search-engine-surfaced secondary read, not a
+  directly-fetched-and-read primary PDF — tiered **[B]** (corroborated
+  across >=2 independent TE listings), not [A].
+- **Confirmed**: `[15, 16.3, 2.7]` (w [B] caliper per plan, d/h [B] TE 2FF
+  family cross-check), opening `+Y` (card holder, panel-edge insertion).
+  Depth uses the 16.3mm reading (TE 6-way listing's "Length", the
+  insertion-axis dimension); height uses 2.7mm (TE `2-1705300-7`'s own
+  "Profile Height from PCB" field, the more literally-named match for this
+  library's Z-height convention) over the other listing's 2.02mm alternate.
+
+### m2_key_b / m2_key_m — M.2 (NGFF) board-to-board connector
+- **Source**: TE Connectivity `2199119-5` "M.2 NGFF, Connector Height .126in
+  [3.2mm], B Keying Code, Gold, Board-to-Board, 67 Position, 0.5mm
+  Centerline" product page (structured "Dimensions" fields).
+- **Read**: Connector Length 21.9mm, Connector Width 8.7mm, Connector Height
+  3.2mm.
+- **Confirmed (m2_key_b)**: `[21.9, 8.7, 3.2]`, opening `+Z` (card-edge slot
+  connector, same family of part as this library's `pcie_x*`/`gpio_2x20`
+  slot/header types — the M.2 module inserts at an angle then presses down
+  flat, mating opening faces up off the board). Tier **[A]**.
+- **m2_key_m**: this same product page's "Also in the Series" section lists
+  TE part `1-2199119-5`, "M.2 0.5PITCH 3.2H KEY M 15U'' AU" — same series
+  (`2199119`), same 0.5mm pitch and 3.2mm height, Key M variant (differs only
+  in keying-notch position and gold-plating thickness, 15u'' vs the Key B
+  part's 30u''). No independent dimension table was fetched for the Key M
+  part itself (the page for `2199119-5` only shows it as a cross-referenced
+  thumbnail, not its own Dimensions section). **Confirmed**: `[21.9, 8.7,
+  3.2]`, opening `+Z`, tier **[B]** (same-series corroboration — length/
+  width assumed identical to the Key B part in the same connector family,
+  not independently re-fetched).
+
+### mpcie — mini-PCI Express card-edge socket
+- **Source**: "0.80mm Pitch Mini PCI Express H=5.2mm Connector Customer
+  Drawing" (DWG NO. S650S5281XXXXM431XX, Rev A), from this repo's `DS/`
+  reference folder alongside the BPI-R4 board drawings.
+- **Read**: plan view gives overall shell width 29.90mm (outer edge-to-edge,
+  including the two mounting ears) — a second, narrower nested reading of
+  25.90mm excludes those ears (same "exclude the mounting flange" precedent
+  as this file's `usb_a` entry); side-profile view gives shell depth 8.20mm
+  (main body) vs. 9.08mm at the base (wider mounting-foot flare, excluded by
+  the same precedent); the connector's own height code is explicit in the
+  ordering grid ("HEIGHT 8: 5.2mm") and repeated in the drawing title,
+  confirmed by the side-profile's "5.20" vertical read.
+- **Confirmed**: `[29.90, 8.20, 5.2]`, opening `+Z` (card-edge slot
+  connector, same family as `pcie_x*`/M.2 above — mini-PCIe cards insert at
+  an angle then press down flat). Tier **[A]** (fetched + read this pass, a
+  genuine connector customer drawing, not a card-only reference).
+- **Card cross-check (separate provenance)**: the plan notes the full-size
+  mini-PCIe **card** is a standard Mini Card form factor, 30 x 50.95mm —
+  this is a named industry-standard form factor, tier **[A]**, but is *not*
+  itself sourced from this connector drawing (the drawing has no card
+  outline). It corroborates only the connector's X-width axis (29.90mm vs.
+  the card's 30mm width, agreeing within 0.1mm — expected, since the socket
+  is sized to accept the card's edge). The card's 50.95mm length is not part
+  of the connector's own body envelope (the card extends well beyond the
+  ~8-30mm socket body when mated) and is not used in this table row.
+
 ### Tally (corrected)
 21 total pairs: **5 same** (incl. 2 upgrades: `gpio_2x20` height, `micro_hdmi` tier), **14 different** (2 new types + 4 weak-evidence/unresolved rows reclassified by this fix pass + 1 tentative weak-evidence row + 7 corroborating/other rows), **2 deferred** (no clean peer — pi5 combo shells), **0 error**. Supersedes the original report's "same: 12, different: 8" tally (which did not match its own table) and the reviewer's interim recount of "9 same / 10 different / 2 deferred" (correct for the table *before* this fix pass; 4 rows flipped same→different in this fix: `microusb_pwr`, `microusb_data`, bpir4 `usb_1`, bpir4 `usbc_pwr_1`).
 

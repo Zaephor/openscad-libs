@@ -8,7 +8,9 @@ assert(connector_known_types() == [
     "rj45", "rj45_stack2", "hdmi", "mini_hdmi", "micro_hdmi",
     "pcie_x1", "pcie_x4", "pcie_x8", "pcie_x16", "gpio_2x20",
     /* SP1 additions: */ "usb_a_stack2_shielded", "rj45_shallow",
-    /* SFP type (#14): */ "sfp"], "type list");
+    /* SFP type (#14): */ "sfp",
+    /* Task 1 additions: */ "microsd", "sim_2ff", "m2_key_b", "m2_key_m", "mpcie"],
+    "type list");
 
 // opening axes (fixed design decision)
 assert(connector_opening("usb_a")    == "+Y", "usb_a opening");
@@ -28,6 +30,18 @@ assert(connector_size("rj45_shallow") == [21, 18.75, 13.5], "rj45_shallow body")
 
 // SFP type (#14)
 assert(connector_size("sfp") == [14.5, 48.7, 9.7], "sfp body"); // [A] TE 2007198-1 SFP+ 1x1 cage
+
+// Task 1 additions
+assert(connector_size("microsd")  == [16.44, 14.5, 1.40], "microsd body"); // [A] GCT MEM2075
+assert(connector_size("sim_2ff")  == [15, 16.3, 2.7], "sim_2ff body");     // w [B] caliper, d/h [B] TE 2FF SIM
+assert(connector_size("m2_key_b") == [21.9, 8.7, 3.2], "m2_key_b body");   // [A] TE 2199119-5
+assert(connector_size("m2_key_m") == [21.9, 8.7, 3.2], "m2_key_m body");   // [B] TE 2199119 series (Key M variant)
+assert(connector_size("mpcie")    == [29.90, 8.20, 5.2], "mpcie body");    // [A] Mini PCI Express H=5.2mm connector drawing
+assert(connector_opening("microsd")  == "+Y", "microsd opening");
+assert(connector_opening("sim_2ff")  == "+Y", "sim_2ff opening");
+assert(connector_opening("m2_key_b") == "+Z", "m2_key_b opening");
+assert(connector_opening("m2_key_m") == "+Z", "m2_key_m opening");
+assert(connector_opening("mpcie")    == "+Z", "mpcie opening");
 
 // --- body renders + arithmetic guard (geometry verified by render step) ---
 // pcie_x16 body volume = 89*7.5*11.25 = 7509.375 mm^3
