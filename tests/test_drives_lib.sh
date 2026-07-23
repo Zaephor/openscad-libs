@@ -128,4 +128,29 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "role=\"all\" consumer render failed:"; echo "$out"; exit 1
 fi
 
+# Bay form factors (#41 Part A): known-types membership + a side-hole render
+# for the new block types.
+cat > "$tmp/bay_known.scad" <<'EOF'
+use <drives/drives.scad>;
+types = drive_known_types();
+assert(len([for (t=types) if (t=="bay525_hh"||t=="bay525_fh"||t=="bay35") t]) == 3,
+       "bay types missing from drive_known_types()");
+EOF
+out="$(run "$tmp/bay_known.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "bay known-types control failed:"; echo "$out"; exit 1
+fi
+
+cat > "$tmp/bay_side_holes.scad" <<'EOF'
+use <drives/drives.scad>;
+difference() {
+    cube([210, 150, 90]);
+    drive_holes("bay525_hh", "side");
+}
+EOF
+out="$(run "$tmp/bay_side_holes.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "bay525_hh side-hole render failed:"; echo "$out"; exit 1
+fi
+
 echo ok

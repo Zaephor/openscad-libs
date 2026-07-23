@@ -59,6 +59,17 @@ function SIDE_35() = [
     [28.50, 6.35, "structural-mount", 3.4], [130.10, 6.35, "structural-mount", 3.4],
 ]; // X [A], Z [B] value/role + //VERIFY face-orientation — see RESEARCH.md Task 2 resolutions (c)
 
+// 5.25" bay-device side mount holes (optical/bay accessories, backlog #41
+// Part A) — modern slimline bay rail screw pattern, NOT SFF-8501's own
+// full-height-magnetic-disk hole table (a distinct, older mounting
+// convention; see RESEARCH.md "Bay form factors"). X: 52.0 (front-to-hole),
+// 131.0 (52+79 spacing); Z: 10.0 (height from underside). Numbers + role
+// tier [B] (2 corroborating community threads); face-orientation //VERIFY,
+// same caveat as SIDE_35() above.
+function SIDE_525() = [
+    [52.0, 10.0, "structural-mount", 3.4], [131.0, 10.0, "structural-mount", 3.4],
+]; // [B] — see RESEARCH.md "Bay form factors"
+
 // 3.5"/2.5" SATA connector position + extent — SFF-8223 Rev 2.7 Table 3-1
 // (2.5") and SFF-8323 Rev 1.6 Table 3-1 (3.5", bit-identical A2/A3/A5/A7/
 // A13/A14 values, confirming these are connector-intrinsic, not
@@ -147,6 +158,14 @@ function _block_table() = [
     ["ssd25_9",  [100.0, 69.85,  9.5], BOTTOM_25(), SIDE_25(),   ["sata",    C35_POS(), C35_EXT()]],
     ["ssd25_15", [100.0, 69.85, 15.0], BOTTOM_25(), SIDE_25(),   ["sata",    C35_POS(), C35_EXT()]],
     ["u2",       [100.0, 69.85, 15.0], BOTTOM_25(), SIDE_25(),   ["sff8639", U2_POS(),  U2_EXT()]],
+
+    // 5.25"/3.5" drive-BAY form factors (backlog #41 Part A). Side-mounted
+    // (optical/bay devices), rear open in the bay-enclosure consumer.
+    // Connector field is a documented placeholder (reused SATA record, not
+    // rendered by that consumer) — see RESEARCH.md "Bay form factors".
+    ["bay525_hh", [200.0, 146.05, 42.3],  [], SIDE_525(), ["sata", C35_POS(), C35_EXT()]], // L [C]//VERIFY, W [A], H [B]
+    ["bay525_fh", [200.0, 146.05, 82.55], [], SIDE_525(), ["sata", C35_POS(), C35_EXT()]], // L [C]//VERIFY, W [A], H [A]
+    ["bay35",     [170.0, 101.6,  25.4],  [], SIDE_35(),  ["sata", C35_POS(), C35_EXT()]], // L [C]//VERIFY, W reused [A]/[B], H [B]
 ];
 /* [Data] — card drives (M.2). Row:
    [type, [w,len,h], [hole x,y], [edge [x,y,z], [w,d,h], key]]. Values per RESEARCH.md. */
