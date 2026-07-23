@@ -3,8 +3,10 @@
 // exposing the device face, rear #40 support tongue. Consumes drives/rack10/
 // rack-support. Prints flat (Z = build height, walls vertical), support-free.
 // Task 2: scaffold + front rack panel + device-face cutout + fit-assert.
-// Task 3 (#41): floor + side walls w/ device side-mount holes + 45deg root
-// gussets + rear rack-support (#40) tongue mate.
+// Task 3 (#41): floor + side walls w/ device side-mount holes + a 45deg rear
+// buttress ramp + rear rack-support (#40) tongue mate. (No front root gusset:
+// see bay_enclosure()'s "Front floor/faceplate joint" comment below for why
+// one doesn't fit there.)
 use <drives/drives.scad>;
 use <rack10/rack10.scad>;
 use <rack-support/rack-support.scad>;
@@ -135,8 +137,8 @@ module bay_enclosure() {
     ramp_y0 = reach - ramp;                     // where the floor begins ramping from floor_th up to ft
     fw      = _dw() + 2 * wall;                 // overall floor/wall-pair width
     fx0     = -(_dw() / 2 + wall);              // floor's/left-wall's outer-X origin
-    gusset_leg = 3;                             // front root-gusset leg (Y and Z) -- modest brace, sized to clear the device envelope (see call site)
-    assert(ramp_y0 > gusset_leg,
+    ramp_margin_min = 3;                        // sanity minimum: flat floor-run (Y=0..ramp_y0) before the rear ramp must be at least this deep
+    assert(ramp_y0 > ramp_margin_min,
         "bay-enclosure: usable depth too short for the tongue's buttress ramp");
 
     difference() {
@@ -169,23 +171,32 @@ module bay_enclosure() {
                 translate([0, reach, floor_th]) cube([fw, rpy - reach, ft - floor_th]);
             }
 
-            // Front root gusset: brace the floor/faceplate corner (a plain
-            // butt joint otherwise — design-for-print's "gusset a
-            // cantilevered arm's root joint" guidance). Confined to the
-            // wall's own X-band (not the full floor width): a gusset
-            // spanning under the device's own footprint would stand proud
-            // of the floor's top face (Z>floor_th) exactly where the device
-            // sits flush against it (X in [-_dw()/2,_dw()/2], zero
-            // clearance by design — see _be_device_frame()) and foul the
-            // fit; restricting it to the wall bands braces the same corner
-            // (and incidentally the wall's own root) without that conflict.
-            // 45deg (leg==leg); self-supporting, same wedge family as the
-            // rear buttress above.
-            for (sx = [-1, 1]) {
-                wx0 = sx > 0 ? _dw() / 2 : -(_dw() / 2 + wall);
-                translate([wx0, 0, 0])
-                    _be_yz_wedge([[0, floor_th], [0, floor_th + gusset_leg], [gusset_leg, floor_th]], 0, wall);
-            }
+            // Front floor/faceplate joint: NO gusset here, on purpose --
+            // (this used to be a wall-X-band-only wedge; removed after
+            // review found it a geometric no-op, ~0.023mm^3 out of
+            // ~112290mm^3 exported volume, i.e. nothing. Root cause: at the
+            // wall's own X-band, the wall cube below already spans the FULL
+            // Y=[0,rpy] x Z=[0,device height] volume for that X-band, and
+            // floor_th < device height, so the floor's [0,floor_th] slab is
+            // already a strict subset of the wall's own solid there -- one
+            // contiguous block, not two members meeting at a joint. A
+            // wall-band gusset literally has nothing to brace.)
+            //
+            // The joint that WOULD need bracing is the CENTER strip (under
+            // the device, X in [-_dw()/2,_dw()/2]): there the floor's top
+            // face (Z=floor_th) is exposed to air and meets the faceplate's
+            // back face (Y=0) at a sharp, unfilled interior corner, same
+            // shape as the rear buttress's problem. But it can't be fixed
+            // the same way: _be_device_frame() parks the device's underside
+            // at EXACTLY Z=floor_th (zero clearance, by design -- see that
+            // module's header comment), so there is zero headroom above the
+            // floor in this X-band for ANY raised material -- not "thin",
+            // literally none. Any wedge/fillet/chamfer that rises even
+            // slightly above floor_th here fouls the device fit. So this
+            // corner is left unbraced: it's an inherent consequence of the
+            // zero-clearance device fit this project targets, not an
+            // oversight, and there's no self-supporting geometry that both
+            // adds real material and respects that clearance.
 
             // Side walls, device_u tall, running the full floor depth (ties
             // them into the rear buttress/tongue area for a stiffer closed
