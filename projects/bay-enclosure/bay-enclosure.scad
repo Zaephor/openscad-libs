@@ -30,7 +30,7 @@ wall = 2.4;
 // mates) — that ramp is Task 3's job, not this uniform Task 2 default.
 floor_th = 1.2;
 faceplate_th = 3.0;
-front_clearance = 1.0;     // gap around the device face in the front cutout
+front_clearance = 1.0;     // side (width-only) gap around the device face; height cutout is flush top+bottom, see _be_faceplate()
 
 assert(len([for (t = drive_known_types()) if (t == device_type && drive_family(t) == "block") t]) > 0,
     str("bay-enclosure: device_type '", device_type, "' must be a block drive"));
