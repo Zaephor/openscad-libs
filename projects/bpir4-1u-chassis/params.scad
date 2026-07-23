@@ -63,6 +63,7 @@ board_side_gap   = 1.0;  // board edge -> corner-post clearance
 // them below and must never re-assign them (OpenSCAD is last-assignment-wins,
 // so a re-assignment here would silently discard whatever the entry file or
 // the customizer set).
+// NOTE: BPI-R4's stock heatsink fins run side-to-side, suboptimal for this chassis's front-intake/rear-exhaust airflow, but no alternative orientation is available.
 // fan_board_gap: clearance kept between the interior-mounted fan's inner
 // face and the board's rear edge. (Task 5 fix — the old fan_plenum=12.0
 // literal was hand-picked and, for the only valid fan_size (40mm), put the

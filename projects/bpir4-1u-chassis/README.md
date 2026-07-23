@@ -45,6 +45,20 @@ See `params.scad`. Key: `enable_exhaust` (rear fans on/off, customizer
 default), `honeycomb_cell`/`honeycomb_wall` (hex size/spacing shared by the
 faceplate and lid vent bands).
 
+## Design Notes
+
+**Heatsink orientation:** The BPI-R4's stock heatsink has fins running
+side-to-side, not front-to-back — suboptimal for this chassis's
+front-intake/rear-exhaust airflow strategy. No alternative heatsink
+orientation is available; this is a known thermal caveat, not a design defect.
+
+**Underside module clearance:** The chassis sizes its internal
+floor-to-board gap to the worst-case underside component keep-out: all
+optional modules populated simultaneously (2× mini-PCIe + double-sided
+M.2-2280). No modules are assumed absent; dimensions derive from the
+board's bottom-face data, ensuring flat, stackable underside geometry with
+no floor recesses.
+
 ## Assembly reference
 
 `assembly.scad` has a `show_rack` toggle (`/* [Show] */` group) that renders
