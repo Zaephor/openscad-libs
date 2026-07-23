@@ -470,9 +470,10 @@ is out of scope (a later task consumes these types for the bpir4 board row).
   the module length family (2242/3042/3052).
 - **Confirmed**: `[30, 52, 3.8]`, opening `+Z`. Footprint (30x52mm) is the
   max module envelope covering the 2242/3042/3052 length class, tier **[A]**
-  (named governing spec, not board-specific). Height 3.8mm is the
-  worst-case double-sided-populated component thickness for this module
-  class, tier **[A]**.
+  (named governing spec, not board-specific). Height 3.8mm tier
+  **[B]/[C] //VERIFY** — an estimate for the worst-case double-sided-populated
+  component thickness for this module class, not a cited PCI-SIG height-code
+  (S1-S3/D1-D5) table value.
 - This is a max **card/module** keep-out envelope, a distinct data class
   from `m2_key_b`/`m2_key_m` above (which are the small board-mounted socket
   connector bodies only) — used where a consumer needs the full plugged-in
@@ -482,9 +483,10 @@ is out of scope (a later task consumes these types for the bpir4 board row).
 - **Source**: M.2 (NGFF) specification, the "2280" form factor designation
   (22mm width x 80mm length).
 - **Confirmed**: `[22, 80, 3.8]`, opening `+Z`. Footprint tier **[A]**
-  (named industry-standard form factor). Height 3.8mm is the worst-case
-  double-sided-populated component thickness for this module class, tier
-  **[A]**.
+  (named industry-standard form factor). Height 3.8mm tier
+  **[B]/[C] //VERIFY** — an estimate for the worst-case double-sided-populated
+  component thickness for this module class, not a cited PCI-SIG height-code
+  table value.
 - Same card/module-vs-socket distinction as `m2_modem_card` above, relative
   to `m2_key_m`.
 
