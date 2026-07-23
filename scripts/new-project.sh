@@ -10,6 +10,10 @@ if ! [[ "$name" =~ ^[A-Za-z0-9._-]+$ ]]; then
   exit 1
 fi
 
+# OpenSCAD identifiers can't contain '-' or '.', but filenames/paths can:
+# keep $name for literal paths, use $ident for function/module prefixes.
+ident="${name//[.-]/_}"
+
 tpl="project-single"
 [ "${2:-}" = "--multipart" ] && tpl="project-multipart"
 dest="$ROOT/projects/$name"
@@ -17,7 +21,7 @@ dest="$ROOT/projects/$name"
 
 cp -r "$ROOT/templates/$tpl" "$dest"
 [ -f "$dest/__NAME__.scad" ] && mv "$dest/__NAME__.scad" "$dest/$name.scad"
-{ grep -rl '__NAME__' "$dest" || true; } | while read -r f; do
-  sed -i "s/__NAME__/$name/g" "$f"
+{ grep -rlE '__NAME__|__IDENT__' "$dest" || true; } | while read -r f; do
+  sed -i -e "s/__IDENT__/$ident/g" -e "s/__NAME__/$name/g" "$f"
 done
 echo "Created project $dest ($tpl)"

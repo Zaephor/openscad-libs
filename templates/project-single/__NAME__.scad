@@ -3,8 +3,8 @@
 
 // use <fans/fans.scad>;   // import libraries as needed
 
-module __NAME__() {
+module __IDENT__() {
     cube([20, 20, 20], center = true);
 }
 
-__NAME__();
+__IDENT__();
