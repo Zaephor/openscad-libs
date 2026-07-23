@@ -10,22 +10,23 @@ geometry), `rack-support` (rear mate). Units: **mm**.
 
 ## Status
 
-**Complete (#41 Part B, Tasks 1-4).** Front rack panel + device-face cutout
-+ width/height fit-assert (Task 2); floor + side walls with device side-mount
-holes + a 45° rear buttress ramp + the rear `rack_support_tongue()` mate
-(Task 3); the three device presets below locked in tests + full gate green
-(Task 4).
+**Complete (#41 Part B, Tasks 2-4).** Part A (Task 1, `#40`-independent) added
+the `bay525_hh`/`bay525_fh`/`bay35` device data to the `drives` lib. Part B,
+this project: front rack panel + device-face cutout + width/height fit-assert
+(Task 2); floor + side walls with device side-mount holes + a 45° rear
+buttress ramp + the rear `rack_support_tongue()` mate (Task 3); the three
+device presets below locked in tests + full gate green (Task 4).
 
 ## Design
 
 - **Side-rail mount.** The device is held by its own side screw holes
   (`drive_holes(device_type, faces="side")`, `drives` lib), cut straight
   through both side walls in one call — there is no bottom-mount tray or
-  top lid. `drive_side_holes()` already returns one hole position **per
-  wall pair** (tuples are `[x,z,role,dia]` in the drive's own frame; the
-  cutter stamps a cylinder at each of the drive's two `Y` faces), so
-  `bay_enclosure()` never doubles the count itself — see
-  `libraries/drives/README.md`.
+  top lid. Each `drive_side_holes()` tuple (`[x,z,role,dia]`) is one hole
+  *position* in the drive's own frame; `drive_holes()` mirrors it onto
+  **both** of the drive's `Y` faces (i.e. both side walls, once rotated into
+  the enclosure frame) itself, so `bay_enclosure()` never doubles the count
+  — see `libraries/drives/README.md`.
 - **Open front cutout, no door/bezel.** The rack panel's device-face opening
   is centered on width with `front_clearance` side margin, but flush
   top-and-bottom (no clearance on that axis) — the device is meant to sit
@@ -77,11 +78,13 @@ Three device presets are locked (rendered + gated in
 
 **`bay525_hh`@1U is vendor-sensitive.** `rack10_device_height(1)` = 43.66mm;
 minus the default `floor_th=1.2mm` leaves a 42.46mm interior against the
-device's 42.3mm nominal height — ~0.16mm of margin. The `drives` lib's
-depth/height figures for these three bay types are `[C]`/`//VERIFY`
-(nominal, mesh/community-sourced, not vendor-datasheet `[A]`; see
-`libraries/drives/RESEARCH.md`'s "Bay form factors" section) — a real unit
-running a hair tall could exceed this margin. If a fit-assert trips on a
+device's 42.3mm nominal height — ~0.16mm of margin. That 42.3mm figure is
+itself only tier `[B]` (community consensus, not an SFF spec table — SFF-8501
+only tables the *full-height* envelope; half-height isn't standardized, and
+the two corroborating sources it's drawn from give a 42-42.5mm range, not a
+single fixed number — see `libraries/drives/RESEARCH.md`'s "Bay form
+factors" section). A real half-height optical drive running toward the high
+end of that range could exceed the 0.16mm margin. If a fit-assert trips on a
 real device, raise `device_u` to `2` or thin `floor_th` (down to the ~3-layer
 FDM solid-floor minimum) before reprinting.
 
