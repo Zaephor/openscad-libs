@@ -129,4 +129,26 @@ for c in "${sp2_checks[@]}"; do
   fi
 done
 
+# "bottom" edge port cutout — positive control. Task 2 added the "bottom"
+# edge (mpcie_1/mpcie_2/m2_ssd_1 on bpir4) with a dedicated branch in
+# sbc_port_cutout(); confirm it renders (doesn't hit the "bad edge" assert).
+cat > "$tmp/bottom_edge.scad" <<'EOF'
+use <sbc/sbc.scad>;
+sbc_port_cutout("bpir4", "mpcie_1");
+EOF
+out="$(run "$tmp/bottom_edge.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "bottom-edge connector (mpcie_1) unexpectedly failed sbc_port_cutout:"; echo "$out"; exit 1
+fi
+
+# Unknown connector name -> sbc_connector()'s own assert must fire.
+cat > "$tmp/bad_connector.scad" <<'EOF'
+use <sbc/sbc.scad>;
+sbc_port_cutout("bpir4", "bogus_connector");
+EOF
+out="$(run "$tmp/bad_connector.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "harness failed to catch an unknown connector name:"; echo "$out"; exit 1
+fi
+
 echo ok
