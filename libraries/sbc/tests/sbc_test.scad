@@ -110,6 +110,39 @@ assert(sbc_connector("bpir4", "microsd_1")[2] == connector_size("microsd"),
     "bpir4 microsd_1 body sourced from connectors microsd");
 assert(sbc_connector("bpir4", "m2modem_1")[2] == connector_size("m2_key_b"),
     "bpir4 m2modem_1 body sourced from connectors m2_key_b");
+
+// --- Task 5: module/card keep-out envelopes (bottom sockets + m2modem_1) ---
+for (n = ["m2modem_1_card", "mpcie_1_card", "mpcie_2_card", "m2_ssd_1_card"])
+    assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,
+        str("bpir4 has exactly one ", n));
+assert(sbc_connector("bpir4", "m2modem_1_card")[2] == connector_size("m2_modem_card"),
+    "bpir4 m2modem_1_card body sourced from connectors m2_modem_card");
+assert(sbc_connector("bpir4", "mpcie_1_card")[2] == connector_size("mpcie_card"),
+    "bpir4 mpcie_1_card body sourced from connectors mpcie_card");
+assert(sbc_connector("bpir4", "mpcie_2_card")[2] == connector_size("mpcie_card"),
+    "bpir4 mpcie_2_card body sourced from connectors mpcie_card");
+assert(sbc_connector("bpir4", "m2_ssd_1_card")[2] == connector_size("m2_2280_card"),
+    "bpir4 m2_ssd_1_card body sourced from connectors m2_2280_card");
+// Each card keep-out row shares its socket's own rear-facing y_max (and, for
+// m2_ssd_1, its own key-edge x_max too) — not its min corner — since the card
+// is larger than the socket and must extend inward from the socket's own
+// pin/rear edge to stay within the board footprint (worst-case anchor
+// simplification documented in sbc.scad).
+function _ymax(c) = c[1][1] + c[2][1];
+function _xmax(c) = c[1][0] + c[2][0];
+_eps = 1e-6;
+assert(abs(sbc_connector("bpir4", "m2modem_1_card")[1][0] - sbc_connector("bpir4", "m2modem_1")[1][0]) < _eps
+    && abs(_ymax(sbc_connector("bpir4", "m2modem_1_card")) - _ymax(sbc_connector("bpir4", "m2modem_1"))) < _eps,
+    "bpir4 m2modem_1_card shares m2modem_1's x_min and y_max");
+assert(abs(sbc_connector("bpir4", "mpcie_1_card")[1][0] - sbc_connector("bpir4", "mpcie_1")[1][0]) < _eps
+    && abs(_ymax(sbc_connector("bpir4", "mpcie_1_card")) - _ymax(sbc_connector("bpir4", "mpcie_1"))) < _eps,
+    "bpir4 mpcie_1_card shares mpcie_1's x_min and y_max");
+assert(abs(sbc_connector("bpir4", "mpcie_2_card")[1][0] - sbc_connector("bpir4", "mpcie_2")[1][0]) < _eps
+    && abs(_ymax(sbc_connector("bpir4", "mpcie_2_card")) - _ymax(sbc_connector("bpir4", "mpcie_2"))) < _eps,
+    "bpir4 mpcie_2_card shares mpcie_2's x_min and y_max");
+assert(abs(_xmax(sbc_connector("bpir4", "m2_ssd_1_card")) - _xmax(sbc_connector("bpir4", "m2_ssd_1"))) < _eps
+    && abs(_ymax(sbc_connector("bpir4", "m2_ssd_1_card")) - _ymax(sbc_connector("bpir4", "m2_ssd_1"))) < _eps,
+    "bpir4 m2_ssd_1_card shares m2_ssd_1's x_max and y_max");
 // dip_1 deliberately overhangs the board's xmax edge by 2mm (caliper-confirmed);
 // gpio26_1 is NOT the Pi-family "gpio" name (distinct 26-pin/13-col part).
 assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == "gpio") 1]) == 0,
@@ -118,8 +151,9 @@ _dip = sbc_connector("bpir4", "dip_1");
 assert(_dip[1][0] + _dip[2][0] == 150.0, "bpir4 dip_1 overhangs xmax by 2mm as caliper-specified");
 
 // --- Task 2: underside ("bottom" edge) sockets ---
+// (2x mpcie + m2_ssd socket bodies) + (2x mpcie + m2_ssd card keep-out envelopes, Task 5)
 _bpr_bottom = [for (c = sbc_connectors("bpir4")) if (c[3] == "bottom") c];
-assert(len(_bpr_bottom) == 3, "bpir4 has 3 bottom-face sockets (2x mpcie + m2_ssd)");
+assert(len(_bpr_bottom) == 6, "bpir4 has 6 bottom-face rows (2x mpcie + m2_ssd sockets, plus their 3 card keep-out envelopes)");
 // Bottom convention: z=0 at the board-bottom plane for every bottom connector.
 for (c = _bpr_bottom)
     assert(c[1][2] == 0, str("bpir4 ", c[0], " bottom connector z must be 0 (board-bottom plane)"));

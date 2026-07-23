@@ -9,7 +9,8 @@ assert(connector_known_types() == [
     "pcie_x1", "pcie_x4", "pcie_x8", "pcie_x16", "gpio_2x20",
     /* SP1 additions: */ "usb_a_stack2_shielded", "rj45_shallow",
     /* SFP type (#14): */ "sfp",
-    /* Task 1 additions: */ "microsd", "sim_2ff", "m2_key_b", "m2_key_m", "mpcie"],
+    /* Task 1 additions: */ "microsd", "sim_2ff", "m2_key_b", "m2_key_m", "mpcie",
+    /* card/module keep-out envelopes: */ "m2_modem_card", "m2_2280_card", "mpcie_card"],
     "type list");
 
 // opening axes (fixed design decision)
@@ -42,6 +43,14 @@ assert(connector_opening("sim_2ff")  == "+Y", "sim_2ff opening");
 assert(connector_opening("m2_key_b") == "+Z", "m2_key_b opening");
 assert(connector_opening("m2_key_m") == "+Z", "m2_key_m opening");
 assert(connector_opening("mpcie")    == "+Z", "mpcie opening");
+
+// card/module keep-out envelopes (max plugged-in card footprint, not the socket body)
+assert(connector_size("m2_modem_card") == [30, 52, 3.8],    "m2_modem_card body"); // [A] M.2 2242/3042/3052 max module envelope
+assert(connector_size("m2_2280_card")  == [22, 80, 3.8],    "m2_2280_card body");  // [A] M.2 2280 form factor
+assert(connector_size("mpcie_card")    == [30, 50.95, 5],   "mpcie_card body");    // footprint [A] Mini Card form factor; h [B]/[C] //VERIFY RF-can estimate
+assert(connector_opening("m2_modem_card") == "+Z", "m2_modem_card opening");
+assert(connector_opening("m2_2280_card")  == "+Z", "m2_2280_card opening");
+assert(connector_opening("mpcie_card")    == "+Z", "mpcie_card opening");
 
 // --- body renders + arithmetic guard (geometry verified by render step) ---
 // pcie_x16 body volume = 89*7.5*11.25 = 7509.375 mm^3

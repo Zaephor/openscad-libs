@@ -55,6 +55,10 @@ function _connector_table() = [
     ["m2_key_b", [21.9, 8.7, 3.2], "+Z"],    // [A] TE 2199119-5 (M.2 NGFF, 0.5mm pitch, 3.2mm height, Key B, 67-position, board-to-board)
     ["m2_key_m", [21.9, 8.7, 3.2], "+Z"],    // [B] TE 2199119 series Key M variant (1-2199119-5, "M.2 0.5PITCH 3.2H KEY M"), same family as m2_key_b; envelope not independently re-fetched for the M-key part's own dimension table
     ["mpcie",    [29.90, 8.20, 5.2], "+Z"],  // [A] "0.80mm Pitch Mini PCI Express H=5.2mm Connector" customer drawing (DWG S650S5281XXXXM431XX); X cross-checked against the industry-standard Mini Card form factor 30x50.95mm [A] (card width agrees within 0.1mm; card's 50.95mm length is not part of the connector's own envelope)
+    // --- Card/module keep-out envelopes (max footprint of the plug-in module itself, NOT the socket body above) ---
+    ["m2_modem_card", [30, 52, 3.8],    "+Z"], // [A] M.2 max module envelope for the 2242/3042/3052 length family (governing industry form-factor spec); h=3.8 double-sided-populated worst case
+    ["m2_2280_card",  [22, 80, 3.8],    "+Z"], // [A] M.2 2280 industry-standard card form factor; h=3.8 double-sided-populated worst case
+    ["mpcie_card",    [30, 50.95, 5],   "+Z"], // footprint [A] full-size Mini Card industry-standard form factor (30x50.95mm); h=5 [B]/[C] //VERIFY RF-can-populated estimate ("~4-5mm tall w/ RF cans"), not a hard spec
 ];
 function connector_known_types() = [for (e = _connector_table()) e[0]];
 function _connector_row(type) =

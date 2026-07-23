@@ -236,7 +236,7 @@ function _sbc_table() = [
         // the first of these 4 was previously attributed to the nearby `M2`
         // silkscreen text above; the other 3 were previously attributed to
         // nearby IC clusters: U2/SW3/CN19, VCORE/VPROC, CON2/CON3) is
-        // user-confirmed to actually be ONE socket's multi-length standoff
+        // actually ONE socket's multi-length standoff
         // set: the underside M.2 Key-M SSD's screw-boss options for
         // different card lengths (2242/2260/2280/22110-style), only one of
         // which is populated depending on which physical card length is
@@ -388,6 +388,19 @@ function _sbc_table() = [
           // added for this socket (no caliper mounting-hole data exists for any
           // new Task 2 component — see RESEARCH.md "Task 2: no new mount holes").
           ["m2modem_1", [3.4, 100.5-14-connector_size("m2_key_b")[1], 1.4], connector_size("m2_key_b"), "top"], // [B] caliper x/y; body from connectors m2_key_b (SSOT)
+          // Card keep-out envelope for m2modem_1's actual WWAN module (the row above
+          // is only the small board-mounted m2_key_b socket connector, not the
+          // module that plugs into it). Same x (min corner) as the socket; y shares
+          // the socket's own y_max (its rear-facing edge, per the "14 rear" caliper
+          // reading) and extends forward (-Y) since the module is far longer than
+          // the socket body. Worst-case simplification, not an exact physical
+          // model: the real module's exact offset from the socket's own pins
+          // varies by which physical module (2242/3042/3052) is installed and
+          // isn't precisely known from available data; anchoring at the socket's
+          // own rear-facing edge (rather than its min corner) is required simply
+          // to keep the larger card envelope within the board's own footprint.
+          // Body from connectors m2_modem_card (SSOT).
+          ["m2modem_1_card", [3.4, 100.5-14-connector_size("m2_modem_card")[1], 1.4], connector_size("m2_modem_card"), "top"],
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
           // where left/right swap relative to the top-view frame this whole row
@@ -408,7 +421,21 @@ function _sbc_table() = [
           // max. y from each own "N rear" (unmirrored): y_max=100.5-N,
           // y_min=y_max-d (connectors' own mpcie depth, 8.20).
           ["mpcie_1", [4.5, 100.5-41.9-connector_size("mpcie")[1], 0], connector_size("mpcie"), "bottom"], // [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT). z=0 (board-bottom plane, this library's existing global Z datum) + h protrudes -Z per the bottom convention
+          // Card keep-out envelope for mpcie_1's actual full-size mini-PCIe card
+          // (the row above is only the small board-mounted mpcie socket connector).
+          // Same x (min corner) as the socket; y shares the socket's own y_max
+          // (its rear-facing edge, per the "41.9 rear" caliper reading) and
+          // extends forward (-Y) since the card is longer than the socket body.
+          // Worst-case simplification, not an exact physical model — the real
+          // card's exact offset from the socket's own pins isn't precisely known
+          // from available data; anchoring at the socket's own rear-facing edge
+          // (rather than its min corner) is required simply to keep the larger
+          // card envelope within the board's own footprint. Body from connectors
+          // mpcie_card (SSOT).
+          ["mpcie_1_card", [4.5, 100.5-41.9-connector_size("mpcie_card")[1], 0], connector_size("mpcie_card"), "bottom"],
           ["mpcie_2", [4.5, 100.5-9.2 -connector_size("mpcie")[1], 0], connector_size("mpcie"), "bottom"], // same x as mpcie_1 (two parallel slots, same left-side column, different y) — [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT)
+          // Card keep-out envelope for mpcie_2, same basis as mpcie_1_card above.
+          ["mpcie_2_card", [4.5, 100.5-9.2 -connector_size("mpcie_card")[1], 0], connector_size("mpcie_card"), "bottom"],
           // M.2 Key-M SSD: caliper "7.6 left" -> x_board = 148-7.6 = 140.4
           // (mirror; the OPPOSITE direction from mpcie's "right" readings,
           // since flipped-left and flipped-right mirror to opposite board
@@ -426,6 +453,19 @@ function _sbc_table() = [
           // convention as m2modem_1/dip_1/gpio26_1): y_max=100.5-2=98.5,
           // y_min=98.5-connectors' own m2_key_m depth(8.7)=89.8.
           ["m2_ssd_1", [140.4-connector_size("m2_key_m")[0], 100.5-2-connector_size("m2_key_m")[1], 0], connector_size("m2_key_m"), "bottom"], // [B] caliper x(mirrored)/y; body from connectors m2_key_m (SSOT). See RESEARCH.md for the multi-length (2242/2260/2280/22110) standoff-hole discussion — this connector position is independent of which length card is ultimately installed
+          // Card keep-out envelope for m2_ssd_1's actual 2280 SSD module (the row
+          // above is only the small board-mounted m2_key_m socket connector).
+          // x shares the socket's own x_max (the "key-right" insertion edge,
+          // 140.4) and extends left (-X); y shares the socket's own y_max (its
+          // rear-facing edge, per the "~2 rear" caliper reading) and extends
+          // forward (-Y), since the card is longer than the socket body in both
+          // axes. Worst-case simplification, not an exact physical model — the
+          // real card's exact offset from the socket's own pins isn't precisely
+          // known from available data; anchoring at the socket's own key/rear
+          // edges (rather than its min corner) is required simply to keep the
+          // larger card envelope within the board's own footprint. Body from
+          // connectors m2_2280_card (SSOT).
+          ["m2_ssd_1_card", [140.4-connector_size("m2_2280_card")[0], 100.5-2-connector_size("m2_2280_card")[1], 0], connector_size("m2_2280_card"), "bottom"],
         ] ],
     // Raspberry Pi Zero family (pizero = Zero / Zero W / Zero WH, same mechanicals;
     // pizero2w = Zero 2 W). Connector maps below are pixel-measured off each board's

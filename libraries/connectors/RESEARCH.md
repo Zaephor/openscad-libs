@@ -393,7 +393,7 @@ is out of scope (a later task consumes these types for the bpir4 board row).
   board-mounted slot/header). Tier **[A]**.
 
 ### sim_2ff — mini-SIM (2FF) card holder
-- **Width**: 15mm, tier **[B] caliper** (per plan; matches the industry-
+- **Width**: 15mm, tier **[B] caliper** (matches the industry-
   standard 2FF Mini-SIM card's own 15mm width, itself shown as a reference
   dimension on both GCT `SIM8055` and `SIM8066` Nano-SIM connector drawings'
   "25.00mm Mini / 15.00mm Micro / 12.30mm Nano" comparison diagrams — those
@@ -408,10 +408,10 @@ is out of scope (a later task consumes these types for the bpir4 board row).
   Height from PCB" 2.7mm) and a related TE 6-way mini-SIM connector listing
   (Length 16.3mm, Width 14.8mm, Depth 2.02mm) — two independent TE catalog
   listings for the 2FF format, agreeing with each other on scale (profile
-  height 2.02-2.7mm) and with the plan's 15mm width (their 14.8mm, -0.2mm).
+  height 2.02-2.7mm) and with the caliper-measured 15mm width (their 14.8mm, -0.2mm).
   Tiered **[B]** (corroborated across the two TE listings, not independently
   verified against a primary vendor drawing), not [A].
-- **Confirmed**: `[15, 16.3, 2.7]` (w [B] caliper per plan, d/h [B] TE 2FF
+- **Confirmed**: `[15, 16.3, 2.7]` (w [B] caliper, d/h [B] TE 2FF
   family cross-check), opening `+Y` (card holder, panel-edge insertion).
   Depth uses the 16.3mm reading (TE 6-way listing's "Length", the
   insertion-axis dimension); height uses 2.7mm (TE `2-1705300-7`'s own
@@ -455,7 +455,7 @@ is out of scope (a later task consumes these types for the bpir4 board row).
   connector, same family as `pcie_x*`/M.2 above — mini-PCIe cards insert at
   an angle then press down flat). Tier **[A]** (fetched + read this pass, a
   genuine connector customer drawing, not a card-only reference).
-- **Card cross-check (separate provenance)**: the plan notes the full-size
+- **Card cross-check (separate provenance)**: the full-size
   mini-PCIe **card** is a standard Mini Card form factor, 30 x 50.95mm —
   this is a named industry-standard form factor, tier **[A]**, but is *not*
   itself sourced from this connector drawing (the drawing has no card
@@ -464,6 +464,42 @@ is out of scope (a later task consumes these types for the bpir4 board row).
   is sized to accept the card's edge). The card's 50.95mm length is not part
   of the connector's own body envelope (the card extends well beyond the
   ~8-30mm socket body when mated) and is not used in this table row.
+
+### m2_modem_card — M.2 modem-class card keep-out envelope
+- **Source**: M.2 (NGFF) specification, the governing industry standard for
+  the module length family (2242/3042/3052).
+- **Confirmed**: `[30, 52, 3.8]`, opening `+Z`. Footprint (30x52mm) is the
+  max module envelope covering the 2242/3042/3052 length class, tier **[A]**
+  (named governing spec, not board-specific). Height 3.8mm is the
+  worst-case double-sided-populated component thickness for this module
+  class, tier **[A]**.
+- This is a max **card/module** keep-out envelope, a distinct data class
+  from `m2_key_b`/`m2_key_m` above (which are the small board-mounted socket
+  connector bodies only) — used where a consumer needs the full plugged-in
+  card's clearance volume, not just the socket footprint.
+
+### m2_2280_card — M.2 2280 SSD card keep-out envelope
+- **Source**: M.2 (NGFF) specification, the "2280" form factor designation
+  (22mm width x 80mm length).
+- **Confirmed**: `[22, 80, 3.8]`, opening `+Z`. Footprint tier **[A]**
+  (named industry-standard form factor). Height 3.8mm is the worst-case
+  double-sided-populated component thickness for this module class, tier
+  **[A]**.
+- Same card/module-vs-socket distinction as `m2_modem_card` above, relative
+  to `m2_key_m`.
+
+### mpcie_card — mini-PCIe full-size card keep-out envelope
+- **Source**: footprint from the same industry-standard Mini Card form
+  factor already cited under `mpcie` above (30 x 50.95mm); height from this
+  repo's own research notes on RF-can-populated mini-PCIe cards ("~4-5mm
+  tall w/ RF cans").
+- **Confirmed**: `[30, 50.95, 5]`, opening `+Z`. Footprint (30x50.95mm)
+  tier **[A]** (named industry-standard full-size Mini Card form factor).
+  Height 5mm tier **[B]/[C] //VERIFY** — an estimate for RF-can-populated
+  cards, not a hard spec; taken as the worst-case end of the cited ~4-5mm
+  range.
+- Same card/module-vs-socket distinction as `m2_modem_card` above, relative
+  to `mpcie`.
 
 ### Tally (corrected)
 21 total pairs: **5 same** (incl. 2 upgrades: `gpio_2x20` height, `micro_hdmi` tier), **14 different** (2 new types + 4 weak-evidence/unresolved rows reclassified by this fix pass + 1 tentative weak-evidence row + 7 corroborating/other rows), **2 deferred** (no clean peer — pi5 combo shells), **0 error**. Supersedes the original report's "same: 12, different: 8" tally (which did not match its own table) and the reviewer's interim recount of "9 same / 10 different / 2 deferred" (correct for the table *before* this fix pass; 4 rows flipped same→different in this fix: `microusb_pwr`, `microusb_data`, bpir4 `usb_1`, bpir4 `usbc_pwr_1`).
