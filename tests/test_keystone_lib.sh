@@ -357,7 +357,17 @@ keystone_insert(fit = $FIT);
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert.stl" "$tmp/insert.scad" 2>/dev/null
 
-python3 - "$tmp/insert.stl" "$FIT" <<'PY' || { echo "keystone_insert() geometry check failed"; exit 1; }
+cat > "$tmp/insert_dims.scad" <<'EOF'
+use <keystone/keystone.scad>;
+f = keystone_insert_face();
+echo(f[0]); echo(f[1]); echo(keystone_insert_depth());
+EOF
+insert_dims_out="$(run "$tmp/insert_dims.scad")"
+fw="$(echo "$insert_dims_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+fh="$(echo "$insert_dims_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+depth="$(echo "$insert_dims_out" | grep -m3 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
+
+python3 - "$tmp/insert.stl" "$FIT" "$fw" "$fh" "$depth" <<'PY' || { echo "keystone_insert() geometry check failed"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
 verts=[]
@@ -370,8 +380,7 @@ fit=float(sys.argv[2])
 xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
 errs=[]
 
-fw, fh = 14.3, 16.0   # keystone_insert_face(), mirrored here as the expected values
-depth = 20            # keystone_insert_depth() default
+fw, fh, depth = float(sys.argv[3]), float(sys.argv[4]), float(sys.argv[5])   # live from keystone_insert_face()/keystone_insert_depth()
 body_w, body_h = fw - 2*fit, fh - 2*fit
 top = body_h / 2
 

@@ -521,6 +521,8 @@ module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_dept
         // a hook (lead-in ramp + retention face) at the beam's forward tip.
         beam_w = L[0]; root_z = L[1]; root_thick = L[2]; tip_z = L[3];
         defl_clear = L[5]; hook_peak = L[6]; hook_zext = L[7];
+        assert(root_z > tip_z + hook_zext,
+            "keystone_insert: latch root must sit rearward of the hook tip (root_z > tip_z + hook_zext) for a physical cantilever");
         beam_under = top + defl_clear;        // beam underside: measured flex clearance above body top
         beam_top   = beam_under + latch_wall; // beam's own flat top (tuned wall, not the caliper's 0.9)
         z_root_front = -root_z;                // root block's forward (shallower) face
