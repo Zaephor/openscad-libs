@@ -43,6 +43,8 @@ function _clear() = rack10_clear_width(standard);
 function _int_h() = rack10_device_height(device_u) - floor_th;
 
 // Fit-asserts (width + height; depth in T3 with rear-post-Y).
+// Height cutout is flush top AND bottom (no front_clearance on this axis —
+// see _be_faceplate()), so the gate is exactly _dh() <= _int_h().
 assert(_dh() <= _int_h() + 1e-6,
     str("bay-enclosure: device height ", _dh(), " > ", device_u, "U interior ", _int_h(),
         " (increase device_u)"));
@@ -58,9 +60,15 @@ module _be_faceplate() {
         if (ear_type == "slot")
             rack10_holes(standard, device_u, hole_type="slot", dia=rack10_screw_clearance("10-32"));
         else rack10_holes(standard, device_u, hole_type=ear_type);
-        // device-face cutout (centered on width, resting on the floor line)
+        // device-face cutout (centered on width, resting on the floor line).
+        // Height is flush top AND bottom (cutout height is exactly _dh(),
+        // no front_clearance): the default preset has near-zero height
+        // margin (~0.16mm), and front_clearance has only ever meant
+        // side-edge (width) clearance for the two edges a hand reaches
+        // around — not top/bottom. Width keeps its existing symmetric
+        // 2*front_clearance.
         translate([-(_dw()/2 + front_clearance), -faceplate_th - 1, floor_th])
-            cube([_dw() + 2*front_clearance, faceplate_th + 2, _dh() + 2*front_clearance]);
+            cube([_dw() + 2*front_clearance, faceplate_th + 2, _dh()]);
     }
 }
 
