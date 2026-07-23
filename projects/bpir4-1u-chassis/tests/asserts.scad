@@ -132,4 +132,11 @@ for (c = _rj45)
     assert(abs(c[2][0] - 13.98) < 1e-6,
         str("bpir4 RJ45: ", c[0], " width ", c[2][0], " != 13.98"));
 
+// Underside worst-case clearance: standoff gap must exceed the tallest
+// underside module keep-out by at least underside_clearance.
+assert(standoff_h - _underside_max_hang() >= underside_clearance - 1e-6,
+    str("underside clearance ", standoff_h - _underside_max_hang(),
+        " < required ", underside_clearance,
+        " (max hang ", _underside_max_hang(), ", standoff ", standoff_h, ")"));
+
 // Render nothing (pure assert file).

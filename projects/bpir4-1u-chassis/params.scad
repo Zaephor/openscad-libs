@@ -18,7 +18,20 @@ wall         = 2.4;   // side + rear wall thickness
 floor_th     = 2.0;   // tray floor (flat underside -> stackable)
 lid_th       = 2.0;   // lid plate thickness
 faceplate_th = 3.0;   // front rack panel thickness
-standoff_h   = 5.0;   // board underside clearance above floor
+// Underside module clearance: the board rides high enough that the worst-case
+// underside keep-out (2x mini-PCIe + a double-sided M.2-2280, from the sbc
+// bottom-face rows) never touches the floor. Design fit-value (design-for-print
+// running clearance), NOT a measured tier. standoff_h derives from it below.
+underside_clearance = 1.0;
+// Max downward protrusion of any underside (edge="bottom") component, read live
+// from the sbc row (#55) — never re-literal a module height here.
+function _underside_max_hang() =
+    max([0, for (c = sbc_connectors(BOARD)) if (c[3] == "bottom") c[2][2]]);
+// Was a hand-typed 5.0 (no underside components existed). Now derived so the
+// board rides above the worst-case underside keep-out (#55 bottom-face rows)
+// with underside_clearance to spare — keeps the flat, stackable underside
+// (no floor recesses).
+standoff_h = _underside_max_hang() + underside_clearance;
 stack_gap    = 0.45;  // 1U device-height gap below pitch (rack lib has no
                       // device-height fn — see spec "Library gap noted")
 wall_gap     = 0.25;  // lid-to-wall running clearance per side
