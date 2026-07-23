@@ -12,6 +12,23 @@ assert(drive_size("hdd35")   == [147.0, 101.6, 26.1], "hdd35 size");
 assert(drive_size("ssd25_7") == [100.0, 69.85, 7.0],  "ssd25_7 size");
 assert(drive_size("u2")      == [100.0, 69.85, 15.0], "u2 size");
 
+// bay form factors (#41 Part A) — see RESEARCH.md "Bay form factors"
+assert(drive_family("bay525_hh") == "block", "bay525_hh is a block drive");
+assert(drive_family("bay525_fh") == "block", "bay525_fh is a block drive");
+assert(drive_family("bay35")     == "block", "bay35 is a block drive");
+assert(drive_size("bay525_hh")[1] == 146.05, "bay525_hh width");
+assert(drive_size("bay525_hh")[2] == 42.3,   "bay525_hh half-height");
+assert(drive_size("bay525_fh")[1] == 146.05, "bay525_fh width");
+assert(drive_size("bay525_fh")[2] == 82.55,  "bay525_fh full-height");
+assert(drive_size("bay35")[1]     == 101.6,  "bay35 width");
+assert(drive_size("bay35")[2]     == 25.4,   "bay35 height");
+assert(len([for (t = drive_known_types()) if (t=="bay525_hh"||t=="bay525_fh"||t=="bay35") t]) == 3,
+    "bay types known");
+assert(len(drive_side_holes("bay525_hh")) > 0, "bay525_hh has side holes");
+assert(len(drive_side_holes("bay525_fh")) > 0, "bay525_fh has side holes");
+assert(len(drive_side_holes("bay35"))     > 0, "bay35 has side holes");
+assert(len(drive_bottom_holes("bay525_hh")) == 0, "bay525_hh side-mount only, no bottom holes");
+
 // every block type: [w,d,h] positive; holes inside footprint (closure)
 module _blk(t) {
     s = drive_size(t);
@@ -21,7 +38,7 @@ module _blk(t) {
     for (h = drive_side_holes(t))
         assert(h[1]>=0 && h[1]<=s[2], str(t," side hole z within height"));
 }
-for (t = ["hdd35","ssd25_7","ssd25_9","ssd25_15","u2"]) _blk(t);
+for (t = ["hdd35","ssd25_7","ssd25_9","ssd25_15","u2","bay525_hh","bay525_fh","bay35"]) _blk(t);
 
 // connector record shape
 c = drive_connector("hdd35");

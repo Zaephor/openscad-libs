@@ -704,3 +704,92 @@ multi-role `WARNING:` echo (fired when `role=undef` and a type's holes span
 `tests/test_drives_lib.sh`'s no-role-consumer control. That's expected, not a
 bug: the WARNING idiom exists for API parity with `sbc` (which does have
 multi-role boards), not because `drives` needs it yet.
+
+## Bay form factors — `bay525_hh` / `bay525_fh` / `bay35` (backlog #41 Part A)
+
+Scope: front-accessible **bay devices** (5.25" optical drives, 3.5" bay
+accessories — card readers, fan controllers), side-mounted into a bay's
+rails, as opposed to the internal storage drives already tabled above. Three
+new rows in `_block_table()`.
+
+### Source fetched and read this pass
+
+| # | Spec / doc | URL | Cached as |
+|---|---|---|---|
+| 8 | **SFF-8501 Rev 1.1** — Form Factor of 5.25" Disk Drives (5 1/4" envelope + full-height mounting-hole table, Table 5-1 / Figure 5-1) | `https://xdevs.com/doc/Seagate/SFF-8501.PDF` | `sff-8501.pdf` |
+
+`SFF-8551` (5.25" CD-ROM 1"-High form factor — the more directly-on-point
+spec for a half-height optical bay device) was **not** locatable as a public
+PDF this pass (SNIA's own listing shows it as a distinct, still-controlled
+document, unlike SFF-8501/8301/8201/8223/8639 above); `SFF-8501`'s envelope
+table is used as the fetched anchor instead, cross-checked against community
+consensus for the side-mount-hole positions (below), since SFF-8501's own
+hole table is transcribed for the full-height *magnetic-disk*-era mounting
+convention, not the slimline optical-drive rail convention this project's
+consumer (`bay-enclosure`, side-rail mount) actually needs.
+
+### Envelope — width + full height — SFF-8501 Rev 1.1 Table 5-1 — tier [A]
+
+- Width `A5` = 146.05mm — [A], fetched/read this pass. Used for
+  `bay525_hh`/`bay525_fh` (both 5.25" width).
+- Full height `A1` = 82.55mm (max) — [A], fetched/read this pass. This is
+  `bay525_fh`'s height directly.
+- Half-height `bay525_hh` = 42.3mm — **not** in SFF-8501 (full-height-only
+  table); tier [B], corroborated across 2 independent community threads
+  (Overclock.net "5.25 drive bay size"; a Tom's Hardware/PCReview-style
+  drive-bay-dimensions thread) both giving 42–42.5mm for a half-height
+  optical drive, consistent with (but not identical to) exactly half of the
+  fetched 82.55mm full-height figure.
+- Depth (`L`, length) is NOT a fixed dimension for either height class —
+  vendors vary; SFF-8501's own `A4`=204.72mm is an upper-bound envelope for
+  the full-height magnetic-disk case, not a per-device nominal. `bay525_hh`/
+  `bay525_fh` ship a nominal **200.0mm** placeholder, `bay35` **170.0mm** —
+  both tier [C]//VERIFY (design nominal, not spec-mandated; a real device's
+  depth should be checked against `_usable_depth()`'s fit-assert at consumer
+  time, per the bay-enclosure plan).
+
+### Side mount holes — `SIDE_525()` — tier [B]
+
+SFF-8501's own Table 5-1 mounting-hole entries (`A7`–`A11`, `A13`, `A14`) are
+transcribed for the **full-height magnetic-disk** mounting convention (an
+older, distinct physical pattern from the modern slimline-optical-drive bay
+rail screw pattern this project's `bay-enclosure` consumer actually targets)
+and are not used directly for that reason — using them would misrepresent a
+different device generation's holes as the modern optical-bay pattern.
+Instead, `SIDE_525()` uses the modern optical-drive convention, corroborated
+across 2 independent community threads (Overclockers.com "5 1/4 bay screw
+hole dimensions?"; a second independent drive-bay-dimensions thread) that
+agree closely on: front-face-to-first-hole-center ≈ 52mm, hole-to-hole
+spacing ≈ 79–80mm, hole height from the drive's underside ≈ 10mm (a second,
+alternate 22mm row also appears in one source — not used here; picking the
+single lower row keeps one canonical pattern rather than fabricating a
+choice between two undifferentiated options). `SIDE_525()` = X positions
+52.0 / 131.0 (52 + 79), Z = 10.0 — tier [B] (numeric value + role), face
+orientation (top vs. bottom datum) //VERIFY (same caveat as `SIDE_35()`
+above — no source explicitly labels which face the row is measured from).
+
+### `bay35` — tier mixed
+
+- Width 101.6mm: reused from `hdd35`'s own already-tiered width datum (same
+  3.5" envelope width; no new fetch) — not re-derived.
+- Height 25.4mm (1"): the well-established 3.5"-slimline height class (the
+  same class 3.5" floppy drives and modern 3.5"-bay panel accessories use,
+  distinct from the 41.3mm/1.63"-high full-height 3.5" HDD class) — tier [B]
+  community consensus; SFF-8300 suite (which formally covers 3.5" height
+  classes) was not re-fetched this pass to confirm the exact figure.
+- Side holes: no distinct standard found for 3.5"-bay *accessory* devices
+  (as opposed to 3.5" HDDs); `bay35` reuses `SIDE_35()` verbatim on the
+  assumption that a 3.5"-bay accessory's casing/rails are physically
+  interchangeable with a 3.5" HDD's (same bay, same drive cage) — tier [C]
+  (reasonable inference, not an independently confirmed accessory-specific
+  spec).
+
+### Connector field
+
+All three rows carry `["sata", C35_POS(), C35_EXT()]` as a **documented
+placeholder** — bay devices' actual rear connector (optical SATA, or nothing
+at all for a bay accessory) is not consumed by the `bay-enclosure` project
+(rear stays open in that design), so the connector record is never rendered
+for these types. Reusing the already-tiered SATA connector record avoids
+inventing an unused, untiered value; not a claim that bay devices' real
+connector sits at that position.
