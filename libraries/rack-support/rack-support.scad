@@ -52,11 +52,11 @@ module _rack_support_yz_prism(pts, xw) {
 // the difference() below removes its central slot-width portion (same
 // material the cavity removes from the floor there) and leaves two ribs
 // flanking the slot, bonded to both the floor slab and the mounting wall.
-// Support-free: the floor/gusset/chamfer are a constant Y-cross-section (no
-// new unsupported area appears) in the print orientation that lays the
-// panel's broad face flat (thickness axis vertical, -Y/mouth-side up per the
-// lib header); the mouth is chamfered so the tongue gets a lead-in ramp
-// instead of a sharp lip.
+// Support-free: printed mouth-up (-Y up), each layer's material footprint
+// shrinks monotonically going up -- the gusset narrows to zero at the mouth
+// while the floor/wall stay continuous -- so every layer is supported by a
+// wider one below it; the mouth is chamfered so the tongue gets a lead-in
+// ramp instead of a sharp lip.
 module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
     w  = rack10_panel_width(standard);
     h  = rack10_device_height(u);

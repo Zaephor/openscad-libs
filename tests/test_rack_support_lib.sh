@@ -171,4 +171,31 @@ for i in range(n):
 sys.exit(0 if abs(min(zs)-2)<0.05 else 1)
 PY
 
+# --- plate/tongue intersection regression (final review, Minor #2) ---
+# The README consumer-contract placement formula (mirrored from
+# assembly.scad, which already uses it to seat the reference stub tray):
+#   reach = rack10_rear_post_y(standard) - rack_support_engagement_depth()
+#   translate([0, reach, 0]) rack_support_tongue();
+#   translate([0, rack10_rear_post_y(standard), 0]) rack_support_plate(standard, u);
+# At that placement the tongue must seat inside the plate's channel cavity
+# without clipping into any of the plate's solid material -- intersection()
+# of the two solids must render EMPTY, the same "is empty" idiom the slot-
+# cavity/hole probes above use (OpenSCAD prints "Current top level object
+# is empty." and writes no STL).
+cat > "$tmp/probe_mate.scad" <<'EOF'
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+u = 1;
+reach = rack10_rear_post_y(standard) - rack_support_engagement_depth();
+intersection() {
+    translate([0, rack10_rear_post_y(standard), 0]) rack_support_plate(standard, u);
+    translate([0, reach, 0]) rack_support_tongue();
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/probe_mate.stl" "$tmp/probe_mate.scad" 2>&1)"
+if [ -f "$tmp/probe_mate.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
+  echo "rack_support_plate/rack_support_tongue clip through each other at the documented placement (expected empty intersection):"; echo "$out"; exit 1
+fi
+
 echo ok
