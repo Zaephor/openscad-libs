@@ -6,7 +6,7 @@
 | Printer | Bambu P1S |
 | Nozzle | 0.4 mm |
 | Layer height | 0.2 mm |
-| Walls / perimeters | 3 minimum; **>= 6 (2.4mm) on the side walls and floor/buttress/tongue** — load-bearing per the `rack-support` #40 consumer contract, not cosmetic |
+| Walls / perimeters | 3 minimum; **>= 6 (2.4mm) on the side walls** — load-bearing per the `rack-support` #40 consumer contract, not cosmetic. The floor/buttress/tongue are thin by design (`floor_th`=1.2mm, ~3 layers) to fit the tightest preset's height budget — print those regions **solid** (100% infill override or a large enough Infill setting to fill them) rather than targeting a wall-count figure |
 | Infill | 20% gyroid |
 | Print speed | 50 mm/s |
 | Supports | None — support-free by construction (see below) |
