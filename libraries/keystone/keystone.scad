@@ -34,11 +34,16 @@
 //                    material behind a thin panel so "standard"'s real
 //                    channel always lands in solid material regardless of
 //                    panel thickness (no-op for "face");
-//                    keystone_insert(plate_thickness, fit, style): geometric
-//                    mate-reference body, plug = keystone_face() (NOT
-//                    print-tuned in v1; "standard"'s real fulcrum/arm
-//                    mechanism is keystone_notch()-derived, see its own
-//                    comment)
+//                    keystone_insert(fit, latch_wall, depth, blank, guides):
+//                    caliper-faithful flagship insert (#54) -- body + guide
+//                    ribs + fixed retention lug + cantilever snap-fit latch,
+//                    built from the keystone_insert_*() data accessors below.
+//                    Style-independent (a single measured mechanism, not
+//                    keyed to "standard"/"face"); the slot/opening this
+//                    insert eventually mates is a DEFERRED, separate effort
+//                    (see this module's own comment) -- keystone_slot()/
+//                    keystone_notch() above remain the OLD guessed-mechanism
+//                    data, parked, not yet reconciled to this insert.
 //   + Fit-check    — keystone_pitch()/min_pitch(style)/pitch_ok(pitch,style)/
 //                    layout_ok(xs,style) + keystone_pitch_assert(pitch,style):
 //                    single-source port-spacing guard, boss-footprint-driven
@@ -51,15 +56,17 @@
 //
 // Keystone is a de-facto standard; expect [A]/[B]/VERIFY. opening/pitch/tmin
 // (both styles) and the "standard" channel/notch geometry (keystone_slot(),
-// keystone_notch(), #38) are sourced+tiered below; body depth+W/H, min_wall,
-// tmax, and keystone_tab() numerics remain //VERIFY pending stronger
-// corroboration — see RESEARCH.md.
+// keystone_notch(), #38) are sourced+tiered below; body depth+W/H and
+// min_wall remain //VERIFY pending stronger corroboration — see RESEARCH.md.
+// The flagship keystone_insert() (#54) is caliper [B]-tiered, see its own
+// data accessors below.
 // All three roles implemented: (1) data table + accessor functions
 // (keystone_opening(), keystone_body(), keystone_plate_thickness(), keystone_pitch(),
-// keystone_min_wall(), keystone_tab(), keystone_slot(), keystone_notch(),
-// keystone_boss_footprint()), (2) keystone_placeholder() envelope for
-// fit-check, and (3) keystone_cutout()/keystone_boss()/keystone_insert()
-// hole-stamp/mate-reference modules.
+// keystone_min_wall(), keystone_slot(), keystone_notch(),
+// keystone_boss_footprint(), keystone_insert_face()/_depth()/_guide_rib()/
+// _lug()/_latch()), (2) keystone_placeholder() envelope for fit-check, and
+// (3) keystone_cutout()/keystone_boss()/keystone_insert() hole-stamp/
+// mate-reference modules.
 
 $fn = 48;
 
@@ -224,18 +231,23 @@ function keystone_pitch()           = 19.05;
 // with an actual print test (or point at a shared print-convention library
 // value, if/when one exists) before treating as load-bearing.
 function keystone_min_wall()        = 1.6;
-// tab: [hook_ledge_z, tab_thickness, hook_edge, latch_edge] — mate-reference
-// placeholder numerics for keystone_insert()'s "face" branch ONLY (unchanged
-// since #28). "standard"'s real retention shape comes from keystone_notch()
-// instead -- #38 Task 3 rebuilt keystone_insert()'s "standard" branch on
-// keystone_notch()'s fulcrum/arm geometry, and it no longer reads this
-// function at all (see keystone_insert()'s own comment). hook_edge/
-// latch_edge //VERIFY: Wikipedia's "Keystone module" article describes a
-// fixed angled flange opposite a flexing cantilever latch -- a single
-// secondary source, not independently corroborated, so it does not earn
-// [B].
-function keystone_tab(style = undef) =
-    let(s = _keystone_resolve_style(style)) [1.0, 1.2, "+Y", "-Y"];
+// keystone_insert_face()/_depth()/_guide_rib()/_lug()/_latch(): flagship
+// insert mechanism data (#54 Task 1, RESEARCH.md "Flagship insert mechanism
+// -- [B] caliper (#54)"), Specimen A (Tecmojo) nominal; Specimen B
+// (VCELINK, a wider/stiffer bound the eventual slot must clear) recorded in
+// RESEARCH.md only, not exposed as its own accessor this task. All z values
+// are POSITIVE magnitudes behind the front face (Z=0); keystone_insert()
+// (a future task) negates them into -Z.
+// --- Flagship insert data (caliper [B], Tecmojo nominal; z = magnitude behind face) ---
+function keystone_insert_face()  = [14.3, 16.0];               // [B] caliper (both specimens agree on W)
+function keystone_insert_depth() = 20;                          // [B] caliper — latch-root lower bound ~18.6 + margin
+function keystone_insert_guide_rib() = [0.8, 7.6, 1.4, 10.0];  // out, run, thick, z0  [B] caliper
+function keystone_insert_lug()   = [7.8, 1.2, 7.0, 6.6];       // w, prot, zlen, z0    [B] caliper
+function keystone_insert_latch() = [9.2, 15.0, 3.6, 5.2, 0.9, 2.2, 4.3, 3.0, 3.1];
+                                    // beam_w, root_z, root_thick, tip_z, beam_wall, defl_clear, hook_peak, hook_zext, body_top  [B] caliper
+                                    // (body_top, index [8], is recorded for reference/provenance only -- like beam_wall
+                                    // (index [4]), it's not used verbatim; the module derives an equivalent value
+                                    // internally instead: defl_clear + latch_wall)
 
 // keystone_boss_footprint(style, clearance): [w, h, y_center] rectangular
 // footprint (X,Y) for keystone_boss(style) below -- "standard"'s channel
@@ -432,151 +444,245 @@ module keystone_boss(plate_thickness = 3.0, clearance = 0.25, style = undef) {
     }
 }
 
-// _keystone_std_notch(width, base, prot, surf, zc): one triangular retention
-// notch for keystone_insert("standard"). Protrudes +Y from a carrier surface
-// at Y=surf, rising `prot` beyond it, `base` long in Z (centred at zc), `width`
-// wide in X (centred). The vertical CATCH face is toward the front (+Z, shallow
-// end); a ramp descends toward the rear (deep, -Z) so a straight push-in cams
-// past the wall. Caller mirrors in Y for the bottom (fulcrum) side.
-module _keystone_std_notch(width, base, prot, surf, zc) {
-    z_catch = zc + base / 2;   // toward front: vertical catch face
-    z_ramp  = zc - base / 2;   // toward rear: ramp down to the surface
+// _keystone_insert_ramp(w, prot, z_flush, z_full): a wedge protruding −Y,
+// flush (0 protrusion) at z=z_flush tapering to full `prot` protrusion at
+// z=z_full -- one continuous surface serving as BOTH the lead-in ramp and
+// the retention (catch) face (construction simplification: the caliper
+// measures the feature's envelope -- width/protrusion/z-span -- not its
+// internal ramp curvature, same spirit as the old _keystone_std_notch()
+// this replaces). Built against the caller's local Y=0 plane; mirror in Y
+// at the call site for a +Y-protruding feature (the latch hook).
+module _keystone_insert_ramp(w, prot, z_flush, z_full) {
+    eps = 0.02;
     hull() {
-        translate([-width / 2, surf, z_catch - 0.01]) cube([width, prot, 0.02]);
-        translate([-width / 2, surf, z_ramp])         cube([width, 0.01, 0.01]);
+        translate([-w / 2, -eps, z_flush - eps / 2]) cube([w, eps, eps]);
+        translate([-w / 2, -prot, z_full])           cube([w, prot + eps, eps]);
     }
 }
 
-/* [Insert] — geometric keystone mate-reference (NOT print-tuned; a print-ready
-   flexing-latch snap insert is out of scope for v1, see backlog #22). Datum
-   matches keystone_cutout(...,style) so keystone_insert(...,style) dropped into
-   the same-style cutout overlays for a virtual mate-check. Front flange stops
-   at Z=0 (grows +Z, common bezel both styles); plug passes through the window.
-   Plug cross-section is ALWAYS the real jack face (keystone_face()), style-
-   independent — the window it threads is the style-varying part, not the jack.
-   `fit` = clearance the plug sits under the face, per side.
-   Retention geometry differs per style:
-     "face": keystone_tab(style)-derived. hook (+Y) rides just behind the front
-             face; latch (-Y) bumps out past the window's raw edge but entirely
-             behind the plate rear (open air there, not solid material) -- grips
-             the plate's flat front/rear faces (pre-#28 model, unchanged;
-             flex_side/deflect are ignored for "face").
-     "standard" (#38): the real push-to-click mechanism (RESEARCH.md "Standard
-             keystone latch geometry (#38)"). A solid FULCRUM rib (default
-             bottom) carries a triangular notch seating in keystone_slot()'s
-             bottom wall-slit; a thin cantilever FLEXING ARM (default top),
-             separated from the plug by a relief gap so it can deflect, carries
-             its own triangular notch seating in the top wall-slit. Both notch
-             tips sit at the SAME depth (keystone_notch()'s fulcrum_z/topnotch_z,
-             ~7.1-7.4mm behind the front face) INSIDE their slit voids -- the
-             seated notches never touch solid frame (a mate, not interference).
-             `flex_side` in "top"(default)/"bottom" swaps which surface is the
-             rigid fulcrum vs the flexing arm (a Y-mirror). `deflect` in 0..1
-             (motion-viz only; 0 = relaxed/seated, assembly.scad drives it)
-             pulls both notches inward toward the mouth centre so they clear the
-             channel's wall bridges during the straight push-in sweep -- the
-             flexing arm's inward travel is real spring deflection, the rigid
-             fulcrum notch's is a non-kinematic stand-in for its triangular ramp
-             camming past the wall (documented viz simplification; the STATIC
-             seated fulcrum is geometrically rigid). The notch base/protrusion/
-             depth values are keystone_notch()-tiered //VERIFY (single-model,
-             366437) and used verbatim; the arm's own thickness/free-length/root
-             (keystone_notch()[3..5], //VERIFY) are NOT used verbatim -- 366437's
-             arm_root_z=20 / arm_length=14 are that author's compact hairpin
-             fold and are physically incompatible with this frame's ~10mm-deep
-             channel (they would punch through the back wall), so the arm here is
-             rooted at the plug rear and sized to fit (a mate-reference/print
-             convention choice, //VERIFY, same spirit as keystone_min_wall()).
-             The support-free printable snap version owns real arm/relief tuning
-             (#22). */
-module keystone_insert(plate_thickness = 3.0, fit = 0.2, style = "standard",
-                       flex_side = "top", deflect = 0) {
-    s = _keystone_resolve_style(style);
-    f = keystone_face();            // [fw, fh] — the real jack, style-independent
-    flange  = 1.5;                  // flange lip beyond the window, per side
-    plug_w  = f[0] - 2 * fit;       // plug cross-section: jack face, less `fit` per side
-    plug_h_xy = f[1] - 2 * fit;
-    if (s == "face") {
-        o = keystone_opening(s);    // [ow, oh] — the window "face"'s cutout leaves
-        t = keystone_tab(s);        // [hook_ledge_z, tab_thickness, hook_edge, latch_edge]
-        ledge_z = t[0];
-        tab_th  = t[1];
-        plug_h  = plate_thickness + 3;   // reaches 3mm behind the plate rear (pre-#28)
-        // inward deflection (motion-viz only, deflect 0=seated): retract the
-        // retention tabs to within the raw window so they clear the plate during
-        // the straight push-in sweep, springing to their seated grip at deflect
-        // 0. Only the -Y latch bump actually protrudes past the window (the +Y
-        // hook already sits inside it), but both retract for symmetry. d_face
-        // brings the latch's outer edge to o[1]/2 - 0.3 (inside the window).
-        // 0.3mm margin //VERIFY (print-convention clearance, as elsewhere here).
-        d_face = deflect * ((o[1]/2 + tab_th - fit) - (o[1]/2 - 0.3));
-        union() {
-            // front flange: front stop, Z=0..+1.2
-            translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
-                cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
-            // through-plug: jack FACE cross-section less `fit` per side
-            translate([-plug_w/2, -plug_h_xy/2, -plug_h])
-                cube([plug_w, plug_h_xy, plug_h]);
-            // top hook ledge on +Y edge, engaging just behind the front face.
-            translate([0, -d_face, 0])
-                translate([-(o[0]/2 - fit), plug_h_xy/2, -(ledge_z + tab_th)])
-                    cube([o[0] - 2*fit, o[1]/2 - plug_h_xy/2, tab_th]);
-            // bottom latch bump on -Y edge, behind the plate rear.
-            translate([0, d_face, 0])
-                translate([-(o[0]/2 - fit), -(o[1]/2 + tab_th - fit), -(plate_thickness + tab_th)])
-                    cube([o[0] - 2*fit, (o[1]/2 + tab_th - fit) - plug_h_xy/2, tab_th]);
+// _keystone_insert_ramp_x(run, prot, z_flush, z_full): same construction as
+// _keystone_insert_ramp() but protruding in +X (run along Y, centered on
+// Y=0) instead of -Y -- used for the guide ribs' side (X) protrusion.
+// Flush (0 protrusion) at z=z_flush, full `prot` protrusion at z=z_full.
+// Mirror in X at the call site for a -X-protruding feature (the left rib).
+module _keystone_insert_ramp_x(run, prot, z_flush, z_full) {
+    eps = 0.02;
+    hull() {
+        translate([0, -run / 2, z_flush - eps / 2]) cube([eps, run, eps]);
+        translate([0, -run / 2, z_full])            cube([prot + eps, run, eps]);
+    }
+}
+
+/* [Insert] — caliper-faithful flagship insert (#54): insert body + guide
+   ribs + fixed retention lug + cantilever snap-fit latch, built from the
+   keystone_insert_*() data accessors above (Tecmojo nominal, [B] caliper).
+   Datum: front (flange) face at Z=0, body extends into −Z. Style-
+   independent (one measured mechanism, not keyed to "standard"/"face" --
+   supersedes the old guessed per-style keystone_insert()/keystone_tab()).
+   `fit` undersizes the BODY plug only (per side) for slot-engagement
+   clearance; the retention features (ribs/lug/latch) keep their measured
+   dimensions, anchored to the fitted body's own top/bottom surfaces so they
+   always stay attached regardless of `fit`. `latch_wall` is the ONE
+   print-tunable dimension (replaces the caliper's as-measured 0.9mm beam
+   wall, keystone_insert_latch()[4], which is not used verbatim -- PETG
+   compliance tuning per the design spec). `depth` is the parametric body
+   depth (default keystone_insert_depth()); `blank=true` renders a solid
+   body (no RJ45 pass-through -- that receptacle is explicitly deferred, see
+   the spec's Out-of-scope; blank=false aborts rather than silently omitting
+   it). `guides=false` omits the L/R guide ribs.
+   The slot/panel opening this insert eventually mates is a SEPARATE,
+   deferred effort (see keystone_slot()/keystone_notch()'s own comments) --
+   this module does not attempt to fit keystone_cutout()/keystone_boss().
+
+   PRINT ORIENTATION (#54 Task 3, design-for-print): print AS GENERATED, NO
+   rotation -- rear face (Z=-depth, the deepest point) DOWN on the bed,
+   front face (Z=0) UP. This is the OPPOSITE convention from
+   keystone_cutout()/keystone_boss() (which explicitly flip 180deg to get
+   their own front-down) -- the two modules don't yet mate (see above), so
+   there's no consistency requirement between them, and this insert's
+   own natural/unrotated pose already happens to be the printable one: the
+   cantilever latch (root+beam+hook) floats `defl_clear` above the body
+   with NO material connecting them except at the root -- if the body's
+   depth axis (Z) is anything other than the vertical build axis, the beam
+   becomes a ~7mm shelf cantilevered from a single anchor with open air
+   underneath for its whole run (fails at any orientation where Z is
+   horizontal, regardless of angle -- this is a floating-island problem,
+   not an overhang-angle one). Rear-down means the root (Z furthest into
+   -Z, closest to the bed) prints first and is anchored directly to the
+   body; the beam then extends "upward" (toward shallower Z) as a straight
+   extrusion along its OWN length axis -- each cross-sectional layer sits
+   directly on the identical layer beneath it, so the whole latch needs NO
+   support.
+   Known trade-offs accepted with this orientation (both judged, not
+   oversights):
+     - STRENGTH: the beam's flex (it bends about X when deflected in Y
+       during insertion) puts its bending stress along Z at the root --
+       FDM's weakest interlayer direction (strength-physics.md). Support-
+       free printability is this task's hard constraint and wins; if latch
+       flex-fatigue durability becomes a real problem in practice, that's a
+       candidate for a future revisit (would need a different mechanism
+       orientation, likely trading back some support-free-ness -- flagged
+       here, not solved).
+     - SMALL NUBS, CORNER-CHAMFERED (#54 Task 3 review fix): the lug's and
+       hook's own retention/catch faces (~1.2mm and ~1.1mm protrusion
+       respectively at default latch_wall), and the guide ribs' own 0.8mm
+       outward step, each originally appeared with their full protrusion in
+       a single abrupt layer transition -- a flat unsupported shelf per
+       overhangs-supports.md, however small. Each now has a small mirrored
+       ramp (reusing `_keystone_insert_ramp()`/`_keystone_insert_ramp_x()`)
+       grown in from 0 protrusion on the far (rear-down build-order-earlier)
+       side of that boundary, `_keystone_chamfer_margin()`-scaled under
+       45deg, so the transition is self-supporting. This only ADDS material
+       behind the existing boundary -- the retention face itself (still
+       full width/height exactly at its original z_full/z_hook_rear/
+       z_rib_deep) is untouched, so the catching shoulder the snap
+       mechanism depends on is preserved.
+   The root block itself (pure rigid anchor, no camming/catching function)
+   WAS reshaped below: a 45deg-safe gusset taper instead of an abrupt step,
+   since nothing functional depends on its shape (see inline comment). */
+module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_depth(),
+                       blank = true, guides = true) {
+    assert(blank, "keystone_insert: blank=false (RJ45 pass-through receptacle) is not yet implemented -- deferred, see the keystone-insert design spec's Out-of-scope");
+
+    f   = keystone_insert_face();       // [fw, fh]
+    rib = keystone_insert_guide_rib();  // [out, run, thick, z0]
+    lug = keystone_insert_lug();        // [w, prot, zlen, z0]
+    L   = keystone_insert_latch();      // [beam_w,root_z,root_thick,tip_z,beam_wall,defl_clear,hook_peak,hook_zext,body_top]
+
+    assert(depth >= L[1] + L[2],
+        str("keystone_insert: depth ", depth, " too shallow for the latch root (needs >= ", L[1] + L[2], ")"));
+
+    body_w = f[0] - 2 * fit;
+    body_h = f[1] - 2 * fit;
+    top    = body_h / 2;   // body's own top (+Y) surface -- the latch's z=0 reference plane
+    bot    = -body_h / 2;  // body's own bottom (-Y) surface -- the lug's reference plane
+
+    union() {
+        // insert body: front face flush at Z=0, grows -Z the full `depth`.
+        translate([-body_w / 2, -body_h / 2, -depth])
+            cube([body_w, body_h, depth]);
+
+        // guide ribs (L/R, alignment fins), each a short fin protruding `out`
+        // past the body side, `run` tall (centered on Y), `thick` deep in Z
+        // starting `z0` behind the front face.
+        if (guides) {
+            rib_out = rib[0]; rib_run = rib[1]; rib_thick = rib[2]; rib_z0 = rib[3];
+            z_rib_deep = -(rib_z0 + rib_thick);
+            rib_chamfer = rib_out * _keystone_chamfer_margin();
+            for (side = [-1, 1])
+                translate([side > 0 ? body_w / 2 : -body_w / 2 - rib_out,
+                           -rib_run / 2, -(rib_z0 + rib_thick)])
+                    cube([rib_out, rib_run, rib_thick]);
+            // Print-safety corner chamfer (#54 Task 3 review fix): the rib's
+            // deep (-Z) edge appears at full rib_out protrusion with nothing
+            // beneath it in the rear-down build order (a flat unsupported
+            // shelf, see overhangs-supports.md). Add a small 45deg-safe
+            // lead-in ramp below it, same treatment as the lug/hook below.
+            for (side = [-1, 1])
+                translate([side > 0 ? body_w / 2 : -body_w / 2, 0, 0])
+                    mirror([side > 0 ? 0 : 1, 0, 0])
+                        _keystone_insert_ramp_x(rib_run, rib_out, z_rib_deep - rib_chamfer, z_rib_deep);
         }
-    } else { // "standard" (#38)
-        assert(flex_side == "top" || flex_side == "bottom",
-            str("keystone_insert: flex_side must be \"top\" or \"bottom\", got \"", flex_side, "\""));
-        o  = keystone_opening(s);   // [ow, oh] — flange bezel size
-        sl = keystone_slot(s);      // [bwd,wt,mw,mh,tsw,tsl,tsd,bsw,bsl,bsd]
-        nt = keystone_notch(s);     // [fb,fp,fz,at,al,arz,tb,tp,tz]
-        mh2  = sl[3] / 2;           // mouth half-height (frame void boundary)
-        surf = mh2 - fit;           // carrier outer surface, just inside the mouth
-        nw   = plug_w;              // notch/rib width (within the full-width slit)
-        // Construction literals below are mate-reference/print-convention
-        // choices (//VERIFY, same spirit as keystone_min_wall() -- not measured
-        // hardware dims; the load-bearing measured values are the keystone_notch()
-        // notch base/protrusion/depth used verbatim above/below, and keystone_slot()).
-        plug_front = 0.5;           // plug fuses into the flange (Z 0..1.2) //VERIFY
-        plug_rear  = -(sl[0] - 0.5);// plug tip stops 0.5mm short of the back wall //VERIFY (0.5 margin)
-        fb = nt[0]; fp = nt[1]; fz = -nt[2];   // fulcrum notch: base, protrusion, depth
-        tb = nt[6]; tp = nt[7]; tz = -nt[8];   // arm notch:     base, protrusion, depth
-        arm_th   = 0.7;             // arm bar thickness, adapted to fit the mouth //VERIFY
-        arm_in   = surf - arm_th;   // arm underside
-        arm_front = tz + tb / 2 + 1.0;         // arm free tip, 1.0mm forward of its notch //VERIFY (1.0)
-        root_len = 1.5;            // deep root block joining arm to plug //VERIFY
-        rib_front = -4.0;          // fulcrum rib front, stays behind the wall bridge //VERIFY
-        // inward deflection (motion-viz only): pull each notch tip to mouth-0.3
-        // (0.3mm clearance margin past the mouth boundary //VERIFY)
-        d_top = deflect * (surf + tp - (mh2 - 0.3));
-        d_bot = deflect * (surf + fp - (mh2 - 0.3));
-        // canonical build: flexing arm on +Y (top), rigid fulcrum on -Y (bottom).
-        // flex_side == "bottom" mirrors the whole assembly in Y (scale -1).
-        scale([1, flex_side == "bottom" ? -1 : 1, 1])
+
+        // fixed retention lug (bottom, -Y): the rigid pivot/anchor. Lead-in
+        // ramp toward the front, retention face toward the rear (deeper).
+        lug_w = lug[0]; lug_prot = lug[1]; lug_zlen = lug[2]; lug_z0 = lug[3];
+        z_lug_full = -(lug_z0 + lug_zlen);
+        lug_chamfer = lug_prot * _keystone_chamfer_margin();
+        translate([0, bot, 0])
+            _keystone_insert_ramp(lug_w, lug_prot, -lug_z0, z_lug_full);
+        // Print-safety corner chamfer (#54 Task 3 review fix): the ramp above
+        // only exists between -lug_z0 and z_lug_full, so at z_lug_full the
+        // retention face's full protrusion appears with nothing beneath it
+        // (a flat unsupported shelf). Mirror the same ramp helper on the far
+        // side of that boundary so it grows in from 0 instead of stepping --
+        // spares the retention face itself (still full width/height exactly
+        // at z_lug_full), only chamfers the unsupported edge below it.
+        translate([0, bot, 0])
+            _keystone_insert_ramp(lug_w, lug_prot, z_lug_full - lug_chamfer, z_lug_full);
+
+        // cantilever snap-fit latch (top, +Y): rigid root block (anchors the
+        // beam to the body near the rear) + a forward-cantilevering beam +
+        // a hook (lead-in ramp + retention face) at the beam's forward tip.
+        beam_w = L[0]; root_z = L[1]; root_thick = L[2]; tip_z = L[3];
+        defl_clear = L[5]; hook_peak = L[6]; hook_zext = L[7];
+        assert(root_z > tip_z + hook_zext,
+            "keystone_insert: latch root must sit rearward of the hook tip (root_z > tip_z + hook_zext) for a physical cantilever");
+        beam_under = top + defl_clear;        // beam underside: measured flex clearance above body top
+        beam_top   = beam_under + latch_wall; // beam's own flat top (tuned wall, not the caliper's 0.9)
+        z_root_front = -root_z;                // root block's forward (shallower) face
+        z_root_rear  = -(root_z + root_thick); // root block's rear (deeper) face
+        z_tip        = -tip_z;                 // hook tip (forward-most point, lead-in start)
+        z_hook_rear  = -(tip_z + hook_zext);    // hook's own rear -- retention face, also the plain beam's forward end
+        hook_prot    = hook_peak - (beam_top - top); // hook bump height above the beam's own top
+
+        // Print-safety (#54 Task 3, see this module's PRINT ORIENTATION
+        // comment above): the root is the rigid anchor -- no camming/
+        // catching function -- so unlike the lug/hook it's free to taper.
+        // rise (body-top -> beam-top) must fit within root_thick's own run
+        // at <=45deg or the gusset below becomes an unsupported overhang.
+        // Margin (#54 Task 3 review fix): a bare ">=" here would permit rise
+        // to reach root_thick exactly (a true 45deg taper, no margin) --
+        // design-for-print's overhangs-supports.md warns not to treat a
+        // value right at the 45deg line as automatically safe (it gives no
+        // specific safe-angle number of its own to derive a ratio from,
+        // just that qualitative caveat). This does NOT reuse
+        // _keystone_chamfer_margin() (a 1.15x RATIO): that helper scales a
+        // ramp that's free to extend its OWN run for more margin
+        // (keystone_cutout()/keystone_boss()'s back-wall tapers). Here
+        // root_thick is a FIXED caliper-measured dimension
+        // (keystone_insert_latch()[2] = 3.6) the assert can only gate
+        // against, not extend -- and this module's own test coverage
+        // exercises rise up to 3.4 (latch_wall=1.2, keystone_test.scad), only
+        // 0.2mm below root_thick, so ANY ratio large enough to matter (incl.
+        // 1.15x) rejects that real, already-shipped configuration outright.
+        // Use a small ABSOLUTE floor instead: half this repo's default
+        // 0.2mm layer height (house-rules.md) -- enough that the taper is
+        // never literally AT the knife-edge (bare rise == root_thick), while
+        // leaving every currently-tested latch_wall value (1.0, 1.2) its own
+        // real, non-zero clearance (0.4mm and 0.2mm respectively).
+        root_margin_mm = 0.1;
+        assert(root_thick - (beam_top - top) >= root_margin_mm,
+            str("keystone_insert: latch_wall ", latch_wall,
+                " makes the root gusset rise (", beam_top - top,
+                ") leave less than ", root_margin_mm,
+                "mm of margin in its available run (", root_thick,
+                ") -- taper would sit at or past a bare 45deg self-support angle with no margin; reduce latch_wall"));
+
         union() {
-            // front flange bezel (front stop, Z 0..1.2)
-            translate([-(o[0]/2 + flange), -(o[1]/2 + flange), 0])
-                cube([o[0] + 2*flange, o[1] + 2*flange, 1.2]);
-            // through-plug: jack FACE cross-section, flange front to plug_rear
-            translate([-plug_w/2, -plug_h_xy/2, plug_rear])
-                cube([plug_w, plug_h_xy, plug_front - plug_rear]);
-            // --- rigid fulcrum (bottom, -Y): solid rib (static, always inside
-            // the mouth) + triangular notch (retracts +d_bot during the sweep) ---
-            translate([-nw/2, -surf, plug_rear])
-                cube([nw, surf - plug_h_xy/2, rib_front - plug_rear]);
-            translate([0, d_bot, 0])
-                mirror([0, 1, 0]) _keystone_std_notch(nw, fb, fp, surf, fz);
-            // --- flexing arm (top, +Y): cantilever bar + deep root block +
-            // triangular notch. Bar+notch deflect -d_top; the root stays put ---
-            translate([0, -d_top, 0])
-                translate([-nw/2, arm_in, plug_rear])
-                    cube([nw, arm_th, arm_front - plug_rear]);
-            translate([-nw/2, plug_h_xy/2, plug_rear])
-                cube([nw, surf - plug_h_xy/2, root_len]);
-            translate([0, -d_top, 0])
-                _keystone_std_notch(nw, tb, tp, surf, tz);
+            // root gusset: tapers from FLUSH with the body's own top surface
+            // at its rear (bed-side, printed first per this module's PRINT
+            // ORIENTATION) up to the beam's full height at its front (where
+            // the beam attaches) -- a 45deg-safe ramp rather than an abrupt
+            // step, so the root needs no support, and it doubles as a
+            // stress-relief gusset at the cantilever's base (strength-
+            // physics.md: fillet/gusset a cantilever-to-wall joint rather
+            // than a sharp step).
+            translate([0, top, 0])
+                mirror([0, 1, 0])
+                    _keystone_insert_ramp(beam_w, beam_top - top, z_root_rear, z_root_front);
+            // beam: plain cantilever section, floating `defl_clear` above the
+            // body top, from the root's front face forward to the hook's rear
+            // edge (z_root_front is the deeper/smaller-magnitude-negative
+            // corner here, since the root sits further behind the hook).
+            translate([-beam_w / 2, beam_under, z_root_front])
+                cube([beam_w, latch_wall, z_hook_rear - z_root_front]);
+            // hook: lead-in ramp (front, at the tip) blending into the
+            // retention face (rear), sitting on the beam's own top surface.
+            translate([0, beam_top, 0])
+                mirror([0, 1, 0])
+                    _keystone_insert_ramp(beam_w, hook_prot, z_tip, z_hook_rear);
+            // Print-safety corner chamfer (#54 Task 3 review fix): same
+            // treatment as the lug above -- the ramp above only exists
+            // between z_tip and z_hook_rear, so the retention face's full
+            // protrusion appears at z_hook_rear with nothing beneath it
+            // (rear-down build order). Mirror the ramp further toward the
+            // root (still well clear of z_root_front) so it grows in from 0
+            // rather than stepping; the retention face itself is unchanged.
+            hook_chamfer = hook_prot * _keystone_chamfer_margin();
+            translate([0, beam_top, 0])
+                mirror([0, 1, 0])
+                    _keystone_insert_ramp(beam_w, hook_prot, z_hook_rear - hook_chamfer, z_hook_rear);
         }
     }
 }

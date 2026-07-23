@@ -43,6 +43,7 @@ use <fans/fans.scad>;
 
 - [bpir4-1u-chassis](projects/bpir4-1u-chassis) — 1U 10-inch rack chassis for the BananaPi BPI-R4.
 - [cable-clip](projects/cable-clip) — single-part M3-mounted cable clip.
+- [keystone-blank](projects/keystone-blank) — printable caliper-faithful keystone blank insert.
 - [keystone-faceplate](projects/keystone-faceplate) — parametric 1U 10-inch N-port keystone faceplate.
 - [two-piece-box](projects/two-piece-box) — multipart box with exploded view.
 
