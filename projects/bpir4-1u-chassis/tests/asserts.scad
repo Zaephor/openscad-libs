@@ -139,4 +139,42 @@ assert(standoff_h - _underside_max_hang() >= underside_clearance - 1e-6,
         " < required ", underside_clearance,
         " (max hang ", _underside_max_hang(), ", standoff ", standoff_h, ")"));
 
+// DIP switch lever overhangs the board's right edge by ~2mm (caliper: board
+// x=148 -> ~150). Guard that the right interior (side-wall inner face) clears
+// the board edge + the lever. Set-once switch (not accessed at runtime) -> no
+// opening cut; this only prevents a future body_w() shrink from clipping it.
+dip_lever_overhang = 2.0; // [B] caliper (#55) — lever proud of board right edge
+_right_wall_inner = body_w()/2 - wall;
+assert(board_w()/2 + dip_lever_overhang <= _right_wall_inner + 1e-6,
+    str("DIP lever (board edge ", board_w()/2, " + ", dip_lever_overhang,
+        " = ", board_w()/2 + dip_lever_overhang,
+        ") exceeds right wall inner face ", _right_wall_inner));
+
+// A bottom-face module (edge="bottom") hangs into the standoff gap; if its
+// footprint overlaps a corner standoff post's XY, a future installed module
+// would collide with the post. Guard it (AABB overlap, board-local frame).
+// KNOWN CONFLICT (#56, user-accepted 2026-07-23): the [3.5,23.5] structural-mount
+// post overlaps the mpcie_1_card keep-out envelope by up to ~2.6mm in X. This
+// hole's structural-mount role is itself tier [B]//VERIFY (bpi-r4.md: "No single
+// source confirms which real-world case product uses which of the 4 structural
+// holes") — not a confirmed real mounting point. Accepted as a documented risk:
+// if mpcie_1 (bottom-left mini-PCIe) is populated, this corner mounting point may
+// be unusable/inaccessible. Any OTHER overlap is still a hard failure.
+_known_keepout_conflicts = [["mpcie_1_card", 3.5, 23.5]];
+_bottom = [for (c = sbc_connectors(BOARD)) if (c[3] == "bottom") c];
+_spost_r = _board_standoff_od()/2;
+for (h = sbc_holes_xy(BOARD, "structural-mount"))
+    for (m = _bottom) {
+        mx0 = m[1][0]; my0 = m[1][1];
+        mx1 = mx0 + m[2][0]; my1 = my0 + m[2][1];
+        // post AABB = [hx-r, hx+r] x [hy-r, hy+r]
+        overlap = (h[0]+_spost_r > mx0) && (h[0]-_spost_r < mx1) &&
+                  (h[1]+_spost_r > my0) && (h[1]-_spost_r < my1);
+        _is_known = len([for (k = _known_keepout_conflicts)
+            if (k[0] == m[0] && abs(k[1]-h[0]) < 1e-6 && abs(k[2]-h[1]) < 1e-6) k]) > 0;
+        assert(!overlap || _is_known,
+            str("underside module ", m[0], " footprint overlaps standoff post at [",
+                h[0], ",", h[1], "] — installed module would collide"));
+    }
+
 // Render nothing (pure assert file).
