@@ -7,6 +7,10 @@
 // buttress ramp + rear rack-support (#40) tongue mate. (No front root gusset:
 // see bay_enclosure()'s "Front floor/faceplate joint" comment below for why
 // one doesn't fit there.)
+// Task 4 (#41): three device presets locked in tests/asserts.scad +
+// tests/asserts_bay525_fh.scad + tests/asserts_bay35.scad
+// (bay525_hh->device_u=1 [default], bay525_fh->device_u=2, bay35->
+// device_u=1) -- see README.md for the full design writeup + preset table.
 use <drives/drives.scad>;
 use <rack10/rack10.scad>;
 use <rack-support/rack-support.scad>;

@@ -81,5 +81,82 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "$out"; fail=1
 fi
 
+# Task 4 (#41): the two remaining LOCKED presets (bay525_hh@1U is already the
+# default, checked above) must render clean -- positive controls in their own
+# files (see each file's header for why one file can't hold both presets).
+out="$(run "$tmp/fh2.stl" "$proj/tests/asserts_bay525_fh.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: bay525_fh@2U preset (asserts_bay525_fh.scad) errored:"; echo "$out"; fail=1
+fi
+[ -s "$tmp/fh2.stl" ] || { echo "FAIL: bay525_fh@2U preset produced no/empty STL"; fail=1; }
+python3 - "$tmp/fh2.stl" <<'PY' || { echo "FAIL: bay525_fh@2U bbox Z-span != rack10_device_height(2)=88.11"; fail=1; }
+import struct, sys
+d = open(sys.argv[1], "rb").read()
+n = struct.unpack("<I", d[80:84])[0]; off = 84
+zs = []
+for i in range(n):
+    for v in range(3):
+        b = off + i*50 + 12 + v*12
+        zs.append(struct.unpack("<3f", d[b:b+12])[2])
+sys.exit(0 if abs((max(zs) - min(zs)) - 88.11) < 0.05 else 1)
+PY
+
+out="$(run "$tmp/b35.stl" "$proj/tests/asserts_bay35.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: bay35@1U preset (asserts_bay35.scad) errored:"; echo "$out"; fail=1
+fi
+[ -s "$tmp/b35.stl" ] || { echo "FAIL: bay35@1U preset produced no/empty STL"; fail=1; }
+python3 - "$tmp/b35.stl" <<'PY' || { echo "FAIL: bay35@1U bbox Z-span != rack10_device_height(1)=43.66"; fail=1; }
+import struct, sys
+d = open(sys.argv[1], "rb").read()
+n = struct.unpack("<I", d[80:84])[0]; off = 84
+zs = []
+for i in range(n):
+    for v in range(3):
+        b = off + i*50 + 12 + v*12
+        zs.append(struct.unpack("<3f", d[b:b+12])[2])
+sys.exit(0 if abs((max(zs) - min(zs)) - 43.66) < 0.05 else 1)
+PY
+
+# Task 4 (#41): confirm each of the three LOCKED presets' device_type
+# actually stamps len(drive_side_holes(type))*2 side-mount holes -- i.e. BOTH
+# walls get cut (drive_holes(...,"side",...) cuts one cylinder per side-hole
+# entry at EACH of the drive's two Y-faces, see drives.scad). Proxy (same
+# idiom as test_keystone_faceplate.sh's facet-count check): render just the
+# cutter geometry via the exact same drive_holes(type, faces="side", depth)
+# call bay_enclosure() itself makes (single source of truth, no duplicated
+# hole data) as a bare union with no difference(); CGAL's own render-summary
+# "Volumes:" line counts N disjoint solids as N+1 (verified empirically: a
+# union of 4 non-touching cylinders reports "Volumes: 5") -- so
+# (Volumes - 1) must equal the drives-lib-computed EXPECT, which the probe
+# echoes itself rather than hardcoding, so a future drives-lib data change
+# updates both sides of the comparison together.
+check_side_holes() { # <device_type>
+  local type="$1"
+  local probe="$tmp/holes_${type}.scad"
+  cat > "$probe" <<EOF
+use <drives/drives.scad>;
+device_type = "$type";
+echo(str("EXPECT=", len(drive_side_holes(device_type)) * 2));
+drive_holes(device_type, faces = "side", depth = 6.8); // depth mirrors bay-enclosure.scad's own 2*wall+2 at wall=2.4
+EOF
+  local out
+  out="$(run "$tmp/holes_${type}.stl" "$probe")"
+  local expect volumes
+  expect="$(echo "$out" | grep -o 'EXPECT=[0-9]*' | tail -1 | cut -d= -f2)"
+  volumes="$(echo "$out" | grep -o 'Volumes:[[:space:]]*[0-9]*' | tail -1 | grep -o '[0-9]*$')"
+  if [ -z "$expect" ] || [ -z "$volumes" ]; then
+    echo "FAIL: $type side-hole probe produced no EXPECT/Volumes -- can't verify hole count:"; echo "$out"; fail=1
+    return
+  fi
+  if [ "$((volumes - 1))" -ne "$expect" ]; then
+    echo "FAIL: $type side-hole cutter count $((volumes - 1)) != expected $expect (both walls)"
+    fail=1
+  fi
+}
+check_side_holes "bay525_hh"
+check_side_holes "bay525_fh"
+check_side_holes "bay35"
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
