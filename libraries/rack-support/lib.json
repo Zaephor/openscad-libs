@@ -1,0 +1,10 @@
+{
+  "name": "rack-support",
+  "description": "Rear-support faceplate + slide-in tongue/slot mating interface for rack10 device trays (#40) -- converts a front-cantilevered tray into a two-end-supported beam for PETG creep mitigation. See RESEARCH.md: the mating-interface dims are DESIGN values, not measured.",
+  "version": "0.1.0",
+  "sources": [
+    ".claude/skills/design-for-print/reference/tolerances-fits.md -- FDM clearance bands (free/running fit) + short-engagement-land fit strategy; backs rack_support_slot_clearance() and rack_support_engagement_depth()",
+    "libraries/rack10/rack10.scad -- dependency (use <rack10/rack10.scad>) for panel widths/holes/depth and the rear mounting-plane datum rack10_rear_post_y()",
+    "No external vendor datasheet or standard -- rack_support_rail_size(), rack_support_slot_clearance(), rack_support_engagement_depth() are this library's own DESIGN values (fit clearances for a mechanism it defines), not measured/spec data; see RESEARCH.md"
+  ]
+}
