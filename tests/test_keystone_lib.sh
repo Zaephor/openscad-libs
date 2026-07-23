@@ -54,16 +54,6 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_opening(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
 fi
 
-# Negative control: keystone_tab("bogus") must abort with assert (#28 style-keying).
-cat > "$tmp/unknown_tab_style.scad" <<'EOF'
-use <keystone/keystone.scad>;
-t = keystone_tab("bogus");
-EOF
-out="$(run "$tmp/unknown_tab_style.scad")"
-if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-  echo "keystone_tab(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
-fi
-
 # Negative control: keystone_slot("bogus") / keystone_notch("bogus") must abort (#38).
 cat > "$tmp/unknown_slot_style.scad" <<'EOF'
 use <keystone/keystone.scad>;
@@ -103,14 +93,29 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "keystone_boss(\"bogus\") failed to abort with unknown style:"; echo "$out"; exit 1
 fi
 
-# Negative control: keystone_insert(...,flex_side="bogus") must abort (#38 Task 3).
-cat > "$tmp/bad_flex_side.scad" <<'EOF'
+# Negative control: keystone_insert(blank=false) must abort -- the RJ45
+# pass-through receptacle is explicitly deferred/out-of-scope for the
+# flagship insert (#54; see the keystone-insert design spec's Out-of-scope).
+cat > "$tmp/insert_blank_false.scad" <<'EOF'
 use <keystone/keystone.scad>;
-keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "bogus");
+keystone_insert(blank = false);
 EOF
-out="$(run "$tmp/bad_flex_side.scad")"
+out="$(run "$tmp/insert_blank_false.scad")"
 if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-  echo "keystone_insert(flex_side=\"bogus\") failed to abort with unknown flex_side:"; echo "$out"; exit 1
+  echo "keystone_insert(blank=false) failed to abort (RJ45 pass-through not yet implemented, #54):"; echo "$out"; exit 1
+fi
+
+# Negative control: keystone_insert(depth=...) too shallow for the latch root
+# must abort -- depth is a Customizer-tunable arg, not a fixed constant, so a
+# caller who shrinks it too far must be caught rather than silently building
+# broken (root-less) geometry.
+cat > "$tmp/insert_depth_too_shallow.scad" <<'EOF'
+use <keystone/keystone.scad>;
+keystone_insert(depth = 10);
+EOF
+out="$(run "$tmp/insert_depth_too_shallow.scad")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "keystone_insert(depth=10) failed to abort (too shallow for the latch root, #54):"; echo "$out"; exit 1
 fi
 
 # Placeholder bbox: bw x bh x bd, front face at Z=0, body grows -Z.
@@ -207,228 +212,6 @@ if errs:
     sys.stderr.write("\n".join(errs) + "\n")
 sys.exit(1 if errs else 0)
 PY
-
-# Jack face (plug cross-section) -- style-independent (#28: plug = face, not opening).
-cat > "$tmp/face.scad" <<'EOF'
-use <keystone/keystone.scad>;
-f = keystone_face();
-echo(f[0]); echo(f[1]);
-EOF
-face_out="$(run "$tmp/face.scad")"
-fw="$(echo "$face_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-fh="$(echo "$face_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-
-# Per-style tab + insert mate-check (#28): keystone_tab(style)/keystone_insert(...,style).
-# "standard"'s keystone_insert() branch is an explicit Task-3 placeholder as of
-# #38 (see keystone_insert()'s own comment) -- it is intentionally NOT put
-# through the detailed hook/latch mate-check machinery below (that would
-# assert on geometry nobody claims is final yet). Only "face" (untouched by
-# #38) runs the full mate-check loop; the "standard" channel's own HARD
-# assertion (real section/void check, not just render-without-error) lives in
-# the dedicated block further down.
-FIT=0.2
-for STYLE in face; do
-  cat > "$tmp/opening_$STYLE.scad" <<EOF
-use <keystone/keystone.scad>;
-o = keystone_opening("$STYLE");
-echo(o[0]); echo(o[1]);
-EOF
-  op_out="$(run "$tmp/opening_$STYLE.scad")"
-  sow="$(echo "$op_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-  soh="$(echo "$op_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-
-  cat > "$tmp/tab_$STYLE.scad" <<EOF
-use <keystone/keystone.scad>;
-t = keystone_tab("$STYLE");
-echo(t[0]); echo(t[1]);
-EOF
-  tab_out="$(run "$tmp/tab_$STYLE.scad")"
-  ledge_z="$(echo "$tab_out" | grep -m1 'ECHO:' | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-  tab_th="$(echo "$tab_out" | grep -m2 'ECHO:' | tail -1 | grep -oE '[0-9]+\.?[0-9]*' | head -1)"
-
-  # Overlay-mate render: insert dropped into the cutout window. Any
-  # non-manifold/CGAL error on the combined solid means the insert collides
-  # with (or fails to clear) the frame material this style's cutout leaves behind.
-  PLATE=3.0
-  cat > "$tmp/mate_$STYLE.scad" <<EOF
-use <keystone/keystone.scad>;
-union() {
-    difference() {
-        union() {
-            translate([-15, -15, -$PLATE]) cube([30, 30, $PLATE]);
-            keystone_boss(plate_thickness = $PLATE, style = "$STYLE");
-        }
-        keystone_cutout(plate_thickness = $PLATE, style = "$STYLE");
-    }
-    keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
-}
-EOF
-  mate_out="$(run "$tmp/mate_$STYLE.scad")"
-  if echo "$mate_out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-    echo "keystone_insert/cutout overlay-mate ($STYLE) failed:"; echo "$mate_out"; exit 1
-  fi
-
-  # HARD assertion: a real geometric boolean intersection between the FRAME
-  # (remaining solid material after keystone_boss()+keystone_cutout()) and the
-  # INSERT, restricted to Z < -0.01 (strictly behind the panel front, excluding
-  # the front flange -- which is BY DESIGN coplanar/flush with the panel front
-  # at Z=0 and would otherwise register as a false-positive degenerate
-  # zero-volume "overlap"). If the insert's tabs clip solid frame material
-  # ANYWHERE behind the panel, this intersection is non-empty and OpenSCAD
-  # exports a real STL; if they truly clear the frame (just
-  # render-without-error, which a union of overlapping solids would also
-  # satisfy), OpenSCAD reports an empty top-level object and refuses to
-  # export anything (checked via absence of a non-empty STL file).
-  cat > "$tmp/overlap_$STYLE.scad" <<EOF
-use <keystone/keystone.scad>;
-intersection() {
-    intersection() {
-        difference() {
-            union() {
-                translate([-15, -15, -$PLATE]) cube([30, 30, $PLATE]);
-                keystone_boss(plate_thickness = $PLATE, style = "$STYLE");
-            }
-            keystone_cutout(plate_thickness = $PLATE, style = "$STYLE");
-        }
-        keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
-    }
-    translate([-20, -20, -20]) cube([40, 40, 19.99]);
-}
-EOF
-  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/overlap_$STYLE.stl" "$tmp/overlap_$STYLE.scad" >/dev/null 2>&1
-  if [ -s "$tmp/overlap_$STYLE.stl" ]; then
-    # Non-empty doesn't necessarily mean a real clip: two solids that touch
-    # with zero gap also produce a non-empty CGAL intersection, but it's a
-    # zero-VOLUME degenerate sliver (one axis extent == 0.0), unlike a real
-    # clip which has genuine extent on all three axes.
-    python3 - "$tmp/overlap_$STYLE.stl" "$STYLE" <<'PY' || exit 1
-import struct,sys
-d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
-xs=[];ys=[];zs=[]
-for i in range(n):
-    for v in range(3):
-        base=off+i*50+12+v*12
-        x,y,z=struct.unpack('<3f',d[base:base+12])
-        xs.append(x); ys.append(y); zs.append(z)
-ex,ey,ez=(max(xs)-min(xs)), (max(ys)-min(ys)), (max(zs)-min(zs))
-eps=0.02
-if ex > eps and ey > eps and ez > eps:
-    sys.stderr.write(f"insert/frame no-clip check ({sys.argv[2]}) FAILED: real volumetric overlap {ex:.3f}x{ey:.3f}x{ez:.3f}mm (insert tab clips solid frame material)\n")
-    sys.exit(1)
-sys.exit(0)
-PY
-  fi
-
-  # Insert alone, numeric bbox checks.
-  cat > "$tmp/insert_$STYLE.scad" <<EOF
-use <keystone/keystone.scad>;
-keystone_insert(plate_thickness = $PLATE, style = "$STYLE");
-EOF
-  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert_$STYLE.stl" "$tmp/insert_$STYLE.scad" 2>/dev/null
-
-  python3 - "$tmp/insert_$STYLE.stl" "$sow" "$soh" "$fw" "$fh" "$FIT" "$PLATE" "$ledge_z" "$tab_th" "$STYLE" \
-      <<'PY' || { echo "insert ($STYLE) geometry check failed"; exit 1; }
-import struct,sys
-d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
-verts=[]   # raw (x,y,z) per vertex, in STL order
-tris=[]    # per-triangle list of rounded (x,y,z) vertices, for connectivity
-for i in range(n):
-    tri=[]
-    for v in range(3):
-        base=off+i*50+12+v*12
-        x,y,z=struct.unpack('<3f',d[base:base+12])
-        verts.append((x,y,z))
-        tri.append((round(x,2), round(y,2), round(z,2)))
-    tris.append(tri)
-ow,oh,fw,fh,fit,plate,ledge_z,tab_th=map(float,sys.argv[2:10]); style=sys.argv[10]
-tol=0.1
-xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
-errs=[]
-
-# flange: overall X span exceeds the window width (front stop present)
-flange_ok = (max(xs)-min(xs)) > ow + 0.5
-if not flange_ok:
-    errs.append(f"insert ({style}) flange X-span {(max(xs)-min(xs)):.2f} does not exceed window width {ow:.2f}+0.5 (missing front stop)")
-
-# plug tip = the deepest point (through-plug always extends further back than
-# any tab feature); its cross-section must be the jack FACE minus fit per
-# side -- NOT the (style-varying) opening.
-minz = min(zs)
-band = [(x,y) for x,y,z in verts if abs(z-minz) < 0.05]
-plug_w = max(x for x,y in band) - min(x for x,y in band)
-plug_h = max(y for x,y in band) - min(y for x,y in band)
-plug_ok = bool(band) and abs(plug_w-(fw-2*fit)) < tol and abs(plug_h-(fh-2*fit)) < tol
-plug_h_xy = fh - 2*fit
-if not plug_ok:
-    errs.append(f"plug cross-section {plug_w:.2f}x{plug_h:.2f} != face-derived {fw-2*fit:.2f}x{fh-2*fit:.2f}")
-
-# body reaches behind the plate rear (latch/clip region)
-behind_ok = minz < -plate - 0.2
-if not behind_ok:
-    errs.append(f"insert ({style}) min Z {minz:.2f} does not reach behind the plate rear ({-plate-0.2:.2f}) (latch/clip region missing)")
-
-# no-collision invariant: any vertex strictly WITHIN the plate's solid Z-band
-# (excludes the front flange at Z>=0 and any feature at/behind the plate rear,
-# which are allowed -- by design -- to grip material outside the window) must
-# stay within the window's raw X/Y bound, i.e. never punch into solid frame.
-# "face": plain-rectangle cutout, raw X/Y bound (ow/2, oh/2) constant through
-# the whole plate depth (unchanged).
-inband = [(x,y) for x,y,z in verts if -(plate-0.02) < z < -0.02]
-noclip_ok = all(abs(x) <= ow/2+0.05 and abs(y) <= oh/2+0.05 for x,y in inband)
-if not noclip_ok:
-    errs.append("insert tab protrudes into solid frame within the plate band (regression)")
-
-# Tab/plug connectivity: the keystone_insert() solid (flange+plug+both
-# retention features) is meant to be ONE physical part, so if any tab doesn't
-# actually touch the plug it will render as a disconnected island in the STL
-# mesh -- count connected components via union-find over (rounded) shared
-# vertices and require exactly one.
-parent={}
-def find(x):
-    while parent[x]!=x:
-        parent[x]=parent[parent[x]]; x=parent[x]
-    return x
-def union(a,b):
-    ra,rb=find(a),find(b)
-    if ra!=rb: parent[ra]=rb
-for tri in tris:
-    for v in tri: parent.setdefault(v,v)
-    a,b,c=tri; union(a,b); union(b,c)
-roots=set(find(v) for v in parent)
-conn_ok = (len(roots)==1)
-if not conn_ok:
-    errs.append(f"insert ({style}) is NOT one connected solid: {len(roots)} disjoint piece(s)")
-
-# Direct per-tab inner-edge coordinate check (#28 review finding): read each
-# tab's OWN free face -- a Z-plane that belongs to no other feature -- and
-# assert its inner Y-edge sits at +/-plug_h_xy/2 directly from raw
-# coordinates. Does not depend on mesh connectivity, so a floating tab is
-# caught even when it's still touching something else in the solid.
-ZTOL = 0.03
-YTOL = 0.05
-def inner_edge_at(z_target, want_max):
-    pts_y = [y for x,y,z in verts if abs(z - z_target) < ZTOL]
-    if not pts_y:
-        return None
-    return max(pts_y) if want_max else min(pts_y)
-
-tab_checks = [
-    ("hook",   -(ledge_z + tab_th), False,  plug_h_xy/2),  # +Y edge: inner = min(Y)
-    ("latch",  -(plate + tab_th),   True,  -plug_h_xy/2),  # -Y edge: inner = max(Y)
-]
-
-for name, z_target, want_max, expected in tab_checks:
-    inner = inner_edge_at(z_target, want_max)
-    if inner is None:
-        errs.append(f"insert ({style}) {name}: no vertices found at its own free face Z={z_target:.2f} (tab missing/misshapen)")
-    elif abs(inner - expected) > YTOL:
-        errs.append(f"insert ({style}) {name}: inner Y-edge {inner:.3f} != plug edge {expected:.3f} (floating gap, #28 regression)")
-
-if errs:
-    sys.stderr.write("\n".join(errs) + "\n")
-sys.exit(0 if (flange_ok and behind_ok and not errs) else 1)
-PY
-done
 
 # --- "standard" cutout section check (#38): real channel+slit material, not
 # just render-without-error. render-without-CGAL-error is NOT proof of correct
@@ -561,108 +344,90 @@ if errs:
 sys.exit(1 if errs else 0)
 PY
 
-# --- #38 Task 3: standard insert seated-mate + insertion-motion no-collision ---
-# The mate-reference insert (fulcrum + flexing arm, keystone_notch()-derived)
-# dropped into the real channel frame must INTERLOCK (both triangular notches
-# seated inside their respective slit VOID, plate wall material adjacent) with
-# NO solid-body interference, and the insertion sweep must never clip -- this
-# is the check the superseded #31 rotate-and-snap motion FAILED (its swinging
-# body solid-overlapped the frame mid-sweep). render-without-CGAL-error is NOT
-# sufficient (a union of overlapping solids is still manifold); every check
-# below forces a REAL boolean intersection and reads the resulting STL bbox.
+# --- #54: flagship keystone_insert() geometry (caliper-faithful, style-
+# independent -- supersedes the old guessed per-style mate-check above). A
+# real STL-bbox check, not just render-without-error: front face cross-
+# section (the caliper face, less `fit` per side), overall depth, a latch
+# feature reaching above the body's own top surface, and a retention lug
+# reaching below the body's own bottom surface.
+FIT=0.2
+cat > "$tmp/insert.scad" <<EOF
+use <keystone/keystone.scad>;
+keystone_insert(fit = $FIT);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert.stl" "$tmp/insert.scad" 2>/dev/null
 
-# real_overlap FILE LABEL: fail iff the intersection STL has genuine extent on
-# all three axes (a real volumetric clip). Two solids that merely touch produce
-# a zero-VOLUME degenerate sliver (>=1 axis extent ~0), which is allowed.
-real_overlap() {
-  local f="$1" label="$2"
-  [ -s "$f" ] || return 0   # empty export => no intersection => no clip
-  python3 - "$f" "$label" <<'PY'
+python3 - "$tmp/insert.stl" "$FIT" <<'PY' || { echo "keystone_insert() geometry check failed"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
-xs=[];ys=[];zs=[]
+verts=[]
 for i in range(n):
     for v in range(3):
         base=off+i*50+12+v*12
-        x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); ys.append(y); zs.append(z)
-ex,ey,ez=(max(xs)-min(xs)),(max(ys)-min(ys)),(max(zs)-min(zs))
-eps=0.05
-if ex>eps and ey>eps and ez>eps:
-    sys.stderr.write(f"{sys.argv[2]}: real volumetric insert/frame overlap {ex:.2f}x{ey:.2f}x{ez:.2f}mm\n")
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        verts.append((x,y,z))
+fit=float(sys.argv[2])
+xs=[x for x,y,z in verts]; ys=[y for x,y,z in verts]; zs=[z for x,y,z in verts]
+errs=[]
+
+fw, fh = 14.3, 16.0   # keystone_insert_face(), mirrored here as the expected values
+depth = 20            # keystone_insert_depth() default
+body_w, body_h = fw - 2*fit, fh - 2*fit
+top = body_h / 2
+
+if not (max(zs) <= 0.05):
+    errs.append(f"insert front face at {max(zs):.2f}, expected flush at Z<=0")
+if not (abs(min(zs) - (-depth)) < 0.5):
+    errs.append(f"insert min Z {min(zs):.2f} != -depth {-depth:.2f}")
+
+front_band = [(x,y) for x,y,z in verts if z > -0.05]
+if not front_band:
+    errs.append("no vertices found at the front face (Z~0) -- body missing")
+else:
+    fx = max(x for x,y in front_band) - min(x for x,y in front_band)
+    fy = max(y for x,y in front_band) - min(y for x,y in front_band)
+    if not (abs(fx - body_w) < 0.1 and abs(fy - body_h) < 0.1):
+        errs.append(f"front face cross-section {fx:.2f}x{fy:.2f} != face-derived {body_w:.2f}x{body_h:.2f}")
+
+if not (max(ys) > top + 0.5):
+    errs.append(f"insert max Y {max(ys):.2f} does not exceed body top {top:.2f} -- latch/hook missing")
+if not (min(ys) < -top - 0.5):
+    errs.append(f"insert min Y {min(ys):.2f} does not exceed body bottom {-top:.2f} -- retention lug missing")
+
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+sys.exit(1 if errs else 0)
+PY
+
+# guides=false must omit the guide ribs -- X-extent shrinks relative to the
+# guides=true default.
+cat > "$tmp/insert_guides_off.scad" <<EOF
+use <keystone/keystone.scad>;
+keystone_insert(fit = $FIT, guides = false);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/insert_guides_off.stl" "$tmp/insert_guides_off.scad" 2>/dev/null
+
+python3 - "$tmp/insert.stl" "$tmp/insert_guides_off.stl" <<'PY' || { echo "keystone_insert(guides=false) geometry check failed"; exit 1; }
+import struct,sys
+def read_xspan(path):
+    d=open(path,'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+    xs=[]
+    for i in range(n):
+        for v in range(3):
+            base=off+i*50+12+v*12
+            x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x)
+    return max(xs)-min(xs)
+with_ribs = read_xspan(sys.argv[1])
+without_ribs = read_xspan(sys.argv[2])
+if not (with_ribs > without_ribs + 0.3):
+    sys.stderr.write(f"guides=false X-span {without_ribs:.2f} not smaller than guides=true {with_ribs:.2f} -- ribs not toggled\n")
     sys.exit(1)
 sys.exit(0)
 PY
-}
 
-# Seated mate for BOTH flex_side orientations: intersection of the frame
-# (plate+boss-cutout) with the seated insert, restricted to Z < -0.01 (behind
-# the panel -- the front flange is BY DESIGN flush at Z=0 and excluded), must
-# be a zero-volume sliver. The notches live in the slit voids; the plug in the
-# mouth void; nothing punches solid frame.
-for FS in top bottom; do
-  cat > "$tmp/std_seat_$FS.scad" <<EOF
-use <keystone/keystone.scad>;
-intersection() {
-    intersection() {
-        difference() {
-            union() {
-                translate([-15, -15, -3]) cube([30, 30, 3]);
-                keystone_boss(plate_thickness = 3.0, style = "standard");
-            }
-            keystone_cutout(plate_thickness = 3.0, style = "standard");
-        }
-        keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "$FS");
-    }
-    translate([-20, -20, -20]) cube([40, 40, 19.99]);
-}
-EOF
-  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_seat_$FS.stl" "$tmp/std_seat_$FS.scad" 2>/dev/null
-  real_overlap "$tmp/std_seat_$FS.stl" "standard seated mate (flex_side=$FS)" \
-    || { echo "standard insert seated-mate clips solid frame (#38 Task 3)"; exit 1; }
-done
-
-# Positive interlock: section the SEATED insert with a thin Z-slab at the top
-# notch's CATCH face (~6.3mm behind the front face = topnotch_z 7.4 - base/2
-# 1.3, where the triangular notch is at ~full protrusion). BOTH notches must
-# reach OUT past the mouth's own Y half-height (into their slit bands) --
-# proving the notches genuinely engage the slit voids, not float inside the
-# mouth. (mouth_h/2 = 9.2; both notch tips should clear it.)
-cat > "$tmp/std_notch_engage.scad" <<'EOF'
-use <keystone/keystone.scad>;
-intersection() {
-    keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "top");
-    translate([-20, -20, -6.3 - 0.05]) cube([40, 40, 0.1]);
-}
-EOF
-"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_notch_engage.stl" "$tmp/std_notch_engage.scad" 2>/dev/null
-python3 - "$tmp/std_notch_engage.stl" "$slot_mh" <<'PY' || { echo "standard insert notches do not engage the slits (#38 Task 3)"; exit 1; }
-import struct,sys
-d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
-ys=[]
-for i in range(n):
-    for v in range(3):
-        base=off+i*50+12+v*12
-        x,y,z=struct.unpack('<3f',d[base:base+12]); ys.append(y)
-if not ys:
-    sys.stderr.write("no insert material at the notch depth (-6.3mm) -- notches missing\n"); sys.exit(1)
-mouth_half=float(sys.argv[2])/2  # keystone_slot()[3] (mouth_h) / 2 -- single-sourced
-if max(ys) <= mouth_half + 0.3:
-    sys.stderr.write(f"top (flex-arm) notch tip {max(ys):.2f} does not clear the mouth half-height {mouth_half:.2f} -- not seated in the slit\n"); sys.exit(1)
-if min(ys) >= -(mouth_half + 0.3):
-    sys.stderr.write(f"bottom (fulcrum) notch tip {min(ys):.2f} does not clear the mouth half-height {-mouth_half:.2f} -- not seated in the slit\n"); sys.exit(1)
-sys.exit(0)
-PY
-
-# Connectivity: the "standard" insert (flange + plug + fulcrum rib/notch +
-# flexing arm/root/notch) must be ONE physical solid -- the deflected arm stays
-# joined to the plug only by its root block, so lock in single-component-ness
-# so a future edit can't silently sever the arm.
-cat > "$tmp/std_conn.scad" <<'EOF'
-use <keystone/keystone.scad>;
-keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "top");
-EOF
-"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/std_conn.stl" "$tmp/std_conn.scad" 2>/dev/null
-python3 - "$tmp/std_conn.stl" <<'PY' || { echo "standard insert connectivity check failed (#38 Task 3)"; exit 1; }
+# Connectivity: the whole insert (body + ribs + lug + latch root/beam/hook)
+# must be ONE physical solid.
+python3 - "$tmp/insert.stl" <<'PY' || { echo "keystone_insert() connectivity check failed"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
 parent={}
@@ -681,44 +446,8 @@ for i in range(n):
     a,b,c=tri; uni(a,b); uni(b,c)
 roots=set(find(v) for v in parent)
 if len(roots)!=1:
-    sys.stderr.write(f"standard insert is NOT one connected solid: {len(roots)} disjoint piece(s)\n"); sys.exit(1)
+    sys.stderr.write(f"keystone_insert() is NOT one connected solid: {len(roots)} disjoint piece(s)\n"); sys.exit(1)
 sys.exit(0)
 PY
-
-# Insertion-motion no-collision (BOTH styles): sample the sweep at >=4 stages
-# (including the 0.85-1.0 spring/click window) via the assembly's own stage
-# helper. Both styles now share one collision-free model -- the retention
-# features (standard's fulcrum/arm notches; face's hook + latch bump) deflect
-# inward while travelling and engage only at seat -- so the insert never
-# solid-overlaps the frame BEHIND the panel at any stage. Restricted to
-# Z < -0.01 (the front flange is BY DESIGN flush at Z=0 against the panel
-# front and would otherwise register as a degenerate coplanar sliver -- same
-# exclusion as the seated-mate checks). This is the strict pairwise-intersection
-# regression guard against #31's swinging-body clip, applied to BOTH styles.
-for STYLE in standard face; do
-  for ST in 0 0.33 0.66 0.9 1.0; do
-    name="mot_${STYLE}_${ST//./_}"
-    cat > "$tmp/$name.scad" <<EOF
-use <keystone/keystone.scad>;
-use <keystone/assembly.scad>;
-intersection() {
-    intersection() {
-        difference() {
-            union() {
-                translate([-15, -15, -3]) cube([30, 30, 3]);
-                keystone_boss(plate_thickness = 3.0, style = "$STYLE");
-            }
-            keystone_cutout(plate_thickness = 3.0, style = "$STYLE");
-        }
-        _keystone_insert_at_stage(3.0, 0.2, "$STYLE", $ST);
-    }
-    translate([-20, -20, -20]) cube([40, 40, 19.99]);
-}
-EOF
-    "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/$name.stl" "$tmp/$name.scad" 2>/dev/null
-    real_overlap "$tmp/$name.stl" "$STYLE insertion motion (stage $ST)" \
-      || { echo "$STYLE insertion-motion CLIPS the frame at stage $ST (#38 Task 3 -- the #31 bug)"; exit 1; }
-  done
-done
 
 echo ok

@@ -62,10 +62,6 @@ assert(keystone_opening("standard") == [sl[2], 22.25],
        "standard opening = [mouth_w, measured max window height @ slit onset]");
 assert(keystone_opening("standard")[1] > sl[3], "standard opening height exceeds the plain (pre-slit) mouth height");
 
-// Plug cross-section is the jack FACE, not the (taller) opening.
-assert(keystone_tab("face")[2] == "+Y", "face tab hook edge");
-assert(keystone_tab("standard")[0] > 0, "standard tab ledge positive (mate-reference placeholder numerics, unchanged by #38 -- Task 3 reworks keystone_insert() itself)");
-
 // --- keystone_boss_footprint() / style-aware min_pitch (#38 update of the
 // #31 pattern to the "standard" channel) ---
 bf = keystone_boss_footprint("standard");
@@ -96,11 +92,6 @@ assert(len(pt) == 2 && pt[0] > 0 && pt[1] > pt[0], "plate thickness [min,max], m
 
 assert(keystone_pitch() > 0, "pitch > 0");
 assert(keystone_min_wall() > 0, "min_wall > 0");
-
-t = keystone_tab();
-assert(len(t) == 4, "tab [hook_ledge_z, tab_thickness, hook_edge, latch_edge]");
-assert(t[0] > 0 && t[1] > 0, "tab ledge_z & thickness positive");
-assert(t[2] == "+Y" && t[3] == "-Y", "tab hook edge +Y, latch edge -Y");
 
 // --- fit-check identity (locks the single-source spacing rule) ---
 assert(keystone_min_pitch("face") == keystone_opening("face")[0] + keystone_min_wall(),
@@ -134,16 +125,12 @@ translate([30, 0, 0]) difference() {
     keystone_cutout(plate_thickness = 3.0);
 }
 
-/* [Insert] — smoke render: mate-reference body, both styles + both flex_side
-   orientations + a mid-insertion deflected pose (#38 Task 3: "standard" is now
-   the real fulcrum + flexing-arm push-to-click mechanism, no longer a
-   placeholder -- see keystone_insert()'s own comment). Seated-mate, notch
-   engagement, and motion-no-collision are asserted numerically in
-   tests/test_keystone_lib.sh. */
-translate([-30,  0, 0]) keystone_insert(plate_thickness = 3.0, style = "standard");
-translate([-30, 30, 0]) keystone_insert(plate_thickness = 3.0, style = "standard", flex_side = "bottom");
-translate([-30, 60, 0]) keystone_insert(plate_thickness = 3.0, style = "standard", deflect = 1); // notches retracted (mid-sweep pose)
-translate([-60,  0, 0]) keystone_insert(plate_thickness = 3.0, style = "face");
+/* [Insert] — smoke render: caliper-faithful flagship insert (#54) -- default
+   reference, guides-off, and tuned fit/latch_wall variants. Numeric bbox and
+   feature-position checks live in tests/test_keystone_lib.sh. */
+translate([-30,  0, 0]) keystone_insert();
+translate([-30, 30, 0]) keystone_insert(guides = false);
+translate([-30, 60, 0]) keystone_insert(fit = 0.3, latch_wall = 1.2);
 
 /* [Boss] (#38) — smoke render: local material behind a thin 3mm plate,
    hosting the "standard" channel's full ~10mm+ depth. Numeric checks

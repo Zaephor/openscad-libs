@@ -1,52 +1,28 @@
-// keystone/assembly.scad — keystone_insert()/keystone_cutout() mate demo +
-// insertion-motion visualization (#38 Task 3). Geometric correctness gate for
-// the mating insert: renders the assembled (seated) state, an insertion-motion
-// sequence, and the bare front window/removal-slot, for both retention styles.
+// keystone/assembly.scad — keystone_insert() + keystone_cutout()/boss()
+// consumer-pattern demo (#38, updated #54). check.sh compiles this file with
+// its own Customizer defaults below.
 // Render: openscad -D 'view="mated"' -D 'style="standard"' assembly.scad
 //         (or via .claude/skills/verify-scad-geometry)
 //
-// STAGE PARAM (motion view only): `stage` is a 0..1 scalar (or one of the
-// keywords "hook"/"mid"/"seated", mapped to 0/0.5/1 waypoints). This is a
-// SIMPLIFIED, non-kinematic pose lerp -- enough to SEE the motion and confirm
-// no solid-body interference along the way, not a physical spring simulation.
-//   "standard" (#38, push-to-click -- RESEARCH.md "Standard keystone latch
-//   geometry": the jack is presented near-flush and pushed STRAIGHT in; the
-//   flexing arm's notch deflects inward to clear the channel wall and springs
-//   into its slit at depth -- no tilt/rotate, both notches at the same depth):
-//     stage 0.0 "hook"    — insert backed off in +Z, clear of the panel, both
-//                           notches deflected inward (ready to enter the mouth).
-//     0 < stage < ~0.85   — straight -Z push: the body slides into the mouth
-//                           with notches held deflected (they clear the wall
-//                           bridges), no rotation.
-//     ~0.85 < stage < 1.0 — at full insertion depth the notches spring back OUT
-//                           into their top/bottom wall-slits (the click).
-//     stage 1.0 "seated"  — relaxed, notches engaged (identical to "mated").
-//   This replaces the superseded #31 "lip" rotate-and-snap arc, whose swinging
-//   body solid-overlapped the frame mid-sweep (the clip bug this task fixes).
-//   The rigid fulcrum notch's modeled inward deflection is a non-kinematic
-//   stand-in for its triangular ramp camming past the wall (see
-//   keystone_insert()'s "standard" comment).
-//   "face" (straight push-fit, no rotation): the SAME collision-free model --
-//   straight -Z push (0 = backed off clear of the panel, 1 = seated flush) with
-//   the +Y hook / -Y latch bump deflected inward during travel (clearing the
-//   plate) and springing to their plate-thickness grip at seat. The retention
-//   SHAPE is the pre-#28 model, unchanged; only the motion now retracts the
-//   tabs so the sweep is collision-free (matching "standard"'s strict no-clip
-//   bar, per the #38 Task-3 review).
+// #54 STATUS: the flagship keystone_insert() (caliper-faithful, style-
+// independent) is a DIFFERENT scale/mechanism than the old guessed
+// keystone_slot()/keystone_notch() channel this frame still cuts -- the slot
+// side is intentionally PARKED pending a separate, deferred reconciliation
+// effort (see keystone_insert()'s own comment in keystone.scad). So the
+// "mated" view below renders the frame and the new insert TOGETHER for
+// compile/smoke purposes only -- it is NOT a real geometric mate-check (the
+// old #38 Task-3 notch-engagement / no-collision motion sweep this file used
+// to drive no longer applies to the new insert's geometry and has been
+// dropped, not adapted). A true insert/slot mate-check is future work once
+// the slot is rebuilt against this insert's envelope.
 use <keystone/keystone.scad>;
-
-function _stage_t(stage) =
-    stage == "hook"   ? 0 :
-    stage == "mid"    ? 0.5 :
-    stage == "seated" ? 1 :
-    stage; // assume numeric 0..1
-function _lerp(a, b, t) = a + (b - a) * t;
 
 // _keystone_frame(plate_thickness, clearance, style): the real consumer
 // pattern documented in keystone_cutout()'s module comment -- union the boss
 // into a representative faceplate swatch, then difference the cutout through
 // both (boss is a no-op for "face"). Single source of truth for the "what does
-// a real panel look like" question in every view below.
+// a real panel look like" question in every view below. Slot-side only --
+// unrelated to keystone_insert(), untouched by #54.
 module _keystone_frame(plate_thickness = 3.0, clearance = 0.25, style = "standard") {
     plate_w = 40; plate_h = 40; // representative faceplate swatch, centered
     difference() {
@@ -59,41 +35,31 @@ module _keystone_frame(plate_thickness = 3.0, clearance = 0.25, style = "standar
     }
 }
 
-// _keystone_insert_at_stage(): insert positioned per `stage` (see header).
-// BOTH styles share one collision-free model: a straight -Z push-in with the
-// retention features (standard's fulcrum/arm notches; face's hook + latch bump)
-// deflected inward during travel so they clear the panel, springing to their
-// seated grip only at the end. Differs from the superseded #31 rotate-and-snap
-// arc, whose swinging body clipped the frame mid-sweep.
-module _keystone_insert_at_stage(plate_thickness, fit, style, stage, flex_side = "top") {
-    t = _stage_t(stage);
-    s = _keystone_resolve_style(style);
-    z_start = (s == "standard") ? 11 : 8;      // backed-off distance at stage 0
-    p_ins   = min(t / 0.85, 1);                // straight-in progress (done by ~0.85)
-    z_off   = _lerp(z_start, 0, p_ins);
-    defl    = t <= 0.85 ? 1 : _lerp(1, 0, (t - 0.85) / 0.15); // spring/click at the end
-    translate([0, 0, z_off])
-        keystone_insert(plate_thickness, fit, s, flex_side, defl);
+// [Mated] — frame + a static seated flagship insert, side by side for a
+// compile/visual smoke check (see #54 STATUS above -- not a real mate-check;
+// the insert's own front face is placed at the frame's front, Z=0, same as
+// the frame's datum, but the two are not claimed to interlock).
+module keystone_assembly_mated(plate_thickness = 3.0, clearance = 0.25, fit = 0.2,
+                                latch_wall = 1.0, style = "standard") {
+    _keystone_frame(plate_thickness, clearance, style);
+    keystone_insert(fit = fit, latch_wall = latch_wall);
 }
 
-// [Mated] — insert fully seated in a plate with the real cutout. The
-// correctness gate: verify-scad-geometry must show the notches engaging the
-// slits with no solid-body interference.
-module keystone_assembly_mated(plate_thickness = 3.0, clearance = 0.25, fit = 0.2, style = "standard", flex_side = "top") {
-    _keystone_frame(plate_thickness, clearance, style);
-    keystone_insert(plate_thickness, fit, style, flex_side, 0);
-}
-
-// [Motion] — insert at an arbitrary insertion `stage` (see header), same frame.
-// Sweep `stage` 0->1 (or pass "hook"/"mid"/"seated") to visualize the
-// insertion sequence one static render at a time.
-module keystone_assembly_motion(plate_thickness = 3.0, clearance = 0.25, fit = 0.2, style = "standard", stage = 1, flex_side = "top") {
-    _keystone_frame(plate_thickness, clearance, style);
-    _keystone_insert_at_stage(plate_thickness, fit, style, stage, flex_side);
+// [Motion] — PARKED (#54): the old #38 Task-3 insertion-motion viz
+// (flex_side/deflect) was built for the superseded guessed "standard"
+// keystone_insert() branch and does not apply to the new caliper-faithful
+// insert (no motion data was measured/modeled this task -- the real
+// pivot-and-latch motion belongs to the deferred slot-reconciliation pass).
+// This view is kept only so the Customizer's view= combo still resolves;
+// it renders the same static seated insert as [Mated].
+module keystone_assembly_motion(plate_thickness = 3.0, clearance = 0.25, fit = 0.2,
+                                 latch_wall = 1.0, style = "standard") {
+    keystone_assembly_mated(plate_thickness, clearance, fit, latch_wall, style);
 }
 
 // [Removal slot] — the bare front window/cavity (frame only, no insert), for
 // inspecting the cutout shape a jack is inserted through / removed from.
+// Slot-side only -- unrelated to keystone_insert(), untouched by #54.
 module keystone_assembly_removal_slot(plate_thickness = 3.0, clearance = 0.25, style = "standard") {
     _keystone_frame(plate_thickness, clearance, style);
 }
@@ -106,12 +72,9 @@ style = "standard";  // ["standard", "face"]
 plate_thickness = 3.0;
 clearance = 0.25;
 fit = 0.2;
-flex_side = "top"; // ["top", "bottom"]
+latch_wall = 1.0;
 
-/* [Insertion Motion — motion view only] */
-stage = 1; // 0..1, or "hook"/"mid"/"seated" via -D 'stage="hook"'
-
-if (view == "mated") keystone_assembly_mated(plate_thickness, clearance, fit, style, flex_side);
-else if (view == "motion") keystone_assembly_motion(plate_thickness, clearance, fit, style, stage, flex_side);
+if (view == "mated") keystone_assembly_mated(plate_thickness, clearance, fit, latch_wall, style);
+else if (view == "motion") keystone_assembly_motion(plate_thickness, clearance, fit, latch_wall, style);
 else if (view == "removal_slot") keystone_assembly_removal_slot(plate_thickness, clearance, style);
 else assert(false, str("keystone assembly: unknown view '", view, "'"));
