@@ -11,6 +11,10 @@ port pitch, minimum printable wall, and retention-tab geometry — every
 consumer library/project reads these accessors rather than copying numbers.
 Units: **mm**.
 
+The flagship `keystone_insert()` (#54) — a caliper-faithful, support-free
+printable blank insert — is consumed as-is by the
+[keystone-blank](../../projects/keystone-blank) project.
+
 ## Datum
 
 Panel-mount default orientation: the panel **front face sits on `Z=0`**,
