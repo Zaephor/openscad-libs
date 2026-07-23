@@ -288,9 +288,10 @@ function _sbc_table() = [
           // replacement (never downgrade an [A] exact-part datasheet figure for
           // a lower-precision caliper total-height read that already agrees to
           // within 0.1mm). Task 2 also caliper-measured the block's overall
-          // 4-port physical envelope as 58.3mm(w) x 20.9mm(d) — per the plan's
-          // explicit instruction this does NOT replace the per-port
-          // pitch/width (13.98, still [A] datasheet-exact) or depth (21.45);
+          // 4-port physical envelope as 58.3mm(w) x 20.9mm(d) — this is
+          // corroborating context only, not a schema change: it does NOT
+          // replace the per-port pitch/width (13.98, still [A]
+          // datasheet-exact) or depth (21.45);
           // it narrows (does not resolve) the RESEARCH.md "unreconciled gap"
           // between the pure pitch-math block end (118.53) and the drawing's
           // detector-confirmed right edge (122.77) — 62.61+58.3=120.91 sits
@@ -411,8 +412,8 @@ function _sbc_table() = [
           // M.2 Key-M SSD: caliper "7.6 left" -> x_board = 148-7.6 = 140.4
           // (mirror; the OPPOSITE direction from mpcie's "right" readings,
           // since flipped-left and flipped-right mirror to opposite board
-          // sides). Cross-check: the brief's own anchor note says this socket
-          // sits "opposite dc_power_1" (x=124.59, a right-side front-panel
+          // sides). Cross-check against the SSD's documented board position
+          // ("opposite dc_power_1", x=124.59, a right-side front-panel
           // part) — 140.4 (mirrored) lands in that same right-side region,
           // while the un-mirrored alternative (7.6, near-left) would NOT;
           // this confirms "left" readings mirror too, not just "right" ones.
