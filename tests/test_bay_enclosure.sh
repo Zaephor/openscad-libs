@@ -82,11 +82,15 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
 fi
 
 # Task 4 (#41): the two remaining LOCKED presets (bay525_hh@1U is already the
-# default, checked above) must render clean -- positive controls in their own
-# files (see each file's header for why one file can't hold both presets).
-out="$(run "$tmp/fh2.stl" "$proj/tests/asserts_bay525_fh.scad")"
+# default, checked above) must render clean -- via -D command-line overrides
+# directly against bay-enclosure.scad, same idiom as the device-type-guard
+# check above (no separate include-and-override .scad file needed: unlike
+# tests/asserts.scad, these are plain positive-control renders, not
+# alternate-top-level-variable negative controls, so there's nothing that
+# needs a second file just to get a second value in scope).
+out="$(run "$tmp/fh2.stl" "$proj/bay-enclosure.scad" -D 'device_type="bay525_fh"' -D 'device_u=2')"
 if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-  echo "FAIL: bay525_fh@2U preset (asserts_bay525_fh.scad) errored:"; echo "$out"; fail=1
+  echo "FAIL: bay525_fh@2U preset errored:"; echo "$out"; fail=1
 fi
 [ -s "$tmp/fh2.stl" ] || { echo "FAIL: bay525_fh@2U preset produced no/empty STL"; fail=1; }
 python3 - "$tmp/fh2.stl" <<'PY' || { echo "FAIL: bay525_fh@2U bbox Z-span != rack10_device_height(2)=88.11"; fail=1; }
@@ -101,9 +105,9 @@ for i in range(n):
 sys.exit(0 if abs((max(zs) - min(zs)) - 88.11) < 0.05 else 1)
 PY
 
-out="$(run "$tmp/b35.stl" "$proj/tests/asserts_bay35.scad")"
+out="$(run "$tmp/b35.stl" "$proj/bay-enclosure.scad" -D 'device_type="bay35"' -D 'device_u=1')"
 if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-  echo "FAIL: bay35@1U preset (asserts_bay35.scad) errored:"; echo "$out"; fail=1
+  echo "FAIL: bay35@1U preset errored:"; echo "$out"; fail=1
 fi
 [ -s "$tmp/b35.stl" ] || { echo "FAIL: bay35@1U preset produced no/empty STL"; fail=1; }
 python3 - "$tmp/b35.stl" <<'PY' || { echo "FAIL: bay35@1U bbox Z-span != rack10_device_height(1)=43.66"; fail=1; }

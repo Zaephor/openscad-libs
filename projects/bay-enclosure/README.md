@@ -28,10 +28,14 @@ device presets below locked in tests + full gate green (Task 4).
   the enclosure frame) itself, so `bay_enclosure()` never doubles the count
   — see `libraries/drives/README.md`.
 - **Open front cutout, no door/bezel.** The rack panel's device-face opening
-  is centered on width with `front_clearance` side margin, but flush
-  top-and-bottom (no clearance on that axis) — the device is meant to sit
+  is centered on width with `front_clearance` side margin, and spans the
+  FULL interior height budget vertically (floor line up to the panel's own
+  top, not just the device's own height) — the device is meant to sit
   directly behind the panel with its own face visible/reachable, not behind
-  a lid.
+  a lid. Opening the cutout to the full interior height (rather than
+  stopping at the device's own height) also avoids leaving a solid,
+  unsupported strip of faceplate material spanning the opening above the
+  device at presets with height headroom — see "Presets" below.
 - **Rear `#40` mate.** The tray's own floor ramps up (45° self-supporting
   wedge) to meet `rack_support_floor_thickness()` and carries a
   `rack_support_tongue()` at the placement formula from the `rack-support`
@@ -68,13 +72,19 @@ in `bay-enclosure.scad` for the full reasoning.
 ## Presets
 
 Three device presets are locked (rendered + gated in
-`tests/asserts.scad`/`tests/asserts_bay525_fh.scad`/`tests/asserts_bay35.scad`):
+`tests/test_bay_enclosure.sh`, via the default render plus `-D` overrides,
+and the `tests/asserts.scad` negative control):
 
-| `device_type` | `device_u` | Device (L x W x H, `drives` lib) | Notes |
-|---|---|---|---|
-| `bay525_hh` (default) | `1` | 200.0 x 146.05 x 42.3 mm | Half-height 5.25". **Tight fit**: only ~0.16mm of height headroom vs. the 1U interior at default `floor_th=1.2mm` (see below). |
-| `bay525_fh` | `2` | 200.0 x 146.05 x 82.55 mm | Full-height 5.25", needs the full 2U interior. |
-| `bay35` | `1` | 170.0 x 101.6 x 25.4 mm | 3.5" bay device, comfortable margin in 1U. |
+| `device_type` | `device_u` | Device (L x W x H, `drives` lib) | Interior height headroom | Notes |
+|---|---|---|---|---|
+| `bay525_hh` (default) | `1` | 200.0 x 146.05 x 42.3 mm | ~0.16mm | Half-height 5.25". **Tight fit** vs. the 1U interior at default `floor_th=1.2mm` (see below). |
+| `bay525_fh` | `2` | 200.0 x 146.05 x 82.55 mm | ~4.36mm | Full-height 5.25", needs the full 2U interior. |
+| `bay35` | `1` | 170.0 x 101.6 x 25.4 mm | ~17.06mm | 3.5" bay device, comfortable margin in 1U. |
+
+The front cutout always opens to the FULL interior height (not just the
+device's own height — see "Design" above), so this headroom shows up as
+extra interior visible above the device through the opening, not as any
+unsupported material.
 
 **`bay525_hh`@1U is vendor-sensitive.** `rack10_device_height(1)` = 43.66mm;
 minus the default `floor_th=1.2mm` leaves a 42.46mm interior against the
@@ -99,7 +109,7 @@ FDM solid-floor minimum) before reprinting.
 | `wall` | Print | `2.4` | Side wall thickness, mm |
 | `floor_th` | Print | `1.2` | Floor thickness eaten out of the `device_u` height budget (see `bay-enclosure.scad`'s own comment for why this is thinner than `rack-support`'s 2.0mm convention) |
 | `faceplate_th` | Print | `3.0` | Front rack panel thickness, mm |
-| `front_clearance` | Print | `1.0` | Side (width-only) gap around the device-face cutout; the cutout's height is flush top+bottom, not clearance-padded |
+| `front_clearance` | Print | `1.0` | Side (width-only) gap around the device-face cutout; the cutout's height spans the full interior budget, not clearance-padded |
 
 ## Build
 

@@ -7,10 +7,15 @@
 // buttress ramp + rear rack-support (#40) tongue mate. (No front root gusset:
 // see bay_enclosure()'s "Front floor/faceplate joint" comment below for why
 // one doesn't fit there.)
-// Task 4 (#41): three device presets locked in tests/asserts.scad +
-// tests/asserts_bay525_fh.scad + tests/asserts_bay35.scad
-// (bay525_hh->device_u=1 [default], bay525_fh->device_u=2, bay35->
-// device_u=1) -- see README.md for the full design writeup + preset table.
+// Task 4 (#41): three device presets locked -- bay525_hh->device_u=1
+// [default], bay525_fh->device_u=2, bay35->device_u=1 -- checked in
+// tests/test_bay_enclosure.sh (default + -D override renders) plus the
+// tests/asserts.scad negative control; see README.md for the full design
+// writeup + preset table.
+// Part B review fix (#41): the front cutout now opens to the FULL interior
+// height budget (_int_h()), not just the device's own height (_dh()) -- see
+// _be_faceplate()'s comment below for why (eliminates an unsupported
+// bridge above the device on the two presets with real height headroom).
 use <drives/drives.scad>;
 use <rack10/rack10.scad>;
 use <rack-support/rack-support.scad>;
@@ -38,7 +43,7 @@ wall = 2.4;
 // mates) — that ramp is Task 3's job, not this uniform Task 2 default.
 floor_th = 1.2;
 faceplate_th = 3.0;
-front_clearance = 1.0;     // side (width-only) gap around the device face; height cutout is flush top+bottom, see _be_faceplate()
+front_clearance = 1.0;     // side (width-only) gap around the device face; height cutout spans the full interior budget (flush at the floor, open to the panel top), see _be_faceplate()
 
 assert(len([for (t = drive_known_types()) if (t == device_type && drive_family(t) == "block") t]) > 0,
     str("bay-enclosure: device_type '", device_type, "' must be a block drive"));
@@ -51,8 +56,10 @@ function _clear() = rack10_clear_width(standard);
 function _int_h() = rack10_device_height(device_u) - floor_th;
 
 // Fit-asserts (width + height; depth in T3 with rear-post-Y).
-// Height cutout is flush top AND bottom (no front_clearance on this axis —
-// see _be_faceplate()), so the gate is exactly _dh() <= _int_h().
+// The device itself (not the cutout -- see _be_faceplate(), which opens to
+// the full _int_h() regardless) must fit within the interior budget, flush
+// on the floor with no headroom allowance above it (no front_clearance on
+// this axis), so the gate is exactly _dh() <= _int_h().
 assert(_dh() <= _int_h() + 1e-6,
     str("bay-enclosure: device height ", _dh(), " > ", device_u, "U interior ", _int_h(),
         " (increase device_u)"));
@@ -81,14 +88,36 @@ module _be_faceplate() {
             rack10_holes(standard, device_u, hole_type="slot", dia=rack10_screw_clearance("10-32"));
         else rack10_holes(standard, device_u, hole_type=ear_type);
         // device-face cutout (centered on width, resting on the floor line).
-        // Height is flush top AND bottom (cutout height is exactly _dh(),
-        // no front_clearance): the default preset has near-zero height
-        // margin (~0.16mm), and front_clearance has only ever meant
-        // side-edge (width) clearance for the two edges a hand reaches
-        // around — not top/bottom. Width keeps its existing symmetric
-        // 2*front_clearance.
+        // Height spans the FULL interior budget (_int_h() = this preset's
+        // rack10_device_height(device_u) minus floor_th) -- from the floor
+        // line (Z=floor_th) up to the panel's own top (Z=rack10_device_height
+        // (device_u)) -- NOT just the device's own height (_dh()).
+        // Sizing the cutout to _dh() alone (a prior revision of this
+        // comment/code) is correct ONLY at presets where the device fills
+        // essentially the whole interior budget (bay525_hh@1U: 42.3mm device
+        // vs. 42.46mm interior, ~0.16mm margin). At the other two LOCKED
+        // presets there's real headroom above the device (bay525_fh@2U:
+        // 82.55mm device vs. 86.91mm interior; bay35@1U: 25.4mm device vs.
+        // 42.46mm interior), and a cutout stopping at _dh() would leave a
+        // solid strip of faceplate material spanning the cutout's full
+        // WIDTH between the top of the device and the top of the panel, with
+        // nothing under it -- an unsupported horizontal bridge (a real
+        // review finding: ~148mm wide x 4.36mm thick at bay525_fh@2U, ~104mm
+        // wide x 17.06mm thick at bay35@1U -- PETG, this project's material,
+        // bridges poorly well short of spans that wide). Opening the cutout
+        // all the way to the panel's own top removes that strip entirely:
+        // there is no faceplate material left spanning across the opening
+        // above the device, so there is nothing left to bridge.
+        // The device itself still sits flush on the floor (bottom edge
+        // unchanged, Z=floor_th) -- only the cutout's TOP edge moves. Where
+        // the device is shorter than the interior budget, more interior is
+        // simply visible through the opening above it; that's fine/
+        // intentional, not a defect. front_clearance still means side-edge
+        // (width) clearance only, not top/bottom -- the cutout's vertical
+        // extent is driven by the interior budget, not a padded device
+        // height, so there is no equivalent "height clearance" concept here.
         translate([-(_dw()/2 + front_clearance), -faceplate_th - 1, floor_th])
-            cube([_dw() + 2*front_clearance, faceplate_th + 2, _dh()]);
+            cube([_dw() + 2*front_clearance, faceplate_th + 2, _int_h()]);
     }
 }
 
