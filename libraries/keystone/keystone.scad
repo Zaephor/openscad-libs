@@ -476,7 +476,52 @@ module _keystone_insert_ramp(w, prot, z_flush, z_full) {
    it). `guides=false` omits the L/R guide ribs.
    The slot/panel opening this insert eventually mates is a SEPARATE,
    deferred effort (see keystone_slot()/keystone_notch()'s own comments) --
-   this module does not attempt to fit keystone_cutout()/keystone_boss(). */
+   this module does not attempt to fit keystone_cutout()/keystone_boss().
+
+   PRINT ORIENTATION (#54 Task 3, design-for-print): print AS GENERATED, NO
+   rotation -- rear face (Z=-depth, the deepest point) DOWN on the bed,
+   front face (Z=0) UP. This is the OPPOSITE convention from
+   keystone_cutout()/keystone_boss() (which explicitly flip 180deg to get
+   their own front-down) -- the two modules don't yet mate (see above), so
+   there's no consistency requirement between them, and this insert's
+   own natural/unrotated pose already happens to be the printable one: the
+   cantilever latch (root+beam+hook) floats `defl_clear` above the body
+   with NO material connecting them except at the root -- if the body's
+   depth axis (Z) is anything other than the vertical build axis, the beam
+   becomes a ~7mm shelf cantilevered from a single anchor with open air
+   underneath for its whole run (fails at any orientation where Z is
+   horizontal, regardless of angle -- this is a floating-island problem,
+   not an overhang-angle one). Rear-down means the root (Z furthest into
+   -Z, closest to the bed) prints first and is anchored directly to the
+   body; the beam then extends "upward" (toward shallower Z) as a straight
+   extrusion along its OWN length axis -- each cross-sectional layer sits
+   directly on the identical layer beneath it, so the whole latch needs NO
+   support.
+   Known trade-offs accepted with this orientation (both judged, not
+   oversights):
+     - STRENGTH: the beam's flex (it bends about X when deflected in Y
+       during insertion) puts its bending stress along Z at the root --
+       FDM's weakest interlayer direction (strength-physics.md). Support-
+       free printability is this task's hard constraint and wins; if latch
+       flex-fatigue durability becomes a real problem in practice, that's a
+       candidate for a future revisit (would need a different mechanism
+       orientation, likely trading back some support-free-ness -- flagged
+       here, not solved).
+     - SMALL UNSUPPORTED NUBS: the lug's and hook's own retention/catch
+       faces (where each ramp's protrusion goes from 0 to full abruptly --
+       ~1.2mm and ~1.1mm respectively at default latch_wall) are LEFT
+       SHARP deliberately: smoothing them would blur or remove the actual
+       catching shoulder the snap mechanism depends on (a real DATA/
+       mechanism change, out of this task's scope). Accepted as small
+       (~1mm-scale) unsupported cantilevered nubs, well within common FDM
+       tolerance for a short, narrow, 3-sided-anchored step (not a bare
+       floating span like the beam) -- same reasoning covers the guide
+       ribs' own 0.8mm outward step, also left unchanged. If a real print
+       shows these drooping, revisit with a corner-only chamfer that
+       spares the bulk of each catch face.
+   The root block itself (pure rigid anchor, no camming/catching function)
+   WAS reshaped below: a 45deg-safe gusset taper instead of an abrupt step,
+   since nothing functional depends on its shape (see inline comment). */
 module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_depth(),
                        blank = true, guides = true) {
     assert(blank, "keystone_insert: blank=false (RJ45 pass-through receptacle) is not yet implemented -- deferred, see the keystone-insert design spec's Out-of-scope");
@@ -531,11 +576,29 @@ module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_dept
         z_hook_rear  = -(tip_z + hook_zext);    // hook's own rear -- retention face, also the plain beam's forward end
         hook_prot    = hook_peak - (beam_top - top); // hook bump height above the beam's own top
 
+        // Print-safety (#54 Task 3, see this module's PRINT ORIENTATION
+        // comment above): the root is the rigid anchor -- no camming/
+        // catching function -- so unlike the lug/hook it's free to taper.
+        // rise (body-top -> beam-top) must fit within root_thick's own run
+        // at <=45deg or the gusset below becomes an unsupported overhang.
+        assert(root_thick >= beam_top - top,
+            str("keystone_insert: latch_wall ", latch_wall,
+                " makes the root gusset rise (", beam_top - top,
+                ") exceed its available run (", root_thick,
+                ") -- taper would exceed a 45deg self-support angle; reduce latch_wall"));
+
         union() {
-            // root block: rigid, spans the full body-top -> beam-top height
-            // (no deflection here) over its measured z-thickness.
-            translate([-beam_w / 2, top, z_root_rear])
-                cube([beam_w, beam_top - top, z_root_front - z_root_rear]);
+            // root gusset: tapers from FLUSH with the body's own top surface
+            // at its rear (bed-side, printed first per this module's PRINT
+            // ORIENTATION) up to the beam's full height at its front (where
+            // the beam attaches) -- a 45deg-safe ramp rather than an abrupt
+            // step, so the root needs no support, and it doubles as a
+            // stress-relief gusset at the cantilever's base (strength-
+            // physics.md: fillet/gusset a cantilever-to-wall joint rather
+            // than a sharp step).
+            translate([0, top, 0])
+                mirror([0, 1, 0])
+                    _keystone_insert_ramp(beam_w, beam_top - top, z_root_rear, z_root_front);
             // beam: plain cantilever section, floating `defl_clear` above the
             // body top, from the root's front face forward to the hook's rear
             // edge (z_root_front is the deeper/smaller-magnitude-negative
