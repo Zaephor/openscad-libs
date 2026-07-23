@@ -29,18 +29,27 @@ module _rack_support_yz_prism(pts, xw) {
 
 // Rear-support plate: a rack10-width panel at the rear posts. Mounting face at
 // Y=0 (rack10_holes stamps here), body grows +Y into the rack. A forward-facing
-// channel (opens -Y) accepts the consumer tongue. Per the DESIGN NOMINALS datum,
-// device-bottom / the channel FLOOR / the tongue underside all share Z=0: the
-// bearing-floor MATERIAL sits below that (Z in [-floor_t,0]) so its top face
-// (Z=0) is the load-bearing contact surface the tongue rests on -- bearing/shear
-// under sustained load, not a snap/latch (creep-friendly, see README). A 45deg
-// gusset ties the floor's underside back to the mounting wall, entirely below
-// the Z>=0 slot cavity (clear of it). Support-free: the floor/gusset are a
-// constant Y-cross-section (no new unsupported area appears) in the print
-// orientation that lays the panel's broad face flat (thickness axis vertical,
-// -Y/mouth-side up per the lib header) -- the shrinking-taper lead-in chamfer
-// and the 45deg gusset stay within that same self-supporting logic; the mouth
-// is chamfered so the tongue gets a lead-in ramp instead of a sharp lip.
+// channel (opens -Y) accepts the consumer tongue.
+//
+// Z-DATUM (rack10.scad:3 -- "Z=0 at the bottom of the U-stack"; rack10_stack_gap()
+// = 0.79mm relief to the device below): ALL solid material of this plate stays
+// at Z>=0 -- it must never intrude into the U-slot below, which houses a
+// different device in a real rack10 stack. The bearing floor's BOTTOM face
+// sits at Z=0 (resting on this device's own U-floor, not below it); its TOP
+// face (Z=floor_t) is the load-bearing contact surface the tongue rests on --
+// bearing/shear under sustained load, not a snap/latch (creep-friendly, see
+// README). The channel cavity sits above the floor (Z in [floor_t,
+// floor_t+slot_h]). The 45deg gusset that braces the floor's cantilever also
+// stays at Z in [0,ed] -- since that overlaps the cavity's Z-range in the
+// slot's own X-band, the gusset is built full panel-width (not slot-width);
+// the difference() below removes its central slot-width portion (same
+// material the cavity removes from the floor there) and leaves two ribs
+// flanking the slot, bonded to both the floor slab and the mounting wall.
+// Support-free: the floor/gusset/chamfer are a constant Y-cross-section (no
+// new unsupported area appears) in the print orientation that lays the
+// panel's broad face flat (thickness axis vertical, -Y/mouth-side up per the
+// lib header); the mouth is chamfered so the tongue gets a lead-in ramp
+// instead of a sharp lip.
 module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
     w  = rack10_panel_width(standard);
     h  = rack10_device_height(u);
@@ -49,45 +58,53 @@ module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
     ed = rack_support_engagement_depth();
     slot_w  = rs[0] + 2 * cl;               // side clearance both sides
     slot_h  = rs[1] + cl;                   // top clearance only; floor stays tight (bearing)
-    floor_t = 2;                            // bearing-floor material thickness, below Z=0
+    floor_t = 2;                            // bearing-floor material thickness, Z in [0,floor_t]
     lead_in = floor_t;                      // mouth chamfer run (Y); == floor_t -> 45deg
+    assert(ed <= h, "rack_support_plate: engagement depth exceeds device height");
     difference() {
         union() {
             // Panel blank (mounting face Y=0, grows +Y).
             translate([-w/2, 0, 0]) cube([w, thickness, h]);
             // Bearing floor: spans the mouth (Y=-ed) through into the panel
-            // (Y=thickness) -- contiguous with the panel, no gap. Material is
-            // below Z=0 so the floor's TOP face (Z=0) is the bearing surface.
-            translate([-slot_w/2, -ed, -floor_t])
+            // (Y=thickness) -- contiguous with the panel, no gap. Material
+            // occupies Z in [0,floor_t] (bottom face on the Z=0 device-floor
+            // datum) so the floor's TOP face (Z=floor_t) is the bearing
+            // surface.
+            translate([-slot_w/2, -ed, 0])
                 cube([slot_w, ed + thickness, floor_t]);
-            // 45deg gusset: right angle at the wall/floor-underside corner,
-            // equal legs (both = ed) along the wall (down) and along the
-            // floor underside (out to the mouth) -> hypotenuse at exactly
-            // 45deg from vertical. Entirely at Z <= -floor_t, strictly below
-            // the Z>=0 slot cavity carved out below -- clear of it.
-            _rack_support_yz_prism(
-                [[0, -floor_t], [-ed, -floor_t], [0, -floor_t - ed]], slot_w);
+            // 45deg gusset: right angle at the wall/floor corner (Y=0,Z=0),
+            // equal legs (both = ed) along the wall (up) and along the floor
+            // (out to the mouth) -> hypotenuse at exactly 45deg from
+            // vertical. Built full panel-width (xw=w, not slot_w): its
+            // central slot-width band gets removed below by the same
+            // difference() that cuts the channel cavity (that band sits
+            // directly under the cavity, Z in [floor_t,ed] there), leaving
+            // ribs flanking the slot that are solidly bonded to both the
+            // floor slab (Z in [0,floor_t], all X) and the mounting wall.
+            _rack_support_yz_prism([[0, 0], [-ed, 0], [0, ed]], w);
         }
-        // The channel cavity the tongue slides into (opens -Y, floor at
-        // Z=0): from the bearing floor's top up by slot_h, tongue-width +
-        // clearance wide, spanning the same Y-range as the floor (mouth
-        // through into the panel) so the panel's own thickness caps/roofs
-        // the seated end. Z starts at -eps (not exactly 0) so the cutter
-        // genuinely overlaps the floor's top face instead of merely
-        // touching it -- an exactly-coincident cutter/solid face at Z=0
-        // over the Y<0 region (outside the panel, where nothing else fills
-        // that gap) leaves CGAL a zero-thickness sliver and renders
-        // non-manifold (verified: dropping this eps reproduces "Object may
-        // not be a valid 2-manifold"). eps is well under any dimension
-        // here, so it doesn't move the Z=0 bearing-surface datum in any
-        // way that matters.
+        // The channel cavity the tongue slides into (opens -Y, floor top at
+        // Z=floor_t): from the bearing floor's top up by slot_h, tongue-
+        // width + clearance wide, spanning the same Y-range as the floor
+        // (mouth through into the panel) so the panel's own thickness
+        // caps/roofs the seated end. Z starts at floor_t-eps (not exactly
+        // floor_t) so the cutter genuinely overlaps the floor's top face
+        // instead of merely touching it -- an exactly-coincident cutter/
+        // solid face over the Y<0 region (outside the panel, where nothing
+        // else fills that gap) leaves CGAL a zero-thickness sliver and
+        // renders non-manifold (verified: dropping this eps reproduces
+        // "Object may not be a valid 2-manifold"). eps is well under any
+        // dimension here, so it doesn't move the floor_t bearing-surface
+        // datum in any way that matters. This same cut also removes the
+        // gusset's central (slot-width) band above floor_t, leaving the
+        // flanking ribs described above.
         eps = 0.01;
-        translate([-slot_w/2, -ed, -eps])
+        translate([-slot_w/2, -ed, floor_t - eps])
             cube([slot_w, ed + thickness, slot_h + eps]);
         // Chamfered mouth: bevel the floor's sharp top-front corner (45deg,
         // run = lead_in) so the tongue gets a lead-in ramp, not a lip.
         _rack_support_yz_prism(
-            [[-ed, 0], [-ed + lead_in, 0], [-ed, -lead_in]], slot_w);
+            [[-ed, floor_t], [-ed + lead_in, floor_t], [-ed, floor_t - lead_in]], slot_w);
         // Rear mounting holes — front pattern reused on this plane (single
         // source of truth; NOT re-literaled). round default; consumer picks type.
         rack10_holes(standard, u, hole_type = hole_type,
