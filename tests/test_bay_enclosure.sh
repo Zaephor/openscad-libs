@@ -40,6 +40,26 @@ ok = abs(xspan - 254) < 0.05 and abs(zspan - 43.66) < 0.05
 sys.exit(0 if ok else 1)
 PY
 
+# Task 3 (#41): rear #40 support-tongue presence/placement. Per
+# rack-support's consumer-contract placement formula, the tongue's tip must
+# land exactly at rack10_rear_post_y("labrax")=240 (rack_support_plate()'s
+# own mounting plane) -- so the tray's overall Y-max must be 240. A floor/
+# tongue that stops short (or overshoots) would fail to mate with the rear
+# rack_support_plate().
+python3 - "$tmp/be.stl" <<'PY' || { echo "FAIL: rear Y-max != rack10_rear_post_y(\"labrax\")=240 -- tongue missing/misplaced"; fail=1; }
+import struct, sys
+d = open(sys.argv[1], "rb").read()
+n = struct.unpack("<I", d[80:84])[0]; off = 84
+ys = []
+for i in range(n):
+    for v in range(3):
+        b = off + i*50 + 12 + v*12
+        x, y, z = struct.unpack("<3f", d[b:b+12])
+        ys.append(y)
+ok = abs(max(ys) - 240) < 0.05
+sys.exit(0 if ok else 1)
+PY
+
 # Negative control: tests/asserts.scad overrides device_type=bay525_fh
 # (full-height, 82.55mm) at device_u=1 -- MUST abort the height fit-assert.
 # A silent-pass here means the fit-assert regressed.
