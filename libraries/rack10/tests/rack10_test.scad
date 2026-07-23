@@ -55,3 +55,9 @@ assert(rack10_clear_width("tecmojo")  == 210, "tecmojo clear width");
 assert(rack10_depth_preset("tecmojo") == 200,   "tecmojo depth preset");
 // Hole centers derive from the shared span for the new keys.
 assert(rack10_hole_h_centers("deskpi") == [-236.525/2, 236.525/2], "deskpi centers");
+
+// #40: rear mounting plane (where a rear-support plate bolts). Nominal =
+// depth_ftf; exact rear-post face offset is unmeasured (//VERIFY, inherits
+// depth_ftf's [C] tier).
+assert(rack10_rear_post_y("labrax") == rack10_depth_preset("labrax"), "labrax rear post y");
+assert(rack10_rear_post_y("tecmojo") == rack10_depth_preset("tecmojo"), "tecmojo rear post y");

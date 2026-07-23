@@ -101,6 +101,17 @@ function rack10_panel_width(standard)  = _rack10_geom(standard)[0];
 function rack10_hole_h_span(standard)  = _rack10_geom(standard)[1];
 function rack10_clear_width(standard)  = _rack10_geom(standard)[2];
 function rack10_depth_preset(standard) = _rack10_geom(standard)[3];
+
+// Rear mounting plane: the Y at which a rear-support plate (#40) bolts to the
+// rear posts. Nominal = the vendor front-to-rear mounting depth. NOTE: rack10
+// does not model rear posts (see ECOSYSTEM.md — rear flanges are illustrative,
+// holes on front flanges only); this assumes the rear pattern MIRRORS the front
+// at depth_ftf. Exact rear-post face offset is //VERIFY (caliper), and it
+// inherits depth_ftf's own [C]//VERIFY tier. rack19 has the parallel
+// depth-preset shape if a 19in rear-support consumer ever appears — not built
+// here (no consumer).
+function rack10_rear_post_y(standard) = rack10_depth_preset(standard);
+
 // Rail hole X centers (datum X-centered), derived from the vendor span above.
 function rack10_hole_h_centers(standard) =
     [-rack10_hole_h_span(standard)/2, rack10_hole_h_span(standard)/2];
