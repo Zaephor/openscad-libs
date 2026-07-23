@@ -92,6 +92,16 @@ assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
 assert(_front_conn_max_h() <= 14.2 + 1e-6,
     str("tallest front connector ", _front_conn_max_h(),
         " unexpectedly > 14.2 (front-connector height regression?)"));
+// UNRESOLVED: front-panel cutout boundary usb_1→sfp_1 at x=16.3 is 0.0mm gap
+// (merged L-shaped opening). This DIFFERS from the dc_power_1/usbc_pwr_1 model:
+// that pair's shared boundary is detector-confirmed solid (its //VERIFY flags are
+// on height/width axes only, not the boundary itself). The usb_1/sfp_1 boundary
+// COINCIDES with a pre-existing //VERIFY on usb_1's right edge (sbc.scad:269,
+// RESEARCH.md ~573-578): the 8.89mm modeled width is narrow for a typical USB-A
+// shell; the true right edge may lie elsewhere, meaning the actual physical gap
+// could be overlap rather than benign zero-gap. Requires re-verification of
+// usb_1's real right edge (sbc library scope) before treating this faceplate
+// geometry as final — out-of-scope for this project-only plan.
 
 // Item 4: four corner lid posts (side-midspan pair dropped).
 assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
