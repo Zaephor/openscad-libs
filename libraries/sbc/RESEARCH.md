@@ -396,6 +396,9 @@ mis-tagged edge. Re-examined all three against high-res crops:
 
 ## BananaPi BPI-R4 (Task 1 of the SBC Plan 2 branch)
 
+See [`research/bpi-r4.md`](research/bpi-r4.md) for the per-board mechanical
+summary plus an electrical/GPIO map and GPIO-usability guidance.
+
 Target variant: the **standard BPI-R4** (2x SFP + 4x RJ45, MediaTek MT7988A
 Filogic 880; 4G/8G RAM and NAND/eMMC/SD storage options are electrically
 irrelevant to the PCB mechanicals) — confirmed as the right variant from its
