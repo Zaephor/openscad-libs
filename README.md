@@ -33,6 +33,7 @@ use <fans/fans.scad>;
 - [motherboards](libraries/motherboards) — mini-ITX/microATX/ATX mounting reference.
 - [multibuild](libraries/multibuild) — MultiBoard-compatible mount/hole interface + MultiBin/Fix-Point accessory geometry.
 - [pcie-bracket](libraries/pcie-bracket) — PCIe low-profile + full-height expansion-slot brackets.
+- [rack-support](libraries/rack-support) — rear-support plate + slide-in tongue/slot mating interface for rack10 device trays.
 - [rack10](libraries/rack10) — 10-inch mini-rack reference (LabRax/DeskPi/TecMojo).
 - [rack19](libraries/rack19) — 19-inch EIA-310-D rack reference.
 - [sbc](libraries/sbc) — SBC mechanical reference (Raspberry Pi B/Zero families + BPI-R4).

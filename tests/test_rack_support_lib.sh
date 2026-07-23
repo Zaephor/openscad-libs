@@ -132,4 +132,43 @@ if [ -f "$tmp/probe_hole.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
   echo "rear mounting hole does NOT penetrate (expected empty at a hole center):"; echo "$out"; exit 1
 fi
 
+# --- rack_support_tongue() span checks (#40 Task 4) ---
+# X-span == rack_support_rail_size()[0] (40), Y-span ==
+# rack_support_engagement_depth() (12), Z-span == rack_support_rail_size()[1]
+# (10). A span (max-min) is unaffected by the tongue's Z-datum fix
+# (underside seated at rack_support_floor_thickness()=2, not Z=0 -- see the
+# module doc) since it's a difference, not an absolute position; the
+# absolute Z position is what verify-scad-geometry confirmed mates with the
+# plate's real channel band, separately from this shape check.
+cat > "$tmp/tongue.scad" <<'EOF'
+use <rack-support/rack-support.scad>;
+rack_support_tongue();
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tongue.stl" "$tmp/tongue.scad" 2>/dev/null
+python3 - "$tmp/tongue.stl" <<'PY' || { echo "rack_support_tongue span wrong (want X=40, Y=12, Z=10)"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[];zs=[]
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[b:b+12]); xs.append(x); ys.append(y); zs.append(z)
+xspan=max(xs)-min(xs); yspan=max(ys)-min(ys); zspan=max(zs)-min(zs)
+ok = abs(xspan-40)<0.05 and abs(yspan-12)<0.05 and abs(zspan-10)<0.05
+sys.exit(0 if ok else 1)
+PY
+
+# Tongue underside sits at rack_support_floor_thickness() (2), not Z=0 --
+# the Z-datum fix this task adapted to. zmin must be ~2, not ~0.
+python3 - "$tmp/tongue.stl" <<'PY' || { echo "rack_support_tongue zmin wrong (want ~2, the plate's bearing-floor top, not 0)"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+zs=[]
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12
+        zs.append(struct.unpack('<3f',d[b:b+12])[2])
+sys.exit(0 if abs(min(zs)-2)<0.05 else 1)
+PY
+
 echo ok

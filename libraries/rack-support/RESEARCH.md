@@ -2,8 +2,8 @@
 
 Evidence/provenance log for `rack-support.scad`'s mating-interface accessors
 (`rack_support_rail_size()`, `rack_support_slot_clearance()`,
-`rack_support_engagement_depth()`). Unlike most libraries in this repo, these
-three values are **not** measured or spec-sourced dimensions of a real-world
+`rack_support_engagement_depth()`, `rack_support_floor_thickness()`). Unlike
+most libraries in this repo, these four values are **not** measured or spec-sourced dimensions of a real-world
 part — there is no vendor part, standard, or physical artifact to measure.
 They are **DESIGN values**: fit-clearance and engagement choices for a
 slide-in tongue/slot mechanism this library itself defines (rear-support
@@ -76,6 +76,24 @@ cross-section and shelf load" — this is a design judgment informed by the
 short-land *strategy*, not a derived number. `//VERIFY design`, pending a
 physical print/load test once Tasks 3-4 build the plate/tongue geometry.
 
+## `rack_support_floor_thickness() = 2` mm
+
+Bearing-floor material thickness inside `rack_support_plate()` (`Z` in
+`[0,floor_t]`); the floor's TOP face (`Z=floor_t`) is the actual
+load-bearing contact surface, not the floor's bottom (`Z=0`, resting on the
+shared rack10 U-floor datum). Originally a `rack_support_plate()`-local
+literal (Task 3); promoted to a function in Task 4 because
+`rack_support_tongue()` must seat on the exact same Z-offset to bear
+correctly against the plate's real floor — a duplicated literal in two
+modules would violate this repo's single-source-of-truth rule the moment
+one changed without the other. No external spec for "how thick should this
+bearing shelf be" — sized as a modest, printable wall thickness (2mm,
+above the 0.8mm-ish minimum for a single/few-perimeter shelf on the P1S/PETG
+target) that still leaves headroom for the tongue's `rack_support_rail_
+size()[1]=10mm` cross-section within a 1U device envelope (`rack10_device_
+height(1)` ≈ 43.66mm). `//VERIFY design`, same footing as the other three
+mating-interface values — pending a physical print/load check.
+
 ## Relationship to `rack10_rear_post_y()` (Task 1)
 
 `rack-support.scad` `use`s `rack10/rack10.scad` for the rear plate's
@@ -84,10 +102,16 @@ Task 1, wraps `rack10_depth_preset(standard)`) as the Y coordinate where the
 rear-support plate mounts to the rear rack posts. That function's own tier
 is `[C]//VERIFY` (it inherits `depth_ftf`'s tier — see
 `libraries/rack10/RESEARCH.md`) and is **not** re-derived or re-tiered here;
-this file only documents the three DESIGN-value accessors this task adds.
+this file only documents the four DESIGN-value accessors this library adds.
 The rear-mirror-of-front-mounting assumption itself (rack10 has no modeled
-rear rack posts) remains `//VERIFY`, flagged for Tasks 3-4 once the plate
-module actually consumes it.
+rear rack posts) remains `//VERIFY`. `rack_support_plate()` (Task 3) now
+mounts at that Y coordinate, and `rack_support_tongue()` + the
+`assembly.scad` reference demo (Task 4) confirm — via `verify-scad-geometry`
+— that a tongue placed at `rack10_rear_post_y(standard) -
+rack_support_engagement_depth()` actually seats in the plate's channel; the
+underlying `[C]//VERIFY` tier on `rack10_rear_post_y()` itself is unchanged
+by that confirmation (it verifies the *mechanism*, not the *rack10 depth
+number*).
 
 ## No fetch-method narrative
 

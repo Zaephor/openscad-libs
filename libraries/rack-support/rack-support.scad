@@ -12,6 +12,13 @@ use <rack10/rack10.scad>;
 function rack_support_rail_size()      = [40, 10]; // tongue [width_X, height_Z] mm //VERIFY design
 function rack_support_slot_clearance() = 0.4;      // per-side slide fit gap    //VERIFY design
 function rack_support_engagement_depth() = 12;     // tongue insertion depth Y  //VERIFY design
+// Bearing-floor material thickness inside rack_support_plate() (Z in
+// [0,floor_t]); the floor's TOP face (Z=floor_t) is the actual bearing
+// contact datum -- see that module's Z-DATUM comment. Promoted to a
+// function (not a plate-local literal) because rack_support_tongue() must
+// seat on the SAME datum: single source of truth for both consumers of
+// this number. //VERIFY design
+function rack_support_floor_thickness() = 2;
 
 /* [Rear plate] */
 // Convex prism from 3 [Y,Z] points, extruded along X (width xw, X-centered).
@@ -58,7 +65,7 @@ module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
     ed = rack_support_engagement_depth();
     slot_w  = rs[0] + 2 * cl;               // side clearance both sides
     slot_h  = rs[1] + cl;                   // top clearance only; floor stays tight (bearing)
-    floor_t = 2;                            // bearing-floor material thickness, Z in [0,floor_t]
+    floor_t = rack_support_floor_thickness(); // bearing-floor material thickness, Z in [0,floor_t]
     lead_in = floor_t;                      // mouth chamfer run (Y); == floor_t -> 45deg
     assert(ed <= h, "rack_support_plate: engagement depth exceeds device height");
     difference() {
@@ -110,4 +117,37 @@ module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
         rack10_holes(standard, u, hole_type = hole_type,
                      dia = hole_type == "round" ? rack10_screw_clearance("m6") : 0);
     }
+}
+
+// The mating tongue a consumer tray unions at its rear, centered on the
+// tray width, projecting +Y to slide into rack_support_plate()'s forward-
+// opening (-Y) channel. Sized from rack_support_rail_size(); reaches
+// rack_support_engagement_depth() into the slot.
+//
+// Z-POSITIONING (matches rack_support_plate()'s Z-DATUM fix, not the
+// original Z=0-flush assumption): the plate's channel cavity sits ABOVE
+// its bearing floor (Z in [floor_t, floor_t+slot_h]), not at Z=0 -- the
+// floor's bottom rests on the shared rack10 U-floor datum, and its TOP
+// face (Z=floor_t, rack_support_floor_thickness()) is the real bearing
+// contact surface. So the tongue is built at Z in [floor_t, floor_t+rs[1]]
+// (underside on the bearing floor, tight fit; top has the plate's
+// slot_clearance headroom), NOT at Z in [0,rs[1]]. rack_support_
+// floor_thickness() is the single source for this offset -- both this
+// module and rack_support_plate() read it, so the two can never drift
+// apart independently.
+//
+// Consumers place their body so the tongue root sits at
+// rack10_rear_post_y(standard) minus rack_support_engagement_depth() (see
+// README consumer contract / placement formula). Leading edge left square:
+// it mates with the plate's own chamfered mouth lead-in, so no additional
+// tongue-side bevel is needed for slide-in clearance. Support-free: a flat
+// vertical end face has no overhang; consumers must bring their own floor
+// up to meet the tongue's underside (Z=floor_t) with no unsupported gap --
+// see the README consumer contract for the required buttressing detail.
+module rack_support_tongue() {
+    rs = rack_support_rail_size();          // [w, h]
+    ed = rack_support_engagement_depth();
+    ft = rack_support_floor_thickness();    // plate bearing-floor top = tongue underside
+    translate([-rs[0] / 2, 0, ft])
+        cube([rs[0], ed, rs[1]]);
 }
