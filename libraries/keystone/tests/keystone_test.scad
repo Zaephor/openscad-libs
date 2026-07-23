@@ -114,6 +114,14 @@ assert(keystone_layout_ok([0, keystone_pitch(), 2 * keystone_pitch()]) == true,
 assert(keystone_layout_ok([0, mp - 0.5]) == false, "sub-min gap rejected");
 assert(keystone_layout_ok([0]) == true, "single port always fits");
 
+// --- Flagship insert data accessors (#54 Task 1, [B] caliper, Tecmojo
+// nominal -- RESEARCH.md "Flagship insert mechanism -- [B] caliper (#54)") ---
+assert(keystone_insert_face()  == [14.3, 16.0], "insert face");
+assert(keystone_insert_depth() == 20, "insert depth default");
+assert(keystone_insert_guide_rib() == [0.8, 7.6, 1.4, 10.0], "guide rib");
+assert(keystone_insert_lug()   == [7.8, 1.2, 7.0, 6.6], "retention lug");
+assert(keystone_insert_latch() == [9.2, 15.0, 3.6, 5.2, 0.9, 2.2, 4.3, 3.0, 3.1], "cantilever latch");
+
 echo("keystone_test OK");
 
 /* [Placeholder] — smoke render; numeric bbox checked in tests/test_keystone_lib.sh */

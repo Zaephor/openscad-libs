@@ -552,6 +552,96 @@ top/bottom engagement, triangular notch-in-slit) and weakest on *exact
 millimeter values*, where only `back_wall_depth` (~10mm) and the
 same-depth-start finding cleared the `[C]` bar this pass.
 
+### Flagship insert — datasheet reconciliation (#54 Task 1)
+
+Two vendor datasheets are on file for this pass: VCELINK "Cat6 Keystone
+Coupler" (M226) and VCELINK "Keystone Wall Plate" (A175-1).
+
+- **A175-1 wall plate** dimensions its keystone port window (front view):
+  **14.6mm (W) x 16.1mm (H)**, with a larger **19.5mm** opening visible from
+  the rear (a front/rear relief taper, consistent with the asymmetric
+  front/rear opening already documented elsewhere in this file). This
+  dimensions the PANEL OPENING, not an insert — it corroborates
+  `keystone_opening("face")` `[A]` (14.70 x 16.40, Samm Teknoloji) as a
+  second independent source in the same ~14.6-14.7 x 16.1-16.4mm range, but
+  is not itself adopted (no change to that accessor this task).
+- **M226 coupler** dimensions its own module cross-section (front view):
+  **14.6mm x 16.2mm**, overall length **32.7mm**; a secondary **20.0mm**
+  run to an internal step is also dimensioned (plausibly the front,
+  keystone-slot-compatible portion of the housing before the coupler's own
+  RJ45-facing rear extension — not confirmed from the drawing alone). These
+  numbers sit close to, but not identical to, the VCELINK BOUND recorded
+  below (face 14.3 x 16.0, depth 32.4mm): deltas of 0.2-0.3mm per dimension,
+  consistent with a datasheet nominal vs. an as-received caliper reading of
+  the same product line, not a discrepancy. The 20.0mm run is coincidentally
+  close to `keystone_insert_depth()`'s 20mm value below, but that value's
+  actual source is the Tecmojo latch-root reading (see next section), not
+  this datasheet — noted here only as a directionally-corroborating data
+  point, not adopted.
+- **Tier decision:** the M226 datasheet states a face for *its own* product
+  (the VCELINK bound specimen), not for the Tecmojo specimen this task's
+  accessors are keyed to (Tecmojo has no vendor datasheet on file). Per
+  `docs/LIBRARY-AUTHORING.md`'s tiering, that means `keystone_insert_face()`
+  and the other flagship accessors below stay **`[B]` caliper** (Tecmojo
+  nominal) — a same-family vendor datasheet for the *other* specimen
+  corroborates the VCELINK bound but does not promote the Tecmojo-keyed,
+  load-bearing values to `[A]`. Printable face nominal stays 14.3mm
+  (caliper, both specimens agree); the datasheets' 14.5-16.2mm range is the
+  wider de-facto-standard envelope our eventual slot must clear, not the
+  printed insert's own dimension.
+
+### Flagship insert mechanism — [B] caliper (#54 Task 1)
+
+Two physical specimens, both CAT6 keystone inserts: **Specimen A
+(Tecmojo)**, bundled with a Tecmojo 0.5U patch panel — smaller, treated as
+the PRIMARY/nominal reference below; **Specimen B (VCELINK)**, a bulk-pack
+CAT6 insert — larger on several features, does not seat in Specimen A's own
+patch panel, and is recorded as the outer BOUND a future slot/opening must
+still clear (not modeled as the flagship insert itself). Coordinate frame:
+origin at the center of the front face (the face exposed out of the panel,
+RJ45 side); X = width, Y = height, Z = depth behind the front face
+(positive magnitude increasing away from the panel).
+
+- **Face** — W identical at both specimens (14.3mm); H 15.9mm (A) vs
+  16.0mm (B), a 0.1mm delta. `keystone_insert_face()` below takes Specimen
+  A's width verbatim and Specimen B's height (both within their mutual
+  0.1mm spread): `[14.3, 16.0]`.
+- **Depth** — body-only Z is 29.8mm (A) vs 32.4mm (B, +2.6mm — a deeper
+  body behind the panel, not relevant to seating). `keystone_insert_depth()`
+  below (20mm) is NOT either specimen's raw body length — it is sized to
+  clear Specimen A's latch root (anchor z 15.0mm + anchor thickness 3.6mm =
+  18.6mm) plus a small margin, i.e. the depth the flagship geometry needs
+  behind the face to host the retention mechanism.
+- **Guide rib** (L/R side shelf, symmetric) — X protrusion past the cube
+  identical at both specimens (0.8mm/side); Y run (long axis) 7.6mm (A) vs
+  7.9mm (B); Z thickness 1.4mm (A) vs 1.5mm (B); rib front face starts
+  10.0mm (A) / 9.9mm (B) behind the front face. `keystone_insert_guide_rib()`
+  below takes Specimen A's reading verbatim: `[0.8, 7.6, 1.4, 10.0]`
+  (out, run, thick, z0).
+- **Fixed retention lug** (bottom, non-flexing) — X width 7.8mm (A) vs
+  8.0mm (B); -Y protrusion past the cube bottom 1.2mm (A) vs 1.1mm (B) (a
+  delta that cancels against the width delta — combined bottom envelope is
+  17.1mm at BOTH specimens); Z length 7.0mm, identical at both.
+  `keystone_insert_lug()` below takes Specimen A's reading verbatim:
+  `[7.8, 1.2, 7.0, 6.6]` (w, prot, zlen, z0).
+- **Cantilever latch** (top, flexing arm + triangular catch) — the one
+  feature where the two specimens diverge meaningfully (identified as the
+  reason Specimen B does not seat in Specimen A's own panel): beam width
+  9.2mm (A) vs 10.2mm (B, +1.0mm, the single largest delta measured); root
+  (anchor) z 15.0mm (A) vs 16.5mm (B); root thickness 3.6mm (A) vs 3.4mm
+  (B); tip reach ~5.2mm from the face (A) vs ~5.5mm (B, flagged as an
+  internally-inconsistent reading needing re-measurement); beam wall
+  thickness 0.9mm (A) vs 1.4mm (B, notably stiffer); deflection clearance
+  gap 2.2mm (A) vs 2.0mm (B); catch peak above the cube top 4.3mm (A) vs
+  4.9mm (B); catch z-extent 3.0mm (A) vs 2.8mm (B); hat-body top (pre-catch)
+  height 3.1mm (A) vs 3.4mm (B). `keystone_insert_latch()` below takes
+  Specimen A's reading verbatim: `[9.2, 15.0, 3.6, 5.2, 0.9, 2.2, 4.3, 3.0,
+  3.1]` (beam_w, root_z, root_thick, tip_z, beam_wall, defl_clear,
+  hook_peak, hook_zext, body_top). Specimen B's larger, stiffer latch is
+  the bound a future slot/opening task must clear; the flagship insert
+  itself models Specimen A (closer to the universal envelope, PETG-tunable
+  flex).
+
 ## Sources
 
 - [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) — tier A — backs `keystone_opening()`, `keystone_plate_thickness()[0]` (tmin); also the sole (single, non-decomposed) reading behind `keystone_body()[2]` (bd), which stays `//VERIFY` since one non-decomposed reading doesn't earn a tier

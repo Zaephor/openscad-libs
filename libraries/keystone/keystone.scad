@@ -237,6 +237,21 @@ function keystone_min_wall()        = 1.6;
 function keystone_tab(style = undef) =
     let(s = _keystone_resolve_style(style)) [1.0, 1.2, "+Y", "-Y"];
 
+// keystone_insert_face()/_depth()/_guide_rib()/_lug()/_latch(): flagship
+// insert mechanism data (#54 Task 1, RESEARCH.md "Flagship insert mechanism
+// -- [B] caliper (#54)"), Specimen A (Tecmojo) nominal; Specimen B
+// (VCELINK, a wider/stiffer bound the eventual slot must clear) recorded in
+// RESEARCH.md only, not exposed as its own accessor this task. All z values
+// are POSITIVE magnitudes behind the front face (Z=0); keystone_insert()
+// (a future task) negates them into -Z.
+// --- Flagship insert data (caliper [B], Tecmojo nominal; z = magnitude behind face) ---
+function keystone_insert_face()  = [14.3, 16.0];               // [B] caliper (both specimens agree on W)
+function keystone_insert_depth() = 20;                          // [B] caliper — latch-root lower bound ~18.6 + margin
+function keystone_insert_guide_rib() = [0.8, 7.6, 1.4, 10.0];  // out, run, thick, z0  [B] caliper
+function keystone_insert_lug()   = [7.8, 1.2, 7.0, 6.6];       // w, prot, zlen, z0    [B] caliper
+function keystone_insert_latch() = [9.2, 15.0, 3.6, 5.2, 0.9, 2.2, 4.3, 3.0, 3.1];
+                                    // beam_w, root_z, root_thick, tip_z, beam_wall, defl_clear, hook_peak, hook_zext, body_top  [B] caliper
+
 // keystone_boss_footprint(style, clearance): [w, h, y_center] rectangular
 // footprint (X,Y) for keystone_boss(style) below -- "standard"'s channel
 // envelope (keystone_slot() mouth + both wall thicknesses, clearance-grown)
