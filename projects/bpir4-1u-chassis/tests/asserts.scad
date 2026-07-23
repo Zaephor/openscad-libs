@@ -83,6 +83,15 @@ assert(_ix - _lid_post_od()/2 >= board_w()/2,
 // Vent band starts above the tallest front connector.
 assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
     "vent band must start above the PCB");
+// #56 Task 3: lock the tallest ymin (front) connector height so a future sbc
+// data change that re-tallens the band is caught. After the Task 1/2 caliper
+// revision (thickness 1.6->1.4, per-connector reconciliation) the tallest
+// front connector is usb_1/USB3 at h=14.1 (bottom->top 15.5 - thickness 1.4),
+// NOT the old SFP h=13.4 placeholder -- SFP dropped to h=10.4 and is now the
+// SHORTEST of the big front connectors. Bound is 14.1 + 0.1mm margin.
+assert(_front_conn_max_h() <= 14.2 + 1e-6,
+    str("tallest front connector ", _front_conn_max_h(),
+        " unexpectedly > 14.2 (front-connector height regression?)"));
 
 // Item 4: four corner lid posts (side-midspan pair dropped).
 assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
