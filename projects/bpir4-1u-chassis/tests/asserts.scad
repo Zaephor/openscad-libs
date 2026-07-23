@@ -153,16 +153,21 @@ for (c = _rj45)
 
 // Underside worst-case clearance: standoff gap must exceed the tallest
 // underside module keep-out by at least underside_clearance.
+// Guards the derivation standoff_h = _underside_max_hang() + underside_clearance
+// (catches future re-literalizing of standoff_h); doesn't verify clearance independently.
 assert(standoff_h - _underside_max_hang() >= underside_clearance - 1e-6,
     str("underside clearance ", standoff_h - _underside_max_hang(),
         " < required ", underside_clearance,
         " (max hang ", _underside_max_hang(), ", standoff ", standoff_h, ")"));
 
-// DIP switch lever overhangs the board's right edge by ~2mm (caliper: board
-// x=148 -> ~150). Guard that the right interior (side-wall inner face) clears
-// the board edge + the lever. Set-once switch (not accessed at runtime) -> no
-// opening cut; this only prevents a future body_w() shrink from clipping it.
-dip_lever_overhang = 2.0; // [B] caliper (#55) — lever proud of board right edge
+// DIP switch lever overhangs the board's right edge. Guard that the right
+// interior (side-wall inner face) clears the board edge + the lever. Set-once
+// switch (not accessed at runtime) -> no opening cut; this only prevents a
+// future body_w() shrink from clipping it.
+function _dip_lever_overhang() =
+    let (dip = [for (c = sbc_connectors(BOARD)) if (c[0] == "dip_1") c])
+    len(dip) > 0 ? max(0, (dip[0][1][0] + dip[0][2][0]) - board_w()) : 0;
+dip_lever_overhang = _dip_lever_overhang(); // derived from sbc dip_1 row (x0 + width - board_w); currently 2.0mm
 _right_wall_inner = body_w()/2 - wall;
 assert(board_w()/2 + dip_lever_overhang <= _right_wall_inner + 1e-6,
     str("DIP lever (board edge ", board_w()/2, " + ", dip_lever_overhang,
