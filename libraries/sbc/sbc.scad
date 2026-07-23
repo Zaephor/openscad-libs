@@ -390,8 +390,8 @@ function _sbc_table() = [
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
           // where left/right swap relative to the top-view frame this whole row
-          // uses (confirmed: `.superpowers/sdd/bpir4/component-measurements.md`
-          // "Left/right flips between TOP and BOTTOM measurements"). Mirror
+          // uses (underside caliper readings use flipped left/right; front/rear
+          // unaffected — see the Task 2 caliper revision section above). Mirror
           // transform applied: a flipped-frame "X right" reading -> x_board = X
           // (flipped-right = board-LEFT); a flipped-frame "X left" reading ->
           // x_board = 148-X (flipped-left = board-RIGHT). "rear" readings are
