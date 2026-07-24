@@ -4,6 +4,7 @@
 // honeycomb. Prints flat, open-top, support-free.
 use <drives/drives.scad>;
 use <rack10/rack10.scad>;
+use <rack-support/rack-support.scad>;
 
 /* [Rack] */
 standard = "labrax";
@@ -17,6 +18,7 @@ rows = 1;
 wall = 2.4;
 floor_th = 3.0;
 drive_gap = 4.0;
+faceplate_th = 3.0;
 
 // block-drive guard (reject M.2 card types)
 assert(len([for (t = drive_known_types()) if (t == drive_type && drive_family(t) == "block") t]) > 0,
@@ -47,6 +49,33 @@ assert(_grid_w() <= _clear() - 2*wall + 1e-6,
 assert(_dh() <= _int_h() + 1e-6,
     str("drive-tray: drive height ", _dh(), " > 1U interior ", _int_h()));
 
+// Depth fit-assert (grid depth vs. rack10's rear-post depth budget, minus
+// the tongue's own engagement land AND this tray's faceplate thickness -- a
+// deliberately conservative BUDGET, not the tight structural minimum: the
+// floor/walls/tongue themselves are placed against rack10_rear_post_y()
+// directly by the rack-support (#40) consumer-contract formula (see
+// _reach() below), not against this reduced figure. This assert exists only
+// to keep the drive grid itself from being sized so deep it leaves no depth
+// margin at all for the rear wall + tongue buttress.
+function _usable_depth() = rack10_rear_post_y(standard) - faceplate_th - rack_support_engagement_depth();
+assert(_grid_d() <= _usable_depth() + 1e-6,
+    str("drive-tray: grid depth ", _grid_d(), " > usable ", _usable_depth(),
+        " for standard ", standard, " (reduce rows / pick a deeper vendor)"));
+
+// Rear #40 support-tongue placement -- rack-support's own consumer-contract
+// "Placement formula" (see libraries/rack-support/README.md): the tongue's
+// TIP lands exactly at rack10_rear_post_y(standard) (rack_support_plate()'s
+// own mounting plane), and its ROOT sits rack_support_engagement_depth() mm
+// forward of that. Deliberately NOT _usable_depth() (rpy - faceplate_th -
+// ed) -- that function is a conservative BUDGET for the grid fit-assert
+// above only. Using it here would place the tongue's root (and therefore
+// its tip) faceplate_th short of the doc-contract position, leaving the
+// tongue faceplate_th shy of rack_support_plate()'s mounting plane and
+// short of full engagement. Confirmed against the sibling #41 consumer
+// (bay-enclosure)'s own STL check that its Y-max == rack10_rear_post_y(
+// "labrax") == 240 (tests/test_bay_enclosure.sh) -- same placement formula.
+function _reach() = rack10_rear_post_y(standard) - rack_support_engagement_depth();
+
 // Per-cell origin (cell's low-X/low-Y corner), grid centered in X, front row at Y=0.
 function _cell_xy(c, r) = [ -_grid_w()/2 + c*(_dw() + drive_gap), r*(_dlen() + drive_gap) ];
 
@@ -66,12 +95,94 @@ module _dt_device_frame(c, r) {
     translate([p[0] + _dw(), p[1], floor_th]) rotate([0, 0, 90]) children();
 }
 
+// Front rack faceplate + ear holes (bpir4/faceplate idiom, same shape as
+// bay-enclosure's _be_faceplate()). Front face at Y=-faceplate_th, back face
+// (where the floor/walls join it) at Y=0 -- the rack10 front-post datum,
+// matching where rack10_holes() itself stamps (Y=0-centered cutter).
+module _dt_faceplate() {
+    difference() {
+        translate([-rack10_panel_width(standard)/2, -faceplate_th, 0])
+            cube([rack10_panel_width(standard), faceplate_th, rack10_device_height(device_u)]);
+        if (ear_type == "slot")
+            rack10_holes(standard, device_u, hole_type = "slot", dia = rack10_screw_clearance("10-32"));
+        else
+            rack10_holes(standard, device_u, hole_type = ear_type);
+    }
+}
+
 module drive_tray() {
+    fw  = _grid_w() + 2*wall;             // overall floor/wall-pair width
+    fx0 = -fw / 2;                        // floor's/left-wall's outer-X origin
+    wh  = rack10_device_height(device_u); // side/rear wall height, matches the faceplate
+
     difference() {
         union() {
-            // Floor spanning the grid (walls/faceplate/tongue join this union in later tasks).
-            translate([-_grid_w()/2 - wall, -wall, 0])
-                cube([_grid_w() + 2*wall, _grid_d() + 2*wall, floor_th]);
+            _dt_faceplate();
+
+            // Floor: front (Y=-wall, overlapping the faceplate's back face,
+            // same idiom as the Task-1 floor) through the tongue's root
+            // (_reach()) -- NOT past it. Nothing extends past _reach() into
+            // the tongue's own engagement span; see the NO-buttress-shelf
+            // comment below for why.
+            translate([fx0, -wall, 0]) cube([fw, _reach() + wall, floor_th]);
+
+            // Side walls: wall-thick, full device height, matching the
+            // floor's Y-span.
+            for (sx = [-1, 1])
+                translate([sx > 0 ? fx0 + fw - wall : fx0, -wall, 0])
+                    cube([wall, _reach() + wall, wh]);
+
+            // Rear wall: closes the box; the tongue attaches to its back
+            // face. NOTE: no separate 45deg gusset at the faceplate/floor or
+            // wall/floor joints -- both are geometric no-ops for this
+            // design, same root cause bay-enclosure documented for its own
+            // front joint: at the wall X-bands, the side wall already spans
+            // the FULL [0,wh] height over the SAME Y-Z footprint the
+            // faceplate/floor already occupy there (one contiguous solid,
+            // nothing to brace); at the center X-band (under the drive
+            // grid), _dt_device_frame() parks each drive flush at
+            // Z=floor_th (zero clearance, by design), so there is zero
+            // headroom above the floor for ANY raised gusset material
+            // without fouling drive fit.
+            translate([fx0, _reach() - wall, 0]) cube([fw, wall, wh]);
+
+            // NO rear buttress shelf under the tongue's own engagement span
+            // (Y > _reach()), despite rack-support's README consumer
+            // contract suggesting one ("running the tray's own floor at the
+            // same Z height as the tongue's underside for the last
+            // engagement_depth() mm", as rack-support's own assembly.scad
+            // reference tray does). Verified empirically (verify-scad-
+            // geometry + a real intersection() boolean against
+            // rack_support_plate(standard, device_u) translated to
+            // rack10_rear_post_y(standard)): a shelf there -- at ANY width,
+            // even just the tongue's own rw -- occupies the EXACT same
+            // Y=[_reach(),rpy] x Z=[0,ft] space rack_support_plate()'s own
+            // bearing floor already fills once assembled (that floor spans
+            // the full mouth-through-panel Y range, not just under the
+            // channel cavity), producing a real ~960mm^3 solid-solid
+            // interference, not a coincident-face touch -- confirmed by
+            // dumping the intersection's own triangle data (all non-
+            // degenerate facets bounded exactly by rw/ft/[_reach(),rpy]).
+            // Two rigid printed parts can't occupy that shared volume, so
+            // any buttress in this span would physically block full
+            // insertion. See task-2-report.md for the full write-up; this
+            // is a tension in rack-support's own consumer-contract guidance
+            // (its own assembly.scad reference tray appears to have the
+            // same unverified collision), not something fixable from this
+            // consumer alone. Left as a flagged concern: the tongue's own
+            // 12mm reach (rack_support_engagement_depth()) prints as a
+            // modest, stocky (40x10mm cross-section) cantilever off the
+            // rear wall's full-height, full-width anchor face at _reach()
+            // -- right at this repo's own ~5-10mm "usually fine, minor
+            // droop" bridging guideline (design-for-print/reference/
+            // overhangs-supports.md), slightly past it and a cantilever
+            // (weaker than a bridge), a real but modest print-time risk.
+
+            // Rear #40 support tongue -- placement formula per rack-support's
+            // own README consumer contract: tip lands at rack10_rear_post_y
+            // (rack_support_plate()'s own mounting plane), root sits
+            // engagement_depth() forward of that (see _reach() above).
+            translate([0, _reach(), 0]) rack_support_tongue();
         }
         // Bottom mount-hole cutters per cell, subtracted from the floor.
         // _dt_device_frame() anchors local Z=0 at the drive's bottom face
