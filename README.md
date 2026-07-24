@@ -29,6 +29,7 @@ use <fans/fans.scad>;
 - [embedded](libraries/embedded) — ESP32/ESP8266 dev-board mounting reference.
 - [fans](libraries/fans) — PC fan frame sizes + mount hole geometry.
 - [heatset](libraries/heatset) — brass heat-set insert data + geometry (M2–M6).
+- [honeycomb](libraries/honeycomb) — self-supporting hex-hole vent cutter.
 - [keystone](libraries/keystone) — keystone-jack snap footprint (opening/cutout/insert).
 - [motherboards](libraries/motherboards) — mini-ITX/microATX/ATX mounting reference.
 - [multibuild](libraries/multibuild) — MultiBoard-compatible mount/hole interface + MultiBin/Fix-Point accessory geometry.
@@ -44,6 +45,7 @@ use <fans/fans.scad>;
 - [bay-enclosure](projects/bay-enclosure) — 1U/2U rack10 enclosure for 5.25"/3.5" bay devices (#40 rear mate)
 - [bpir4-1u-chassis](projects/bpir4-1u-chassis) — 1U 10-inch rack chassis for the BananaPi BPI-R4.
 - [cable-clip](projects/cable-clip) — single-part M3-mounted cable clip.
+- [fan-grille](projects/fan-grille) — flat honeycomb fan finger-guard.
 - [keystone-blank](projects/keystone-blank) — printable caliper-faithful keystone blank insert.
 - [keystone-faceplate](projects/keystone-faceplate) — parametric 1U 10-inch N-port keystone faceplate.
 - [two-piece-box](projects/two-piece-box) — multipart box with exploded view.
