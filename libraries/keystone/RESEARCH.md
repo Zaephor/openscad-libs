@@ -642,6 +642,13 @@ RJ45 side); X = width, Y = height, Z = depth behind the front face
   itself models Specimen A (closer to the universal envelope, PETG-tunable
   flex).
 
+### Lug and latch corrections (#60, caliper re-measurement 2026-07-23)
+
+Specimen A (Tecmojo) was re-measured to correct earlier interpretations in #54:
+
+- **Lug** — previously modeled as a `[7.8, 1.2, 7.0, 6.6]` wedge ramp; caliper re-measurement confirms it is a **plain rectangular block** `[7.8, 1.1, 1.1, 6.8]` (w, prot, zlen, z0) with no wedge profile — supersedes the #54 Tecmojo-nominal wedge interpretation.
+- **Latch tip/peak/extension** — re-measured to `[9.2, 15.0, 3.6, 5.0, 0.9, 2.2, 4.5, 3.1, 3.1]` (tip_z changed 5.2→5.0mm, hook_peak changed 4.3→4.5mm, hook_zext changed 3.0→3.1mm), all `[B]` caliper from the user's physical insert (2026-07-23). These correct #54's earlier Tecmojo-nominal values carried from the first pass's less-resolved read.
+
 ## Sources
 
 - [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) — tier A — backs `keystone_opening()`, `keystone_plate_thickness()[0]` (tmin); also the sole (single, non-decomposed) reading behind `keystone_body()[2]` (bd), which stays `//VERIFY` since one non-decomposed reading doesn't earn a tier

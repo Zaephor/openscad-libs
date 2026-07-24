@@ -242,12 +242,14 @@ function keystone_min_wall()        = 1.6;
 function keystone_insert_face()  = [14.3, 16.0];               // [B] caliper (both specimens agree on W)
 function keystone_insert_depth() = 20;                          // [B] caliper — latch-root lower bound ~18.6 + margin
 function keystone_insert_guide_rib() = [0.8, 7.6, 1.4, 10.0];  // out, run, thick, z0  [B] caliper
-function keystone_insert_lug()   = [7.8, 1.2, 7.0, 6.6];       // w, prot, zlen, z0    [B] caliper
-function keystone_insert_latch() = [9.2, 15.0, 3.6, 5.2, 0.9, 2.2, 4.3, 3.0, 3.1];
-                                    // beam_w, root_z, root_thick, tip_z, beam_wall, defl_clear, hook_peak, hook_zext, body_top  [B] caliper
+function keystone_insert_lug()   = [7.8, 1.1, 1.1, 6.8];        // w, prot, zlen, z0  [B] caliper (physical insert 2026-07-23) — plain block, supersedes the #54 Tecmojo-nominal wedge
+function keystone_insert_latch() = [9.2, 15.0, 3.6, 5.0, 0.9, 2.2, 4.5, 3.1, 3.1];
+                                    // beam_w, root_z, root_thick, tip_z, beam_wall, defl_clear, hook_peak, hook_zext, body_top
+                                    // tip_z/hook_peak/hook_zext [B] caliper (physical insert 2026-07-23), rest carried from #54
                                     // (body_top, index [8], is recorded for reference/provenance only -- like beam_wall
                                     // (index [4]), it's not used verbatim; the module derives an equivalent value
                                     // internally instead: defl_clear + latch_wall)
+function keystone_insert_root_fillet() = 1.5;  // beam-root stress-relief fillet radius (mm) — design value (design-for-print strength-physics)
 
 // keystone_boss_footprint(style, clearance): [w, h, y_center] rectangular
 // footprint (X,Y) for keystone_boss(style) below -- "standard"'s channel
