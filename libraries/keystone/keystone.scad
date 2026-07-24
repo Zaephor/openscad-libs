@@ -471,14 +471,20 @@ module _keystone_insert_ramp(w, prot, z_flush, z_full) {
 // run=r), followed by a straight ramp for any remaining rise up to y_hi at
 // z_hi (same 45deg-safe ramp shape this replaces -- the arc's 1:1 rise/run
 // consumption leaves the ramp's own run-vs-rise margin UNCHANGED, see
-// keystone_insert()'s root-fillet asserts). The arc's own last fraction (as
-// it nears tangent-vertical) is a small, load-bearing internal-corner
-// concave feature backed by solid on 3 sides -- design-for-print's
-// strength-physics.md: fillets are the right call for a load-bearing
-// corner and this scale of concave feature is the accepted, self-supporting
-// case (distinct from a flat unsupported shelf) -- not a chamfer, because
-// this corner needs the stress-relief a fillet gives, not just print
-// safety. Spans w in X (beam_w); z_lo must be the MORE-NEGATIVE (earlier-
+// keystone_insert()'s root-fillet asserts).
+//
+// SUPPORT-FREE NOTE (user-accepted tradeoff, 2026-07-24): the arc's back
+// half genuinely exceeds the 45deg self-support guideline (measured
+// per-segment overhang from vertical at N=8/r=1.5: ~51/62/73/84deg for the
+// last 4 segments -- the final segment is close to a flat shelf, not a
+// minor edge case). Task review flagged this as an unescalated real
+// overhang per the plan's escalation clause; the user was asked and chose
+// to accept it as-is over a partial-arc-blend or smaller-radius
+// alternative, prioritizing the true quarter-circle profile (anti-fracture
+// stress relief + physical fidelity) over strict support-free compliance
+// for this specific small, solid, 3-sides-backed feature. Not a "call it
+// self-supporting and move on" -- an explicit, recorded user decision.
+// Spans w in X (beam_w); z_lo must be the MORE-NEGATIVE (earlier-
 // printed, rear-down) end, z_hi the front.
 module _keystone_insert_root_fillet(w, r, y_lo, y_hi, z_lo, z_hi) {
     N = 8; // arc subdivision (quarter circle)
