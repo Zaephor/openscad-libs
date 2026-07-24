@@ -43,10 +43,10 @@ function board_insert_bore() = heatset_pilot_dia(board_insert_size); // was 3.4
 function lid_insert_bore()   = heatset_pilot_dia(lid_insert_size);   // was 4.2
 vent_slot_w   = 2.5;  // intake/lid vent slot width
 vent_slot_gap = 3.0;  // gap between vent slots
-// Shared honeycomb vent geometry (parts/_honeycomb.scad honeycomb_vent()):
+// Shared honeycomb vent geometry (honeycomb/honeycomb.scad honeycomb_vent()):
 // used by the faceplate above-IO band and (per the v3 plan) the lid vents,
 // so both bands look consistent. cell = hex point-to-point width; its flat
-// top edge (the only true bridge in a flat-top hex -- see _honeycomb.scad)
+// top edge (the only true bridge in a flat-top hex -- see honeycomb/honeycomb.scad)
 // is cell/2 = 4mm, safely under design-for-print's <=5mm "reliably
 // self-supporting" bridge ceiling. wall = gap kept between adjacent hex
 // holes, sized >= 2x a 0.4mm nozzle's line width.

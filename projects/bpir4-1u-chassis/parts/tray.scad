@@ -14,7 +14,7 @@ use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
 use <heatset/heatset.scad>;
-use <_honeycomb.scad>;
+use <honeycomb/honeycomb.scad>;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
@@ -118,9 +118,9 @@ module _faceplate(ear_hole_type = ear_hole_type) {
         // tallest connector to just below the ledge — straight cross-chassis
         // airflow over the SFP/connector tops. Replaces the old full-width
         // slot cubes (a flat, unsupported bridge spanning the whole cluster
-        // width) with honeycomb_vent() (parts/_honeycomb.scad): flat-top hex
+        // width) with honeycomb_vent() (honeycomb/honeycomb.scad): flat-top hex
         // cells whose only bridge (the hex top edge) is a few mm, not the
-        // whole band width — see _honeycomb.scad for the self-support
+        // whole band width — see honeycomb/honeycomb.scad for the self-support
         // reasoning and honeycomb_cell/honeycomb_wall in params.scad.
         cl = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]];
         cr = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]+c[2][0]];

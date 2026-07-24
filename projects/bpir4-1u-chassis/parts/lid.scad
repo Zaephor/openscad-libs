@@ -18,7 +18,7 @@ ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <tray.scad>;   // for _lid_post_xy() (functions import via use)
-use <_honeycomb.scad>;
+use <honeycomb/honeycomb.scad>;
 
 module _lid_countersink() {
     // Countersunk M3 clearance: straight through-hole + a 90-degree head cone
@@ -58,7 +58,7 @@ module lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan
         for (p = _lid_post_xy(enable_exhaust))
             translate([p[0], p[1], 0]) _lid_countersink();
         // Optional lid vents over the hot zone (center band): a self-
-        // supporting honeycomb hex-hole cutter (parts/_honeycomb.scad),
+        // supporting honeycomb hex-hole cutter (honeycomb/honeycomb.scad),
         // reusing the faceplate's honeycomb_cell/honeycomb_wall (params.scad)
         // for a visually consistent look. band_len mirrors the old slot
         // loop's target coverage (half the lid depth, centered on the

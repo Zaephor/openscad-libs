@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Verifies the lid's center vent band uses the shared self-supporting
-# honeycomb hex-hole cutter (parts/_honeycomb.scad) instead of the old
-# slot-cube loop (parts/lid.scad's old `lid_vents` block), for visual
-# consistency with the faceplate's honeycomb intake vents (see
+# honeycomb hex-hole cutter (libraries/honeycomb/honeycomb.scad) instead of
+# the old slot-cube loop (parts/lid.scad's old `lid_vents` block), for
+# visual consistency with the faceplate's honeycomb intake vents (see
 # tests/test_bpir4_honeycomb_vents.sh for that half). Checks:
 #   (a) the old per-slot cube loop is gone from lid.scad;
 #   (b) lid.scad now calls honeycomb_vent(...);
@@ -10,8 +10,9 @@
 #   (d) the rendered lid is actually a many-hole honeycomb array, not the old
 #       handful of slot cubes -- far more STL facets (real-teeth proxy for
 #       (a)+(b) actually being wired together, not just textually true);
-#   (e) the worst-case boundary-hex bridge span _honeycomb.scad computes for
-#       itself (echo()'d as HONEYCOMB_WORST_SPAN=, see _honeycomb.scad and
+#   (e) the worst-case boundary-hex bridge span honeycomb.scad computes for
+#       itself (echo()'d as HONEYCOMB_WORST_SPAN=, see
+#       libraries/honeycomb/honeycomb.scad and
 #       tests/test_bpir4_honeycomb_vents.sh for why this is the real
 #       regression guard) is numerically <=5mm, the design-for-print
 #       self-support ceiling.

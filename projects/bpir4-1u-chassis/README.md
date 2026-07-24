@@ -21,7 +21,7 @@ allows. Intake air runs through
 a self-supporting honeycomb hex-vent band above the IO connector cluster
 (not side margins), for a straight cross-chassis path over the SFP/connector
 tops — no supports needed, since each hex cell's own bridge is only a few mm
-(`parts/_honeycomb.scad`, shared with the lid). The lid carries the same
+(`libraries/honeycomb/honeycomb.scad`, shared with the lid). The lid carries the same
 honeycomb pattern over the board's hot zone (`lid_vents`, on by default),
 also support-free. Rack ears default to slotted mounting holes
 (`ear_hole_type`), with round options available.

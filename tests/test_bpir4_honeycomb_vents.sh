@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # Verifies the faceplate's above-IO intake vent band uses a self-supporting
-# honeycomb hex-hole cutter (parts/_honeycomb.scad) instead of the old
-# full-width bridge slot (a flat unsupported roof spanning the whole
+# honeycomb hex-hole cutter (libraries/honeycomb/honeycomb.scad) instead of
+# the old full-width bridge slot (a flat unsupported roof spanning the whole
 # connector-cluster width -- the thing this task replaces). Checks:
 #   (a) the old full-width vent-slot cube is gone from tray.scad;
-#   (b) parts/_honeycomb.scad exposes the exact honeycomb_vent(width, height,
-#       depth, cell, wall) signature Task 3 (lid vents) depends on verbatim;
+#   (b) libraries/honeycomb/honeycomb.scad exposes the exact
+#       honeycomb_vent(width, height, depth, cell, wall) signature Task 3
+#       (lid vents) depends on verbatim;
 #   (c) the faceplate still renders clean (no ERROR / manifold warning);
 #   (d) the rendered band is actually a many-hole array, not one big slot --
 #       a honeycomb of dozens of hex prisms produces far more STL facets than
 #       the old single cube-per-row slot did (real-teeth proxy for (a)+(b)
 #       actually being wired together, not just textually true);
-#   (e) the worst-case boundary-hex bridge span _honeycomb.scad computes for
+#   (e) the worst-case boundary-hex bridge span honeycomb.scad computes for
 #       itself (echo()'d as HONEYCOMB_WORST_SPAN=, independently recomputed
 #       from _span_at() rather than trusting _hex_is_safe()'s boolean -- see
 #       that file) is numerically <=5mm, the design-for-print self-support
@@ -33,8 +34,8 @@ fi
 
 # (b) exact module signature (Task 3 depends on this without further changes).
 if ! grep -Eq 'module[[:space:]]+honeycomb_vent\([[:space:]]*width,[[:space:]]*height,[[:space:]]*depth,[[:space:]]*cell,[[:space:]]*wall[[:space:]]*\)' \
-      "$proj/parts/_honeycomb.scad" 2>/dev/null; then
-  echo "FAIL: parts/_honeycomb.scad missing exact honeycomb_vent(width, height, depth, cell, wall) signature"
+      "$root/libraries/honeycomb/honeycomb.scad" 2>/dev/null; then
+  echo "FAIL: libraries/honeycomb/honeycomb.scad missing exact honeycomb_vent(width, height, depth, cell, wall) signature"
   fail=1
 fi
 
@@ -66,7 +67,8 @@ if [ -s "$tmp/faceplate.stl" ]; then
 fi
 
 # (e) worst-case boundary-hex bridge span, independently recomputed inside
-# _honeycomb.scad (see that file's `worst_span`/`_drawn_span()`), must be
+# libraries/honeycomb/honeycomb.scad (see that file's `worst_span`/
+# `_drawn_span()`), must be
 # <=5mm. This is what actually distinguishes the fe87c75 fix from the
 # original bug -- both pass the facet-count check above.
 span_line="$(echo "$out" | grep -o 'HONEYCOMB_WORST_SPAN=[0-9.]*' | tail -1)"
