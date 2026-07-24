@@ -29,6 +29,7 @@ so a self-tapping screw cutting fresh threads there generates real hoop
 stress in that corner and can split the PETG on assembly. Go slow: hand-start
 the screw and stop at the first sign of resistance, consider a
 smaller-diameter fastener than the nominal M5, or pre-drill the hole slightly
-before driving the screw. At `fan_size=80` the tab is already comfortably
-thicker (~2.1 mm), most other sizes are >=2.85 mm, and `fan_size>=120` tabs
-are >=5 mm — this caution is really only about the 40 mm default.
+before driving the screw. `fan_size=80` (~2.1 mm) and `fan_size=92`
+(~2.6 mm) are next-thinnest but still well ahead of the 40 mm default;
+50/60/70 mm sit at ~2.85 mm, and `fan_size>=120` tabs are >=5 mm — this
+caution is really only about the 40 mm default.
