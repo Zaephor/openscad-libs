@@ -67,16 +67,35 @@ module _dt_device_frame(c, r) {
 }
 
 module drive_tray() {
-    // Floor spanning the grid (walls/faceplate/tongue added in later tasks).
-    translate([-_grid_w()/2 - wall, -wall, 0])
-        cube([_grid_w() + 2*wall, _grid_d() + 2*wall, floor_th]);
-    // Drives + bottom mount-hole clearance per cell.
-    for (c = [0:cols-1]) for (r = [0:rows-1]) {
-        _dt_device_frame(c, r) {
-            % drive_placeholder(drive_type);
-            translate([0, 0, -floor_th])
-                drive_holes(drive_type, faces = "bottom", depth = floor_th + 2);
+    difference() {
+        union() {
+            // Floor spanning the grid (walls/faceplate/tongue join this union in later tasks).
+            translate([-_grid_w()/2 - wall, -wall, 0])
+                cube([_grid_w() + 2*wall, _grid_d() + 2*wall, floor_th]);
         }
+        // Bottom mount-hole cutters per cell, subtracted from the floor.
+        // _dt_device_frame() anchors local Z=0 at the drive's bottom face
+        // (absolute Z=floor_th, the floor's TOP). drive_holes()'s cylinder
+        // is center=true around ITS OWN local Z=0 (drives.scad: "pierces
+        // Z=0 floor"), so shifting the local frame down by floor_th/2 lands
+        // that center on the floor's MIDPLANE (absolute Z=floor_th/2) --
+        // with depth=floor_th+2 the cut then spans absolute Z=[-1,
+        // floor_th+1], a clean 1mm-margin through-cut of the [0,floor_th]
+        // floor slab. Shifting by a full floor_th (an earlier revision of
+        // this line) anchors the cylinder's center at the floor's BOTTOM
+        // face instead of its midplane, so the same depth only cuts
+        // [-2.5, +2.5] -- past the bottom but NOT reaching the top face at
+        // floor_th=3.0, leaving a real un-perforated skin there (caught by
+        // rendering to STL and point-in-mesh testing a known hole XY at
+        // Z=floor_th: covered/solid at top, open at bottom -- an asymmetric,
+        // wrong result for what must be a straight through-hole).
+        for (c = [0:cols-1]) for (r = [0:rows-1])
+            _dt_device_frame(c, r)
+                translate([0, 0, -floor_th/2])
+                    drive_holes(drive_type, faces = "bottom", depth = floor_th + 2);
     }
+    // Drive placeholders per cell — % preview only, excluded from real geometry/export.
+    for (c = [0:cols-1]) for (r = [0:rows-1])
+        _dt_device_frame(c, r) % drive_placeholder(drive_type);
 }
 drive_tray();
