@@ -64,11 +64,23 @@ module css610_underdesk_bracket() {
                 rotate([0, 90, 0]) cylinder(h = leg_thickness + 2, d = mount_hole, $fn = 32);
         // 2 countersunk wood-screw holes in the flange (bored through Z),
         // spaced along the flange span; centered past the device edge so
-        // the screw clears leg_thickness (X0 = leg_thickness).
+        // the screw clears leg_thickness (X0 = leg_thickness). Screw is
+        // driven UP from below the flange (accessible from underneath, per
+        // the underdesk-mount orientation) so the countersink opens on the
+        // flange's BOTTOM face.
+        // NOTE (Task 2, #59 fix): the brief's representative code offset the
+        // countersink cone by `-flange_thickness` from the `+1` baseline,
+        // which left the cone's wide end 1mm short of the flange bottom
+        // (H+standoff-flange_thickness) -- a solid 1mm "floor" blocked the
+        // hole from ever opening through, caught via a probe at the hole
+        // axis on the bottom-face Z-slice (non-empty = blocked). Fixed by
+        // extending the offset an extra 1mm (+ a 0.01mm overshoot) so the
+        // cone's wide end lands just past the bottom face and its narrow end
+        // (matching wood_screw dia) meets the straight bore with no gap.
         for (fy = [leg_len * 0.3, leg_len * 0.7])
             translate([leg_thickness + flange_len / 2, fy, H + standoff + 1]) {
                 cylinder(h = flange_thickness + 2, d = wood_screw, center = true, $fn = 32);
-                translate([0, 0, -flange_thickness])
+                translate([0, 0, -flange_thickness - 1.01])
                     cylinder(h = (csk_dia - wood_screw) / 2 + 0.01, d1 = csk_dia, d2 = wood_screw, $fn = 32);
             }
     }
