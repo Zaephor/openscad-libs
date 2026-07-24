@@ -72,7 +72,6 @@ printer (Bambu P1S, PETG).
 | `wood_screw` | `4` | Wood-screw clearance hole diameter (flange, into the desk) |
 | `csk_dia` | `8` | Wood-screw countersink mouth diameter, mm |
 | `flange_len` | `25` | Flange projection past the leg's outer face, mm |
-| `flange_width` | `40` | *(declared but not currently consumed by the module — the leg/flange Y-span is derived from the device hole pattern instead; see the module's own comment)* |
 | `standoff` | `0` | Extra gap between the flange top and the device top plane; `0` = flush |
 | `side` | `"R"` | `"L"` or `"R"` — print one of each; see "Print 2x" above |
 
