@@ -623,7 +623,7 @@ RJ45 side); X = width, Y = height, Z = depth behind the front face
   delta that cancels against the width delta — combined bottom envelope is
   17.1mm at BOTH specimens); Z length 7.0mm, identical at both.
   `keystone_insert_lug()` below takes Specimen A's reading verbatim:
-  `[7.8, 1.2, 7.0, 6.6]` (w, prot, zlen, z0).
+  `[7.8, 1.2, 7.0, 6.6]` (w, prot, zlen, z0) — **superseded by the #60 correction below**.
 - **Cantilever latch** (top, flexing arm + triangular catch) — the one
   feature where the two specimens diverge meaningfully (identified as the
   reason Specimen B does not seat in Specimen A's own panel): beam width
@@ -637,7 +637,7 @@ RJ45 side); X = width, Y = height, Z = depth behind the front face
   height 3.1mm (A) vs 3.4mm (B). `keystone_insert_latch()` below takes
   Specimen A's reading verbatim: `[9.2, 15.0, 3.6, 5.2, 0.9, 2.2, 4.3, 3.0,
   3.1]` (beam_w, root_z, root_thick, tip_z, beam_wall, defl_clear,
-  hook_peak, hook_zext, body_top). Specimen B's larger, stiffer latch is
+  hook_peak, hook_zext, body_top) — **superseded by the #60 correction below**. Specimen B's larger, stiffer latch is
   the bound a future slot/opening task must clear; the flagship insert
   itself models Specimen A (closer to the universal envelope, PETG-tunable
   flex).
@@ -646,7 +646,7 @@ RJ45 side); X = width, Y = height, Z = depth behind the front face
 
 Specimen A (Tecmojo) was re-measured to correct earlier interpretations in #54:
 
-- **Lug** — previously modeled as a `[7.8, 1.2, 7.0, 6.6]` wedge ramp; caliper re-measurement confirms it is a **plain rectangular block** `[7.8, 1.1, 1.1, 6.8]` (w, prot, zlen, z0) with no wedge profile — supersedes the #54 Tecmojo-nominal wedge interpretation.
+- **Lug** — previously modeled as a `[7.8, 1.2, 7.0, 6.6]` wedge ramp; caliper re-measurement confirms it is a **plain rectangular block** `[7.8, 1.1, 1.1, 6.8]` (w, prot, zlen, z0) with no wedge profile. The dominant numeric change is the Z-length re-measurement (7.0mm → 1.1mm), not merely the wedge-to-block shape correction — supersedes the #54 Tecmojo-nominal wedge interpretation.
 - **Latch tip/peak/extension** — re-measured to `[9.2, 15.0, 3.6, 5.0, 0.9, 2.2, 4.5, 3.1, 3.1]` (tip_z changed 5.2→5.0mm, hook_peak changed 4.3→4.5mm, hook_zext changed 3.0→3.1mm), all `[B]` caliper from the user's physical insert (2026-07-23). These correct #54's earlier Tecmojo-nominal values carried from the first pass's less-resolved read.
 
 ## Sources
