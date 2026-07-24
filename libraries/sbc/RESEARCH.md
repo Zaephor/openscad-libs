@@ -1287,6 +1287,81 @@ No new hole ROWS were added; the existing 16-hole set is unchanged in count,
 position, and role by this task — only the x=129.54 column's documented
 *purpose* was clarified.
 
+### BPI-R4 corrections round 2 (#62), Task 1: keep-out yaw fixes
+
+A follow-up review against the **physical board itself** (not the assembly
+drawing/caliper notes alone) found three keep-out boxes from the prior pass
+laid out with the wrong **yaw** (rotated 90° from their real orientation) —
+their measured `[w,d]` sizes were correct, only the orientation was wrong.
+Passing asserts (body==`connector_size(...)`, in-envelope, x_min/y_max
+anchor-sharing) never caught any of these because none of them checked
+cross-connector AABB overlap or axis direction — the exact failure mode
+[[feedback_colored_surface_review]] warns about. All three are corrected here
+by rotating the box 90° in-plane via a new local helper, `_sbc_rot90(sz) =
+[sz[1], sz[0], sz[2]]` (sbc.scad) — same position-anchor formula as before
+(x_min flush to the socket's own x_min / y_max flush to the socket's own
+y_max, or the equivalent "-rear"/flush-to-xmax convention for gpio26_1), just
+fed the rotated size instead of the raw catalog/literal tuple. **No value was
+re-measured or invented; every fix is a pure 90° rotation of an existing
+[B]-tier size already in the file.**
+
+- **`mpcie_1_card` / `mpcie_2_card`** (mini-PCIe full-card keep-out,
+  `connector_size("mpcie_card")` = `[30, 50.95, 5]`, `"bottom"` edge): the
+  prior pass extended the 50.95mm long axis in **-Y** (away from each
+  socket's own "N rear" edge), the same direction convention used for the
+  small socket footprint. Because the two sockets sit only 32.7mm apart in Y
+  (41.9 vs 9.2 "rear" readings), the two 50.95mm-long card boxes overlapped
+  each other by 18.25mm — a real collision the existing asserts (body/
+  envelope/anchor-sharing) never checked for. The real mini-PCIe cards'
+  long axis actually runs toward the **Key-M SSD side** (increasing X), not
+  backward along Y. Rotated via `_sbc_rot90(connector_size("mpcie_card"))` =
+  `[50.95, 30, 5]`: the long 50.95mm axis now runs along X (both cards span
+  x=[4.5, 55.45], pointing toward the Key-M SSD at x=140.4, ~63mm clear of
+  it) and only the 30mm width extends down (-Y) from each socket's own
+  y_max, landing at y=[28.6, 58.6] (card 1) and y=[61.3, 91.3] (card 2) — a
+  2.7mm gap between the two, no overlap. Sizes unchanged, still `[B]`
+  caliper (`connector_size("mpcie_card")` itself, SSOT).
+- **`m2modem_1_card`** (M.2 Key-B WWAN module keep-out,
+  `connector_size("m2_modem_card")` = `[30, 52, 3.8]`, `"top"` edge; the
+  small `m2modem_1` socket row itself, `connector_size("m2_key_b")`, was
+  **not** touched — its y=[77.8,86.5] footprint never reached the SFP cages
+  either before or after this fix, only the larger module envelope did):
+  the prior pass extended the 52mm long axis in -Y from the socket's own
+  "14 rear" edge, reaching down to y=34.5 — squarely inside the
+  `sfp_1`/`sfp_2` cages' own y=[0, 53.98] keep-out (x overlaps `sfp_1`
+  directly). Rotated via `_sbc_rot90(connector_size("m2_modem_card"))` =
+  `[52, 30, 3.8]`: the 52mm long axis now runs along X (clear of both
+  mPCIe columns, x=[3.4, 55.4]) and only the 30mm width extends down from
+  the socket's y_max, landing at y=[56.5, 86.5] — clear of the SFP cages'
+  y<=53.98 span by 2.52mm. Size unchanged, still `[B]` caliper.
+- **`gpio26_1`** (26-pin/2.54mm header, board-specific literal
+  `[33.02, 5.08, 6.0]`, `"top"` edge, flush to the right/xmax wall): the
+  prior pass ran the 33.02mm 13-column pin-field span along **X** (the
+  header's own short side against the wall) and the 5.08mm 2-row spacing
+  along Y — backwards. The real header sits flush against the right wall
+  with its long pin-field span running along Y (front-to-back) and only
+  its narrow 2-row spacing crossing X. Rotated via
+  `_sbc_rot90([33.02, 5.08, 6.0])` = `[5.08, 33.02, 6.0]`: x is now flush to
+  xmax using the ROTATED (narrow) width, `148-5.08=142.92`; y keeps the
+  same "10-rear" anchor as before (`y_max=100.5-10=90.5`, unaffected by the
+  yaw fix) but now extends the rotated (long) 33.02mm depth back from it:
+  `y_min=90.5-33.02=57.48`. Same tiers as before: `[B]` caliper y(10-rear)
+  + pin-count/pitch math for w/d; `[C]`//VERIFY x (flush-right assumption,
+  unchanged reasoning, just recomputed off the rotated width) and h.
+
+**Verification**: a colored-per-surface render (two orthogonal-axis overlay
+projections, since the headless renderer only overlays on the xz/yz plane —
+each part given a distinct color and a distinct artificial Z-band so its
+X-extent and Y-extent read directly as a bar per axis) confirmed: both
+mPCIe cards' long axis now visibly points toward increasing X (toward the
+Key-M SSD column) with a clear Y gap between the two and no X overlap with
+the Key-M keep-out; the Key-B module box's Y span sits entirely above
+(higher-Y than) both SFP cages' Y span; `gpio26_1` sits flush against the
+xmax wall with a tall Y-spanning, narrow-X footprint. New/updated asserts
+in `tests/sbc_test.scad` lock all three (see `_aabb_overlap` + the
+round-2 overlap-regression block, and the gpio26_1 long-axis/flush-xmax
+checks).
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps

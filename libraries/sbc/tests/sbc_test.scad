@@ -115,22 +115,36 @@ assert(sbc_connector("bpir4", "m2modem_1")[2] == connector_size("m2_key_b"),
 for (n = ["m2modem_1_card", "mpcie_1_card", "mpcie_2_card", "m2_ssd_1_card"])
     assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,
         str("bpir4 has exactly one ", n));
-assert(sbc_connector("bpir4", "m2modem_1_card")[2] == connector_size("m2_modem_card"),
-    "bpir4 m2modem_1_card body sourced from connectors m2_modem_card");
-assert(sbc_connector("bpir4", "mpcie_1_card")[2] == connector_size("mpcie_card"),
-    "bpir4 mpcie_1_card body sourced from connectors mpcie_card");
-assert(sbc_connector("bpir4", "mpcie_2_card")[2] == connector_size("mpcie_card"),
-    "bpir4 mpcie_2_card body sourced from connectors mpcie_card");
+// Round-2 (#62): mpcie_1_card/mpcie_2_card/m2modem_1_card are yaw-corrected
+// (w/d swapped vs the catalog type) so their long axis points the right way —
+// see sbc.scad's _sbc_rot90() + inline comments. Body must still be SOURCED
+// from the catalog type (SSOT), just rotated 90° in-plane, hence the swapped-
+// index compare here instead of an exact connector_size(...) match.
+function _rot90(sz) = [sz[1], sz[0], sz[2]];
+assert(sbc_connector("bpir4", "m2modem_1_card")[2] == _rot90(connector_size("m2_modem_card")),
+    "bpir4 m2modem_1_card body sourced from connectors m2_modem_card (yaw-rotated)");
+assert(sbc_connector("bpir4", "mpcie_1_card")[2] == _rot90(connector_size("mpcie_card")),
+    "bpir4 mpcie_1_card body sourced from connectors mpcie_card (yaw-rotated)");
+assert(sbc_connector("bpir4", "mpcie_2_card")[2] == _rot90(connector_size("mpcie_card")),
+    "bpir4 mpcie_2_card body sourced from connectors mpcie_card (yaw-rotated)");
 assert(sbc_connector("bpir4", "m2_ssd_1_card")[2] == connector_size("m2_2280_card"),
     "bpir4 m2_ssd_1_card body sourced from connectors m2_2280_card");
 // Each card keep-out row shares its socket's own rear-facing y_max (and, for
 // m2_ssd_1, its own key-edge x_max too) — not its min corner — since the card
 // is larger than the socket and must extend inward from the socket's own
 // pin/rear edge to stay within the board footprint (worst-case anchor
-// simplification documented in sbc.scad).
+// simplification documented in sbc.scad). This anchor relationship is
+// unaffected by the round-2 yaw fix (same x_min-flush/y_max-flush formula,
+// just fed a rotated size).
 function _ymax(c) = c[1][1] + c[2][1];
 function _xmax(c) = c[1][0] + c[2][0];
+function _xmin(c) = c[1][0];
+function _ymin(c) = c[1][1];
 _eps = 1e-6;
+// AABB overlap test: true if boxes a and b's XY footprints intersect.
+function _aabb_overlap(a, b) =
+    _xmin(a) < _xmax(b) && _xmax(a) > _xmin(b) &&
+    _ymin(a) < _ymax(b) && _ymax(a) > _ymin(b);
 assert(abs(sbc_connector("bpir4", "m2modem_1_card")[1][0] - sbc_connector("bpir4", "m2modem_1")[1][0]) < _eps
     && abs(_ymax(sbc_connector("bpir4", "m2modem_1_card")) - _ymax(sbc_connector("bpir4", "m2modem_1"))) < _eps,
     "bpir4 m2modem_1_card shares m2modem_1's x_min and y_max");
@@ -143,6 +157,37 @@ assert(abs(sbc_connector("bpir4", "mpcie_2_card")[1][0] - sbc_connector("bpir4",
 assert(abs(_xmax(sbc_connector("bpir4", "m2_ssd_1_card")) - _xmax(sbc_connector("bpir4", "m2_ssd_1"))) < _eps
     && abs(_ymax(sbc_connector("bpir4", "m2_ssd_1_card")) - _ymax(sbc_connector("bpir4", "m2_ssd_1"))) < _eps,
     "bpir4 m2_ssd_1_card shares m2_ssd_1's x_max and y_max");
+
+// --- Round-2 (#62) Task 1: yaw-fix overlap regression asserts ---
+// #55 had mpcie_1_card/mpcie_2_card overlapping each other, and m2modem_1_card
+// overlapping the SFP cages — passing asserts hid both because nothing checked
+// cross-connector AABB overlap. These lock the round-2 fix in place.
+_mpcie_1_card = sbc_connector("bpir4", "mpcie_1_card");
+_mpcie_2_card = sbc_connector("bpir4", "mpcie_2_card");
+_m2_ssd_1_card = sbc_connector("bpir4", "m2_ssd_1_card");
+_m2modem_1_card = sbc_connector("bpir4", "m2modem_1_card");
+_sfp_1 = sbc_connector("bpir4", "sfp_1");
+_sfp_2 = sbc_connector("bpir4", "sfp_2");
+assert(!_aabb_overlap(_mpcie_1_card, _mpcie_2_card),
+    "bpir4 mpcie_1_card must not overlap mpcie_2_card (round-2 yaw fix)");
+assert(!_aabb_overlap(_mpcie_1_card, _m2_ssd_1_card),
+    "bpir4 mpcie_1_card must not overlap the Key-M SSD keep-out (round-2 yaw fix)");
+assert(!_aabb_overlap(_mpcie_2_card, _m2_ssd_1_card),
+    "bpir4 mpcie_2_card must not overlap the Key-M SSD keep-out (round-2 yaw fix)");
+assert(!_aabb_overlap(_m2modem_1_card, _sfp_1),
+    "bpir4 m2modem_1_card (Key-B) must not overlap sfp_1 (round-2 yaw fix)");
+assert(!_aabb_overlap(_m2modem_1_card, _sfp_2),
+    "bpir4 m2modem_1_card (Key-B) must not overlap sfp_2 (round-2 yaw fix)");
+// gpio26_1's 33.02mm long dimension must run in Y, flush against the right
+// (xmax) wall, with the 5.08mm dimension across X — locks the round-2 yaw fix
+// (#55 had these two dimensions swapped).
+_gpio26 = sbc_connector("bpir4", "gpio26_1");
+assert(_gpio26[2][1] > _gpio26[2][0],
+    "bpir4 gpio26_1 long (33.02) dimension must run in Y, not X (round-2 yaw fix)");
+assert(abs(_xmax(_gpio26) - sbc_size("bpir4")[0]) < _eps,
+    "bpir4 gpio26_1 flush to xmax (right wall)");
+assert(_xmin(_gpio26) >= 0 && _ymin(_gpio26) >= -_eps && _ymax(_gpio26) <= sbc_size("bpir4")[1] + _eps,
+    "bpir4 gpio26_1 stays within the board's xmax margin/envelope");
 // dip_1 deliberately overhangs the board's xmax edge by 2mm (caliper-confirmed);
 // gpio26_1 is NOT the Pi-family "gpio" name (distinct 26-pin/13-col part).
 assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == "gpio") 1]) == 0,

@@ -49,6 +49,13 @@ function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings labe
     // Pi3B drawing calls out "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/-0.05mm" (same
     // feature, 0.05mm drilling-tolerance difference from the Pi4/Pi5 label) — see RESEARCH.md.
 
+// Yaw-rotate a [w,d,h] footprint 90° in the XY plane (swap w/d, h untouched).
+// Used where a connector/keep-out's measured [w,d] size (from connector_size() or
+// a board literal) is unchanged but the box needs to be laid out with its long
+// axis on the other in-plane axis (round-2 corrections, #62) — SSOT: never
+// re-literal the swapped numbers, always derive from the same source value.
+function _sbc_rot90(sz) = [sz[1], sz[0], sz[2]];
+
 // Row: [key, [x,y], corner_r, thickness, [[hx,hy],...holes], [connectors...]]
 // Connectors are [name, [x,y,z], [w,d,h], edge].
 // All four boards share the 58x49mm 4-hole rectangle inset 3.5mm and the outline below —
@@ -370,11 +377,23 @@ function _sbc_table() = [
           // pin-header datasheet (`DS/Header_PIN 2.54mm.pdf`) rather than the
           // Pi-specific gpio_2x20 h=8.5 (that figure is grounded in the
           // Raspberry-Pi-HAT-specific header part; uart_1's h=6.0 is the more
-          // relevant same-board, same-generic-header-family evidence). x placed
-          // flush to the right wall (148-33.02=114.98) — caliper says "right
+          // relevant same-board, same-generic-header-family evidence).
+          // Round-2 correction (#62, physical-board review): #55 had this
+          // header's own w/d swapped — it modeled the 33.02mm 13-column
+          // pin-field span running along X (across the header's own short
+          // side against the wall) and the 5.08mm 2-row spacing along Y. The
+          // real header sits flush against the right (xmax) wall with its
+          // long 13-column field running FORWARD/BACK along Y and only its
+          // narrow 2-row spacing crossing X — i.e. the footprint needed a 90°
+          // yaw, not a re-measurement (measured w/d unchanged, still [B]
+          // caliper + pin-count/pitch math). x placed flush to the right wall
+          // using the ROTATED width (148-5.08=142.92) — caliper says "right
           // wall" without an exact number, so this exact x is [C]//VERIFY
-          // placement, not caliper-measured; y per the "-rear" convention above.
-          ["gpio26_1", [148-33.02, 100.5-10-5.08, 1.4], [33.02, 5.08, 6.0], "top"], // [B] caliper y(10-rear) + pin-count/pitch math; [C] //VERIFY x (flush-right assumption) and h (reused generic header figure)
+          // placement, not caliper-measured; y keeps the same "10-rear"
+          // anchor as #55 (y_max=100.5-10=90.5, unaffected by the yaw fix)
+          // but now extends the ROTATED (long, 33.02) depth back from it:
+          // y_min=90.5-33.02=57.48.
+          ["gpio26_1", [148-_sbc_rot90([33.02, 5.08, 6.0])[0], 100.5-10-_sbc_rot90([33.02, 5.08, 6.0])[1], 1.4], _sbc_rot90([33.02, 5.08, 6.0]), "top"], // [B] caliper y(10-rear) + pin-count/pitch math; [C] //VERIFY x (flush-right assumption) and h (reused generic header figure). Round-2 (#62): yaw-corrected via _sbc_rot90 — w/d swapped so the 33.02mm dimension runs in Y (right-wall-flush) and 5.08mm crosses X; measured sizes unchanged from #55
           // M.2 Key-B modem socket. Caliper "14 rear/3.4 left" read the same way
           // as dip_1/gpio26_1's y convention (distance from rear to the box's
           // own rear-facing edge) and the standard "x=left-edge" convention (x is
@@ -400,7 +419,18 @@ function _sbc_table() = [
           // own rear-facing edge (rather than its min corner) is required simply
           // to keep the larger card envelope within the board's own footprint.
           // Body from connectors m2_modem_card (SSOT).
-          ["m2modem_1_card", [3.4, 100.5-14-connector_size("m2_modem_card")[1], 1.4], connector_size("m2_modem_card"), "top"],
+          // Round-2 correction (#62, physical-board review): #55 laid this card
+          // out with the unrotated [30,52,3.8] body (52mm depth extending along
+          // Y from the socket's rear edge), which reaches all the way down to
+          // y=34.5 — deep into the sfp_1/sfp_2 cages' own y=[0,53.98] keep-out,
+          // a real collision the asserts never caught. Yaw-corrected via
+          // _sbc_rot90 (same anchor formula, rotated size fed in): the 52mm long
+          // axis now runs along X (away from the board's left edge, still fully
+          // clear of both mPCIe columns) and only the 30mm width extends down
+          // from the socket's y_max, landing at y=[56.5,86.5] — clear of the
+          // SFP cages' y<=53.98 span by 2.52mm. Measured size unchanged, [B]
+          // caliper (same as the socket row above).
+          ["m2modem_1_card", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_modem_card"))[1], 1.4], _sbc_rot90(connector_size("m2_modem_card")), "top"],
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
           // where left/right swap relative to the top-view frame this whole row
@@ -432,10 +462,28 @@ function _sbc_table() = [
           // (rather than its min corner) is required simply to keep the larger
           // card envelope within the board's own footprint. Body from connectors
           // mpcie_card (SSOT).
-          ["mpcie_1_card", [4.5, 100.5-41.9-connector_size("mpcie_card")[1], 0], connector_size("mpcie_card"), "bottom"],
+          // Round-2 correction (#62, physical-board review): #55 laid both
+          // mpcie_1_card and mpcie_2_card out with the unrotated [30,50.95,5]
+          // body (50.95mm depth extending -Y from each socket's own rear edge).
+          // Since the two sockets are only 32.7mm apart in Y (41.9 vs 9.2 "rear"
+          // readings), the two 50.95mm-long card boxes overlapped each other by
+          // 18.25mm — a real collision the pre-existing asserts never caught
+          // (they only checked body==connector_size(...) and in-envelope, not
+          // cross-card overlap). The real cards' long axis actually runs toward
+          // the Key-M SSD side (increasing X, away from this left-edge column),
+          // not backward along Y. Yaw-corrected via _sbc_rot90 (same anchor
+          // formula as before — x_min flush to the socket's own x_min, y_max
+          // flush to the socket's own y_max — just fed the rotated size): the
+          // 50.95mm long axis now runs along X (x=[4.5,55.45] for both cards,
+          // pointing toward Key-M at x=140.4, and well clear of it) and only
+          // the 30mm width extends down from each socket's own y_max, landing
+          // at y=[28.6,58.6] (card 1) and y=[61.3,91.3] (card 2) — no overlap
+          // between the two cards (58.6 < 61.3). Measured size unchanged, [B]
+          // caliper (same as the socket rows).
+          ["mpcie_1_card", [4.5, 100.5-41.9-_sbc_rot90(connector_size("mpcie_card"))[1], 0], _sbc_rot90(connector_size("mpcie_card")), "bottom"],
           ["mpcie_2", [4.5, 100.5-9.2 -connector_size("mpcie")[1], 0], connector_size("mpcie"), "bottom"], // same x as mpcie_1 (two parallel slots, same left-side column, different y) — [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT)
-          // Card keep-out envelope for mpcie_2, same basis as mpcie_1_card above.
-          ["mpcie_2_card", [4.5, 100.5-9.2 -connector_size("mpcie_card")[1], 0], connector_size("mpcie_card"), "bottom"],
+          // Card keep-out envelope for mpcie_2, same basis as mpcie_1_card above (round-2 yaw-corrected, see comment above).
+          ["mpcie_2_card", [4.5, 100.5-9.2 -_sbc_rot90(connector_size("mpcie_card"))[1], 0], _sbc_rot90(connector_size("mpcie_card")), "bottom"],
           // M.2 Key-M SSD: caliper "7.6 left" -> x_board = 148-7.6 = 140.4
           // (mirror; the OPPOSITE direction from mpcie's "right" readings,
           // since flipped-left and flipped-right mirror to opposite board
