@@ -408,6 +408,76 @@ if errs:
 sys.exit(1 if errs else 0)
 PY
 
+# --- #60: guide ribs / lug are PLAIN RECTANGLES, not tapered ramps/wedges
+# (Task 2 dropped the print-safety lead-in chamfers -- physical caliper
+# showed no taper). A render-without-error smoke test can't distinguish a
+# plain block from a wedge (both are manifold); this samples actual
+# geometry:
+#   - lug: the -Y protrusion sampled near BOTH ends of the lug's own Z-span
+#     must be the SAME (== lug_prot) -- the old ramp had ~0 protrusion at
+#     its flush (front) end, growing to lug_prot only at the rear.
+#   - guide rib: no vertex may sit past the body's own side wall at a Z
+#     deeper than the rib's own deep edge -- the old chamfer ramp used to
+#     add exactly such material there.
+cat > "$tmp/insert_feature_dims.scad" <<'EOF'
+use <keystone/keystone.scad>;
+rib = keystone_insert_guide_rib();
+lug = keystone_insert_lug();
+echo(rib[2]); echo(rib[3]);
+echo(lug[1]); echo(lug[2]); echo(lug[3]);
+EOF
+feat_out="$(run "$tmp/insert_feature_dims.scad")"
+nth_echo() { echo "$1" | grep -m"$2" 'ECHO:' | tail -1 | grep -oE '[-0-9]+\.?[0-9]*' | head -1; }
+rib_thick="$(nth_echo "$feat_out" 1)"; rib_z0="$(nth_echo "$feat_out" 2)"
+lug_prot="$(nth_echo "$feat_out" 3)"; lug_zlen="$(nth_echo "$feat_out" 4)"; lug_z0="$(nth_echo "$feat_out" 5)"
+
+python3 - "$tmp/insert.stl" "$FIT" "$fw" "$fh" "$rib_thick" "$rib_z0" "$lug_prot" "$lug_zlen" "$lug_z0" <<'PY' || { echo "keystone_insert() plain-rectangle rib/lug geometry check failed (#60)"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+verts=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12])
+        verts.append((x,y,z))
+
+fit=float(sys.argv[2]); fw=float(sys.argv[3]); fh=float(sys.argv[4])
+rib_thick, rib_z0 = float(sys.argv[5]), float(sys.argv[6])
+lug_prot, lug_zlen, lug_z0 = float(sys.argv[7]), float(sys.argv[8]), float(sys.argv[9])
+body_w, body_h = fw - 2*fit, fh - 2*fit
+bot = -body_h / 2
+tol = 0.15
+errs = []
+
+def min_y_near_z(z0, zband=0.15):
+    ys = [y for x, y, z in verts if abs(z - z0) < zband]
+    return min(ys) if ys else None
+
+z_lug_front = -lug_z0
+z_lug_rear  = -(lug_z0 + lug_zlen)
+y_front = min_y_near_z(z_lug_front)
+y_rear  = min_y_near_z(z_lug_rear)
+if y_front is None or y_rear is None:
+    errs.append("lug: could not find vertices near its front/rear Z bands")
+else:
+    prot_front = bot - y_front
+    prot_rear  = bot - y_rear
+    if not (abs(prot_front - lug_prot) < tol):
+        errs.append(f"lug front-band (z~{z_lug_front:.2f}) protrusion {prot_front:.2f} != lug_prot {lug_prot:.2f} -- still tapered/ramped, not a plain block")
+    if not (abs(prot_rear - lug_prot) < tol):
+        errs.append(f"lug rear-band (z~{z_lug_rear:.2f}) protrusion {prot_rear:.2f} != lug_prot {lug_prot:.2f}")
+
+rib_zone_x = body_w / 2 + 0.05  # just past the body's own side wall -- ribs-only territory
+z_rib_deep = -(rib_z0 + rib_thick)
+beyond = [(x, y, z) for x, y, z in verts if abs(x) > rib_zone_x and z < z_rib_deep - tol]
+if beyond:
+    errs.append(f"rib: {len(beyond)} vertex/vertices with |x|>{rib_zone_x:.2f} at Z<{z_rib_deep:.2f} -- old chamfer ramp not removed")
+
+if errs:
+    sys.stderr.write("\n".join(errs) + "\n")
+sys.exit(1 if errs else 0)
+PY
+
 # guides=false must omit the guide ribs -- X-extent shrinks relative to the
 # guides=true default.
 cat > "$tmp/insert_guides_off.scad" <<EOF
