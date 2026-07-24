@@ -41,6 +41,7 @@ use <fans/fans.scad>;
 
 ## Projects
 
+- [bay-enclosure](projects/bay-enclosure) — 1U/2U rack10 enclosure for 5.25"/3.5" bay devices (#40 rear mate)
 - [bpir4-1u-chassis](projects/bpir4-1u-chassis) — 1U 10-inch rack chassis for the BananaPi BPI-R4.
 - [cable-clip](projects/cable-clip) — single-part M3-mounted cable clip.
 - [keystone-blank](projects/keystone-blank) — printable caliper-faithful keystone blank insert.
