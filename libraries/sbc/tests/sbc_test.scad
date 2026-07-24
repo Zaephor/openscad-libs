@@ -194,6 +194,34 @@ assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == "gpio") 1]) == 0,
     "bpir4 has no Pi-style 40-pin gpio (gpio26_1 is a distinct, smaller part)");
 _dip = sbc_connector("bpir4", "dip_1");
 assert(_dip[1][0] + _dip[2][0] == 150.0, "bpir4 dip_1 overhangs xmax by 2mm as caliper-specified");
+// Round 2 (#62) Task 2: h revised 2.5->9.0 from a physical-board caliper
+// re-measurement (was a generic slide-switch-actuator placeholder guess).
+assert(_dip[2][2] == 9.0, "bpir4 dip_1 h caliper-revised round 2 #62 Task 2");
+
+// --- Round-2 (#62) Task 2: front-connector +2mm protrusion coverage ---
+// sbc_placeholder() shifts a connector's rendered Y start by
+// _sbc_front_protrusion(b, name) (0 unless it's one of bpir4's own 9
+// front-panel connectors). This locks the ALLOWLIST itself: exactly the 9
+// named bpir4 front connectors get the 2.0mm protrusion, every other bpir4
+// connector gets 0, and every OTHER board's "ymin" connectors (which sit
+// flush in reality) get 0 too -- a board+name check, not an edge-only check.
+// (2.0 is hardcoded here, not sbc.scad's own SBC_FRONT_PROTRUSION constant:
+// `use` doesn't import top-level variables, only modules/functions — same
+// reason SBC_OVERLAP is never referenced from this test file either.)
+_bpir4_front_connectors = ["usb_1", "sfp_1", "sfp_2",
+    "rj45_1", "rj45_2", "rj45_3", "rj45_4", "dc_power_1", "usbc_pwr_1"];
+for (n = _bpir4_front_connectors)
+    assert(_sbc_front_protrusion("bpir4", n) == 2.0,
+        str("bpir4 ", n, " must get the +2mm front-panel protrusion"));
+for (c = sbc_connectors("bpir4"))
+    if (len([for (n = _bpir4_front_connectors) if (n == c[0]) n]) == 0)
+        assert(_sbc_front_protrusion("bpir4", c[0]) == 0,
+            str("bpir4 ", c[0], " (not a front-panel connector) must NOT get the protrusion"));
+for (b = ["pi3b", "pi3bplus", "pi4b", "pi5", "pizero", "pizero2w"])
+    for (c = sbc_connectors(b))
+        if (c[3] == "ymin")
+            assert(_sbc_front_protrusion(b, c[0]) == 0,
+                str("sbc ", b, " ", c[0], " (non-bpir4 ymin connector) must stay flush, no protrusion"));
 
 // --- Task 2: underside ("bottom" edge) sockets ---
 // (2x mpcie + m2_ssd socket bodies) + (2x mpcie + m2_ssd card keep-out envelopes, Task 5)
@@ -316,7 +344,11 @@ assert(sbc_connector("pi4b", "usb3")[2] == [17, 18.75, 16.0],
 // w/d unchanged, still literal (no catalog peer), just the height reconciled.
 assert(sbc_connector("bpir4", "usb_1")[2] == [8.89, 23.16, 14.1],
     "bpir4 usb_1 (different, weak) stays literal, h caliper-revised Task 2");
-assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 53.98, 10.4],
-    "bpir4 sfp_1 (no-peer) stays literal, h caliper-revised Task 2");
+// Round 2 (#62) Task 2: d revised 53.98->48.4 from a physical-board caliper
+// re-measurement (both cages, identical part) — w/h unchanged, still literal.
+assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 48.4, 10.4],
+    "bpir4 sfp_1 (no-peer) stays literal, d caliper-revised round 2 #62 Task 2");
+assert(sbc_connector("bpir4", "sfp_2")[2] == [16.51, 48.4, 10.4],
+    "bpir4 sfp_2 (no-peer) stays literal, d caliper-revised round 2 #62 Task 2, same fix as sfp_1");
 assert(sbc_connector("pi3b", "av_jack")[2] == [6, 6, 6.0],
     "pi3b av_jack (no-peer) stays literal");

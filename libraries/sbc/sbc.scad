@@ -274,8 +274,8 @@ function _sbc_table() = [
           // reconciliation table (incl. the one row, rj45, where the caliper
           // figure is corroboration and the prior [A] datasheet h is KEPT).
           ["usb_1",       [7.41,   0, 1.4], [8.89,  23.16, 14.1], "ymin"], // CN11 (caliper-confirmed USB3 port). [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3) x/w; //VERIFY width still narrow vs typical USB-A 13.6mm body. h=14.1 [B] caliper Task 2: bottom->top 15.5 - thickness 1.4 (was 13.5 [C] //VERIFY placeholder)
-          ["sfp_1",       [16.3,   0, 1.4], [16.51, 53.98, 10.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4 [B] caliper Task 2: bottom->top 11.8 - thickness 1.4 (was 13.4 [C] //VERIFY placeholder; caliper "9.5 alone" figure is the cage's own standalone body height, a corroborating cross-check, not used directly since it isn't board-bottom-referenced)
-          ["sfp_2",       [34.08,  0, 1.4], [16.51, 53.98, 10.4], "ymin"], // CN9+CN20+CN10. [B] width; //VERIFY depth carried over from sfp_1 (own detector pass on this cage returned no hit — symmetric-layout assumption) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4, same Task 2 caliper reconciliation as sfp_1 (identical cage part)
+          ["sfp_1",       [16.3,   0, 1.4], [16.51, 48.4, 10.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); d=48.4 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement supersedes the prior 53.98mm single-detector-hit figure, //VERIFY dropped) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4 [B] caliper Task 2: bottom->top 11.8 - thickness 1.4 (was 13.4 [C] //VERIFY placeholder; caliper "9.5 alone" figure is the cage's own standalone body height, a corroborating cross-check, not used directly since it isn't board-bottom-referenced)
+          ["sfp_2",       [34.08,  0, 1.4], [16.51, 48.4, 10.4], "ymin"], // CN9+CN20+CN10. [B] width; d=48.4 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement, same fix/basis as sfp_1 — identical cage part, //VERIFY dropped) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4, same Task 2 caliper reconciliation as sfp_1 (identical cage part)
           // ONE physical 4-port ganged RJ45 block (WAN + 3x LAN); "WAN X1" silk
           // marks port 1 of the block, NOT a separate connector (hardware owner,
           // 2026-07-16). Refdes is CN21 (single component) — the earlier "CN1"
@@ -364,7 +364,7 @@ function _sbc_table() = [
           // this row) — i.e. y_max = 100.5-value, y_min = y_max-depth. Caliper
           // does not disambiguate near-vs-far edge explicitly; flagged //VERIFY
           // for that interpretation, x/w/d themselves are [B] caliper.
-          ["dip_1", [148+2-10.4, 100.5-48.6-6.5, 1.4], [10.4, 6.5, 2.5], "top"], // DIP switch bank. [B] caliper position (x reconstructed from the caliper's explicit "+2mm overhang off x=148": x_max=150, x_min=150-10.4=139.6) + w/d; [C] //VERIFY h (generic slide-switch actuator height, no datasheet) and the y-edge-reference interpretation above
+          ["dip_1", [148+2-10.4, 100.5-48.6-6.5, 1.4], [10.4, 6.5, 9.0], "top"], // DIP switch bank. [B] caliper position (x reconstructed from the caliper's explicit "+2mm overhang off x=148": x_max=150, x_min=150-10.4=139.6) + w/d; h=9.0 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement supersedes the prior 2.5mm [C] //VERIFY generic slide-switch-actuator placeholder guess) — the y-edge-reference interpretation above is untouched by this fix, still //VERIFY
           // 26-pin/2.54mm header — distinct from the Pi-HAT 40-pin "gpio" family
           // (see NOTE above uart_1). No catalog type fits (connectors' gpio_2x20
           // is sized for 40-pin/20-column; this is 26-pin/13-column) — per SSOT,
@@ -679,6 +679,25 @@ function sbc_connector(b, name) =
     let (cs = [for (c = sbc_connectors(b)) if (c[0] == name) c])
     assert(len(cs) > 0, str("sbc: board ", b, " has no connector ", name)) cs[0];
 
+// Round 2 (#62) Task 2: bpir4's front-panel connector housings sit slightly
+// forward of the PCB's own front edge (y=0) in reality — a physical-board
+// caliper spot-check found the housings ~2mm proud of the board edge, not
+// flush. [B] caliper. This is a real datum correction for THESE SPECIFIC
+// front connectors, not a per-board/per-edge rule: other boards' "ymin"
+// connectors (e.g. the Pi Zero family's micro-USB/mini-HDMI ports) sit
+// flush and must NOT get this shift, and bpir4's own non-front connectors
+// (dip_1, sfp sockets' peers on other edges, gpio26_1, etc.) are untouched
+// too. One named constant + an explicit board+name allowlist, honored by
+// sbc_placeholder() below — NOT a per-row edit of each affected row's
+// stored y to -2.0 (that would duplicate the single 2.0mm correction value
+// across 9 rows instead of keeping one source of truth for it).
+SBC_FRONT_PROTRUSION = 2.0;
+_SBC_BPIR4_FRONT_CONNECTORS = ["usb_1", "sfp_1", "sfp_2",
+    "rj45_1", "rj45_2", "rj45_3", "rj45_4", "dc_power_1", "usbc_pwr_1"];
+function _sbc_front_protrusion(b, name) =
+    (b == "bpir4" && len([for (n = _SBC_BPIR4_FRONT_CONNECTORS) if (n == name) n]) > 0)
+        ? SBC_FRONT_PROTRUSION : 0;
+
 /* [Placeholder] */
 // PCB slab (rounded corners) + connector bodies; mounting holes as keep-outs.
 // Corner datum: board in +X/+Y, bottom on Z=0.
@@ -698,7 +717,12 @@ module sbc_placeholder(b) {
                 if (c[3] == "bottom")
                     translate([c[1][0], c[1][1], c[1][2] - c[2][2]]) cube(c[2]);
                 else
-                    translate(c[1]) cube(c[2]);
+                    // Round 2 (#62) Task 2: shift the connector's Y start by
+                    // its front-protrusion amount (0 for every connector
+                    // except bpir4's front-panel list above), so those
+                    // housings render proud of y=0 without re-literaling the
+                    // -2.0 shift into 9 separate row positions.
+                    translate([c[1][0], c[1][1] - _sbc_front_protrusion(b, c[0]), c[1][2]]) cube(c[2]);
         }
         for (h = sbc_holes(b, "all"))
             translate([h[0], h[1], -1]) cylinder(h = t + 2, d = h[3]);

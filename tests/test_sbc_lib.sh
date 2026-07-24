@@ -141,6 +141,41 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "bottom-edge connector (mpcie_1) unexpectedly failed sbc_port_cutout:"; echo "$out"; exit 1
 fi
 
+# Round-2 (#62) Task 2: front-connector +2mm protrusion — rendered-geometry
+# positive control. sbc_placeholder("bpir4")'s 9 front-panel connector bodies
+# (usb_1/sfp_1/sfp_2/rj45_1..4/dc_power_1/usbc_pwr_1) are shifted -2mm in Y by
+# SBC_FRONT_PROTRUSION, so the whole board's rendered STL bbox must reach
+# y=-2.0 (not just y=0, flush) — every other stored row's y stays within
+# [0, board depth], so this shift is the only thing that can make the
+# overall bbox go negative. A same-shaped check on a non-bpir4 board (no
+# protrusion mechanism applies there) confirms the flush board stays >= 0,
+# i.e. this isn't just generic STL/export slop.
+cat > "$tmp/bpir4_placeholder.scad" <<'EOF'
+use <sbc/sbc.scad>;
+sbc_placeholder("bpir4");
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/bpir4_placeholder.stl" "$tmp/bpir4_placeholder.scad" 2>/dev/null
+python3 - "$tmp/bpir4_placeholder.stl" <<'PY' || { echo "bpir4 placeholder front-connector protrusion (min Y) not ~ -2.0mm"; exit 1; }
+import struct, sys
+d = open(sys.argv[1], 'rb').read(); n = struct.unpack('<I', d[80:84])[0]; off = 84
+ymin = min(struct.unpack('<3f', d[off+i*50+12+v*12: off+i*50+12+v*12+12])[1]
+           for i in range(n) for v in range(3))
+sys.exit(0 if abs(ymin - (-2.0)) < 0.05 else 1)
+PY
+
+cat > "$tmp/pi4b_placeholder.scad" <<'EOF'
+use <sbc/sbc.scad>;
+sbc_placeholder("pi4b");
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/pi4b_placeholder.stl" "$tmp/pi4b_placeholder.scad" 2>/dev/null
+python3 - "$tmp/pi4b_placeholder.stl" <<'PY' || { echo "pi4b placeholder (no protrusion mechanism) unexpectedly has a negative min Y"; exit 1; }
+import struct, sys
+d = open(sys.argv[1], 'rb').read(); n = struct.unpack('<I', d[80:84])[0]; off = 84
+ymin = min(struct.unpack('<3f', d[off+i*50+12+v*12: off+i*50+12+v*12+12])[1]
+           for i in range(n) for v in range(3))
+sys.exit(0 if ymin > -0.05 else 1)
+PY
+
 # Unknown connector name -> sbc_connector()'s own assert must fire.
 cat > "$tmp/bad_connector.scad" <<'EOF'
 use <sbc/sbc.scad>;

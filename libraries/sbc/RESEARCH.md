@@ -1361,6 +1361,70 @@ in `tests/sbc_test.scad` lock all three (see `_aabb_overlap` + the
 round-2 overlap-regression block, and the gpio26_1 long-axis/flush-xmax
 checks).
 
+### BPI-R4 corrections round 2 (#62), Task 2: DIP height, SFP depth, front-connector protrusion
+
+A further physical-board review (following Task 1's yaw fixes) found two
+more corrections against the board itself, plus a real front-panel detail
+the assembly-drawing/pixel-detector pass had missed entirely: the front
+connector housings don't sit flush against the PCB's own front edge.
+
+- **`dip_1`** (DIP switch bank, `"top"` face): `h` corrected from `2.5mm` to
+  `9.0mm`. The `2.5mm` prior figure was a generic slide-switch-actuator
+  height placeholder (`[C]`//VERIFY, no datasheet) recorded when this row
+  was first added; a direct physical-board caliper re-measurement puts the
+  real actuator-stack height at `9.0mm`. Re-tagged `[B]` caliper; the prior
+  `//VERIFY` is dropped for `h` specifically — the row's separate
+  y-edge-reference-convention flag (which edge the "48.6-rear" caliper
+  reading anchors to) is a different, still-open question and is untouched
+  by this fix.
+- **`sfp_1`/`sfp_2`** (SFP cage pair, `"ymin"` front edge): `d` (depth, the
+  middle `[w,d,h]` axis) corrected from `53.98mm` to `48.4mm` for both cages
+  (identical part, same fix applies to both). The `53.98mm` prior figure
+  came from a single dark-pixel-run detector hit on `sfp_1`'s own top edge
+  (with `sfp_2`'s depth carried over from `sfp_1` by a symmetric-layout
+  assumption, since its own detector pass returned no hit) — a real but not
+  physical-board-verified figure. A direct caliper re-measurement of the
+  cage puts the real depth at `48.4mm`. Re-tagged `[B]` caliper for both
+  rows; the prior `//VERIFY` on depth is dropped for both.
+
+**Front-connector +2mm protrusion.** The nine bpir4 front-panel connectors
+sharing the `"ymin"` (y=0) edge — `usb_1`, `sfp_1`, `sfp_2`, `rj45_1..4`,
+`dc_power_1`, `usbc_pwr_1` — physically sit slightly proud of the PCB's own
+front edge in reality: a caliper spot-check found the housing faces sit
+~2mm forward of y=0, not flush against it. This is a real datum correction,
+not a per-row size/position change to the stored `[w,d,h]`/`[x,y,z]`
+literals (which stay as-is, still describing each connector relative to the
+board edge) — it's applied via a single named constant,
+`SBC_FRONT_PROTRUSION = 2.0` (sbc.scad), plus an explicit `bpir4`-and-name
+allowlist (`_SBC_BPIR4_FRONT_CONNECTORS`) consulted by a new accessor,
+`_sbc_front_protrusion(b, name)`, which `sbc_placeholder()`'s generic
+(non-`"bottom"`) rendering branch calls: for a connector on the allowlist,
+the placeholder cube's Y start is shifted by `-SBC_FRONT_PROTRUSION` before
+the cube is drawn, so the housing renders 2mm further -Y (forward, past
+y=0) without touching the stored row data or any other board's connectors.
+One correction value in one place, not nine duplicated `-2.0` row literals.
+
+`sbc_port_cutout()`'s `"ymin"` branch needed **no change**: it already
+extrudes the panel opening a full `depth` (default 20mm) in -Y from the
+connector's own stored `y` (still 0, unchanged), which already reaches well
+past the shifted body's new -2mm front face — the rendered protrusion sits
+entirely inside the existing cutout's -Y extent regardless, so a future
+faceplate consumer's opening still fully exposes the proud-mounted
+connector without any cutout-side change.
+
+`[B]` caliper (2.0mm forward-protrusion figure). Scoped deliberately to
+bpir4's own nine front connectors only — no other board's `"ymin"`
+connectors (e.g. the Pi Zero family's micro-USB/mini-HDMI ports) get this
+shift; the allowlist gates on board name AND connector name explicitly,
+rather than keying off the `"ymin"` edge alone, since flush-mounted
+`"ymin"` connectors are the norm everywhere else in this file. Locked by a
+`tests/sbc_test.scad` regression block asserting the allowlist's coverage
+(all 9 named connectors get the shift; every other bpir4 connector, and
+every other board's `"ymin"` connectors, get none) plus a
+`tests/test_sbc_lib.sh` rendered-geometry check (`sbc_placeholder("bpir4")`'s
+STL bounding box reaches y=-2.0, while a non-bpir4 board's placeholder
+stays flush at y>=0).
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps
