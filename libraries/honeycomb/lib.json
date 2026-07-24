@@ -1,0 +1,10 @@
+{
+  "name": "honeycomb",
+  "description": "Self-supporting hex-hole vent cutter for print-safe ventilation apertures. Module honeycomb_vent(width, height, depth, cell, wall) produces flat-top hexagon patterns tuned for reliable bridging (<=5mm span ceiling per design-for-print guidelines). Prints support-free by construction.",
+  "version": "0.1.0",
+  "sources": [
+    "design-for-print skill (bridging table: <=5mm reliably self-supporting)",
+    "OpenSCAD circle($fn=6) flat-top hexagon geometry",
+    "Flat-top hex column-stacking geometry with boundary-crossing safety checks"
+  ]
+}
