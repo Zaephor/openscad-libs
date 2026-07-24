@@ -25,17 +25,18 @@
 // pitch (hex flat-to-flat height + wall).
 //
 // Boundary rows (self-support fix): `height` is a caller-supplied value
-// (derived from board/connector geometry in this project, not a hand-picked
-// literal) and is essentially never an exact multiple of `row_pitch`. A
+// (typically derived from board/connector geometry by the calling project,
+// not a hand-picked literal) and is essentially never an exact multiple of
+// `row_pitch`. A
 // naive `intersection()` with `square([width, height])` clips whichever hex
 // straddles y=0 or y=height at WHATEVER point its own vertical position
 // happens to land -- and a flat-top hex's cross-section width varies from
 // cell/2 (at its own flat top/bottom edge, the intended <=5mm bridge) up to
 // the full `cell` (at its equator, the two side vertices). Clipping near
 // the equator instead of the flat edge can expose a span close to `cell`
-// -- e.g. with this project's cell=8/wall=1.2 defaults and the faceplate's
-// actual band height (15.9mm), the naive clip left a ~7.59mm top-row span,
-// blowing past the design-for-print <=5mm reliably-self-supporting ceiling.
+// -- e.g. with cell=8/wall=1.2 defaults and a real caller's band height
+// (15.9mm), the naive clip left a ~7.59mm top-row span, blowing past the
+// design-for-print <=5mm reliably-self-supporting ceiling.
 // Fix: test every boundary-straddling hex individually (`_hex_is_safe()`)
 // against that same width-at-offset formula, and simply omit (don't draw)
 // any hex whose clip would expose more than `max_safe_span`. Hexes fully
@@ -45,7 +46,7 @@
 // (a hair less vent area at that edge) instead of an oversized opening.
 // This makes the module safe for ANY caller-supplied height without the
 // caller having to pick a row_pitch-aligned value -- see
-// `tests/test_bpir4_honeycomb_vents.sh`'s worst-case-span check.
+// `tests/test_honeycomb_lib.sh`'s worst-case-span check.
 //
 // Left/right (X / `width`) boundary clipping does NOT need the same
 // treatment: X is the direction perpendicular to the extrusion's bridging
@@ -55,14 +56,14 @@
 // has to bridge in the extrusion direction. Confirmed by inspection of the
 // vertex geometry below (worst case is a shortened, not widened, edge).
 //
-// Local frame (matches this project's cube-cutter convention -- corner-
-// anchored, not centered): X in [0, width], Y in [0, height], Z in
-// [0, depth]. The hex array is built in the local XY plane and linear-
-// extruded along local Z by `depth`; callers rotate/translate the whole call
-// to align local Z with whichever axis they're actually cutting through
-// (see parts/tray.scad's _faceplate() for the faceplate's rotate([90,0,0])
-// call, which puts local Z onto the chassis Z axis and local Y -- depth --
-// onto the chassis Y axis, matching the old cube cutter it replaces).
+// Local frame (a corner-anchored cube-cutter convention, not centered):
+// X in [0, width], Y in [0, height], Z in [0, depth]. The hex array is
+// built in the local XY plane and linear-extruded along local Z by `depth`;
+// callers rotate/translate the whole call to align local Z with whichever
+// axis they're actually cutting through (e.g. a vertical wall vent might
+// rotate([90,0,0]) so local Z lands on the assembly's vertical axis and
+// local Y -- depth -- lands on the assembly's depth axis, matching whatever
+// cube cutter it replaces).
 module honeycomb_vent(width, height, depth, cell, wall) {
     r      = cell / 2;                  // circumradius
     hex_h  = r * sqrt(3);               // flat-to-flat height (vertical)
@@ -108,7 +109,7 @@ module honeycomb_vent(width, height, depth, cell, wall) {
     // "<=max_safe_span". If `_hex_is_safe()` is ever weakened (wrong
     // comparison, hard-coded true/false, wrong offset, etc.) this
     // recomputation still measures the true span of what gets drawn and
-    // fails loudly here -- see tests/test_bpir4_honeycomb_vents.sh, which
+    // fails loudly here -- see tests/test_honeycomb_lib.sh, which
     // greps the echo() below and re-verifies it numerically from the shell
     // side too (belt and suspenders: catches both a broken assert() and a
     // broken echo()).

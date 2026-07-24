@@ -9,8 +9,15 @@ Provenance legend (per `docs/LIBRARY-AUTHORING.md`):
 - `[A]` the authoritative governing standard/spec itself fetched and read directly.
 - `[B]` corroborated across >=2 independent peers.
 - `[C]` single-sourced / derived, or a named standard cited but not fetched.
-- `[D]` design-tier only (not measured; hand-tuned at design time).
 - `//VERIFY` marks a weak/single-sourced value pending stronger corroboration.
+- `DESIGN` — this repo's convention (see `libraries/rack-support/RESEARCH.md`)
+  for a value chosen by the library's own design, not measured or spec-sourced.
+  None of `docs/LIBRARY-AUTHORING.md`'s hardware-confidence tiers ([A]/[B]/[C])
+  apply to a value with no external part/standard/artifact to cite — inventing
+  a hardware tier for a made-up-here number would misrepresent its confidence,
+  so it is tagged `DESIGN` instead, with its rationale cited to the source
+  guidance it was derived from (design-for-print skill / standard hexagon
+  geometry, both cited per-row below).
 
 ## Design Tiers and Sources Consulted
 
@@ -18,7 +25,7 @@ Provenance legend (per `docs/LIBRARY-AUTHORING.md`):
 
 | Dimension | Value | Tier | Source |
 |---|---|---|---|
-| Max safe bridge span (extrusion direction) | 5 mm | [D] | design-for-print skill: "<=5mm is reliably self-supporting, minimal-to-no sag" |
+| Max safe bridge span (extrusion direction) | 5 mm | DESIGN | design-for-print skill: "<=5mm is reliably self-supporting, minimal-to-no sag" |
 
 **Justification:** The 5mm ceiling is a design guideline from the design-for-print
 skill reference, which summarizes common FDM print reliability. Flat-top hexagons
@@ -35,11 +42,11 @@ density (thinner wall) for boundary safety margin (smaller cell) as needed.
 
 | Aspect | Value | Tier | Source |
 |---|---|---|---|
-| Hexagon orientation (vertices vs flat edges) | Flat-top (horizontal edge at top/bottom) | [D] | OpenSCAD `circle(r, $fn=6)` places vertices at 0/60/120/180/240/300°, yielding flat edges at top/bottom. |
-| Circumradius ↔ cell relationship | cell = 2 × circumradius | [D] | Standard regular hexagon geometry (cell is point-to-point width). |
-| Flat-to-flat height | cell × sqrt(3) / 2 | [D] | Derived from regular hexagon formula h = r × sqrt(3), where r = cell/2. |
-| Column pitch (horizontal hex-center spacing) | 0.75 × cell + wall | [D] | Flat-top hex column-packing geometry (standard hex-grid math). |
-| Row pitch (vertical hex-center spacing within a column) | hex_flat_to_flat_height + wall | [D] | Vertical stacking of hexes with gap = wall. |
+| Hexagon orientation (vertices vs flat edges) | Flat-top (horizontal edge at top/bottom) | DESIGN | OpenSCAD `circle(r, $fn=6)` places vertices at 0/60/120/180/240/300°, yielding flat edges at top/bottom. |
+| Circumradius ↔ cell relationship | cell = 2 × circumradius | DESIGN | Standard regular hexagon geometry (cell is point-to-point width). |
+| Flat-to-flat height | cell × sqrt(3) / 2 | DESIGN | Derived from regular hexagon formula h = r × sqrt(3), where r = cell/2. |
+| Column pitch (horizontal hex-center spacing) | 0.75 × cell + wall | DESIGN | Flat-top hex column-packing geometry (standard hex-grid math). |
+| Row pitch (vertical hex-center spacing within a column) | hex_flat_to_flat_height + wall | DESIGN | Vertical stacking of hexes with gap = wall. |
 
 **Justification:** Flat-top hexagons are the standard orientation for honeycomb
 look-alike vents (real honeycomb, bee nests, industrial grilles). They expose a
@@ -51,8 +58,8 @@ taper) but are less aesthetically common and not modeled here.
 
 | Aspect | Mechanism | Tier |
 |---|---|---|
-| Safe boundary clipping | `_hex_is_safe(y)` function tests each boundary-straddling hex's exposed span against 5mm ceiling; omits unsafe hexes. | [D] |
-| Regression guard | `worst_span` regression assertion re-measures every drawn hex's true exposed span and asserts it ≤ 5mm, catching bugs in `_hex_is_safe()`. | [D] |
+| Safe boundary clipping | `_hex_is_safe(y)` function tests each boundary-straddling hex's exposed span against 5mm ceiling; omits unsafe hexes. | DESIGN |
+| Regression guard | `worst_span` regression assertion re-measures every drawn hex's true exposed span and asserts it ≤ 5mm, catching bugs in `_hex_is_safe()`. | DESIGN |
 
 **Justification:** The module's robustness to arbitrary caller-supplied heights
 (not row-pitch-aligned) is a design choice. Without the `_hex_is_safe()` check,
@@ -77,7 +84,7 @@ design/print-tuning parameters:
   thinner wall increases vent area but reduces the boundary safety margin.
 
 No caliper-measurement or vendor-datasheet backing these choices; they are
-**design-only** and flagged as `[D]` in all provenance tables.
+**design-only** and flagged as `DESIGN` in all provenance tables.
 
 ## Gap / Open Questions
 
