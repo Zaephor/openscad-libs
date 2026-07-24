@@ -59,12 +59,13 @@ PY
 # small/misplaced to ever hit anything.
 mod="$proj/css610-underdesk-mount.scad"
 
-probe_empty() {  # $1 = probe .scad body (intersection block), $2 = description
+probe_empty() {  # $1 = probe .scad body (intersection block), $2 = description, $3 = bracket call (default "R")
+  bracket_call="${3:-css610_underdesk_bracket();}"
   rm -f "$tmp/p.stl"
   cat > "$tmp/p.scad" <<EOF
 use <$mod>;
 intersection() {
-    css610_underdesk_bracket();
+    $bracket_call
     $1
 }
 EOF
@@ -74,12 +75,13 @@ EOF
   fi
 }
 
-probe_solid() {  # $1 = probe .scad body (intersection block), $2 = description
+probe_solid() {  # $1 = probe .scad body (intersection block), $2 = description, $3 = bracket call (default "R")
+  bracket_call="${3:-css610_underdesk_bracket();}"
   rm -f "$tmp/p.stl"
   cat > "$tmp/p.scad" <<EOF
 use <$mod>;
 intersection() {
-    css610_underdesk_bracket();
+    $bracket_call
     $1
 }
 EOF
@@ -108,5 +110,31 @@ done
 # Positive control: flange material away from any hole (Y=1, same Z-band).
 probe_solid "translate([0, 0, 45]) cube([2, 2, 2]);" \
   "flange off-hole material (Y=0) unexpectedly empty"
+
+# --- L/R mirror mesh regression (Task 3, #59) ---
+# side="L" must also open all 6 holes through at the SAME (Y,Z) coordinates
+# as side="R" -- true here because _css610_side_holes()'s Y-values and the
+# wood-screw Y-positions are each symmetric about leg_len/2 (verified
+# algebraically in tests/asserts.scad), so mirroring in Y maps the hole set
+# onto itself. This is the mesh-level confirmation of that claim, not just a
+# formula check -- it would catch a mirror-transform bug (wrong axis, wrong
+# translate-back offset) that asserts.scad's coordinate-only check can't see.
+for hyz in "9.5 9.5" "9.5 34.5" "34.5 9.5" "34.5 34.5"; do
+  set -- $hyz
+  probe_empty "translate([1, $1 - 1, $2 - 1]) cube([1, 2, 2]);" \
+    "L-side leg M3 hole at Y=$1,Z=$2 does not open through" \
+    'css610_underdesk_bracket(side="L");'
+done
+probe_solid "translate([1, 0, 0]) cube([1, 2, 2]);" \
+  "L-side leg off-hole material (Y=0,Z=0) unexpectedly empty" \
+  'css610_underdesk_bracket(side="L");'
+for fy in 13.2 30.8; do
+  probe_empty "translate([14.5, $fy - 1, 43.0]) cube([2, 2, 4.2]);" \
+    "L-side flange wood-screw hole at Y=$fy does not open through" \
+    'css610_underdesk_bracket(side="L");'
+done
+probe_solid "translate([0, 0, 45]) cube([2, 2, 2]);" \
+  "L-side flange off-hole material (Y=0) unexpectedly empty" \
+  'css610_underdesk_bracket(side="L");'
 
 [ "$fail" -eq 0 ] && echo ok || exit 1

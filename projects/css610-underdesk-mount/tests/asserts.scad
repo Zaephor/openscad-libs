@@ -48,6 +48,40 @@ for (fy = [_leg_len * 0.3, _leg_len * 0.7])
 assert(_leg_thickness + _flange_len / 2 > _leg_thickness,
     "flange holes must clear the device edge (X > leg_thickness)");
 
-// Bracket render (Task 2): drives the geometry contract above + the STL bbox
-// checks in tests/test_css610_underdesk_mount.sh.
-css610_underdesk_bracket();
+// Contract (Task 3, #59): the bracket must clear the device's PHYSICAL
+// envelope, not just the formal X>leg_thickness rule above. Device sits at
+// X in [-_css610_size()[0], 0] flush against the leg (see the module's
+// fit-viz comment / task-3-report.md verify-scad-geometry render); the
+// wood-screw hole (max radius csk_dia/2=4 at its countersink mouth) must
+// not cross X=0 into the device.
+_csk_dia = 8;   // must match css610-underdesk-mount.scad's own csk_dia default (`use` scope, see note above)
+_csk_r = _csk_dia / 2;
+assert(_leg_thickness + _flange_len / 2 - _csk_r > 0,
+    "flange wood-screw hole (incl. countersink) must clear the device's physical X<=0 envelope");
+
+// L/R mirror (Task 3, #59): side="L" must render without error, and --
+// because _css610_side_holes()'s Y-values (9.5, 34.5) and the wood-screw
+// Y-positions (leg_len*0.3, leg_len*0.7 = 13.2, 30.8) are each symmetric
+// about leg_len/2=22 -- mirroring in Y (44-y) must map each hole set onto
+// itself, confirming both L and R variants align to the same device hole
+// pattern (verified algebraically here; mesh-level confirmation in
+// tests/test_css610_underdesk_mount.sh's L-side hole-void probes).
+function _in_set(v, list) = len([for (x = list) if (abs(x - v) < 1e-9) x]) > 0;
+
+_hole_ys = [for (h = holes) h[0]]; // [9.5, 34.5, 9.5, 34.5]
+for (y = _hole_ys)
+    assert(_in_set(_leg_len - y, _hole_ys),
+        str("mirrored M3 hole Y=", _leg_len - y, " (from Y=", y, ") not in original hole-Y set ",
+            _hole_ys, " -- L/R mirror would misalign the M3 holes"));
+
+_wood_ys = [_leg_len * 0.3, _leg_len * 0.7]; // [13.2, 30.8]
+for (y = _wood_ys)
+    assert(_in_set(_leg_len - y, _wood_ys),
+        str("mirrored wood-screw hole Y=", _leg_len - y, " (from Y=", y, ") not in original set ",
+            _wood_ys, " -- L/R mirror would misalign the wood-screw holes"));
+
+// Bracket render (Task 2/3): drives the geometry contract above + the STL
+// bbox checks in tests/test_css610_underdesk_mount.sh. Both L and R render
+// here to prove the `side` param produces valid geometry for each.
+css610_underdesk_bracket(side = "R");
+css610_underdesk_bracket(side = "L");
