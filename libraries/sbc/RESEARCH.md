@@ -1295,8 +1295,8 @@ laid out with the wrong **yaw** (rotated 90° from their real orientation) —
 their measured `[w,d]` sizes were correct, only the orientation was wrong.
 Passing asserts (body==`connector_size(...)`, in-envelope, x_min/y_max
 anchor-sharing) never caught any of these because none of them checked
-cross-connector AABB overlap or axis direction — the exact failure mode
-[[feedback_colored_surface_review]] warns about. All three are corrected here
+cross-connector AABB overlap or axis direction — the exact failure mode this
+correction targets. All three are corrected here
 by rotating the box 90° in-plane via a new local helper, `_sbc_rot90(sz) =
 [sz[1], sz[0], sz[2]]` (sbc.scad) — same position-anchor formula as before
 (x_min flush to the socket's own x_min / y_max flush to the socket's own
@@ -1330,9 +1330,11 @@ re-measured or invented; every fix is a pure 90° rotation of an existing
   "14 rear" edge, reaching down to y=34.5 — squarely inside the
   `sfp_1`/`sfp_2` cages' own y=[0, 53.98] keep-out (x overlaps `sfp_1`
   directly). Rotated via `_sbc_rot90(connector_size("m2_modem_card"))` =
-  `[52, 30, 3.8]`: the 52mm long axis now runs along X (clear of both
-  mPCIe columns, x=[3.4, 55.4]) and only the 30mm width extends down from
-  the socket's y_max, landing at y=[56.5, 86.5] — clear of the SFP cages'
+  `[52, 30, 3.8]`: the 52mm long axis now runs along X (x=[3.4, 55.4], which
+  overlaps the mPCIe cards' own x=[4.5, 55.45] almost entirely — clearance
+  from the mPCIe keep-outs comes from the `"top"` vs `"bottom"` edge
+  separation, not XY) and only the 30mm width extends down from the
+  socket's y_max, landing at y=[56.5, 86.5] — clear of the SFP cages'
   y<=53.98 span by 2.52mm. Size unchanged, still `[B]` caliper.
 - **`gpio26_1`** (26-pin/2.54mm header, board-specific literal
   `[33.02, 5.08, 6.0]`, `"top"` edge, flush to the right/xmax wall): the
@@ -1349,10 +1351,7 @@ re-measured or invented; every fix is a pure 90° rotation of an existing
   + pin-count/pitch math for w/d; `[C]`//VERIFY x (flush-right assumption,
   unchanged reasoning, just recomputed off the rotated width) and h.
 
-**Verification**: a colored-per-surface render (two orthogonal-axis overlay
-projections, since the headless renderer only overlays on the xz/yz plane —
-each part given a distinct color and a distinct artificial Z-band so its
-X-extent and Y-extent read directly as a bar per axis) confirmed: both
+**Verification**: a colored per-surface render confirmed: both
 mPCIe cards' long axis now visibly points toward increasing X (toward the
 Key-M SSD column) with a clear Y gap between the two and no X overlap with
 the Key-M keep-out; the Key-B module box's Y span sits entirely above

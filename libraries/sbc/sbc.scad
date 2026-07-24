@@ -425,11 +425,14 @@ function _sbc_table() = [
           // y=34.5 — deep into the sfp_1/sfp_2 cages' own y=[0,53.98] keep-out,
           // a real collision the asserts never caught. Yaw-corrected via
           // _sbc_rot90 (same anchor formula, rotated size fed in): the 52mm long
-          // axis now runs along X (away from the board's left edge, still fully
-          // clear of both mPCIe columns) and only the 30mm width extends down
-          // from the socket's y_max, landing at y=[56.5,86.5] — clear of the
-          // SFP cages' y<=53.98 span by 2.52mm. Measured size unchanged, [B]
-          // caliper (same as the socket row above).
+          // axis now runs along X (x=[3.4,55.4], which actually overlaps the
+          // mPCIe cards' own x=[4.5,55.45] almost entirely — clearance from
+          // the mPCIe keep-outs comes from this card being "top" edge vs the
+          // mPCIe cards' "bottom" edge, not from XY separation) and only the
+          // 30mm width extends down from the socket's y_max, landing at
+          // y=[56.5,86.5] — clear of the SFP cages' y<=53.98 span by 2.52mm.
+          // Measured size unchanged, [B] caliper (same as the socket row
+          // above).
           ["m2modem_1_card", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_modem_card"))[1], 1.4], _sbc_rot90(connector_size("m2_modem_card")), "top"],
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
