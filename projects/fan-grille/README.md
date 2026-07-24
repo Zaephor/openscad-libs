@@ -40,7 +40,10 @@ See [PRINTING.md](PRINTING.md) for print settings.
 ## Sourcing
 
 - Mount-hole positions and diameters: `fans` lib's `fan_holes(fan_size, role="structural-mount")`
-  — the fan's own corner-hole frame, centered on the fan origin.
+  — the fan's own corner-hole frame, centered on the fan origin. At the
+  default `fan_size=40` the corner tabs between hole and plate edge are thin
+  (~1.85 mm) — see [PRINTING.md](PRINTING.md#corner-mount-hole-tab-thickness)
+  for fastener-driving guidance.
 - Honeycomb vent field: `honeycomb` lib's `honeycomb_vent(width, height, depth, cell, wall)`
   — the same self-supporting hex-hole cutter used by the bpir4 chassis lid/faceplate vents
   (this project is the honeycomb lib's 2nd consumer).
