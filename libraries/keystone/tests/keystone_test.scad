@@ -118,6 +118,17 @@ assert(keystone_insert_latch()[6] == 4.5, "latch hook_peak 4.5");
 assert(keystone_insert_latch()[7] == 3.1, "latch hook_zext 3.1");
 assert(keystone_insert_root_fillet() > 0, "root fillet radius present");
 
+// --- Root-fillet / hook geometry invariants (#60 Task 3): re-derived from
+// the fillet+uniform-tip-hook rebuild; render-time asserts inside
+// keystone_insert() itself gate these per-call (latch_wall/fit-dependent),
+// these are the accessor-only preconditions those asserts rely on. ---
+L60 = keystone_insert_latch();
+assert(L60[1] > L60[3] + L60[7],
+       "latch root_z sits rearward of tip_z+hook_zext (physical cantilever, re-derived #60)");
+assert(keystone_insert_root_fillet() < L60[2],
+       "root fillet radius fits within root_thick's own run");
+assert(L60[7] > 0, "hook_zext positive -- uniform tip forward of a rearward-rising ramp");
+
 echo("keystone_test OK");
 
 /* [Placeholder] — smoke render; numeric bbox checked in tests/test_keystone_lib.sh */

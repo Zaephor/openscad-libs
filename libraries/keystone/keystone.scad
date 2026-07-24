@@ -462,6 +462,67 @@ module _keystone_insert_ramp(w, prot, z_flush, z_full) {
     }
 }
 
+// _keystone_insert_root_fillet(w, r, y_lo, y_hi, z_lo, z_hi): rounded CONCAVE
+// fillet joining a flush base (y=y_lo, matching the body-top plane that
+// extends further behind z_lo) up to a full-height wall (y=y_hi, reached by
+// z_hi) -- fills the reentrant corner between the two (#60). Construction:
+// a quarter-circle arc of radius r, tangent to the flush base at z_lo
+// (0-slope start, self-supporting) and tangent-vertical at z_lo+r (rise=r,
+// run=r), followed by a straight ramp for any remaining rise up to y_hi at
+// z_hi (same 45deg-safe ramp shape this replaces -- the arc's 1:1 rise/run
+// consumption leaves the ramp's own run-vs-rise margin UNCHANGED, see
+// keystone_insert()'s root-fillet asserts). The arc's own last fraction (as
+// it nears tangent-vertical) is a small, load-bearing internal-corner
+// concave feature backed by solid on 3 sides -- design-for-print's
+// strength-physics.md: fillets are the right call for a load-bearing
+// corner and this scale of concave feature is the accepted, self-supporting
+// case (distinct from a flat unsupported shelf) -- not a chamfer, because
+// this corner needs the stress-relief a fillet gives, not just print
+// safety. Spans w in X (beam_w); z_lo must be the MORE-NEGATIVE (earlier-
+// printed, rear-down) end, z_hi the front.
+module _keystone_insert_root_fillet(w, r, y_lo, y_hi, z_lo, z_hi) {
+    N = 8; // arc subdivision (quarter circle)
+    profile = concat(
+        [[-z_lo, y_lo]],
+        [for (k = [1:N]) let(a = k * 90 / N)
+            [-(z_lo + r * sin(a)), y_lo + r - r * cos(a)]],
+        [[-z_hi, y_hi]],
+        [[-z_hi, y_lo]]
+    );
+    translate([-w / 2, 0, 0])
+        rotate([0, 90, 0])
+            linear_extrude(w)
+                polygon(profile);
+}
+
+// _keystone_insert_hook(w, beam_top, hook_peak_y, z_tip, z_rear, chamfer):
+// the snap-fit catch (#60 rebuild) -- uniform tip flush with the beam's own
+// top surface at z_tip (NO material forward of it), ramping rearward to
+// hook_peak_y at z_rear, then a VERTICAL 90deg retention/catching face at
+// z_rear (single Z value shared by the peak and base-of-face vertices below
+// -- vertical by construction). Print-safety lead-in: without it, the
+// retention face's full protrusion above beam_top would appear in one
+// abrupt layer at z_rear (a floating-shelf overhang, same issue the
+// superseded hook's own corner-chamfer addressed -- see keystone_insert()'s
+// PRINT ORIENTATION comment). `chamfer` grows that protrusion in from 0
+// starting `chamfer` further rearward of z_rear -- purely additive, further
+// back than the catching shoulder itself, so the retention face (still full
+// height, still exactly at z_rear) is untouched.
+module _keystone_insert_hook(w, beam_top, hook_peak_y, z_tip, z_rear, chamfer) {
+    translate([-w / 2, 0, 0])
+        rotate([0, 90, 0])
+            linear_extrude(w)
+                polygon([
+                    [-z_tip,  beam_top],   // tip: flush, forward-most point
+                    [-z_rear, hook_peak_y], // peak: ramp's rear end
+                    [-z_rear, beam_top],    // down to beam_top -- the vertical catch face
+                ]);
+    hook_prot = hook_peak_y - beam_top;
+    translate([0, beam_top, 0])
+        mirror([0, 1, 0])
+            _keystone_insert_ramp(w, hook_prot, z_rear - chamfer, z_rear);
+}
+
 /* [Insert] — caliper-faithful flagship insert (#54): insert body + guide
    ribs + fixed retention lug + cantilever snap-fit latch, built from the
    keystone_insert_*() data accessors above (Tecmojo nominal, [B] caliper).
@@ -512,26 +573,31 @@ module _keystone_insert_ramp(w, prot, z_flush, z_full) {
        candidate for a future revisit (would need a different mechanism
        orientation, likely trading back some support-free-ness -- flagged
        here, not solved).
-     - SMALL NUB, CORNER-CHAMFERED (#54 Task 3 review fix; narrowed by #60):
-       the hook's own retention/catch face (~1.1mm protrusion at default
-       latch_wall) originally appeared with its full protrusion in a single
-       abrupt layer transition -- a flat unsupported shelf per
-       overhangs-supports.md, however small. It has a small mirrored ramp
-       (`_keystone_insert_ramp()`) grown in from 0 protrusion on the far
-       (rear-down build-order-earlier) side of that boundary,
-       `_keystone_chamfer_margin()`-scaled under 45deg, so the transition is
-       self-supporting. This only ADDS material behind the existing
-       boundary -- the retention face itself (still full width/height
-       exactly at its original z_hook_rear) is untouched, so the catching
-       shoulder the snap mechanism depends on is preserved. The lug's and
-       guide ribs' own small protrusions (~1.1mm and 0.8mm respectively) got
-       this same chamfer treatment under #54, but #60 replaced both with
-       plain rectangular blocks (physical caliper measurement showed no
-       taper) -- see keystone_insert_lug()/keystone_insert_guide_rib() and
-       their call sites below.
+     - UNIFORM-TIP HOOK, CORNER-CHAMFERED (#54 Task 3 review fix; REBUILT
+       #60): the hook is now a uniform tip (flush with the beam, no material
+       forward of z_tip) ramping rearward to a vertical 90deg retention/
+       catch face at z_hook_rear (see _keystone_insert_hook()). That
+       retention face's protrusion above beam_top (~1.1-1.3mm at the tested
+       latch_wall values) would otherwise appear in a single abrupt layer
+       transition -- a flat unsupported shelf per overhangs-supports.md,
+       however small. `_keystone_insert_hook()` grows it in from 0 via a
+       small mirrored `_keystone_insert_ramp()` on the far (rear-down
+       build-order-earlier) side of that boundary, `_keystone_chamfer_margin()`-
+       scaled under 45deg, so the transition is self-supporting. This only
+       ADDS material behind the existing boundary -- the retention face
+       itself (still full width/height exactly at z_hook_rear) is untouched,
+       so the catching shoulder the snap mechanism depends on is preserved.
+       The lug's and guide ribs' own small protrusions (~1.1mm and 0.8mm
+       respectively) got this same chamfer treatment under #54, but #60
+       replaced both with plain rectangular blocks (physical caliper
+       measurement showed no taper) -- see keystone_insert_lug()/
+       keystone_insert_guide_rib() and their call sites below.
    The root block itself (pure rigid anchor, no camming/catching function)
-   WAS reshaped below: a 45deg-safe gusset taper instead of an abrupt step,
-   since nothing functional depends on its shape (see inline comment). */
+   is REBUILT #60 as a rounded concave fillet (`_keystone_insert_root_fillet()`,
+   radius `keystone_insert_root_fillet()`) instead of the #54 straight-taper
+   gusset -- a load-bearing internal-corner stress-relief fillet
+   (strength-physics.md) rather than a plain chamfer, since nothing
+   functional depends on the root's exact shape but its strength does. */
 module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_depth(),
                        blank = true, guides = true) {
     assert(blank, "keystone_insert: blank=false (RJ45 pass-through receptacle) is not yet implemented -- deferred, see the keystone-insert design spec's Out-of-scope");
@@ -576,7 +642,8 @@ module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_dept
 
         // cantilever snap-fit latch (top, +Y): rigid root block (anchors the
         // beam to the body near the rear) + a forward-cantilevering beam +
-        // a hook (lead-in ramp + retention face) at the beam's forward tip.
+        // a hook (uniform tip + rearward ramp + vertical catch face, #60) at
+        // the beam's forward tip.
         beam_w = L[0]; root_z = L[1]; root_thick = L[2]; tip_z = L[3];
         defl_clear = L[5]; hook_peak = L[6]; hook_zext = L[7];
         assert(root_z > tip_z + hook_zext,
@@ -585,77 +652,74 @@ module keystone_insert(fit = 0.2, latch_wall = 1.0, depth = keystone_insert_dept
         beam_top   = beam_under + latch_wall; // beam's own flat top (tuned wall, not the caliper's 0.9)
         z_root_front = -root_z;                // root block's forward (shallower) face
         z_root_rear  = -(root_z + root_thick); // root block's rear (deeper) face
-        z_tip        = -tip_z;                 // hook tip (forward-most point, lead-in start)
+        z_tip        = -tip_z;                 // hook tip (forward-most point, uniform/flush)
         z_hook_rear  = -(tip_z + hook_zext);    // hook's own rear -- retention face, also the plain beam's forward end
-        hook_prot    = hook_peak - (beam_top - top); // hook bump height above the beam's own top
 
-        // Print-safety (#54 Task 3, see this module's PRINT ORIENTATION
-        // comment above): the root is the rigid anchor -- no camming/
-        // catching function -- so unlike the lug/hook it's free to taper.
-        // rise (body-top -> beam-top) must fit within root_thick's own run
-        // at <=45deg or the gusset below becomes an unsupported overhang.
-        // Margin (#54 Task 3 review fix): a bare ">=" here would permit rise
-        // to reach root_thick exactly (a true 45deg taper, no margin) --
-        // design-for-print's overhangs-supports.md warns not to treat a
-        // value right at the 45deg line as automatically safe (it gives no
-        // specific safe-angle number of its own to derive a ratio from,
-        // just that qualitative caveat). This does NOT reuse
-        // _keystone_chamfer_margin() (a 1.15x RATIO): that helper scales a
-        // ramp that's free to extend its OWN run for more margin
-        // (keystone_cutout()/keystone_boss()'s back-wall tapers). Here
-        // root_thick is a FIXED caliper-measured dimension
-        // (keystone_insert_latch()[2] = 3.6) the assert can only gate
-        // against, not extend -- and this module's own test coverage
-        // exercises rise up to 3.4 (latch_wall=1.2, keystone_test.scad), only
-        // 0.2mm below root_thick, so ANY ratio large enough to matter (incl.
-        // 1.15x) rejects that real, already-shipped configuration outright.
-        // Use a small ABSOLUTE floor instead: half this repo's default
-        // 0.2mm layer height (house-rules.md) -- enough that the taper is
-        // never literally AT the knife-edge (bare rise == root_thick), while
-        // leaving every currently-tested latch_wall value (1.0, 1.2) its own
-        // real, non-zero clearance (0.4mm and 0.2mm respectively).
+        // Root fillet (#60, replaces the #54 Task 3 straight-taper gusset):
+        // radius from the data accessor, must fit within the root's own run
+        // (root_thick) and leave positive rise for the post-arc ramp.
+        root_fillet_r = keystone_insert_root_fillet();
+        assert(root_fillet_r > 0 && root_fillet_r < root_thick,
+            str("keystone_insert: root fillet radius ", root_fillet_r,
+                " must be positive and fit within the root's available run (",
+                root_thick, ")"));
+        assert(root_fillet_r < beam_top - top,
+            str("keystone_insert: root fillet radius ", root_fillet_r,
+                " must be less than the root's total rise (", beam_top - top,
+                ") so the straight ramp segment after the fillet has positive rise"));
+        // Post-arc ramp margin (#54 Task 3 review fix, re-derived #60 for the
+        // fillet): the root gusset is now [quarter-circle arc, radius
+        // root_fillet_r] + [straight 45deg-safe ramp for the remaining rise].
+        // The arc consumes root_fillet_r of BOTH rise and run (1:1), so it
+        // cancels out of the run-vs-rise margin: (root_thick - root_fillet_r)
+        // - (rise - root_fillet_r) == root_thick - rise, algebraically
+        // IDENTICAL to the pre-fillet ramp's own margin -- this assert's
+        // condition is therefore unchanged from #54 Task 3 (see that review
+        // fix's reasoning for why >= a small absolute floor, not a ratio).
         root_margin_mm = 0.1;
         assert(root_thick - (beam_top - top) >= root_margin_mm,
             str("keystone_insert: latch_wall ", latch_wall,
-                " makes the root gusset rise (", beam_top - top,
+                " makes the root's post-fillet ramp rise (",
+                beam_top - top - root_fillet_r,
                 ") leave less than ", root_margin_mm,
-                "mm of margin in its available run (", root_thick,
+                "mm of margin in its available run (", root_thick - root_fillet_r,
                 ") -- taper would sit at or past a bare 45deg self-support angle with no margin; reduce latch_wall"));
 
+        // Hook geometry invariants (#60): uniform tip (hook_zext > 0
+        // guarantees the polygon's forward-most vertex is exactly z_tip, no
+        // material forward of it) and a real catching shoulder (peak strictly
+        // above the beam's own top).
+        assert(hook_zext > 0,
+            "keystone_insert: hook_zext must be positive (uniform tip forward of a rearward-rising ramp)");
+        hook_peak_y = top + hook_peak;
+        assert(hook_peak_y > beam_top,
+            str("keystone_insert: hook_peak (", hook_peak,
+                ") must exceed the beam's own height above body top (",
+                beam_top - top, ") for a real catching shoulder"));
+        // The retention face is vertical BY CONSTRUCTION: _keystone_insert_hook()
+        // places both its peak vertex and its beam_top-at-z_rear vertex at the
+        // SAME z (z_hook_rear) -- single-valued Z at every Y between them.
+
         union() {
-            // root gusset: tapers from FLUSH with the body's own top surface
-            // at its rear (bed-side, printed first per this module's PRINT
-            // ORIENTATION) up to the beam's full height at its front (where
-            // the beam attaches) -- a 45deg-safe ramp rather than an abrupt
-            // step, so the root needs no support, and it doubles as a
-            // stress-relief gusset at the cantilever's base (strength-
-            // physics.md: fillet/gusset a cantilever-to-wall joint rather
-            // than a sharp step).
-            translate([0, top, 0])
-                mirror([0, 1, 0])
-                    _keystone_insert_ramp(beam_w, beam_top - top, z_root_rear, z_root_front);
+            // root fillet: rounded concave transition from FLUSH with the
+            // body's own top surface at its rear (bed-side, printed first
+            // per this module's PRINT ORIENTATION) up to the beam's full
+            // height at its front (where the beam attaches) -- see
+            // _keystone_insert_root_fillet()'s own comment for the
+            // construction and why it's self-supporting, and
+            // strength-physics.md for why a fillet (not the old straight
+            // taper) is the right call at this load-bearing cantilever root.
+            _keystone_insert_root_fillet(beam_w, root_fillet_r, top, beam_top, z_root_rear, z_root_front);
             // beam: plain cantilever section, floating `defl_clear` above the
             // body top, from the root's front face forward to the hook's rear
             // edge (z_root_front is the deeper/smaller-magnitude-negative
             // corner here, since the root sits further behind the hook).
             translate([-beam_w / 2, beam_under, z_root_front])
                 cube([beam_w, latch_wall, z_hook_rear - z_root_front]);
-            // hook: lead-in ramp (front, at the tip) blending into the
-            // retention face (rear), sitting on the beam's own top surface.
-            translate([0, beam_top, 0])
-                mirror([0, 1, 0])
-                    _keystone_insert_ramp(beam_w, hook_prot, z_tip, z_hook_rear);
-            // Print-safety corner chamfer (#54 Task 3 review fix): same
-            // treatment as the lug above -- the ramp above only exists
-            // between z_tip and z_hook_rear, so the retention face's full
-            // protrusion appears at z_hook_rear with nothing beneath it
-            // (rear-down build order). Mirror the ramp further toward the
-            // root (still well clear of z_root_front) so it grows in from 0
-            // rather than stepping; the retention face itself is unchanged.
-            hook_chamfer = hook_prot * _keystone_chamfer_margin();
-            translate([0, beam_top, 0])
-                mirror([0, 1, 0])
-                    _keystone_insert_ramp(beam_w, hook_prot, z_hook_rear - hook_chamfer, z_hook_rear);
+            // hook (#60 rebuild): uniform tip, rearward ramp, vertical 90deg
+            // catch -- see _keystone_insert_hook()'s own comment.
+            hook_chamfer = (hook_peak_y - beam_top) * _keystone_chamfer_margin();
+            _keystone_insert_hook(beam_w, beam_top, hook_peak_y, z_tip, z_hook_rear, hook_chamfer);
         }
     }
 }
