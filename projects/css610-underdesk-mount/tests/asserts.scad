@@ -32,14 +32,12 @@ for (h = holes) {
 }
 
 // Contract: flange top is coplanar with the device top (flush-mount datum).
-// The module builds the flange as [z0 = _H+_standoff-_flange_thickness, height
-// _flange_thickness], so top = z0 + _flange_thickness == _H + _standoff --
-// this is an algebraic identity of the module's own formula (any future
-// formula change that breaks it is what this guards), not a mesh-derived
-// check; the actual rendered STL Z-max is confirmed separately (bbox check
-// in tests/test_css610_underdesk_mount.sh).
-assert(abs((_H + _standoff - _flange_thickness + _flange_thickness) - (_H + _standoff)) < 1e-9,
-    "flange top must equal device top (H + standoff)");
+// NOT checked here -- an algebraic re-derivation from the module's own
+// z0/height formula would be a tautology (always true regardless of what
+// the module actually computes) and provide zero real verification. The
+// real, mesh-derived check lives in tests/test_css610_underdesk_mount.sh's
+// STL bbox check (Z-max == H+standoff == 47.1), which DOES catch a wrong
+// formula (e.g. the gusset-overshoot bug caught during Task 2 review).
 
 // Contract: 2 flange wood-screw holes, spaced within the flange span, and
 // centered past the device edge (X0 = leg_thickness + flange_len/2 >
