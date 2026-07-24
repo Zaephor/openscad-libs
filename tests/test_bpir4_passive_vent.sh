@@ -13,7 +13,8 @@
 #      `grep -q honeycomb_vent` is insufficient on its own -- the faceplate
 #      already calls it -- so this counts call sites instead.
 #   2. Runtime check: honeycomb_vent() echoes "HONEYCOMB_WORST_SPAN=" to
-#      stderr once per call (see parts/_honeycomb.scad). Render tray() and
+#      stderr once per call (see libraries/honeycomb/honeycomb.scad). Render
+#      tray() and
 #      tray(enable_exhaust=false) via throwaway consumers UNDER
 #      projects/bpir4-1u-chassis/ (a `use <parts/tray.scad>` only resolves
 #      relative to the consumer file's own directory -- see
@@ -36,7 +37,7 @@ fail=0
 
 # --- 1. Source check: >=2 honeycomb_vent( call sites in tray.scad. Exclude
 # comment-only lines (leading `//`) so a prose mention of the function name
-# (e.g. "...with honeycomb_vent() (parts/_honeycomb.scad): ...") doesn't
+# (e.g. "...with honeycomb_vent() (libraries/honeycomb/honeycomb.scad): ...") doesn't
 # inflate the count -- only lines that actually invoke it. ---
 call_sites="$(grep -v '^[[:space:]]*//' "$proj/parts/tray.scad" | grep -c 'honeycomb_vent(')"
 if [ "$call_sites" -lt 2 ]; then
