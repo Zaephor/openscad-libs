@@ -15,6 +15,10 @@ for (t = multibuild_known_mounts()) {
     assert(2 * multibuild_mount_tip_flare(t) <= multibuild_hole_dia(t));
 }
 
+// mount_footprint: grid-relative hole offsets a mount instance occupies.
+// snap is a single-hole mount -> footprint is exactly [[0,0]].
+assert(multibuild_mount_footprint("snap") == [[0,0]], "snap single-hole footprint");
+
 // grid_count: floor(length / pitch)
 assert(multibuild_grid_count(2.9 * p) == 2);
 assert(multibuild_grid_count(3.0 * p) == 3);

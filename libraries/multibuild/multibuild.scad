@@ -59,6 +59,23 @@ function multibuild_mount_arm_count(type)  = _multibuild_row(type)[4];
 function multibuild_mount_arm_width(type)  = _multibuild_row(type)[5];
 function multibuild_mount_tip_flare(type)  = _multibuild_row(type)[6];
 
+// Grid-relative hole offsets (grid units) a mount instance occupies. Single-
+// hole mounts = [[0,0]]. Multi-hole mounts (e.g. Peg Click, T3) list each peg's
+// grid cell. Parallel accessor -- does not touch _multibuild_table()'s row schema.
+function _multibuild_footprint_table() = [
+    ["snap", [[0,0]]],
+    // ["peg_click", [[0,0],[1,0]]],  // added in T3
+];
+function multibuild_mount_footprint(type) =
+    let (r = [for (e = _multibuild_footprint_table()) if (e[0]==type) e[1]])
+    len(r) == 1 ? r[0] : [[0,0]];   // default single-hole
+
+// True if `type`'s footprint fits within a cols x rows grid (offsets in-range).
+function multibuild_mount_fits(type, cols, rows) =
+    let (fp = multibuild_mount_footprint(type))
+    max([for (o=fp) o[0]]) < cols && max([for (o=fp) o[1]]) < rows
+    && min([for (o=fp) o[0]]) >= 0 && min([for (o=fp) o[1]]) >= 0;
+
 /* [Data: Fix-Point] — accessory-side receiving negatives (Fix-Point / Multipoint).
    PARALLEL to the mount table, deliberately SEPARATE: these are NEGATIVE-ONLY
    types (a Fix-Point has no positive arms/flare/mount body), so they must NOT
@@ -109,6 +126,12 @@ function multibuild_grid_points(cols, rows) =
 // Sized to the tip-flare span (widest point) x engagement length (the mount
 // is deliberately longer than the hole is deep -- see Task 2 note).
 module multibuild_mount_placeholder(type) {
+    p = multibuild_grid_pitch();
+    for (off = multibuild_mount_footprint(type))
+        translate([off[0] * p, off[1] * p, 0])
+            _multibuild_mount_placeholder_peg(type);
+}
+module _multibuild_mount_placeholder_peg(type) {
     d = 2 * multibuild_mount_tip_flare(type);
     h = multibuild_mount_engagement(type);
     translate([0, 0, -h])
@@ -126,6 +149,12 @@ module multibuild_mount_placeholder(type) {
 // the measured at-rest tip diameter already clears the hole waist (Task 2
 // note), so no compliant-flex simulation is needed for v1.
 module multibuild_mount(type) {
+    p = multibuild_grid_pitch();
+    for (off = multibuild_mount_footprint(type))
+        translate([off[0] * p, off[1] * p, 0])
+            _multibuild_mount_peg(type);
+}
+module _multibuild_mount_peg(type) {
     n  = multibuild_mount_arm_count(type);
     w  = multibuild_mount_arm_width(type);
     rf = multibuild_mount_tip_flare(type);
