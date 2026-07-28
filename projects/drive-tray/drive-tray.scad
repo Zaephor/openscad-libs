@@ -5,6 +5,7 @@
 use <drives/drives.scad>;
 use <rack10/rack10.scad>;
 use <rack-support/rack-support.scad>;
+use <honeycomb/honeycomb.scad>;
 
 /* [Rack] */
 standard = "labrax";
@@ -19,6 +20,22 @@ wall = 2.4;
 floor_th = 3.0;
 drive_gap = 4.0;
 faceplate_th = 3.0;
+/* [Vent] */
+cell = 8.0;      // hex point-to-point (design/print value, carried from bpir4/fan-grille)
+hc_wall = 1.2;   // gap between hex holes (named hc_wall -- `wall` above is the tray's own wall thickness)
+// Inset of each cell's honeycomb vent field from the drive footprint. NOT the
+// brief-default 6mm: verified empirically (STL ring-solidity + bbox math
+// against drives.scad's own BOTTOM_35()/BOTTOM_25() coordinates, run through
+// _dt_device_frame()'s rotate([0,0,90]) mapping) that 6mm lets the vent field
+// overlap the hdd35 mount hole nearest each cell's X edge (drives.scad's
+// BOTTOM_35 near-edge hole lands at tray-frame X-offset 6.35mm from the cell
+// edge -- inside a 6mm inset, i.e. INSIDE the vent field). 10mm clears every
+// bottom mount hole (all >=1.9mm solid margin between hole edge and field
+// edge) for BOTH the hdd35 #44 preset and the ssd25_9 #45-shaped preset (see
+// task-3-report.md); every drive-tray bottom-hole pattern happens to sit
+// close to the cell's X edges (never near the interior), so a uniform inset
+// clears them via X-exclusion alone regardless of Y position.
+vent_inset = 10;
 
 // block-drive guard (reject M.2 card types)
 assert(len([for (t = drive_known_types()) if (t == drive_type && drive_family(t) == "block") t]) > 0,
@@ -93,6 +110,16 @@ function _cell_xy(c, r) = [ -_grid_w()/2 + c*(_dw() + drive_gap), r*(_dlen() + d
 module _dt_device_frame(c, r) {
     p = _cell_xy(c, r);
     translate([p[0] + _dw(), p[1], floor_th]) rotate([0, 0, 90]) children();
+}
+
+// Per-cell honeycomb-vent placement -- tray frame directly (unlike
+// _dt_device_frame(), no rotate() is needed: the vent cuts straight down
+// through the flat floor, same orientation fan-grille cuts its own flat
+// plate in). Field is centered on the cell footprint (_dw() x _dlen()),
+// inset by vent_inset on every side.
+module _dt_vent_frame(c, r) {
+    p = _cell_xy(c, r);
+    translate([p[0] + vent_inset, p[1] + vent_inset, -1]) children();
 }
 
 // Front rack faceplate + ear holes (bpir4/faceplate idiom, same shape as
@@ -204,6 +231,19 @@ module drive_tray() {
             _dt_device_frame(c, r)
                 translate([0, 0, -floor_th/2])
                     drive_holes(drive_type, faces = "bottom", depth = floor_th + 2);
+
+        // Per-cell honeycomb floor vents, cut straight through Z (flat
+        // print -> no bridge, same idiom as fan-grille's plate_th cut):
+        // depth = floor_th + 2 (2mm oversize) with _dt_vent_frame()'s own
+        // Z=-1 translate centers that oversize through the [0,floor_th]
+        // slab, same 1mm-margin convention the mount-hole cutters above
+        // use. Field is _dw()/_dlen() (the cell's own tray-frame footprint,
+        // NOT drive_size()'s native device-frame indices -- see _dlen()/
+        // _dw() header comment) shrunk by 2*vent_inset per side; vent_inset
+        // is sized above to clear every bottom mount hole.
+        for (c = [0:cols-1]) for (r = [0:rows-1])
+            _dt_vent_frame(c, r)
+                honeycomb_vent(_dw() - 2*vent_inset, _dlen() - 2*vent_inset, floor_th + 2, cell, hc_wall);
     }
     // Drive placeholders per cell — % preview only, excluded from real geometry/export.
     for (c = [0:cols-1]) for (r = [0:rows-1])

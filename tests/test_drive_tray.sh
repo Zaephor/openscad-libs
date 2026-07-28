@@ -2,9 +2,10 @@
 # Verifies the drive-tray project renders clean at defaults, that the
 # tests/asserts.scad / tests/asserts_depth.scad negative controls genuinely
 # abort the width/depth fit-asserts, that the default grid stamps the
-# expected total bottom-hole count, and that the rear #40 support tongue is
-# present and correctly placed (Task 2) (OpenSCAD exit code unreliable for
-# asserts -- grep stderr, per repo idiom).
+# expected total bottom-hole count, that the rear #40 support tongue is
+# present and correctly placed (Task 2), and that the per-cell honeycomb
+# floor vents (Task 3) are present and self-supporting (OpenSCAD exit code
+# unreliable for asserts -- grep stderr, per repo idiom).
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/drive-tray"
@@ -24,6 +25,33 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "FAIL: default drive-tray.scad errored:"; echo "$out"; fail=1
 fi
 [ -s "$tmp/dt.stl" ] || { echo "FAIL: default render produced no/empty STL"; fail=1; }
+
+# Honeycomb floor vents (Task 3): the module's own self-support regression
+# guard (see honeycomb.scad) echoes HONEYCOMB_WORST_SPAN=<N> -- must stay
+# <=5mm (design-for-print's bridging ceiling) or the library's own assert()
+# would already have aborted the render above; re-check the echoed number
+# directly too (belt-and-suspenders, same idiom the library's own comment
+# describes for its test).
+span="$(echo "$out" | grep -o 'HONEYCOMB_WORST_SPAN=[0-9.]*' | head -1 | cut -d= -f2)"
+if [ -z "$span" ]; then
+  echo "FAIL: no HONEYCOMB_WORST_SPAN echo in default render -- floor vents missing?"; fail=1
+elif ! awk -v s="$span" 'BEGIN{exit !(s <= 5)}'; then
+  echo "FAIL: HONEYCOMB_WORST_SPAN=$span > 5mm -- self-support ceiling violated"; fail=1
+fi
+
+# Honeycomb floor vents (Task 3): facet count must jump well past a
+# no-vent floor's own facet count (896, the pre-Task-3 tongue/wall/faceplate
+# geometry measured against 74e60f0's own drive-tray.scad) -- confirms the
+# per-cell hex fields are actually present in the render, not silently
+# skipped. Threshold (1500) sits well clear of both the no-vent baseline
+# (896) and the with-vent default (~3100), so it only trips if the vent
+# cutters stop being applied.
+facets="$(echo "$out" | grep -o 'Facets:[[:space:]]*[0-9]*' | tail -1 | grep -o '[0-9]*$')"
+if [ -z "$facets" ]; then
+  echo "FAIL: no CGAL 'Facets:' summary in default render output"; fail=1
+elif [ "$facets" -le 1500 ]; then
+  echo "FAIL: default render facet count $facets <= 1500 -- honeycomb floor vents missing?"; fail=1
+fi
 
 # Negative control: tests/asserts.scad overrides cols=9 -- MUST abort the
 # grid-width fit-assert. A silent pass here means the fit-assert regressed.
