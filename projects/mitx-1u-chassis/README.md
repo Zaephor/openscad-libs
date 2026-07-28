@@ -30,11 +30,12 @@ and honeycomb intake/exhaust vents. All geometry verified support-free.
   applied to the standoffs, the `%`-preview placeholder, *and* the IO
   cutout — all three read the board's own local frame (rear-left-corner
   origin per `motherboards.scad`), so they can't drift apart independently.
-- **IO cutout direction.** `mobo_io_cutout_stamp()` grows +Y from the
-  board's own local Y=0 (its rear/IO edge); the faceplate sits at -Y from
-  that same plane (rack10's front-of-panel convention), so the stamp is
-  `mirror([0,1,0])`-flipped before being placed in the shared board frame —
-  otherwise the cutter grows away from the faceplate and never reaches it.
+- **IO cutout direction.** The library's own `mobo_io_cutout_stamp()` grows
+  +Y from the board's local Y=0 (its rear/IO edge); the faceplate sits at -Y
+  from that same plane (rack10's front-of-panel convention). This project
+  doesn't call that module directly (see below) but its local cutout reuses
+  the same `mirror([0,1,0])`-flip before placing the cut in the shared board
+  frame — otherwise it grows away from the faceplate and never reaches it.
 - **Board-specific IO window height.** The generic ATX-family shield height
   `mobo_io_cutout("itx")[2]` (44.45mm) doesn't fit the available headroom
   above the board (interior height minus `standoff_h` leaves less than
