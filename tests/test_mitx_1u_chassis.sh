@@ -97,4 +97,23 @@ probe_solid "translate([-115, -4, 40]) cube([2,5,2]);" "left-ear faceplate mater
 # computed height rather than some smaller nominal/placeholder band.
 probe_empty "translate([60, -4, 43]) cube([2,5,0.5]);" "IO window does not reach flush to the 1U interior ceiling"
 
+# Rear wall / #40 tongue (Task 2). Numeric literals below match the default
+# geometry (standard=labrax: rack10_rear_post_y=240, rack_support_engagement_depth=12
+# -> _tongue_y()=228; wall=2.4 -> rear wall inner face=225.6; fan_size=40 ->
+# _fan_cx()=-55.5, dc_dia=11 -> _dc_cx()=55.5; rear_center_z=21.83).
+# Fan bore + DC-in must be REAL voids clean through the rear wall.
+probe_empty "translate([-56.5, 226, 20.83]) cube([2,2,2]);" "fan bore does not open through the rear wall"
+probe_empty "translate([54.5, 226, 20.83]) cube([2,2,2]);"  "DC-in hole does not open through the rear wall"
+# Positive control: plain rear wall material clear of the fan/DC-in/tongue.
+probe_solid "translate([-91, 226, 20.83]) cube([2,2,2]);" "rear wall material beside the fan unexpectedly empty"
+# The #40 tongue must be REAL material (not just numerically placed dead
+# space) at its own footprint, well past the rear wall.
+probe_solid "translate([-1, 233, 5]) cube([2,2,2]);" "#40 tongue is not real material"
+# Buttress regression: the tongue's underside must be solidly supported by
+# the tray's own floor for its full engagement reach (no unsupported
+# overhang) -- rack-support's own README "Buttressing" consumer contract.
+# A floor that stops short of the tongue's own Y-span (a real prior bug
+# caught only by this probe, not by a clean render) would leave this empty.
+probe_solid "translate([-0.4, 233.6, 0.1]) cube([0.8,0.8,0.8]);" "no floor/buttress under the #40 tongue -- unsupported overhang"
+
 [ "$fail" -eq 0 ] && echo ok || exit 1

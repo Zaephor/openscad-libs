@@ -36,6 +36,21 @@ assert(_button_x() + button_dia/2 < _io_x0(),
 assert(len(rack10_hole_z(1)) == 3,
     str("mitx-1u: expected 3 hole rows per column for u=1, got ", len(rack10_hole_z(1))));
 
+// #40 tongue Y-extent regression: the tongue's tip must land exactly on
+// rack10_rear_post_y(standard) -- rack_support_tongue()'s own consumer
+// contract (rack-support.scad / README "Buttressing" + "Placement formula")
+// -- NOT on _usable_depth() (that fn additionally reserves faceplate_th as a
+// separate, more conservative board-depth margin; the two intentionally
+// differ, see _tongue_y()'s own comment in the main file). This also locks
+// _tongue_y() >= _usable_depth(), i.e. the board always has room before the
+// rear wall.
+assert(_tongue_y() + rack_support_engagement_depth() == rack10_rear_post_y(standard),
+    str("mitx-1u: tongue tip ", _tongue_y()+rack_support_engagement_depth(),
+        " != rear post plane ", rack10_rear_post_y(standard)));
+assert(_tongue_y() >= _usable_depth(),
+    str("mitx-1u: tongue root ", _tongue_y(), " < _usable_depth() ", _usable_depth(),
+        " -- rear wall would sit in front of the board's own depth budget"));
+
 // No explicit render call needed -- the include above already re-runs
 // mitx-1u-chassis.scad's own trailing mitx_1u_chassis() call (and its
 // top-level fit-asserts) at defaults.
