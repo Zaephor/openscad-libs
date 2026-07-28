@@ -634,7 +634,7 @@ Notes per row:
   Resulting block: x=[62.61, 118.53] (55.92mm, 4×13.98mm) — 12.02mm clear
   of `sfp_2`'s right edge (50.59). No board-geometry conflict on that side.
 
-  **Unreconciled gap, //VERIFY at the time (resolved round-3, see below):**
+  **Unreconciled gap, flagged weak at the time (RESOLVED round-3, see below):**
   the computed block end (118.53, from
   block_x0 + 4×pitch) falls 4.24mm short of the drawing's own
   detector-confirmed right edge (122.77, cited two paragraphs above and

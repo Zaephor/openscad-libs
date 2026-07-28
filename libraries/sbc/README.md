@@ -422,10 +422,16 @@ only a vendor DXF + a separate assembly PNG):
   geometry plus the separate vendor assembly-drawing silhouette (pixel-
   measured off a calibrated render), not from dimensioned CAD text. Body
   depths/heights are frequently estimated from generic connector datasheets.
-  The **3-gang LAN RJ45 (CN21)** is split into 3 **equal** ports (`rj45_2`/
-  `rj45_3`/`rj45_4`) — the overall envelope is `[B]` pixel-detected, but no
-  internal divider is dimensioned anywhere, so the even trisection itself is
-  `[C]` //VERIFY.
+  **CN21 is ONE physical 4-port ganged RJ45 block** (WAN + 3×LAN: `rj45_1`
+  = WAN, `rj45_2`/`rj45_3`/`rj45_4` = LAN), not a separate WAN jack plus a
+  distinct 3-port LAN group — that earlier two-connector reading is
+  discredited/superseded (see `RESEARCH.md`). Per-port pitch/width/depth/
+  height (13.98/13.98/21.45/13.60mm) are `[A]`, read from the exact
+  bundled connector datasheet (`HRJC-M03C01C10cNL.pdf`). The block's own
+  overall physical envelope (`rj45_block`, 58.5mm wide) is `[B]` caliper
+  (round-3 #65) and is what the faceplate cutout actually uses, since it's
+  wider than the sum of the 4 port pitches alone (the end shell overhangs
+  the outermost ports).
 - **No Pi-style `"gpio"` header is modeled for `bpir4`.** The DXF's
   `PIN_TOP` layer shows no 2×20/2.54mm THT grid anywhere on the board — any
   GPIO/pin header is undimensioned in available sources, and is a
