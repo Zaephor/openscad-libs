@@ -260,12 +260,16 @@ _mpcie_1_socket = sbc_connector("bpir4", "mpcie_1");
 _mpcie_1_card_env = sbc_connector("bpir4", "mpcie_1_card");
 _mpcie_2_socket = sbc_connector("bpir4", "mpcie_2");
 _mpcie_2_card_env = sbc_connector("bpir4", "mpcie_2_card");
+_m2_ssd_1_socket = sbc_connector("bpir4", "m2_ssd_1");
+_m2_ssd_1_card_env = sbc_connector("bpir4", "m2_ssd_1_card");
 assert(_aabb_contains(_m2modem_1_socket, _m2modem_1_card_env),
     "bpir4 m2modem_1 socket sits within its own card's footprint (#65)");
 assert(_aabb_contains(_mpcie_1_socket, _mpcie_1_card_env),
     "bpir4 mpcie_1 socket sits within its own card's footprint (#65)");
 assert(_aabb_contains(_mpcie_2_socket, _mpcie_2_card_env),
     "bpir4 mpcie_2 socket sits within its own card's footprint (#65)");
+assert(_aabb_contains(_m2_ssd_1_socket, _m2_ssd_1_card_env),
+    "bpir4 m2_ssd_1 socket sits within its own card's footprint (#65)");
 // mpcie_1 and mpcie_2 are both on the bottom face (same Z plane) and must not
 // overlap in XY (different sockets, same board level).
 assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_socket),
@@ -283,6 +287,10 @@ assert(!_aabb_overlap(_mpcie_2_socket, _mpcie_1_card_env),
     "bpir4 mpcie_2 socket must not overlap mpcie_1_card (foreign card, same edge, #65)");
 assert(!_aabb_overlap(_mpcie_2_socket, _m2_ssd_1_card_env),
     "bpir4 mpcie_2 socket must not overlap m2_ssd_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_m2_ssd_1_socket, _mpcie_1_card_env),
+    "bpir4 m2_ssd_1 socket must not overlap mpcie_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_m2_ssd_1_socket, _mpcie_2_card_env),
+    "bpir4 m2_ssd_1 socket must not overlap mpcie_2_card (foreign card, same edge, #65)");
 // mpcie_1/mpcie_2 share the same (mirrored) x — two parallel underside slots.
 assert(sbc_connector("bpir4", "mpcie_1")[1][0] == sbc_connector("bpir4", "mpcie_2")[1][0],
     "bpir4 mpcie_1/mpcie_2 share the same x column");
