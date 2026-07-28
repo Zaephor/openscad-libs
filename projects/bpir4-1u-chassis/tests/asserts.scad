@@ -83,6 +83,19 @@ assert(_ix - _lid_post_od()/2 >= board_w()/2,
 // Vent band starts above the tallest front connector.
 assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
     "vent band must start above the PCB");
+// Round 3 #65 final-review fix: the check above only guards against the band
+// dropping below the PCB itself -- it doesn't catch the rib above the
+// TALLEST INFLATED cutout top eroding thin. io_port_clearance inflates every
+// ymin cutout UPWARD in Z (sbc.scad's _sbc_cutout_inflate()), so the real rib
+// is measured from board_z()+thickness+_front_conn_max_h()+io_port_clearance,
+// not from the nominal top. Locks the rib at >=1mm above the inflated top so
+// this class of erosion (silently shrunk from the intended 1.0mm to 0.6mm
+// when io_port_clearance was introduced without updating _vent_band_z0())
+// can't recur if either constant changes again.
+_inflated_cutout_top = board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + io_port_clearance;
+assert(_vent_band_z0() - _inflated_cutout_top >= 1 - 1e-6,
+    str("vent-band rib above inflated cutout top (", _vent_band_z0() - _inflated_cutout_top,
+        "mm) is below the intended 1mm minimum"));
 // #56 Task 3 (retargeted Round 3 #65): lock the tallest ymin (front) connector
 // height so a future sbc data change that re-tallens the band is caught. The
 // round-3 full front-row re-caliper dropped usb_1/USB3 from h=14.1 to h=13.0,
