@@ -430,7 +430,9 @@ function _sbc_table() = [
           // the mPCIe keep-outs comes from this card being "top" edge vs the
           // mPCIe cards' "bottom" edge, not from XY separation) and only the
           // 30mm width extends down from the socket's y_max, landing at
-          // y=[56.5,86.5] — clear of the SFP cages' y<=53.98 span by 2.52mm.
+          // y=[56.5,86.5] — clear of the SFP cages' y<=48.4 span by 8.1mm
+          // (SFP depth was later corrected 53.98->48.4 by Task 2; this figure
+          // reflects current HEAD).
           // Measured size unchanged, [B] caliper (same as the socket row
           // above).
           ["m2modem_1_card", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_modem_card"))[1], 1.4], _sbc_rot90(connector_size("m2_modem_card")), "top"],

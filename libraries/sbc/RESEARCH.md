@@ -557,6 +557,12 @@ its numbers.
 the assembly drawing (SFP1/SFP2/USB/WAN/LAN x3/DC-in/USB-C-PD all sit flush
 against the board's bottom/short edge in the drawing). Left to right by x:
 
+Note: the x/w/d values in this original DXF-pixel-detection table (`usb_1`,
+`sfp_1`/`sfp_2`, `dc_power_1`, `usbc_pwr_1`) are superseded by later round-2
+(#62) caliper corrections documented further below in this file. This table
+is a historical provenance log, not current data — `sbc.scad` is the single
+source of truth for current values.
+
 | name | refdes | x0 | w | y0(=0) | d | h | edge | tier |
 |---|---|---|---|---|---|---|---|---|
 | `usb_1` | CN11 (USB) | 7.41 | 8.89 | 0 | 23.16 | 13.5 | ymin | [B] pos / [C] body h //VERIFY |
@@ -1335,7 +1341,9 @@ re-measured or invented; every fix is a pure 90° rotation of an existing
   from the mPCIe keep-outs comes from the `"top"` vs `"bottom"` edge
   separation, not XY) and only the 30mm width extends down from the
   socket's y_max, landing at y=[56.5, 86.5] — clear of the SFP cages'
-  y<=53.98 span by 2.52mm. Size unchanged, still `[B]` caliper.
+  y<=48.4 span by 8.1mm (SFP depth was later corrected 53.98->48.4 by Task
+  2; this figure reflects current HEAD). Size unchanged, still `[B]`
+  caliper.
 - **`gpio26_1`** (26-pin/2.54mm header, board-specific literal
   `[33.02, 5.08, 6.0]`, `"top"` edge, flush to the right/xmax wall): the
   prior pass ran the 33.02mm 13-column pin-field span along **X** (the
