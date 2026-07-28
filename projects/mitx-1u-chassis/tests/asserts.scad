@@ -15,6 +15,14 @@ include <../mitx-1u-chassis.scad>;
 assert(_bw() == 170 && _bd() == 170,
     str("mitx-1u: expected 170x170 mini-ITX board, got ", _bw(), "x", _bd()));
 
+// IO window is explicitly sized to available headroom, not the library's
+// full generic shield height -- regression lock so a future edit can't
+// silently reintroduce the oversized cutter (relying on incidental
+// faceplate-blank clipping) that this fix removed.
+assert(_io_window_h() < _io()[2],
+    str("mitx-1u: expected the custom IO window (", _io_window_h(),
+        ") to stay smaller than the generic shield height (", _io()[2], ")"));
+
 // The button sits OUTSIDE the board/IO footprint on the panel's low-X side
 // (not just "somewhere on the panel" -- the off-center guard in the main
 // file checks panel bounds, not this board-relative placement intent).

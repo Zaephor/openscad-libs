@@ -90,5 +90,11 @@ probe_empty "translate([-98.31, -4, 20.83]) cube([2,5,2]);" "button hole does no
 # Positive controls: faceplate material clear of any cutout/hole.
 probe_solid "translate([60, -4, 4]) cube([2,5,2]);"    "below-IO faceplate material unexpectedly empty"
 probe_solid "translate([-115, -4, 40]) cube([2,5,2]);" "left-ear faceplate material unexpectedly empty"
+# IO window reaches flush to the 1U interior ceiling (_io_window_h() =
+# _int_h()-standoff_h, top edge = floor_th+standoff_h+_io_window_h() =
+# rack10_device_height(1) = 43.66) -- probe just under the panel top,
+# inside the IO window's X-span, confirms the window is cut to its full
+# computed height rather than some smaller nominal/placeholder band.
+probe_empty "translate([60, -4, 43]) cube([2,5,0.5]);" "IO window does not reach flush to the 1U interior ceiling"
 
 [ "$fail" -eq 0 ] && echo ok || exit 1

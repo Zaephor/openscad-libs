@@ -43,6 +43,15 @@ function _io_x1() = _board_x() + _io()[0] + _io()[1];   // world high (right) ed
 // it clears both by construction whenever the gap is wide enough for it.
 function _button_x() = (-rack10_panel_width(standard) / 2 + _io_x0()) / 2;
 
+// Real headroom above the board's own IO-edge Z-datum, flush to the 1U
+// interior ceiling. mobo_io_cutout("itx")[2] (44.45mm, the full generic
+// ATX-family shield height) does not fit here -- board depth _int_h()
+// interior minus standoff_h leaves less than that -- so this project cuts
+// a board-specific window sized to available headroom instead of the
+// library's generic envelope (spec addendum 2026-07-28: this is a
+// BYO-board appliance, not a universal-shield-compatible case).
+function _io_window_h() = _int_h() - standoff_h;
+
 // Fit-asserts
 assert(_bw() <= rack10_clear_width(standard) - 2*wall + 1e-6,
     str("mitx-1u: board width ", _bw(), " > usable ", rack10_clear_width(standard)-2*wall));
@@ -76,7 +85,8 @@ module _mitx_faceplate() {
         // and never reaches it.
         translate([_board_x(), 0, floor_th + standoff_h])
             mirror([0, 1, 0])
-                mobo_io_cutout_stamp("itx", depth = faceplate_th + 2);
+                translate([_io()[0], -1, 0])
+                    cube([_io()[1], faceplate_th + 3, _io_window_h()]);
         // power button hole in the off-center gap beside the IO window.
         translate([_button_x(), -faceplate_th - 1, rack10_device_height(1)/2])
             rotate([-90,0,0]) cylinder(h = faceplate_th + 2, d = button_dia);
