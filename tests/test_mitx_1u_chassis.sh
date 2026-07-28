@@ -151,4 +151,25 @@ probe_solid "translate([-1, 233, 5]) cube([2,2,2]);" "#40 tongue is not real mat
 # caught only by this probe, not by a clean render) would leave this empty.
 probe_solid "translate([-0.4, 233.6, 0.1]) cube([0.8,0.8,0.8]);" "no floor/buttress under the #40 tongue -- unsupported overhang"
 
+# --- Fan teardrop flat-cap regression (final-review fix, 2026-07-28): a
+# full 45deg teardrop's ideal apex (r*sqrt(2) above center) reaches past the
+# rear wall's own top edge at defaults, which used to open a notch through
+# the wall instead of closing to a point. _mitx_fan_teardrop() now caps the
+# apex at the available headroom. Points that were a real EMPTY void before
+# this fix (an open notch through the wall's top edge, near the fan's own
+# X-span) must now be SOLID -- the wall closes over the top of the bore.
+probe_solid "translate([-53, 226, 43]) cube([2,2,0.5]);" "fan teardrop flat-cap: wall top edge still open past the fan bore (should be closed)"
+probe_solid "translate([-58, 226, 43]) cube([2,2,0.5]);" "fan teardrop flat-cap: wall top edge still open past the fan bore, other side (should be closed)"
+
+# --- Board-vs-side-wall collision guard (final-review finding, 2026-07-28):
+# the off-center guard above only checks the IO window/button against the
+# PANEL's outer bounds -- board_offset=30 used to render clean while the
+# board's own right edge collided with the right side wall's interior face.
+out="$(run "$tmp/neg_board_wall.stl" "$mod" -D "board_offset=30")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: board_offset=30 did NOT abort -- board-vs-side-wall collision guard broken:"
+  echo "$out"; fail=1
+fi
+[ -s "$tmp/neg_board_wall.stl" ] && { echo "FAIL: board_offset=30 negative control produced a non-empty STL (should have aborted)"; fail=1; }
+
 [ "$fail" -eq 0 ] && echo ok || exit 1

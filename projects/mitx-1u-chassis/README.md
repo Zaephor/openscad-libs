@@ -41,7 +41,15 @@ and honeycomb intake/exhaust vents. All geometry verified support-free.
   above the board (interior height minus `standoff_h` leaves less than
   that), so the cutout is sized to `_io_window_h() = _int_h() - standoff_h`
   instead — this is a BYO-board appliance, not a universal-shield-compatible
-  case.
+  case. At defaults this window is flush with the **panel's own top edge**,
+  so the faceplate is a U (open along the top of the IO span), not a fully
+  enclosed rectangular aperture — the panel's top rail is only continuous
+  outside the IO window's X-span (over the ears). This is the deliberate
+  "maximum available headroom" default from the design spec, since no
+  specific board's actual port band is known yet; once a real board is
+  on hand, `_io_window_h()` can be narrowed to that board's populated-port
+  height, closing the top rail back up across the IO span (flagged as a
+  future tuning point, not required for a BYO-board default).
 - **Off-center guard.** Because `board_offset` moves both the IO window and
   the button hole, a fit-assert checks the IO cutout's right edge and both
   edges of the button hole stay within `+-rack10_panel_width/2` (see

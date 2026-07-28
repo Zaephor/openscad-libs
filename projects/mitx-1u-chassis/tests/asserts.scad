@@ -60,6 +60,28 @@ assert(_fan_vent_cx() < 0 && _fan_cx() < 0,
     str("mitx-1u: fan-flanking vent x=", _fan_vent_cx(),
         " expected on the same (negative) side as the fan x=", _fan_cx()));
 
+// Fan teardrop flat-cap regression (final-review fix, 2026-07-28): at
+// defaults the ideal 45deg apex (r*sqrt(2) above center) exceeds available
+// rear-wall headroom, so _mitx_fan_teardrop() caps it to a small flat top
+// instead of letting it punch an open notch through the wall's top edge.
+// Locks that a) the cap is actually engaged at defaults (documents why the
+// flat-top exists, not just that it's safe) and b) the resulting flat span
+// stays within the main file's own 10mm safe-bridging ceiling.
+assert(_fan_teardrop_apex() > _fan_teardrop_avail(),
+    str("mitx-1u: expected the default fan_size to need the flat-cap (ideal apex ",
+        _fan_teardrop_apex(), " > available ", _fan_teardrop_avail(),
+        ") -- if this no longer holds, the flat-cap code path is untested"));
+assert(_fan_teardrop_flat_w() > 0 && _fan_teardrop_flat_w() <= 10,
+    str("mitx-1u: fan teardrop flat-top span ", _fan_teardrop_flat_w(), "mm out of range"));
+
+// Board-vs-side-wall collision guard (final-review finding, 2026-07-28):
+// the main file's off-center guard only checks the IO window/button against
+// the panel's OUTER bounds -- this locks the board footprint against the
+// shell's INTERIOR wall faces too, independent of that check.
+assert(_board_x() - wall >= -_clear_w()/2 && _board_x() + _bw() + wall <= _clear_w()/2,
+    str("mitx-1u: board [", _board_x(), ",", _board_x()+_bw(),
+        "] collides with a side wall (interior span +-", _clear_w()/2 - wall, ")"));
+
 // No explicit render call needed -- the include above already re-runs
 // mitx-1u-chassis.scad's own trailing mitx_1u_chassis() call (and its
 // top-level fit-asserts) at defaults.

@@ -40,8 +40,13 @@ Tasks 1-3:
 - **Rear fan bore.** Teardropped (45° roof replacing the top arc of the
   circular bore) — a plain round hole this large (36.8mm at the default
   40mm fan) on a horizontal axis through a vertical wall is well past the
-  safe plain-hole span. Fan mount screw holes stay plain round (well under
-  the bridging-safe threshold).
+  safe plain-hole span. At the default fan_size, the ideal sharp teardrop
+  apex would actually reach past the rear wall's own top edge, so the
+  apex is capped at the available headroom instead of the full point —
+  this leaves a small flat top (~8mm at defaults) rather than an open
+  notch through the wall, safely inside the "usually fine, minor droop"
+  span below. Fan mount screw holes stay plain round (well under the
+  bridging-safe threshold).
 - **Rear DC-in hole.** Left plain round (11mm, near the top of the "usually
   fine, minor droop" band) — a barrel-jack panel-mount nut needs true
   roundness, so it isn't teardropped.

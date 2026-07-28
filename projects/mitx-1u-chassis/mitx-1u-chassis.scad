@@ -96,6 +96,22 @@ function _fan_vent_w()   = 24;
 function _fan_vent_cx()  = (_fan_vent_x1() + _side_inner_x()) / 2;
 function _fan_vent_h()   = _wall_top_z() - 2 * _side_vent_zmargin();
 
+// Fan bore teardrop geometry (final-review finding, 2026-07-28): a full 45deg
+// teardrop's apex reaches r*sqrt(2) above center, which needs MORE headroom
+// than the plain bore radius r alone -- at the default fan_size=40 that apex
+// would land above _wall_top_z(), opening the roof through the wall's own
+// top edge instead of closing to a point. _mitx_fan_teardrop() caps the
+// apex at the available headroom instead (see that module) -- this
+// produces a small flat top rather than a sharp point; the assert below
+// guards that flat span stays within this repo's own established
+// "usually fine, minor droop" ceiling (design-for-print/reference/
+// overhangs-supports.md), the same reference already used to justify the
+// DC-in hole's plain-round treatment.
+function _fan_bore_r()          = fan_size * 0.92 / 2;
+function _fan_teardrop_apex()   = _fan_bore_r() * sqrt(2);
+function _fan_teardrop_avail()  = _wall_top_z() - _rear_center_z();
+function _fan_teardrop_flat_w() = 2 * max(0, _fan_teardrop_apex() - _fan_teardrop_avail());
+
 // Fit-asserts
 assert(_bw() <= rack10_clear_width(standard) - 2*wall + 1e-6,
     str("mitx-1u: board width ", _bw(), " > usable ", rack10_clear_width(standard)-2*wall));
@@ -133,6 +149,20 @@ assert(abs(_dc_cx()) - dc_dia/2 >= _gusset_x() + _gusset_xw()/2 - 1e-6,
 // Fan must fit within the rear wall's own height.
 assert(_rear_center_z() - fan_size/2 >= -1e-6 && _rear_center_z() + fan_size/2 <= _wall_top_z() + 1e-6,
     str("mitx-1u: fan_size ", fan_size, " does not fit within rear wall height ", _wall_top_z()));
+// Fan teardrop's flattened apex (see _fan_teardrop_flat_w() above) must stay
+// within the safe self-bridging ceiling -- a larger fan_size (taller bore)
+// could otherwise widen the flat top past what prints clean without support.
+assert(_fan_teardrop_flat_w() <= 10 + 1e-6,
+    str("mitx-1u: fan_size ", fan_size, " teardrop flat-top span ", _fan_teardrop_flat_w(),
+        "mm exceeds the 10mm safe self-bridging ceiling -- reduce fan_size or add rear-wall headroom"));
+// Board must not collide with the side walls' inner faces (the off-center
+// guard above only checks the IO window/button against the outer PANEL
+// bounds, not the board footprint against the shell's INTERIOR walls --
+// a large enough board_offset can shove the board into a side wall while
+// still passing every other assert; final-review finding, 2026-07-28).
+assert(_board_x() - wall >= -_clear_w()/2 - 1e-6 && _board_x() + _bw() + wall <= _clear_w()/2 + 1e-6,
+    str("mitx-1u: board [", _board_x(), ",", _board_x()+_bw(), "] at board_offset=", board_offset,
+        " collides with a side wall (interior span +-", _clear_w()/2 - wall, ")"));
 // Side intake vents must stay clear of the rear gusset zone (starts at
 // _tongue_y()-wall-_gusset_size(), matching the _mitx_gusset() calls below).
 assert(_side_vent_y0() + _side_vent_len() <= _tongue_y() - wall - _gusset_size() - 1e-6,
@@ -228,17 +258,26 @@ module _mitx_gusset(x0, xw, y0, z0, size) {
 // true roundness (it mounts over this opening via fan_holes()'s screws
 // anyway), so a 45deg teardrop roof (replacing the top arc) is the
 // standard, cost-free fix. Same translate([0,0,-1])/depth+2 overshoot
-// convention as fan_bore() itself. Built with the apex at local Y=-r*sqrt2
+// convention as fan_bore() itself. Built with the apex at local Y=-reach
 // (not +) so that after this file's usual rotate([-90,0,0]) (old Y -> new
 // -Z) the roof lands pointing +Z (up) in the final printed orientation --
 // see fans.scad header for the native +Z-bore frame this mirrors.
-module _mitx_fan_teardrop(size, depth) {
+//
+// `max_reach` caps how far the apex point can sit above center: a full 45deg
+// teardrop's ideal apex is r*sqrt(2) above center, which can exceed the
+// available headroom to the wall's own top edge (at the default fan_size
+// this would otherwise open the roof through the wall's top instead of
+// closing to a point -- final-review finding, 2026-07-28). Capping the
+// apex at `max_reach` truncates the point into a small flat top instead;
+// see _fan_teardrop_flat_w()'s fit-assert for the safe-span guard.
+module _mitx_fan_teardrop(size, depth, max_reach) {
     r = size * 0.92 / 2;
+    reach = min(r * sqrt(2), max_reach);
     translate([0, 0, -1])
         linear_extrude(height = depth + 2)
             hull() {
                 circle(r = r);
-                translate([0, -r * sqrt(2)]) circle(r = 0.001);
+                translate([0, -reach]) circle(r = 0.001);
             }
 }
 
@@ -294,7 +333,7 @@ module mitx_1u_chassis() {
         // frame: airflow along +Z -- rotate([-90,0,0]) maps that Z-bore
         // onto +Y, X stays put; see fans.scad header).
         translate([_fan_cx(), _tongue_y() - wall, _rear_center_z()])
-            rotate([-90, 0, 0]) _mitx_fan_teardrop(fan_size, wall);
+            rotate([-90, 0, 0]) _mitx_fan_teardrop(fan_size, wall, _fan_teardrop_avail());
         translate([_fan_cx(), _tongue_y() - wall, _rear_center_z()])
             rotate([-90, 0, 0]) fan_holes(fan_size, wall);
         // rear DC-in barrel hole, same +Y-through-the-wall orientation as the
