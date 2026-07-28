@@ -56,6 +56,17 @@ post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-78.7)
 board_side_gap   = 1.0;  // board edge -> corner-post clearance
+// Per-side running clearance between a front-panel connector's real body and
+// the faceplate opening sbc_faceplate_cutouts() cuts for it (Round 3 #65).
+// Design fit-value (design-for-print running clearance, consistent with this
+// project's other running-clearance precedents -- wall_gap, underside_
+// clearance), NOT a measured/spec tier: never cite this as [A]/[B]/[C]. Eats
+// io_port_clearance off EACH side of every connector's cutout, so two
+// adjacent cutouts' EFFECTIVE gap shrinks by 2x this value versus the
+// connectors' nominal body-edge gap -- see parts/tray.scad's
+// _io_gap_wall_geom(), which accounts for exactly this when sizing the IO
+// gap bridge-support walls.
+io_port_clearance = 0.4;
 
 // ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
 // their defaults in each entry file (assembly.scad, parts/tray.scad,
