@@ -433,9 +433,10 @@ function _sbc_table() = [
           // the mPCIe keep-outs comes from this card being "top" edge vs the
           // mPCIe cards' "bottom" edge, not from XY separation) and only the
           // 30mm width extends down from the socket's y_max, landing at
-          // y=[56.5,86.5] — clear of the SFP cages' y<=48.4 span by 8.1mm
-          // (SFP depth was later corrected 53.98->48.4 by Task 2; this figure
-          // reflects current HEAD).
+          // y=[56.5,86.5] — clear of the SFP cages' y<=48.7 span by 7.8mm
+          // (SFP depth was later corrected 53.98->48.7 by round-3 #65's SFP
+          // catalog adoption, connector_size("sfp") — see the sfp_1/sfp_2
+          // rows above).
           // Measured size unchanged, [B] caliper (same as the socket row
           // above).
           ["m2modem_1_card", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_modem_card"))[1], 1.4], _sbc_rot90(connector_size("m2_modem_card")), "top"],
@@ -496,8 +497,8 @@ function _sbc_table() = [
           // (mirror; the OPPOSITE direction from mpcie's "right" readings,
           // since flipped-left and flipped-right mirror to opposite board
           // sides). Cross-check against the SSD's documented board position
-          // ("opposite dc_power_1", x=125.2 (round-2 #62 Task 2b caliper
-          // correction; was 124.59), a right-side front-panel
+          // ("opposite dc_power_1", x=124.7 (round-3 #65 full front-row
+          // re-caliper; was 125.2 per round-2 #62 Task 2b), a right-side front-panel
           // part) — 140.4 (mirrored) lands in that same right-side region,
           // while the un-mirrored alternative (7.6, near-left) would NOT;
           // this confirms "left" readings mirror too, not just "right" ones.

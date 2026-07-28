@@ -284,7 +284,6 @@ assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_socket),
 // overlap a foreign card on its own Z level (e.g. bottom-face mpcie_1_socket
 // must not overlap bottom-face mpcie_2_card or m2_ssd_1_card). Top-face
 // m2modem_1 has no other top-face cards to check against.
-_m2_ssd_1_card_env = sbc_connector("bpir4", "m2_ssd_1_card");
 assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_card_env),
     "bpir4 mpcie_1 socket must not overlap mpcie_2_card (foreign card, same edge, #65)");
 assert(!_aabb_overlap(_mpcie_1_socket, _m2_ssd_1_card_env),

@@ -1393,9 +1393,9 @@ re-measured or invented; every fix is a pure 90° rotation of an existing
   from the mPCIe keep-outs comes from the `"top"` vs `"bottom"` edge
   separation, not XY) and only the 30mm width extends down from the
   socket's y_max, landing at y=[56.5, 86.5] — clear of the SFP cages'
-  y<=48.4 span by 8.1mm (SFP depth was later corrected 53.98->48.4 by Task
-  2; this figure reflects current HEAD). Size unchanged, still `[B]`
-  caliper.
+  y<=48.7 span by 7.8mm (SFP depth was later corrected 53.98->48.7 by
+  round-3 #65's SFP catalog adoption, `connector_size("sfp")`). Size
+  unchanged, still `[B]` caliper.
 - **`gpio26_1`** (26-pin/2.54mm header, board-specific literal
   `[33.02, 5.08, 6.0]`, `"top"` edge, flush to the right/xmax wall): the
   prior pass ran the 33.02mm 13-column pin-field span along **X** (the
@@ -1473,14 +1473,16 @@ faceplate consumer's opening still fully exposes the proud-mounted
 connector without any cutout-side change.
 
 `[B]` caliper (2.0mm forward-protrusion figure). Scoped deliberately to
-bpir4's own nine front connectors only — no other board's `"ymin"`
-connectors (e.g. the Pi Zero family's micro-USB/mini-HDMI ports) get this
-shift; the allowlist gates on board name AND connector name explicitly,
-rather than keying off the `"ymin"` edge alone, since flush-mounted
-`"ymin"` connectors are the norm everywhere else in this file. Locked by a
-`tests/sbc_test.scad` regression block asserting the allowlist's coverage
-(all 9 named connectors get the shift; every other bpir4 connector, and
-every other board's `"ymin"` connectors, get none) plus a
+bpir4's own front connectors only (nine at round-2 time; ten as of round-3
+#65, which added `rj45_block` — see the round-3 section below) — no other
+board's `"ymin"` connectors (e.g. the Pi Zero family's micro-USB/mini-HDMI
+ports) get this shift; the allowlist gates on board name AND connector name
+explicitly, rather than keying off the `"ymin"` edge alone, since
+flush-mounted `"ymin"` connectors are the norm everywhere else in this
+file. Locked by a `tests/sbc_test.scad` regression block asserting the
+allowlist's coverage (all named connectors get the shift; every other
+bpir4 connector, and every other board's `"ymin"` connectors, get none)
+plus a
 `tests/test_sbc_lib.sh` rendered-geometry check (`sbc_placeholder("bpir4")`'s
 STL bounding box reaches y=-2.0, while a non-bpir4 board's placeholder
 stays flush at y>=0).
@@ -1604,7 +1606,11 @@ subsequent port is +13.98. This is also what resolves the "unreconciled
 gap" flagged earlier in this file (see the resolution note immediately
 following that flag, above): the block's own right edge, 64.0+58.5 =
 122.5, lands 0.27mm from the drawing-detector's independently-read 122.77
-— vindicating the drawing figure.
+— vindicating the drawing figure. `rj45_block` also joins the
+front-protrusion allowlist (`_SBC_BPIR4_FRONT_CONNECTORS` in sbc.scad —
+see the round-2 Task 2 section above): the same 2.0mm forward-protrusion
+figure applies to the ganged shell, so the allowlist grows from nine
+connectors to ten.
 
 **SFP catalog-type adoption.** The round-3 caliper reading for the SFP
 cage, `[15.0, 48.5, 9.5]`, agrees with `connectors/connectors.scad`'s `sfp`
