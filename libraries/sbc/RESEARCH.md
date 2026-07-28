@@ -559,9 +559,9 @@ against the board's bottom/short edge in the drawing). Left to right by x:
 
 Note: the x/w/d values in this original DXF-pixel-detection table (`usb_1`,
 `sfp_1`/`sfp_2`, `dc_power_1`, `usbc_pwr_1`) are superseded by later round-2
-(#62) caliper corrections documented further below in this file. This table
-is a historical provenance log, not current data — `sbc.scad` is the single
-source of truth for current values.
+(#62) and round-3 (#65) caliper corrections documented further below in this
+file. This table is a historical provenance log, not current data —
+`sbc.scad` is the single source of truth for current values.
 
 | name | refdes | x0 | w | y0(=0) | d | h | edge | tier |
 |---|---|---|---|---|---|---|---|---|
@@ -634,7 +634,8 @@ Notes per row:
   Resulting block: x=[62.61, 118.53] (55.92mm, 4×13.98mm) — 12.02mm clear
   of `sfp_2`'s right edge (50.59). No board-geometry conflict on that side.
 
-  **Unreconciled gap, //VERIFY:** the computed block end (118.53, from
+  **Unreconciled gap, //VERIFY at the time (resolved round-3, see below):**
+  the computed block end (118.53, from
   block_x0 + 4×pitch) falls 4.24mm short of the drawing's own
   detector-confirmed right edge (122.77, cited two paragraphs above and
   independently re-confirmed on `dc_power_1`'s own boundary read below).
@@ -651,6 +652,25 @@ Notes per row:
   pitch-only computation would suggest) — still clear, no overlap, but a
   materially tighter margin. Flagging for a future pass rather than
   guessing the bezel-overhang split between the two ends.
+
+  **Resolved, round-3 (#65), 2026-07-28 — //VERIFY dropped.** A full
+  physical-board re-caliper of the RJ45 block (see "BPI-R4 corrections
+  round 3 (#65)" further below) measured the block's real outer envelope
+  directly: 58.5mm wide, positioned at x=64.0, so right edge = 64.0+58.5 =
+  **122.5mm**. That lands just **0.27mm** from the drawing-detector's
+  independently-read 122.77mm right edge above — the drawing figure is
+  **vindicated**, not just used conservatively. The pitch-math end (118.53)
+  is now understood rather than merely flagged: summing 4 port pitches
+  (13.98mm each, the datasheet's pin-column pitch) only accounts for the
+  ports' own footprints, not the housing's end-shell overhang beyond the
+  outermost pin columns — exactly the "bezel/housing overhang" explanation
+  guessed at above, now confirmed by a direct measurement of the real part
+  instead of inferred from the datasheet's front-view bezel width. The
+  block is modeled today as a dedicated `rj45_block` envelope row
+  (`sbc.scad`), sized to this caliper figure, with the 4 [A]
+  datasheet-sourced port rows centered inside it — this is what the
+  chassis faceplate now cuts, so the opening fits the real shell rather
+  than the narrower pitch-only span.
 - **`dc_power_1` (CN4 "DC12V")**: x/y envelope pixel-detected consistently
   across two separate windowed runs (122.77/124.59/134.62 cols;
   10.71/0 rows) — tier [B] for position. Height (10.0mm) has **no top-view
@@ -1091,6 +1111,38 @@ rule (never downgrade a tier without cause), the [A] datasheet figure is kept
 unchanged; the caliper cross-check is noted here rather than used to
 overwrite a higher-tier value that already agrees within noise.
 
+**Round-3 (#65) reversal, 2026-07-28: the bottom-referenced datum above is now
+REVERSED for the SFP cages and `usb_1`.** The table just above deliberately
+picked `h = (bottom->top) - thickness` over each connector's own standalone
+"alone" reading, reasoning that "alone" wasn't board-bottom-referenced. A
+fresh physical-board caliper pass in round 3 revisits that call and comes out
+the other way:
+
+- The SFP cage's standalone body height re-measures at **9.5mm** (matching
+  the "alone" figure this table already had, not a new number) — and that
+  reading now agrees with `connectors/connectors.scad`'s independently
+  catalog-sourced `sfp` type (`connector_size("sfp")[2] = 9.7`, tier **[A]**,
+  TE Connectivity 2007198-1 datasheet) to within 0.2mm. That is a second,
+  independent [A]-tier source corroborating the *standalone* reading — the
+  bottom-referenced 10.4mm this table computed has no comparable independent
+  corroboration to weigh against it.
+- The same pass re-measured `usb_1`'s standalone body height directly at
+  **13.0mm** (its own "alone" figure, `13.0` in the table above — again not a
+  new number, just the reading this table had already set aside), superseding
+  the bottom-referenced 14.1mm this table computed for that row.
+
+Both rows now store the standalone body height directly: `sfp_1`/`sfp_2` at
+`h=9.7` (via `connector_size("sfp")`, see "SFP catalog-type adoption" in the
+round-3 section below) and `usb_1` at `h=13.0`. **This is a genuine reversal
+of the decision recorded in the table above, not a silent overwrite** — the
+original bottom-referenced reasoning stays on record there; round 3
+supersedes it specifically for these two connectors, on the strength of the
+new catalog-agreement evidence. `rj45` is untouched by this reversal either
+way: its bottom-referenced cross-check (13.7) and its own [A] datasheet
+figure (13.60) already agreed before round 3, so neither convention changes
+that row. See "BPI-R4 corrections round 3 (#65)" further below for the full
+front-row re-caliper this reversal is part of.
+
 **RJ45 4-port block overall envelope (58.3mm x 20.9mm caliper).** This is the
 *outer* physical envelope of the whole ganged block, not a new per-port
 literal — per-port pitch/width (13.98mm, exact datasheet) and depth
@@ -1489,6 +1541,92 @@ staying real, non-zero spans.
 Source: physical board caliper (2026-07-24), same session as Task 1/Task 2
 above. `[B]` tier throughout for the corrected axes.
 
+### BPI-R4 corrections round 3 (#65): socket yaw completion + front-row re-caliper + SFP catalog adoption
+
+A further physical-board review (2026-07-24/2026-07-28, user review of the
+merged round-2 (#62) result) found one more yaw defect and a real error in
+the round-2 front-row edge correction, prompting a full front-row
+re-caliper from scratch.
+
+**Socket yaw completion.** Round 2 (#62) Task 1 yaw-corrected the three
+module *keep-out card* envelopes (`m2modem_1_card`, `mpcie_1_card`,
+`mpcie_2_card`) via `_sbc_rot90()`, but left the underlying board-mounted
+*socket* connectors (`m2modem_1`, `mpcie_1`, `mpcie_2`) unrotated. A
+socket's long axis must run perpendicular to its card's long axis — the
+socket spans the card's own plug edge — so with the cards rotated and the
+sockets not, every one of these three sockets ended up 90° off relative to
+the card it mates. User-confirmed directly on the physical board: cards
+correct, nested socket bodies wrong. Fixed the same way round 2 fixed the
+cards: `_sbc_rot90(connector_size(...))` fed to each socket body, same
+x_min/y_max anchor formula as before — no value re-measured or invented,
+a pure 90° rotation of the existing catalog-sourced size, tier unchanged
+(`[B]` caliper position, catalog-sourced body). `m2_ssd_1` (the Key-M SSD
+socket) was deliberately **left unrotated**: its card (`m2_2280_card`,
+22x80) was never rotated in round 2 either, so its 21.9mm socket span
+already runs parallel to the card's 22mm plug edge — rotating it here
+would have introduced the exact class of bug this fix targets, not
+corrected one.
+
+**Front-row re-caliper (2026-07-28).** Round 2 (#62) Task 2b's X-edge
+correction had, unintentionally, collapsed the real `sfp_1`<->`sfp_2` gap
+to 0.17mm — the two cages are physically ~3.2mm apart on the board. Rather
+than patch that one pair, the entire front row (all 9 `ymin` connectors)
+was re-calipered from scratch:
+
+| connector | x (round-2 #62) | x (round-3) | body (round-2 #62) | body (round-3) |
+|---|---|---|---|---|
+| `usb_1` | 8.0 | 8.0 (unchanged) | `[5.8, 25.5, 14.1]` | `[5.7, 25.5, 13.0]` |
+| `sfp_1` | 17.4 | 17.5 | `[16.51, 48.4, 10.4]` | `connector_size("sfp")` = `[14.5, 48.7, 9.7]` |
+| `sfp_2` | 34.08 | 35.7 | `[16.51, 48.4, 10.4]` | `connector_size("sfp")` |
+| `rj45_block` (new row) | — | 64.0 | — | `[58.5, 21.45, 13.60]` (d/h sourced from the rj45 port row) |
+| `rj45_1`..`rj45_4` | 62.61 + 13.98×i | 65.29 + 13.98×i | `[13.98, 21.45, 13.60]` | unchanged (still the [A] exact datasheet body) |
+| `dc_power_1` | 125.2 | 124.7 | `[9.8, 10.71, 10.0]` | `[10.0, 13.0, 10.3]` |
+| `usbc_pwr_1` | 137.3 | 139.3 | `[8.7, 9.95, 3.2]` | `[6.7, 6.8, 3.0]` |
+
+All round-3 figures are `[B]` caliper (physical board, 2026-07-28) except
+where a tier is called out below. Resulting gaps: `usb_1`<->`sfp_1` 3.8mm
+(was 3.6), `sfp_1`<->`sfp_2` 3.7mm (was 0.17mm — the defect that triggered
+this pass), `sfp_2`<->`rj45_block` 13.8mm, `rj45_block`<->`dc_power_1`
+2.2mm (was 6.06mm against the old pitch-math `rj45_4` right edge), and
+`dc_power_1`<->`usbc_pwr_1` 4.6mm (was 2.3mm). `usbc_pwr_1` is taken at
+face value from this round-3 pass (`w=6.7, d=6.8, h=3.0`), superseding
+both the round-2 caliper width (8.7) and the earlier generic USB-C
+datasheet width (~8.9) — a direct measurement of *this* board's actual
+connector wins over either.
+
+**`rj45_block` (new connector row).** The 4 RJ45 ports keep their `[A]`
+exact-datasheet pitch/width (13.98mm) and are centered inside a new
+58.5mm-wide envelope row representing the real ganged shell's physical
+width (2.58mm of end-shell beyond the 4×13.98=55.92mm of pure port pitch)
+— this is what a chassis faceplate must cut, since a 55.92mm opening would
+foul the real shell. Port 1's x is 64.0 + (58.5−55.92)/2 = 65.29; each
+subsequent port is +13.98. This is also what resolves the "unreconciled
+gap" flagged earlier in this file (see the resolution note immediately
+following that flag, above): the block's own right edge, 64.0+58.5 =
+122.5, lands 0.27mm from the drawing-detector's independently-read 122.77
+— vindicating the drawing figure.
+
+**SFP catalog-type adoption.** The round-3 caliper reading for the SFP
+cage, `[15.0, 48.5, 9.5]`, agrees with `connectors/connectors.scad`'s `sfp`
+catalog type (`[14.5, 48.7, 9.7]`, tier `[A]`, TE Connectivity 2007198-1)
+within 0.5mm on all three axes — this repo's SP2 "same peer" threshold
+(see "SP2 connector reconcile" below). The prior #21/SP2 verdict for
+`sfp_1`/`sfp_2` — "no-peer... literal retained" — is now **obsolete**: both
+rows adopt `connector_size("sfp")` directly, upgrading body tier
+`[B]` -> `[A]`. Positions (`x`) stay this board's own `[B]` caliper reading
+— only the body is sourced from the catalog. `connectors/connectors.scad`'s
+own `sfp` row comment records this adoption directly (see that file); the
+SP2 reconcile table below is updated to match.
+
+**Tier changes this round**: `dc_power_1.h` `[C]//VERIFY` -> `[B]` (was a
+generic barrel-jack-body estimate with no drawing or caliper source behind
+it; this pass directly measured it at 10.3mm, `//VERIFY` dropped).
+`sfp_1`/`sfp_2` bodies `[B]` -> `[A]` (adopted from the catalog type, as
+above — see also the height-datum reversal note earlier in this file,
+which this same caliper pass triggered for these two rows plus `usb_1`).
+Every other row above is a `[B]` caliper replacement of a prior `[B]`
+caliper figure — value change, no tier change.
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps
@@ -1877,17 +2015,28 @@ connector's tier as tagged in `sbc.scad`/this file above.
 
 #### bpir4 (10)
 
+**Note (round-3 #65 update):** this table is a point-in-time SP2 Task 1
+snapshot; most rows below still describe the sbc data as it stood at that
+time (position/body values for `usb_1`, `rj45_1..4`, `dc_power_1`,
+`usbc_pwr_1` have since moved again — see "BPI-R4 corrections round 3
+(#65)" above for the current front-row values). The `sfp_1`/`sfp_2` rows
+and the `dc_power_1` tier note below are updated in place to reflect the
+round-3 result, since round 3 directly obsoletes the verdict this table
+recorded for them; every other row's *verdict* (same/different/no-peer)
+and reasoning are otherwise still historically accurate and left as
+originally written.
+
 | connector | sbc `[w,d,h]` | catalog type `[w,d,h]` | Δ (w,d,h) | verdict | tier note |
 |---|---|---|---|---|---|
-| usb_1 | [8.89,23.16,13.5] | usb_a_stack2 [13.66,14.6,13.88] (best h-fit; usb_a_stack2_shielded's h=16.0 fits worse) | −4.77,+8.56,−0.38 | different (unresolved, weak evidence) | h reconciles against `usb_a_stack2` (Δ−0.38, within threshold), but w/d fail by a wide margin against **every** candidate peer (usb_a and usb_a_stack2 share the same w/d, only h differs, so the peer choice doesn't change this). sbc's own w is self-flagged `//VERIFY` "narrow vs typical USB-A body"; d has no independent corroboration either. Not confidently mapped to any type — flagged for adjudication/re-verification, not a basis for a new type from one weak reading |
-| sfp_1 | [16.51,53.98,13.4] | sfp [14.5,48.7,9.7] | +2.01,+5.28,+3.70 | no-peer | **#21 adoption reconcile**: now that connectors `sfp` (TE 2007198-1, single-port 1x1 cage) exists, every axis runs far past the SP2 threshold; sbc's figure is a cage-PAIR keep-out (CN7+CN8, SFP0074EP-class) — a multi-component board-unique footprint with no meaningful 1:1 single-port peer (same reasoning as `rj45_1`/combo shells). Literal retained; depth/height stay //VERIFY; no new catalog type from one board |
-| sfp_2 | [16.51,53.98,13.4] | sfp [14.5,48.7,9.7] | +2.01,+5.28,+3.70 | no-peer | same as sfp_1 (CN9+CN20+CN10) |
-| rj45_1 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | **Task 2 reclassify (was `error`)**: re-modeled as port 1 of CN21, the BPI-R4's single 4-port ganged RJ45 block (hardware-owner ground truth), body sourced [A] from the exact bundled connector datasheet (`RJ45x4-HRJC-M03C01C10cNL.pdf`). A ganged multi-port block with its own datasheet has no meaningful 1:1 peer against `rj45_shallow` (a single-port catalog type) — same reasoning as `sfp_1`/`sfp_2`. The prior [8.0,20.0,13.5] reading (an 8mm lone "WAN" jack) is discredited/superseded — see bpir4 RJ45 section above |
+| usb_1 | [8.89,23.16,13.5] | usb_a_stack2 [13.66,14.6,13.88] (best h-fit; usb_a_stack2_shielded's h=16.0 fits worse) | −4.77,+8.56,−0.38 | different (unresolved, weak evidence) | h reconciles against `usb_a_stack2` (Δ−0.38, within threshold), but w/d fail by a wide margin against **every** candidate peer (usb_a and usb_a_stack2 share the same w/d, only h differs, so the peer choice doesn't change this). sbc's own w is self-flagged `//VERIFY` "narrow vs typical USB-A body"; d has no independent corroboration either. Not confidently mapped to any type — flagged for adjudication/re-verification, not a basis for a new type from one weak reading. (Superseded position/body as of round-3: `x=8.0`, `[5.7,25.5,13.0]` — see round-3 section above; this row's peer comparison was not re-run against the new figure) |
+| sfp_1 | ~~[16.51,53.98,13.4]~~ **`connector_size("sfp")` = [14.5,48.7,9.7] (round-3 #65)** | sfp [14.5,48.7,9.7] | ~~+2.01,+5.28,+3.70~~ **0,0,0 (adopted directly)** | ~~no-peer~~ **same — adopted (round-3 #65)** | **#21 adoption reconcile, OBSOLETED by round-3 (#65):** the verdict recorded here at SP2 Task 1 time was `no-peer` (every axis ran far past the SP2 threshold against the then-current sbc figure). A round-3 physical-board re-caliper gave a new reading, `[15.0,48.5,9.5]`, that agrees with the `sfp` catalog type within 0.5mm on **all three axes** — the SP2 "same peer" threshold is now met. The row's body is adopted directly from `connector_size("sfp")` (tier `[B]`→`[A]`); the `x` position stays this board's own `[B]` caliper reading (unchanged by the adoption, only the body is sourced from the catalog). No new catalog type was needed — the existing `sfp` type (added under the old #21 verdict's own reasoning process) already fits |
+| sfp_2 | ~~[16.51,53.98,13.4]~~ **`connector_size("sfp")` = [14.5,48.7,9.7] (round-3 #65)** | sfp [14.5,48.7,9.7] | ~~+2.01,+5.28,+3.70~~ **0,0,0 (adopted directly)** | ~~no-peer~~ **same — adopted (round-3 #65)** | same as sfp_1 (CN9+CN20+CN10) — identical cage part, same round-3 caliper-vs-catalog agreement |
+| rj45_1 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | **Task 2 reclassify (was `error`)**: re-modeled as port 1 of CN21, the BPI-R4's single 4-port ganged RJ45 block (hardware-owner ground truth), body sourced [A] from the exact bundled connector datasheet (`RJ45x4-HRJC-M03C01C10cNL.pdf`). A ganged multi-port block with its own datasheet has no meaningful 1:1 peer against `rj45_shallow` (a single-port catalog type) — same reasoning as `sfp_1`/`sfp_2`. The prior [8.0,20.0,13.5] reading (an 8mm lone "WAN" jack) is discredited/superseded — see bpir4 RJ45 section above. (Round-3 #65 adds a sibling `rj45_block` envelope row, `[58.5,21.45,13.60]` at x=64.0, cut by the faceplate alongside the 4 ports — see round-3 section above; position unchanged for this row's body/verdict) |
 | rj45_2 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | **Task 2 reclassify (was `different`)**: same reasoning as rj45_1 — one physical ganged block, no single-port peer. The prior [18.2567,19.05,13.5] reading (an assumed even 3-way split of an unrelated 3-port envelope) is discredited/superseded |
 | rj45_3 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | same reasoning as rj45_2 |
 | rj45_4 | [13.98,21.45,13.60] | rj45_shallow [21,18.75,13.5] | −7.02,+2.70,+0.10 | no-peer | same reasoning as rj45_2 |
-| dc_power_1 | [10.03,10.71,10.0] | — | n/a | no-peer | DC12V barrel power jack — no barrel-jack type exists anywhere in the catalog; a genuinely distinct connector class, not merely omitted |
-| usbc_pwr_1 | [8.94,9.95,3.2] | usb_c [8.94,6.90,3.16] | 0.00,+3.05,+0.04 | different (unresolved, weak evidence) | w/h agree closely (w exact), but d fails by 6x the threshold. sbc's own note flags this exact axis as tangled with an unresolved boundary conflict against the adjacent unmapped "CN6" component — a self-flagged-suspect reading, not confirmed evidence of a deeper USB-C variant. `usb_c` is very likely still the right nominal part; the depth reading itself needs re-verification before adopting either value |
+| dc_power_1 | [10.03,10.71,10.0] (superseded by round-3 #65: **[10.0,13.0,10.3]**) | — | n/a | no-peer | DC12V barrel power jack — no barrel-jack type exists anywhere in the catalog; a genuinely distinct connector class, not merely omitted. **Round-3 (#65) tier note:** `h` upgrades `[C]//VERIFY` → `[B]` — the value recorded here (10.0mm) was a generic barrel-jack-body estimate with no drawing or caliper source; round-3's physical-board pass directly measured it (10.3mm), and the `//VERIFY` is dropped. The `no-peer` verdict itself is unaffected (still no catalog barrel-jack type to compare against) |
+| usbc_pwr_1 | [8.94,9.95,3.2] (superseded by round-3 #65: **[6.7,6.8,3.0]**) | usb_c [8.94,6.90,3.16] | 0.00,+3.05,+0.04 | different (unresolved, weak evidence) | w/h agree closely (w exact), but d fails by 6x the threshold. sbc's own note flags this exact axis as tangled with an unresolved boundary conflict against the adjacent unmapped "CN6" component — a self-flagged-suspect reading, not confirmed evidence of a deeper USB-C variant. `usb_c` is very likely still the right nominal part; the depth reading itself needs re-verification before adopting either value. (Round-3 #65 re-calipered this connector directly and took the new reading at face value rather than resolving the peer question — see round-3 section above; the peer comparison here was not re-run against the new figure) |
 | uart_1 | [5.0,10.0,6.0] | — | n/a | no-peer | console/UART pin header — different pitch/pin-count class from the catalog's only header type (`gpio_2x20`, a 2x20/2.54mm-pitch part); no generic peer |
 
 #### pizero (4)
@@ -1909,21 +2058,25 @@ connector's tier as tagged in `sbc.scad`/this file above.
 | microusb_pwr | [7.4,4.6,2.8] | micro_usb [7.72,5.48,3.96] | −0.32,−0.88,−1.16 | different (unresolved) | same ambiguity as pizero's microusb_pwr |
 | csi | [3.3,16.0,1.5] | — | n/a | no-peer | camera FPC connector notch; no generic type in catalog (same class as pi5's csi_dsi_1/2) |
 
-### No-peer connectors (17 total, literal — intentional, per the brief's global constraint)
+### No-peer connectors (17 total at SP2 Task 1 time; 15 as of round-3 #65 — literal, intentional, per the brief's global constraint)
 
 `av_jack` (pi3b, pi3bplus, pi4b — 3.5mm AV/audio jack), `csi_dsi_1`/`csi_dsi_2`
 (pi5) + `csi` (pizero2w) (camera/display FPC connectors, 3 total), `pcie_fpc`
 (pi5, PCIe FFC ribbon — distinct from the catalog's card-edge `pcie_x*`
 types), `rj45`+`usb2` combo shell (pi5 — board-unique molded part, 2 records
-sharing one box), `sfp_1`/`sfp_2` (bpir4, SFP cages), `rj45_1`/`rj45_2`/
+sharing one box), ~~`sfp_1`/`sfp_2` (bpir4, SFP cages)~~ **removed from this
+list by round-3 (#65)** — see the bpir4 table above: both rows now adopt
+`connector_size("sfp")` directly and are `same`, not `no-peer`,
+`rj45_1`/`rj45_2`/
 `rj45_3`/`rj45_4` (bpir4, **Task 2**: the single 4-port ganged RJ45 block,
 CN21 — a datasheet-sourced ganged multi-port part has no meaningful 1:1
 catalog peer, same reasoning as the SFP cages; previously 1 `error` +
 3 `different` from the discredited two-connector split), `dc_power_1`
 (bpir4, DC barrel jack — no barrel-jack type exists in the catalog at all),
 `uart_1` (bpir4, console/UART header — different pin-count/pitch class from
-`gpio_2x20`). None of these have — or plausibly should get — a generic
-catalog peer; they stay as literal `[w,d,h]` on the sbc side.
+`gpio_2x20`). None of the 15 current entries have — or plausibly should
+get — a generic catalog peer; they stay as literal `[w,d,h]` on the sbc
+side.
 
 ### New types needed for Task 2 (SP2)
 
@@ -1981,9 +2134,15 @@ future re-fetch/re-measurement pass, not a new catalog entry.
 **51 total connectors** (7 pi3b + 7 pi3bplus + 8 pi4b + 10 pi5 + 10 bpir4 + 4
 pizero + 5 pizero2w — matches `_sbc_table()`/`_sbc_gpio()` exactly):
 
+As of SP2 Task 1 (original pass):
+
 - **same**: 21
 - **different**: 13 (1 marginal-noise-leaning + 9 unresolved/weak-evidence + 3 confirmed-by-source [pi3b/pi3bplus `usb2_2`, pi4b `rj45`] — see per-row notes; none propose a new type)
 - **error**: 0 (bpir4 `rj45_1` was the last one — re-modeled and reclassified `no-peer` in Task 2, not fixed toward `rj45_shallow`)
 - **no-peer**: 17 (literal, intentional; +4 in Task 2 — bpir4 `rj45_1`..`rj45_4`, the single 4-port ganged RJ45 block, has no meaningful 1:1 catalog peer)
 
 21 + 13 + 0 + 17 = 51.
+
+**As of round-3 (#65)**: `sfp_1`/`sfp_2` move from `no-peer` to `same`
+(catalog-type adoption, see the bpir4 table above) — **same: 23**,
+**no-peer: 15**, `different`/`error` unchanged. 23 + 13 + 0 + 15 = 51.

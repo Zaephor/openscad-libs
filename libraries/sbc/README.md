@@ -275,7 +275,7 @@ source of truth for the dimension, instead of two copies that could drift.
 touched by this. Full 51-row verdict table: `RESEARCH.md`, "SP2 connector
 reconcile — Task 1".
 
-**Sourced (21 of 51)** — mapped to a catalog type:
+**Sourced (23 of 51)** — mapped to a catalog type:
 
 | Board | Sourced connectors | Catalog type(s) |
 |---|---|---|
@@ -284,13 +284,13 @@ reconcile — Task 1".
 | pi5 | `gpio`, `usb3`, `usbc_pwr`, `hdmi_1`, `hdmi_2` | `gpio_2x20`, `usb_a_stack2_shielded`, `usb_c`, `micro_hdmi` |
 | pizero | `gpio`, `minihdmi` | `gpio_2x20`, `mini_hdmi` |
 | pizero2w | `gpio` | `gpio_2x20` |
-| bpir4 | *(none)* | — |
+| bpir4 | `sfp_1`, `sfp_2` *(adopted round-3 #65 — see below; none at SP2 Task 1 time)* | `sfp` |
 
-**Literal (30 of 51)** — unchanged, for one of three reasons:
+**Literal (28 of 51)** — unchanged, for one of three reasons:
 
-- **No catalog peer at all (13)**: `av_jack` (pi3b/pi3bplus/pi4b),
+- **No catalog peer at all (11)**: `av_jack` (pi3b/pi3bplus/pi4b),
   `csi_dsi_1`/`csi_dsi_2` (pi5), `csi` (pizero2w), `pcie_fpc` (pi5), the pi5
-  `rj45`/`usb2` combo shell, `sfp_1`/`sfp_2` (bpir4), `dc_power_1` (bpir4
+  `rj45`/`usb2` combo shell, `dc_power_1` (bpir4
   barrel jack), `uart_1` (bpir4 console header) — genuinely distinct part
   classes the catalog doesn't model, not gaps to fill.
 - **A peer exists but disagrees by >0.5mm on some axis (13)**, and neither
@@ -304,11 +304,14 @@ reconcile — Task 1".
   data-correction problem, not a sourcing one; flagged rather than silently
   patched.
 
-**bpir4 sources nothing** — all 10 of its connectors landed
-different/error/no-peer against the catalog, consistent with it already
-being the board with the weakest connector provenance (no refdes text on
-its source DXF at all — see Sources above). This pass leaves bpir4 exactly
-as literal as before.
+**bpir4 now sources 2 of its 10 connectors** — `sfp_1`/`sfp_2` adopt the
+`sfp` catalog type as of round-3 (#65): a physical-board re-caliper
+(2026-07-24/2026-07-28) brought the cage reading within 0.5mm of the
+catalog body on all three axes, obsoleting the original SP2 Task 1
+`no-peer` verdict (see `RESEARCH.md`, bpir4 SP2 table + "BPI-R4 corrections
+round 3 (#65)"). The remaining 8 bpir4 connectors are still literal,
+consistent with it being the board with the weakest connector provenance
+overall (no refdes text on its source DXF at all — see Sources above).
 
 **Grounding**: no adopted body was a downgrade — where sbc's own tier was
 already the stronger one (e.g. pi4b/pi5 `hdmi_1`/`hdmi_2`, whose `[A]`
