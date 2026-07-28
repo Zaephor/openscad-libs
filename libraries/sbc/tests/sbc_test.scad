@@ -108,8 +108,8 @@ assert(sbc_connector("bpir4", "sim_1")[2] == connector_size("sim_2ff"),
     "bpir4 sim_1 body sourced from connectors sim_2ff");
 assert(sbc_connector("bpir4", "microsd_1")[2] == connector_size("microsd"),
     "bpir4 microsd_1 body sourced from connectors microsd");
-assert(sbc_connector("bpir4", "m2modem_1")[2] == connector_size("m2_key_b"),
-    "bpir4 m2modem_1 body sourced from connectors m2_key_b");
+assert(sbc_connector("bpir4", "m2modem_1")[2] == _rot90(connector_size("m2_key_b")),
+    "bpir4 m2modem_1 socket body yaw-rotated (round-3 #65)");
 
 // --- Task 5: module/card keep-out envelopes (bottom sockets + m2modem_1) ---
 for (n = ["m2modem_1_card", "mpcie_1_card", "mpcie_2_card", "m2_ssd_1_card"])
@@ -233,12 +233,42 @@ for (c = _bpr_bottom)
 for (n = ["mpcie_1", "mpcie_2", "m2_ssd_1"])
     assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,
         str("bpir4 has exactly one ", n));
-assert(sbc_connector("bpir4", "mpcie_1")[2] == connector_size("mpcie"),
-    "bpir4 mpcie_1 body sourced from connectors mpcie");
-assert(sbc_connector("bpir4", "mpcie_2")[2] == connector_size("mpcie"),
-    "bpir4 mpcie_2 body sourced from connectors mpcie");
+// --- Round-3 (#65) Task 1: socket yaw-rotation fixes ---
+// m2modem_1 and mpcie sockets' long axes must be perpendicular to their
+// cards' long axes (sockets are the thing the cards plug into). #62 rotated
+// the cards but not the sockets — #65 fixes the sockets to match. m2_ssd_1
+// stays unrotated since its card was never rotated.
+assert(sbc_connector("bpir4", "mpcie_1")[2] == _rot90(connector_size("mpcie")),
+    "bpir4 mpcie_1 socket body yaw-rotated (round-3 #65)");
+assert(sbc_connector("bpir4", "mpcie_2")[2] == _rot90(connector_size("mpcie")),
+    "bpir4 mpcie_2 socket body yaw-rotated (round-3 #65)");
 assert(sbc_connector("bpir4", "m2_ssd_1")[2] == connector_size("m2_key_m"),
-    "bpir4 m2_ssd_1 body sourced from connectors m2_key_m");
+    "bpir4 m2_ssd_1 socket stays UNROTATED (its card was never rotated)");
+// --- Round-3 (#65) Task 1: socket-inside-card + socket-vs-socket asserts ---
+// Each socket sits within its own card's XY footprint (it is the thing the
+// card plugs into), and no socket overlaps another socket or a foreign card.
+// These asserts would have caught the unrotated sockets from #55 immediately.
+function _aabb_contains(inner, outer) =
+    _xmin(inner) >= _xmin(outer) - _eps &&
+    _xmax(inner) <= _xmax(outer) + _eps &&
+    _ymin(inner) >= _ymin(outer) - _eps &&
+    _ymax(inner) <= _ymax(outer) + _eps;
+_m2modem_1_socket = sbc_connector("bpir4", "m2modem_1");
+_m2modem_1_card_env = sbc_connector("bpir4", "m2modem_1_card");
+_mpcie_1_socket = sbc_connector("bpir4", "mpcie_1");
+_mpcie_1_card_env = sbc_connector("bpir4", "mpcie_1_card");
+_mpcie_2_socket = sbc_connector("bpir4", "mpcie_2");
+_mpcie_2_card_env = sbc_connector("bpir4", "mpcie_2_card");
+assert(_aabb_contains(_m2modem_1_socket, _m2modem_1_card_env),
+    "bpir4 m2modem_1 socket sits within its own card's footprint (#65)");
+assert(_aabb_contains(_mpcie_1_socket, _mpcie_1_card_env),
+    "bpir4 mpcie_1 socket sits within its own card's footprint (#65)");
+assert(_aabb_contains(_mpcie_2_socket, _mpcie_2_card_env),
+    "bpir4 mpcie_2 socket sits within its own card's footprint (#65)");
+// mpcie_1 and mpcie_2 are both on the bottom face (same Z plane) and must not
+// overlap in XY (different sockets, same board level).
+assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_socket),
+    "bpir4 mpcie_1 socket must not overlap mpcie_2 socket (both bottom-face, #65)");
 // mpcie_1/mpcie_2 share the same (mirrored) x — two parallel underside slots.
 assert(sbc_connector("bpir4", "mpcie_1")[1][0] == sbc_connector("bpir4", "mpcie_2")[1][0],
     "bpir4 mpcie_1/mpcie_2 share the same x column");
