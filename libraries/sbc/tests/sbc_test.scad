@@ -341,9 +341,8 @@ assert(sbc_connector("pi3b", "usb2_2")[2] == [17, 9, 16.0],
 assert(sbc_connector("pi4b", "usb3")[2] == [17, 18.75, 16.0],
     "pi4b usb3 (different, marginal) stays literal");
 // Task 2: h revised from caliper bottom->top figures (thickness now 1.4) —
-// w/d unchanged, still literal (no catalog peer), just the height reconciled.
-assert(sbc_connector("bpir4", "usb_1")[2] == [8.89, 23.16, 14.1],
-    "bpir4 usb_1 (different, weak) stays literal, h caliper-revised Task 2");
+// w/d unchanged at the time, still literal (no catalog peer). Round 2 #62
+// Task 2b later revised w/d too (x-edge gap correction) — see below.
 // Round 2 (#62) Task 2: d revised 53.98->48.4 from a physical-board caliper
 // re-measurement (both cages, identical part) — w/h unchanged, still literal.
 assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 48.4, 10.4],
@@ -352,3 +351,37 @@ assert(sbc_connector("bpir4", "sfp_2")[2] == [16.51, 48.4, 10.4],
     "bpir4 sfp_2 (no-peer) stays literal, d caliper-revised round 2 #62 Task 2, same fix as sfp_1");
 assert(sbc_connector("pi3b", "av_jack")[2] == [6, 6, 6.0],
     "pi3b av_jack (no-peer) stays literal");
+
+// --- Round 2 (#62) Task 2b: usb_1/sfp_1/dc_power_1/usbc_pwr_1 x-edge gap
+// correction --- The prior pixel-detected data modeled two adjacent
+// connector pairs (usb_1/sfp_1 and dc_power_1/usbc_pwr_1) sharing an exact X
+// boundary (0mm gap); a physical-board caliper re-check (2026-07-24) found
+// real gaps and corrected the affected x/w (and usb_1's d). usb_1's h and
+// sfp_1's w/d/h are unchanged, already covered by the asserts above.
+assert(sbc_connector("bpir4", "usb_1")[2] == [5.8, 25.5, 14.1],
+    "bpir4 usb_1 w/d caliper-revised round 2 #62 Task 2b (x-edge gap correction)");
+assert(sbc_connector("bpir4", "usb_1")[1][0] == 8.0,
+    "bpir4 usb_1 x caliper-revised round 2 #62 Task 2b");
+assert(sbc_connector("bpir4", "sfp_1")[1][0] == 17.4,
+    "bpir4 sfp_1 x caliper-revised round 2 #62 Task 2b");
+assert(sbc_connector("bpir4", "dc_power_1")[1][0] == 125.2
+    && sbc_connector("bpir4", "dc_power_1")[2][0] == 9.8,
+    "bpir4 dc_power_1 x/w caliper-revised round 2 #62 Task 2b");
+assert(sbc_connector("bpir4", "usbc_pwr_1")[1][0] == 137.3
+    && sbc_connector("bpir4", "usbc_pwr_1")[2][0] == 8.7,
+    "bpir4 usbc_pwr_1 x/w caliper-revised round 2 #62 Task 2b");
+
+// Gap regressions: Task 3 (faceplate bridge-support walls) places support
+// geometry into these two specific gaps and depends on them staying real,
+// non-zero spans, not the old 0mm shared-boundary reading.
+_usb_1 = sbc_connector("bpir4", "usb_1");
+_dc_power_1 = sbc_connector("bpir4", "dc_power_1");
+_usbc_pwr_1 = sbc_connector("bpir4", "usbc_pwr_1");
+assert(_near(_xmin(_sfp_1) - _xmax(_usb_1), 3.6, 0.2),
+    "bpir4 usb_1<->sfp_1 gap ~3.6mm (round 2 #62 Task 2b x-edge correction)");
+assert(_xmin(_sfp_1) - _xmax(_usb_1) > 0,
+    "bpir4 usb_1<->sfp_1 must have a real positive gap, not share a boundary");
+assert(_near(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1), 2.3, 0.2),
+    "bpir4 dc_power_1<->usbc_pwr_1 gap ~2.3mm (round 2 #62 Task 2b x-edge correction)");
+assert(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1) > 0,
+    "bpir4 dc_power_1<->usbc_pwr_1 must have a real positive gap, not share a boundary");

@@ -1425,6 +1425,62 @@ every other board's `"ymin"` connectors, get none) plus a
 STL bounding box reaches y=-2.0, while a non-bpir4 board's placeholder
 stays flush at y>=0).
 
+### BPI-R4 corrections round 2 (#62), Task 2b: usb_1/sfp_1/dc_power_1/usbc_pwr_1 X-edge gap correction
+
+A further physical-board review found that two adjacent front-panel connector
+pairs — `usb_1`/`sfp_1`, and `dc_power_1`/`usbc_pwr_1` — were modeled with a
+**0mm gap**, sharing an exact X boundary. This was a real modeling error, not
+a coincidence of a tightly-packed board: the prior DXF pixel-detection pass
+picked up each connector's own edge independently and happened to land the
+two readings on the same coordinate, silently erasing a real physical gap
+between the two housings. A fresh caliper pass against the physical board
+(2026-07-24) corrects all four rows' `x`/`w` (and, for `usb_1`, `d`) to
+restore the true gaps.
+
+- **`usb_1`** (CN11, USB3 port): caliper reads 8.0mm from the board's left
+  edge to the left edge of the port cage, and the cage itself as 5.8mm wide
+  x 25.5mm deep. `x` corrected `7.41 -> 8.0`, `w` corrected `8.89 -> 5.8`,
+  `d` corrected `23.16 -> 25.5`. `h` (14.1) is unchanged — not re-measured
+  by this pass. Tier `[B]` caliper; the prior `//VERIFY` on width is
+  dropped (the caliper reading directly measures the cage, not a
+  pixel-detector inference).
+- **`sfp_1`** (CN7+CN8 cage pair): caliper reads 17.4mm from the board's
+  left edge to the left wall of the cage. `x` corrected `16.3 -> 17.4`. `w`
+  (16.51), `d` (48.4, already corrected in Task 2 above), and `h` (10.4)
+  are unchanged. Tier `[B]` caliper. `sfp_2` (x=34.08) is untouched by this
+  pass — its own gap to the new `sfp_1` right edge (34.08 − 33.91 = 0.17mm)
+  is a separate, unrelated question and out of scope here.
+- **`dc_power_1`** (CN4 "DC12V" barrel jack): caliper reads 13.0mm from the
+  board's right edge to the right side of the barrel port, giving a right
+  edge of 148.0 − 13.0 = 135.0mm (board width 148.0mm). Width is corrected
+  to 9.8mm per the round-2 spec doc (was 10.03). `x` (left edge) is
+  therefore recomputed as 135.0 − 9.8 = 125.2 (was 124.59); `w` corrected
+  `10.03 -> 9.8`. `d` (10.71) and `h` (10.0, still `[C]` //VERIFY, not
+  re-measured) are unchanged. Tier `[B]` caliper for x/w; the prior
+  `//VERIFY` on x/w (which stemmed from the shared-boundary pixel-detection
+  read) is dropped.
+- **`usbc_pwr_1`** (CN5 "PD20V" USB-C PD input): caliper reads 2.0mm from
+  the board's right edge to the right side of the connector, giving a right
+  edge of 148.0 − 2.0 = 146.0mm. Width is corrected to 8.7mm per the
+  round-2 spec doc (was 8.94). `x` (left edge) is therefore recomputed as
+  146.0 − 8.7 = 137.3 (was 134.62); `w` corrected `8.94 -> 8.7`. `d` (9.95)
+  and `h` (3.2) are unchanged. Tier `[B]` caliper for x/w; the prior
+  `//VERIFY` on x/w (which stemmed from the shared-boundary pixel-detection
+  read against `dc_power_1`, and the earlier unresolved "CN6 proximity"
+  note) is dropped.
+
+**Resulting gaps.** `usb_1` right edge (8.0+5.8=13.8) to `sfp_1` left edge
+(17.4) is 3.6mm — matches the round-2 spec doc's cited ~3.7mm figure within
+caliper rounding. `dc_power_1` right edge (135.0) to `usbc_pwr_1` left edge
+(137.3) is 2.3mm — matches the round-2 spec doc's cited ~2.0mm figure within
+caliper rounding. Both gaps are locked by regression asserts in
+`tests/sbc_test.scad` — a downstream task (faceplate bridge-support walls)
+places support geometry into these two specific gaps and depends on them
+staying real, non-zero spans.
+
+Source: physical board caliper (2026-07-24), same session as Task 1/Task 2
+above. `[B]` tier throughout for the corrected axes.
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps
