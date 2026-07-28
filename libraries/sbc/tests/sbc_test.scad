@@ -244,10 +244,11 @@ assert(sbc_connector("bpir4", "mpcie_2")[2] == _rot90(connector_size("mpcie")),
     "bpir4 mpcie_2 socket body yaw-rotated (round-3 #65)");
 assert(sbc_connector("bpir4", "m2_ssd_1")[2] == connector_size("m2_key_m"),
     "bpir4 m2_ssd_1 socket stays UNROTATED (its card was never rotated)");
-// --- Round-3 (#65) Task 1: socket-inside-card + socket-vs-socket asserts ---
+// --- Round-3 (#65) Task 1: socket-inside-card + socket-vs-socket/foreign-card asserts ---
 // Each socket sits within its own card's XY footprint (it is the thing the
 // card plugs into), and no socket overlaps another socket or a foreign card.
-// These asserts would have caught the unrotated sockets from #55 immediately.
+// The exact-equality socket-rotation asserts (Step 2 above) are the regression
+// lock that would have caught the unrotated sockets immediately.
 function _aabb_contains(inner, outer) =
     _xmin(inner) >= _xmin(outer) - _eps &&
     _xmax(inner) <= _xmax(outer) + _eps &&
@@ -269,6 +270,19 @@ assert(_aabb_contains(_mpcie_2_socket, _mpcie_2_card_env),
 // overlap in XY (different sockets, same board level).
 assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_socket),
     "bpir4 mpcie_1 socket must not overlap mpcie_2 socket (both bottom-face, #65)");
+// Socket-vs-foreign-card overlap checks on same edge (Z-plane): no socket may
+// overlap a foreign card on its own Z level (e.g. bottom-face mpcie_1_socket
+// must not overlap bottom-face mpcie_2_card or m2_ssd_1_card). Top-face
+// m2modem_1 has no other top-face cards to check against.
+_m2_ssd_1_card_env = sbc_connector("bpir4", "m2_ssd_1_card");
+assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_card_env),
+    "bpir4 mpcie_1 socket must not overlap mpcie_2_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_mpcie_1_socket, _m2_ssd_1_card_env),
+    "bpir4 mpcie_1 socket must not overlap m2_ssd_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_mpcie_2_socket, _mpcie_1_card_env),
+    "bpir4 mpcie_2 socket must not overlap mpcie_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_mpcie_2_socket, _m2_ssd_1_card_env),
+    "bpir4 mpcie_2 socket must not overlap m2_ssd_1_card (foreign card, same edge, #65)");
 // mpcie_1/mpcie_2 share the same (mirrored) x — two parallel underside slots.
 assert(sbc_connector("bpir4", "mpcie_1")[1][0] == sbc_connector("bpir4", "mpcie_2")[1][0],
     "bpir4 mpcie_1/mpcie_2 share the same x column");

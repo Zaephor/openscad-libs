@@ -406,7 +406,7 @@ function _sbc_table() = [
           // in RESEARCH.md rather than silently reconciled; no new mount hole is
           // added for this socket (no caliper mounting-hole data exists for any
           // new Task 2 component — see RESEARCH.md "Task 2: no new mount holes").
-          ["m2modem_1", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_key_b"))[1], 1.4], _sbc_rot90(connector_size("m2_key_b")), "top"], // [B] caliper x/y; body from connectors m2_key_b (SSOT) — socket's long axis yaw-rotated to match its card's orientation (#62 round-2 correction: physical-board review 2026-07-28, [B])
+          ["m2modem_1", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_key_b"))[1], 1.4], _sbc_rot90(connector_size("m2_key_b")), "top"], // [B] caliper x/y; body from connectors m2_key_b (SSOT) — socket's long axis yaw-rotated to match its card's orientation (#65 round-3 correction: physical-board review 2026-07-28, [B])
           // Card keep-out envelope for m2modem_1's actual WWAN module (the row above
           // is only the small board-mounted m2_key_b socket connector, not the
           // module that plugs into it). Same x (min corner) as the socket; y shares
@@ -455,7 +455,7 @@ function _sbc_table() = [
           // entirely — impossible, so x_board=4.5 must be the MIN corner, not
           // max. y from each own "N rear" (unmirrored): y_max=100.5-N,
           // y_min=y_max-d (connectors' own mpcie depth, 8.20).
-          ["mpcie_1", [4.5, 100.5-41.9-_sbc_rot90(connector_size("mpcie"))[1], 0], _sbc_rot90(connector_size("mpcie")), "bottom"], // [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT) — socket's long axis yaw-rotated to match its card's orientation (#62 round-2 correction: physical-board review 2026-07-28, [B]). z=0 (board-bottom plane, this library's existing global Z datum) + h protrudes -Z per the bottom convention
+          ["mpcie_1", [4.5, 100.5-41.9-_sbc_rot90(connector_size("mpcie"))[1], 0], _sbc_rot90(connector_size("mpcie")), "bottom"], // [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT) — socket's long axis yaw-rotated to match its card's orientation (#65 round-3 correction: physical-board review 2026-07-28, [B]). z=0 (board-bottom plane, this library's existing global Z datum) + h protrudes -Z per the bottom convention
           // Card keep-out envelope for mpcie_1's actual full-size mini-PCIe card
           // (the row above is only the small board-mounted mpcie socket connector).
           // Same x (min corner) as the socket; y shares the socket's own y_max
@@ -486,7 +486,7 @@ function _sbc_table() = [
           // between the two cards (58.6 < 61.3). Measured size unchanged, [B]
           // caliper (same as the socket rows).
           ["mpcie_1_card", [4.5, 100.5-41.9-_sbc_rot90(connector_size("mpcie_card"))[1], 0], _sbc_rot90(connector_size("mpcie_card")), "bottom"],
-          ["mpcie_2", [4.5, 100.5-9.2 -_sbc_rot90(connector_size("mpcie"))[1], 0], _sbc_rot90(connector_size("mpcie")), "bottom"], // same x as mpcie_1 (two parallel slots, same left-side column, different y) — [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT) — socket's long axis yaw-rotated to match its card's orientation (#62 round-2 correction: physical-board review 2026-07-28, [B])
+          ["mpcie_2", [4.5, 100.5-9.2 -_sbc_rot90(connector_size("mpcie"))[1], 0], _sbc_rot90(connector_size("mpcie")), "bottom"], // same x as mpcie_1 (two parallel slots, same left-side column, different y) — [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT) — socket's long axis yaw-rotated to match its card's orientation (#65 round-3 correction: physical-board review 2026-07-28, [B])
           // Card keep-out envelope for mpcie_2, same basis as mpcie_1_card above (round-2 yaw-corrected, see comment above).
           ["mpcie_2_card", [4.5, 100.5-9.2 -_sbc_rot90(connector_size("mpcie_card"))[1], 0], _sbc_rot90(connector_size("mpcie_card")), "bottom"],
           // M.2 Key-M SSD: caliper "7.6 left" -> x_board = 148-7.6 = 140.4
