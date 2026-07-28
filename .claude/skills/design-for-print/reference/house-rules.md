@@ -53,6 +53,44 @@ chamfer instead of overhang, split into printable sub-parts, teardrop a
 horizontal hole) rather than accept supports. See `overhangs-supports.md`
 for the concrete techniques.
 
+## Edge breaking (recommended)
+
+Break exposed external (convex) edges and corners on printed parts — improves
+handling comfort, chip resistance, and finished appearance.
+
+*Unlike the no-supports rule above, this is a recommendation, not a hard
+constraint — leaving an edge sharp needs no justification.*
+
+### Pinned nominals
+
+These nominals follow the precedent set in `projects/bpir4-1u-chassis/parts/tray.scad` (lid-post chamfer and fillet both at 1.2 mm) and keystone's print-safety margin (1.15×). Reuse rather than re-derive:
+
+- **Exposed-edge chamfer:** ~**1.2 mm** chamfer leg at 45° (band: 0.5–1.5 mm).
+- **Exposed outside-corner round:** ~**2.0 mm** radius on larger flanges and plates; scale down on small parts to keep proportional.
+- **Print-safe floor:** Keep any break **≥ 2 layer heights (0.4 mm)** so it renders at the repo's 0.2 mm layer height.
+
+### Applies well to
+
+- **Rack ears and mount flanges:** hand-contact surfaces where sharpness causes discomfort and visible chipping.
+- **Faceplate perimeters:** edges that face the outside and visible during use.
+- **Plate and bracket outside corners:** anywhere gripped or handled during installation or maintenance.
+- **Other external convex features:** any edge a hand might contact or that stresses aesthetics.
+
+### Do NOT apply
+
+- **Mating and bearing faces:** surfaces that must stay sharp for a tight fit or flush joint.
+- **Fit-critical edges:** anything that affects a tolerance band or insertion clearance.
+- **Faces that must stay flush:** stacking datum faces, flat datum planes where a break would disrupt a seal or alignment.
+- **Where it would undersize a wall:** do not chamfer or round if it would take a wall thickness below its minimum.
+- **Functional sharp edges:** retention shoulders, catch/detent edges (example: the keystone insert's retention face is deliberately sharp).
+
+### Deferred helper
+
+A shared OpenSCAD edge-break primitive is deliberately deferred until a
+second part needs the same primitive — that triggers a standing `2nd-consumer`
+merge into `libraries/`. Parts implement their own breaks for now, as
+`projects/bpir4-1u-chassis/` and `libraries/keystone/` already do.
+
 ## Repo clearance precedent (bpir4-1u-chassis)
 
 These are real, working values from a chassis that has actually been
@@ -84,6 +122,6 @@ bands, and `strength-physics.md` for the reasoning behind `boss_wall`.
 ## Cross-references
 
 - Term definitions: `glossary.md`
-- Overhang / bridging / no-support geometry techniques: `overhangs-supports.md`
+- Overhang / bridging / no-support geometry techniques: `overhangs-supports.md` (chamfer-as-overhang-technique)
 - General (non-repo-precedent) fit-band numbers: `tolerances-fits.md`
-- Layer strength and boss/insert wall-thickness reasoning: `strength-physics.md`
+- Layer strength and boss/insert wall-thickness reasoning: `strength-physics.md` (internal-corner fillets for stress)

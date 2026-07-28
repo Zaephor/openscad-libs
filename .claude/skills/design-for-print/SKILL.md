@@ -10,6 +10,7 @@ description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD i
 - **The 45° self-support rule:** Overhangs steeper than 45° need support material. Read `reference/overhangs-supports.md`.
 - **Orient load across layers:** Part strength varies by direction; align stress toward layer planes. Read `reference/strength-physics.md`.
 - **Fillet internal corners:** Sharp corners create stress concentrations and are hard to print cleanly. Read `reference/strength-physics.md`.
+- **Break exposed edges (recommended):** chamfer or round external edges/corners a hand will touch — rack ears, flanges, plate corners. Nominals in `reference/house-rules.md`. Not required; skip where it fights a mating face or a functional sharp edge.
 - **Pick a fit band on purpose:** Clearances compound; measure before you design. Read `reference/tolerances-fits.md`.
 - **Design the assembly order:** inner parts first; verify with the exploded self-check. Read `reference/assembly-order.md`.
 
@@ -26,4 +27,5 @@ This repo defaults to **Bambu P1S (PETG, 0.4 mm nozzle, no supports)**. Every de
 | Clearances, fits, hole sizing, elephant's foot | `reference/tolerances-fits.md` |
 | Part strength, layer direction, ribs vs walls | `reference/strength-physics.md` |
 | This repo's printer/material defaults + clearances | `reference/house-rules.md` |
+| Breaking exposed external edges/corners (recommended) | `reference/house-rules.md` |
 | Assembly order, fastener access, insertion clearance, exploded self-check | `reference/assembly-order.md` |
