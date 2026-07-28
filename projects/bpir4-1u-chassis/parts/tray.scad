@@ -90,54 +90,111 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
     }
 }
 
+// IO-gap wall widths (Round 2 #62 Task 3): print-safety design constants
+// (design-for-print: kept < the real gap so a connector opening can never
+// be intruded on; wide enough for >=2 perimeters at a 0.4mm nozzle), not
+// sbc-owned data. Exposed as FUNCTIONS (not module-local variables) so
+// tests/asserts.scad's `use <../parts/tray.scad>` can call the exact same
+// values `_faceplate()` renders with, instead of re-typing them -- `use`
+// only imports functions/modules, never plain variables (see reference_
+// openscad_gotchas), so a local variable here would be invisible there.
+function _io_wall_w_usb_sfp() = 2.5;  // usb_1 <-> sfp_1 gap (~3.6mm real gap)
+function _io_wall_w_dc_usbc() = 1.5;  // dc_power_1 <-> usbc_pwr_1 gap (~2.3mm real gap)
+
+// IO-gap bridge-support wall geometry (Round 2 #62 Task 3): the bpir4 board
+// has real, small physical gaps between two front-connector pairs --
+// usb_1<->sfp_1 (~3.6mm) and dc_power_1<->usbc_pwr_1 (~2.3mm), see
+// libraries/sbc/sbc.scad's bpir4 row -- that sbc_faceplate_cutouts() already
+// cuts as two SEPARATE boxes, incidentally leaving the gap band uncut. This
+// function/module pair makes that break EXPLICIT rather than relying on the
+// cutout boxes' exact edges never drifting into each other: a wall centered
+// in the gap, narrower than the gap by design (`w` < the computed gap,
+// asserted below) so at these tight (2.3/3.6mm) tolerances neither
+// connector's own opening can ever be intruded on. Positions are computed
+// from sbc_connector(BOARD, name) -- single source of truth, never
+// hand-literaled (see #62 Task 3 brief). Z-extent: from the panel base
+// (Z=0 -- already solid there for every front connector, since all four
+// share the same board-local z=1.4 cutout-bottom offset) up through the
+// TALLER of the two flanking cutouts' tops, so the wall intersects the FULL
+// Z-height of both openings it separates, not just one -- this stays safely
+// under _vent_band_z0() (>=1mm above the single tallest front connector
+// overall, see params.scad).
+// Returns [x0, x1, z1] (chassis frame): wall spans X in [x0,x1], Z in
+// [0,z1], full panel-thickness Y -- the function is the single source of
+// truth both `_io_gap_wall()` (renders it) and tests/asserts.scad (checks
+// it against the connectors' own cutout edges) call.
+function _io_gap_wall_geom(name_l, name_r, w) =
+    let (cl = sbc_connector(BOARD, name_l), cr = sbc_connector(BOARD, name_r),
+         xl = cl[1][0] + cl[2][0],   // left connector's right edge (board-local)
+         xr = cr[1][0],              // right connector's left edge (board-local)
+         gap = xr - xl)
+    assert(gap > w,
+        str("_io_gap_wall: ", name_l, "/", name_r, " gap ", gap,
+            "mm too narrow for a ", w, "mm wall"))
+    let (xc = board_x() + (xl + xr) / 2,                                 // gap midpoint, chassis X
+         zt = board_z() + max(cl[1][2] + cl[2][2], cr[1][2] + cr[2][2])) // taller opening top, chassis Z
+    [xc - w/2, xc + w/2, zt];
+
+module _io_gap_wall(name_l, name_r, w) {
+    g = _io_gap_wall_geom(name_l, name_r, w);
+    translate([g[0], -faceplate_th, 0])
+        cube([g[1] - g[0], faceplate_th, g[2]]);
+}
+
 // Front rack panel: full panel width, chassis-exterior height, front face on
 // Y=0 growing -Y (toward the rack front). Rack mount holes + connector cutouts.
 module _faceplate(ear_hole_type = ear_hole_type) {
-    difference() {
-        // Panel blank (own height = ext_h(); width from the library).
-        translate([-panel_w()/2, -faceplate_th, 0])
-            cube([panel_w(), faceplate_th, ext_h()]);
-        // Rack mounting holes on the ears: slot (default) for post-spacing
-        // tolerance, or a round type. Width from the 10-32 screw clearance.
-        // "round" has no library-resolved clearance (unlike "m6"/"10-32",
-        // which rack10_holes() resolves internally), so its dia is supplied
-        // from params.scad's ear_hole_round_dia.
-        if (ear_hole_type == "slot")
-            rack10_holes(STD, 1, hole_type = "slot",
-                         dia = rack10_screw_clearance("10-32"));
-        else if (ear_hole_type == "round")
-            rack10_holes(STD, 1, hole_type = "round", dia = ear_hole_round_dia);
-        else
-            rack10_holes(STD, 1, hole_type = ear_hole_type);
-        // BPI-R4 front-panel connector openings (ymin edge), at the board's
-        // chassis position. depth clears the panel thickness.
-        translate([board_x(), board_y(), board_z()])
-            sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
-        // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
-        // hex-hole cutter across the connector cluster, from just above the
-        // tallest connector to just below the ledge — straight cross-chassis
-        // airflow over the SFP/connector tops. Replaces the old full-width
-        // slot cubes (a flat, unsupported bridge spanning the whole cluster
-        // width) with honeycomb_vent() (honeycomb/honeycomb.scad): flat-top hex
-        // cells whose only bridge (the hex top edge) is a few mm, not the
-        // whole band width — see honeycomb/honeycomb.scad for the self-support
-        // reasoning and honeycomb_cell/honeycomb_wall in params.scad.
-        cl = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]];
-        cr = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]+c[2][0]];
-        bx0 = min(cl); bx1 = max(cr);                 // connector cluster X-span (chassis frame)
-        z0 = _vent_band_z0();
-        z1 = ext_h() - lid_th - vent_slot_gap;        // just below the ledge
-        // rotate([90,0,0]) maps honeycomb_vent's local (width=X, height=Y,
-        // depth=Z) frame onto the chassis frame: local X stays chassis X,
-        // local Y (depth, the cut-through axis) becomes chassis Y — cutting
-        // through the panel thickness like the old cube's Y span — and local
-        // Z (height) becomes chassis Z. translate([bx0, 1, z0]) then lands it
-        // exactly where the old cube band sat (Y from -faceplate_th-1 to +1,
-        // Z from z0 to z1).
-        translate([bx0, 1, z0])
-            rotate([90, 0, 0])
-                honeycomb_vent(bx1 - bx0, z1 - z0, faceplate_th + 2,
-                                honeycomb_cell, honeycomb_wall);
+    union() {
+        difference() {
+            // Panel blank (own height = ext_h(); width from the library).
+            translate([-panel_w()/2, -faceplate_th, 0])
+                cube([panel_w(), faceplate_th, ext_h()]);
+            // Rack mounting holes on the ears: slot (default) for post-spacing
+            // tolerance, or a round type. Width from the 10-32 screw clearance.
+            // "round" has no library-resolved clearance (unlike "m6"/"10-32",
+            // which rack10_holes() resolves internally), so its dia is supplied
+            // from params.scad's ear_hole_round_dia.
+            if (ear_hole_type == "slot")
+                rack10_holes(STD, 1, hole_type = "slot",
+                             dia = rack10_screw_clearance("10-32"));
+            else if (ear_hole_type == "round")
+                rack10_holes(STD, 1, hole_type = "round", dia = ear_hole_round_dia);
+            else
+                rack10_holes(STD, 1, hole_type = ear_hole_type);
+            // BPI-R4 front-panel connector openings (ymin edge), at the board's
+            // chassis position. depth clears the panel thickness.
+            translate([board_x(), board_y(), board_z()])
+                sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
+            // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
+            // hex-hole cutter across the connector cluster, from just above the
+            // tallest connector to just below the ledge — straight cross-chassis
+            // airflow over the SFP/connector tops. Replaces the old full-width
+            // slot cubes (a flat, unsupported bridge spanning the whole cluster
+            // width) with honeycomb_vent() (honeycomb/honeycomb.scad): flat-top hex
+            // cells whose only bridge (the hex top edge) is a few mm, not the
+            // whole band width — see honeycomb/honeycomb.scad for the self-support
+            // reasoning and honeycomb_cell/honeycomb_wall in params.scad.
+            cl = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]];
+            cr = [for (c = sbc_connectors(BOARD)) if (c[3]=="ymin") board_x()+c[1][0]+c[2][0]];
+            bx0 = min(cl); bx1 = max(cr);                 // connector cluster X-span (chassis frame)
+            z0 = _vent_band_z0();
+            z1 = ext_h() - lid_th - vent_slot_gap;        // just below the ledge
+            // rotate([90,0,0]) maps honeycomb_vent's local (width=X, height=Y,
+            // depth=Z) frame onto the chassis frame: local X stays chassis X,
+            // local Y (depth, the cut-through axis) becomes chassis Y — cutting
+            // through the panel thickness like the old cube's Y span — and local
+            // Z (height) becomes chassis Z. translate([bx0, 1, z0]) then lands it
+            // exactly where the old cube band sat (Y from -faceplate_th-1 to +1,
+            // Z from z0 to z1).
+            translate([bx0, 1, z0])
+                rotate([90, 0, 0])
+                    honeycomb_vent(bx1 - bx0, z1 - z0, faceplate_th + 2,
+                                    honeycomb_cell, honeycomb_wall);
+        }
+        // Explicit bridge-support walls in the two real IO gaps (see
+        // _io_gap_wall()/_io_gap_wall_geom() above for the reasoning).
+        _io_gap_wall("usb_1", "sfp_1", _io_wall_w_usb_sfp());
+        _io_gap_wall("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
     }
 }
 

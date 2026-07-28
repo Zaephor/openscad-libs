@@ -49,6 +49,13 @@ function sbc_hole_dia() = 2.7; // mm, M2.5 clearance.  [A] Pi4/Pi5 drawings labe
     // Pi3B drawing calls out "4x M2.5 MOUNTING HOLES DRILLED TO 2.75 +/-0.05mm" (same
     // feature, 0.05mm drilling-tolerance difference from the Pi4/Pi5 label) — see RESEARCH.md.
 
+// Yaw-rotate a [w,d,h] footprint 90° in the XY plane (swap w/d, h untouched).
+// Used where a connector/keep-out's measured [w,d] size (from connector_size() or
+// a board literal) is unchanged but the box needs to be laid out with its long
+// axis on the other in-plane axis (round-2 corrections, #62) — SSOT: never
+// re-literal the swapped numbers, always derive from the same source value.
+function _sbc_rot90(sz) = [sz[1], sz[0], sz[2]];
+
 // Row: [key, [x,y], corner_r, thickness, [[hx,hy],...holes], [connectors...]]
 // Connectors are [name, [x,y,z], [w,d,h], edge].
 // All four boards share the 58x49mm 4-hole rectangle inset 3.5mm and the outline below —
@@ -266,9 +273,9 @@ function _sbc_table() = [
           // RESEARCH.md "Task 2 caliper revision" for the full per-connector
           // reconciliation table (incl. the one row, rj45, where the caliper
           // figure is corroboration and the prior [A] datasheet h is KEPT).
-          ["usb_1",       [7.41,   0, 1.4], [8.89,  23.16, 14.1], "ymin"], // CN11 (caliper-confirmed USB3 port). [B] cols/rows pixel-measured (3 independent search windows agree on 7.41/13.8/16.3) x/w; //VERIFY width still narrow vs typical USB-A 13.6mm body. h=14.1 [B] caliper Task 2: bottom->top 15.5 - thickness 1.4 (was 13.5 [C] //VERIFY placeholder)
-          ["sfp_1",       [16.3,   0, 1.4], [16.51, 53.98, 10.4], "ymin"], // CN7+CN8 cage/connector pair. [B] width cross-corroborated against sfp_2 (both exactly 16.51mm); //VERIFY depth (single detector hit, SFP0074EP cage datasheet length ~50-56mm is consistent) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4 [B] caliper Task 2: bottom->top 11.8 - thickness 1.4 (was 13.4 [C] //VERIFY placeholder; caliper "9.5 alone" figure is the cage's own standalone body height, a corroborating cross-check, not used directly since it isn't board-bottom-referenced)
-          ["sfp_2",       [34.08,  0, 1.4], [16.51, 53.98, 10.4], "ymin"], // CN9+CN20+CN10. [B] width; //VERIFY depth carried over from sfp_1 (own detector pass on this cage returned no hit — symmetric-layout assumption) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4, same Task 2 caliper reconciliation as sfp_1 (identical cage part)
+          ["usb_1",       [8.0,    0, 1.4], [5.8,   25.5,  14.1], "ymin"], // CN11 (caliper-confirmed USB3 port). x/w/d [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — supersedes the prior 7.41/8.89/23.16 pixel-detected figures, which mis-modeled this connector as sharing an exact boundary with sfp_1 when a real ~3.6mm gap exists; //VERIFY dropped, see RESEARCH.md). h=14.1 [B] caliper Task 2: bottom->top 15.5 - thickness 1.4 (was 13.5 [C] //VERIFY placeholder, unchanged by this correction)
+          ["sfp_1",       [17.4,   0, 1.4], [16.51, 48.4, 10.4], "ymin"], // CN7+CN8 cage/connector pair. x [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — supersedes the prior pixel-detected 16.3 left edge, which mis-modeled the boundary with usb_1 as touching when a real ~3.6mm gap exists; //VERIFY dropped, see RESEARCH.md). w=16.51 [B] width cross-corroborated against sfp_2 (both exactly 16.51mm, unchanged) (SP2 #21: no-peer vs connectors sfp, literal retained). d=48.4 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement supersedes the prior 53.98mm single-detector-hit figure, //VERIFY dropped). h=10.4 [B] caliper Task 2: bottom->top 11.8 - thickness 1.4 (was 13.4 [C] //VERIFY placeholder; caliper "9.5 alone" figure is the cage's own standalone body height, a corroborating cross-check, not used directly since it isn't board-bottom-referenced)
+          ["sfp_2",       [34.08,  0, 1.4], [16.51, 48.4, 10.4], "ymin"], // CN9+CN20+CN10. [B] width; d=48.4 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement, same fix/basis as sfp_1 — identical cage part, //VERIFY dropped) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4, same Task 2 caliper reconciliation as sfp_1 (identical cage part)
           // ONE physical 4-port ganged RJ45 block (WAN + 3x LAN); "WAN X1" silk
           // marks port 1 of the block, NOT a separate connector (hardware owner,
           // 2026-07-16). Refdes is CN21 (single component) — the earlier "CN1"
@@ -300,8 +307,8 @@ function _sbc_table() = [
           ["rj45_2",  [76.59,   0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 2 (LAN)
           ["rj45_3",  [90.57,   0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 3 (LAN)
           ["rj45_4",  [104.55,  0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 4 (LAN)
-          ["dc_power_1",  [124.59,  0, 1.4], [10.03,  10.71, 10.0], "ymin"], // CN4 "DC12V" barrel jack. [B] x/y envelope pixel-detected (edges shared with rj45_4/usbc_pwr_1 boundaries); [C] //VERIFY height (no top-view Z dimension; generic barrel-jack estimate; Task 2 caliper pass did not re-measure this one)
-          ["usbc_pwr_1",  [134.62,  0, 1.4], [8.94,   9.95,  3.2], "ymin"], // CN5 "PD20V" USB-C PD input. [B] left edge + top edge pixel-detected; [C] //VERIFY width (generic USB-C receptacle datasheet figure, own right-edge detector pass inconclusive — see RESEARCH.md re: CN6 proximity)
+          ["dc_power_1",  [125.2,   0, 1.4], [9.8,    10.71, 10.0], "ymin"], // CN4 "DC12V" barrel jack. x/w [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — right edge = board width 148.0 - 13.0mm-from-right-edge caliper reading = 135.0; width corrected to 9.8mm per the round-2 spec doc — supersedes the prior pixel-detected 124.59/10.03 figures, which mis-modeled this connector as sharing an exact boundary with usbc_pwr_1 when a real ~2.3mm gap exists; //VERIFY dropped on x/w, see RESEARCH.md). [C] //VERIFY height (no top-view Z dimension; generic barrel-jack estimate; not re-measured by this correction)
+          ["usbc_pwr_1",  [137.3,   0, 1.4], [8.7,    9.95,  3.2], "ymin"], // CN5 "PD20V" USB-C PD input. x/w [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — right edge = board width 148.0 - 2.0mm-from-right-edge caliper reading = 146.0; width corrected to 8.7mm per the round-2 spec doc — supersedes the prior pixel-detected left edge (134.62) and generic-datasheet width (8.94), which mis-modeled this connector as sharing an exact boundary with dc_power_1 when a real ~2.3mm gap exists; //VERIFY dropped on x/w, see RESEARCH.md). d=9.95 [B] top edge (pre-existing detector-confirmed value, unchanged and not re-measured by this correction — see RESEARCH.md)
           // Non-front-panel, top face (z=thickness, opens +Z, no lateral edge):
           ["uart_1",      [8.0,    10.0, 1.4], [5.0,   10.0,  6.0], "top"], // CON1 console/UART header ("G RX TX" silkscreen labels), does not touch a lateral edge. [C] //VERIFY position (visual crop read only, not pixel-detector-confirmed — search window overlapped CN11's own edges); h=6.0 [B] from Header_PIN 2.54mm.pdf body height
           // NOTE: no Pi-style 40-pin "gpio" header is modeled for bpir4 — the DXF
@@ -357,7 +364,7 @@ function _sbc_table() = [
           // this row) — i.e. y_max = 100.5-value, y_min = y_max-depth. Caliper
           // does not disambiguate near-vs-far edge explicitly; flagged //VERIFY
           // for that interpretation, x/w/d themselves are [B] caliper.
-          ["dip_1", [148+2-10.4, 100.5-48.6-6.5, 1.4], [10.4, 6.5, 2.5], "top"], // DIP switch bank. [B] caliper position (x reconstructed from the caliper's explicit "+2mm overhang off x=148": x_max=150, x_min=150-10.4=139.6) + w/d; [C] //VERIFY h (generic slide-switch actuator height, no datasheet) and the y-edge-reference interpretation above
+          ["dip_1", [148+2-10.4, 100.5-48.6-6.5, 1.4], [10.4, 6.5, 9.0], "top"], // DIP switch bank. [B] caliper position (x reconstructed from the caliper's explicit "+2mm overhang off x=148": x_max=150, x_min=150-10.4=139.6) + w/d; h=9.0 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement supersedes the prior 2.5mm [C] //VERIFY generic slide-switch-actuator placeholder guess) — the y-edge-reference interpretation above is untouched by this fix, still //VERIFY
           // 26-pin/2.54mm header — distinct from the Pi-HAT 40-pin "gpio" family
           // (see NOTE above uart_1). No catalog type fits (connectors' gpio_2x20
           // is sized for 40-pin/20-column; this is 26-pin/13-column) — per SSOT,
@@ -370,11 +377,23 @@ function _sbc_table() = [
           // pin-header datasheet (`DS/Header_PIN 2.54mm.pdf`) rather than the
           // Pi-specific gpio_2x20 h=8.5 (that figure is grounded in the
           // Raspberry-Pi-HAT-specific header part; uart_1's h=6.0 is the more
-          // relevant same-board, same-generic-header-family evidence). x placed
-          // flush to the right wall (148-33.02=114.98) — caliper says "right
+          // relevant same-board, same-generic-header-family evidence).
+          // Round-2 correction (#62, physical-board review): #55 had this
+          // header's own w/d swapped — it modeled the 33.02mm 13-column
+          // pin-field span running along X (across the header's own short
+          // side against the wall) and the 5.08mm 2-row spacing along Y. The
+          // real header sits flush against the right (xmax) wall with its
+          // long 13-column field running FORWARD/BACK along Y and only its
+          // narrow 2-row spacing crossing X — i.e. the footprint needed a 90°
+          // yaw, not a re-measurement (measured w/d unchanged, still [B]
+          // caliper + pin-count/pitch math). x placed flush to the right wall
+          // using the ROTATED width (148-5.08=142.92) — caliper says "right
           // wall" without an exact number, so this exact x is [C]//VERIFY
-          // placement, not caliper-measured; y per the "-rear" convention above.
-          ["gpio26_1", [148-33.02, 100.5-10-5.08, 1.4], [33.02, 5.08, 6.0], "top"], // [B] caliper y(10-rear) + pin-count/pitch math; [C] //VERIFY x (flush-right assumption) and h (reused generic header figure)
+          // placement, not caliper-measured; y keeps the same "10-rear"
+          // anchor as #55 (y_max=100.5-10=90.5, unaffected by the yaw fix)
+          // but now extends the ROTATED (long, 33.02) depth back from it:
+          // y_min=90.5-33.02=57.48.
+          ["gpio26_1", [148-_sbc_rot90([33.02, 5.08, 6.0])[0], 100.5-10-_sbc_rot90([33.02, 5.08, 6.0])[1], 1.4], _sbc_rot90([33.02, 5.08, 6.0]), "top"], // [B] caliper y(10-rear) + pin-count/pitch math; [C] //VERIFY x (flush-right assumption) and h (reused generic header figure). Round-2 (#62): yaw-corrected via _sbc_rot90 — w/d swapped so the 33.02mm dimension runs in Y (right-wall-flush) and 5.08mm crosses X; measured sizes unchanged from #55
           // M.2 Key-B modem socket. Caliper "14 rear/3.4 left" read the same way
           // as dip_1/gpio26_1's y convention (distance from rear to the box's
           // own rear-facing edge) and the standard "x=left-edge" convention (x is
@@ -400,7 +419,23 @@ function _sbc_table() = [
           // own rear-facing edge (rather than its min corner) is required simply
           // to keep the larger card envelope within the board's own footprint.
           // Body from connectors m2_modem_card (SSOT).
-          ["m2modem_1_card", [3.4, 100.5-14-connector_size("m2_modem_card")[1], 1.4], connector_size("m2_modem_card"), "top"],
+          // Round-2 correction (#62, physical-board review): #55 laid this card
+          // out with the unrotated [30,52,3.8] body (52mm depth extending along
+          // Y from the socket's rear edge), which reaches all the way down to
+          // y=34.5 — deep into the sfp_1/sfp_2 cages' own y=[0,53.98] keep-out,
+          // a real collision the asserts never caught. Yaw-corrected via
+          // _sbc_rot90 (same anchor formula, rotated size fed in): the 52mm long
+          // axis now runs along X (x=[3.4,55.4], which actually overlaps the
+          // mPCIe cards' own x=[4.5,55.45] almost entirely — clearance from
+          // the mPCIe keep-outs comes from this card being "top" edge vs the
+          // mPCIe cards' "bottom" edge, not from XY separation) and only the
+          // 30mm width extends down from the socket's y_max, landing at
+          // y=[56.5,86.5] — clear of the SFP cages' y<=48.4 span by 8.1mm
+          // (SFP depth was later corrected 53.98->48.4 by Task 2; this figure
+          // reflects current HEAD).
+          // Measured size unchanged, [B] caliper (same as the socket row
+          // above).
+          ["m2modem_1_card", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_modem_card"))[1], 1.4], _sbc_rot90(connector_size("m2_modem_card")), "top"],
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
           // where left/right swap relative to the top-view frame this whole row
@@ -432,15 +467,34 @@ function _sbc_table() = [
           // (rather than its min corner) is required simply to keep the larger
           // card envelope within the board's own footprint. Body from connectors
           // mpcie_card (SSOT).
-          ["mpcie_1_card", [4.5, 100.5-41.9-connector_size("mpcie_card")[1], 0], connector_size("mpcie_card"), "bottom"],
+          // Round-2 correction (#62, physical-board review): #55 laid both
+          // mpcie_1_card and mpcie_2_card out with the unrotated [30,50.95,5]
+          // body (50.95mm depth extending -Y from each socket's own rear edge).
+          // Since the two sockets are only 32.7mm apart in Y (41.9 vs 9.2 "rear"
+          // readings), the two 50.95mm-long card boxes overlapped each other by
+          // 18.25mm — a real collision the pre-existing asserts never caught
+          // (they only checked body==connector_size(...) and in-envelope, not
+          // cross-card overlap). The real cards' long axis actually runs toward
+          // the Key-M SSD side (increasing X, away from this left-edge column),
+          // not backward along Y. Yaw-corrected via _sbc_rot90 (same anchor
+          // formula as before — x_min flush to the socket's own x_min, y_max
+          // flush to the socket's own y_max — just fed the rotated size): the
+          // 50.95mm long axis now runs along X (x=[4.5,55.45] for both cards,
+          // pointing toward Key-M at x=140.4, and well clear of it) and only
+          // the 30mm width extends down from each socket's own y_max, landing
+          // at y=[28.6,58.6] (card 1) and y=[61.3,91.3] (card 2) — no overlap
+          // between the two cards (58.6 < 61.3). Measured size unchanged, [B]
+          // caliper (same as the socket rows).
+          ["mpcie_1_card", [4.5, 100.5-41.9-_sbc_rot90(connector_size("mpcie_card"))[1], 0], _sbc_rot90(connector_size("mpcie_card")), "bottom"],
           ["mpcie_2", [4.5, 100.5-9.2 -connector_size("mpcie")[1], 0], connector_size("mpcie"), "bottom"], // same x as mpcie_1 (two parallel slots, same left-side column, different y) — [B] caliper x(mirrored)/y; body from connectors mpcie (SSOT)
-          // Card keep-out envelope for mpcie_2, same basis as mpcie_1_card above.
-          ["mpcie_2_card", [4.5, 100.5-9.2 -connector_size("mpcie_card")[1], 0], connector_size("mpcie_card"), "bottom"],
+          // Card keep-out envelope for mpcie_2, same basis as mpcie_1_card above (round-2 yaw-corrected, see comment above).
+          ["mpcie_2_card", [4.5, 100.5-9.2 -_sbc_rot90(connector_size("mpcie_card"))[1], 0], _sbc_rot90(connector_size("mpcie_card")), "bottom"],
           // M.2 Key-M SSD: caliper "7.6 left" -> x_board = 148-7.6 = 140.4
           // (mirror; the OPPOSITE direction from mpcie's "right" readings,
           // since flipped-left and flipped-right mirror to opposite board
           // sides). Cross-check against the SSD's documented board position
-          // ("opposite dc_power_1", x=124.59, a right-side front-panel
+          // ("opposite dc_power_1", x=125.2 (round-2 #62 Task 2b caliper
+          // correction; was 124.59), a right-side front-panel
           // part) — 140.4 (mirrored) lands in that same right-side region,
           // while the un-mirrored alternative (7.6, near-left) would NOT;
           // this confirms "left" readings mirror too, not just "right" ones.
@@ -628,6 +682,25 @@ function sbc_connector(b, name) =
     let (cs = [for (c = sbc_connectors(b)) if (c[0] == name) c])
     assert(len(cs) > 0, str("sbc: board ", b, " has no connector ", name)) cs[0];
 
+// Round 2 (#62) Task 2: bpir4's front-panel connector housings sit slightly
+// forward of the PCB's own front edge (y=0) in reality — a physical-board
+// caliper spot-check found the housings ~2mm proud of the board edge, not
+// flush. [B] caliper. This is a real datum correction for THESE SPECIFIC
+// front connectors, not a per-board/per-edge rule: other boards' "ymin"
+// connectors (e.g. the Pi Zero family's micro-USB/mini-HDMI ports) sit
+// flush and must NOT get this shift, and bpir4's own non-front connectors
+// (dip_1, sfp sockets' peers on other edges, gpio26_1, etc.) are untouched
+// too. One named constant + an explicit board+name allowlist, honored by
+// sbc_placeholder() below — NOT a per-row edit of each affected row's
+// stored y to -2.0 (that would duplicate the single 2.0mm correction value
+// across 9 rows instead of keeping one source of truth for it).
+SBC_FRONT_PROTRUSION = 2.0;
+_SBC_BPIR4_FRONT_CONNECTORS = ["usb_1", "sfp_1", "sfp_2",
+    "rj45_1", "rj45_2", "rj45_3", "rj45_4", "dc_power_1", "usbc_pwr_1"];
+function _sbc_front_protrusion(b, name) =
+    (b == "bpir4" && len([for (n = _SBC_BPIR4_FRONT_CONNECTORS) if (n == name) n]) > 0)
+        ? SBC_FRONT_PROTRUSION : 0;
+
 /* [Placeholder] */
 // PCB slab (rounded corners) + connector bodies; mounting holes as keep-outs.
 // Corner datum: board in +X/+Y, bottom on Z=0.
@@ -647,7 +720,12 @@ module sbc_placeholder(b) {
                 if (c[3] == "bottom")
                     translate([c[1][0], c[1][1], c[1][2] - c[2][2]]) cube(c[2]);
                 else
-                    translate(c[1]) cube(c[2]);
+                    // Round 2 (#62) Task 2: shift the connector's Y start by
+                    // its front-protrusion amount (0 for every connector
+                    // except bpir4's front-panel list above), so those
+                    // housings render proud of y=0 without re-literaling the
+                    // -2.0 shift into 9 separate row positions.
+                    translate([c[1][0], c[1][1] - _sbc_front_protrusion(b, c[0]), c[1][2]]) cube(c[2]);
         }
         for (h = sbc_holes(b, "all"))
             translate([h[0], h[1], -1]) cylinder(h = t + 2, d = h[3]);

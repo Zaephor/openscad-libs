@@ -92,16 +92,49 @@ assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
 assert(_front_conn_max_h() <= 14.2 + 1e-6,
     str("tallest front connector ", _front_conn_max_h(),
         " unexpectedly > 14.2 (front-connector height regression?)"));
-// UNRESOLVED: front-panel cutout boundary usb_1→sfp_1 at x=16.3 is 0.0mm gap
-// (merged L-shaped opening). This DIFFERS from the dc_power_1/usbc_pwr_1 model:
-// that pair's shared boundary is detector-confirmed solid (its //VERIFY flags are
-// on height/width axes only, not the boundary itself). The usb_1/sfp_1 boundary
-// COINCIDES with a pre-existing //VERIFY on usb_1's right edge (sbc.scad:269,
-// RESEARCH.md ~573-578): the 8.89mm modeled width is narrow for a typical USB-A
-// shell; the true right edge may lie elsewhere, meaning the actual physical gap
-// could be overlap rather than benign zero-gap. Requires re-verification of
-// usb_1's real right edge (sbc library scope) before treating this faceplate
-// geometry as final — out-of-scope for this project-only plan.
+// RESOLVED (Round 2 #62 Task 2b/3): the old "0.0mm gap (merged L-shaped
+// opening)" note here was itself the bug -- a pixel-detected boundary that
+// mis-modeled usb_1 and sfp_1 as sharing an exact edge. A physical-board
+// caliper re-check (2026-07-24, see libraries/sbc/sbc.scad's bpir4 row and
+// RESEARCH.md) found a real ~3.6mm gap there, matching the same
+// "real-gap-not-shared-boundary" pattern already true of the
+// dc_power_1/usbc_pwr_1 pair (~2.3mm). Both //VERIFY flags on the affected
+// edges are dropped in sbc.scad. parts/tray.scad's _faceplate() now unions
+// an explicit support wall into each gap (_io_gap_wall()/_io_gap_wall_geom())
+// so the panel material there is a deliberate, verified feature rather than
+// incidental cutout-box leftover -- checked below.
+
+// Round 2 #62 Task 3: IO-gap bridge-support walls. Recomputes each wall's
+// geometry via the SAME _io_gap_wall_geom() function parts/tray.scad's
+// _faceplate() renders with (single source of truth -- `use`d above), and
+// each connector's own cutout edges via sbc_connector() directly, then
+// checks: (a) the wall band [x0,x1] sits STRICTLY inside the real gap, with
+// positive clearance to both flanking connectors' cutout edges, so a
+// connector's own opening is never intruded on; (b) the wall genuinely has
+// positive width (material is actually present in the gap X-band, not a
+// degenerate/zero-width case).
+function _conn_x_edges(name) =
+    let (c = sbc_connector(BOARD, name))
+    [board_x() + c[1][0], board_x() + c[1][0] + c[2][0]];  // [left edge, right edge], chassis frame
+
+_wall_usb_sfp = _io_gap_wall_geom("usb_1", "sfp_1", _io_wall_w_usb_sfp());
+_wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+_usb1_x = _conn_x_edges("usb_1");   _sfp1_x = _conn_x_edges("sfp_1");
+_dc_x   = _conn_x_edges("dc_power_1"); _usbc_x = _conn_x_edges("usbc_pwr_1");
+
+assert(_wall_usb_sfp[1] - _wall_usb_sfp[0] > 0,
+    "usb_1/sfp_1 support wall has zero/negative width");
+assert(_wall_usb_sfp[0] > _usb1_x[1] && _wall_usb_sfp[1] < _sfp1_x[0],
+    str("usb_1/sfp_1 support wall [", _wall_usb_sfp[0], ",", _wall_usb_sfp[1],
+        "] intrudes into a connector opening (usb_1 right=", _usb1_x[1],
+        ", sfp_1 left=", _sfp1_x[0], ")"));
+
+assert(_wall_dc_usbc[1] - _wall_dc_usbc[0] > 0,
+    "dc_power_1/usbc_pwr_1 support wall has zero/negative width");
+assert(_wall_dc_usbc[0] > _dc_x[1] && _wall_dc_usbc[1] < _usbc_x[0],
+    str("dc_power_1/usbc_pwr_1 support wall [", _wall_dc_usbc[0], ",", _wall_dc_usbc[1],
+        "] intrudes into a connector opening (dc_power_1 right=", _dc_x[1],
+        ", usbc_pwr_1 left=", _usbc_x[0], ")"));
 
 // Item 4: four corner lid posts (side-midspan pair dropped).
 assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
@@ -177,14 +210,19 @@ assert(board_w()/2 + dip_lever_overhang <= _right_wall_inner + 1e-6,
 // A bottom-face module (edge="bottom") hangs into the standoff gap; if its
 // footprint overlaps a corner standoff post's XY, a future installed module
 // would collide with the post. Guard it (AABB overlap, board-local frame).
-// KNOWN CONFLICT (#56, user-accepted 2026-07-23): the [3.5,23.5] structural-mount
-// post overlaps the mpcie_1_card keep-out envelope by up to ~2.6mm in X. This
-// hole's structural-mount role is itself tier [B]//VERIFY (bpi-r4.md: "No single
-// source confirms which real-world case product uses which of the 4 structural
-// holes") — not a confirmed real mounting point. Accepted as a documented risk:
-// if mpcie_1 (bottom-left mini-PCIe) is populated, this corner mounting point may
-// be unusable/inaccessible. Any OTHER overlap is still a hard failure.
-_known_keepout_conflicts = [["mpcie_1_card", 3.5, 23.5]];
+// FORMER KNOWN CONFLICT (#56, user-accepted 2026-07-23), RESOLVED by Round 2
+// #62 Task 1: the [3.5,23.5] structural-mount post used to overlap the
+// mpcie_1_card keep-out envelope by up to ~2.6mm in X, because #55 laid that
+// card out with the wrong yaw (long axis along Y instead of X). Task 1's
+// mPCIe yaw fix moved mpcie_1_card's footprint to x=[4.5,55.45]/y=[28.6,58.6]
+// (board frame) — verified by direct computation against this same post
+// (r=_board_standoff_od()/2): y+r=27.105 < the card's y0=28.6, a genuine
+// 1.495mm clearance, not an overlap. All 4 structural-mount posts x all 6
+// bottom-face modules were re-checked exhaustively (mpcie_1/_card,
+// mpcie_2/_card, m2_ssd_1/_card) and NONE overlap any longer, so the prior
+// accepted-conflict exception is dropped: this is now an unconditional hard
+// assert (any future overlap — from either side re-drifting — fails loudly,
+// with no silent allowance).
 _bottom = [for (c = sbc_connectors(BOARD)) if (c[3] == "bottom") c];
 _spost_r = _board_standoff_od()/2;
 for (h = sbc_holes_xy(BOARD, "structural-mount"))
@@ -194,9 +232,7 @@ for (h = sbc_holes_xy(BOARD, "structural-mount"))
         // post AABB = [hx-r, hx+r] x [hy-r, hy+r]
         overlap = (h[0]+_spost_r > mx0) && (h[0]-_spost_r < mx1) &&
                   (h[1]+_spost_r > my0) && (h[1]-_spost_r < my1);
-        _is_known = len([for (k = _known_keepout_conflicts)
-            if (k[0] == m[0] && abs(k[1]-h[0]) < 1e-6 && abs(k[2]-h[1]) < 1e-6) k]) > 0;
-        assert(!overlap || _is_known,
+        assert(!overlap,
             str("underside module ", m[0], " footprint overlaps standoff post at [",
                 h[0], ",", h[1], "] — installed module would collide"));
     }
