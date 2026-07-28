@@ -92,16 +92,49 @@ assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
 assert(_front_conn_max_h() <= 14.2 + 1e-6,
     str("tallest front connector ", _front_conn_max_h(),
         " unexpectedly > 14.2 (front-connector height regression?)"));
-// UNRESOLVED: front-panel cutout boundary usb_1→sfp_1 at x=16.3 is 0.0mm gap
-// (merged L-shaped opening). This DIFFERS from the dc_power_1/usbc_pwr_1 model:
-// that pair's shared boundary is detector-confirmed solid (its //VERIFY flags are
-// on height/width axes only, not the boundary itself). The usb_1/sfp_1 boundary
-// COINCIDES with a pre-existing //VERIFY on usb_1's right edge (sbc.scad:269,
-// RESEARCH.md ~573-578): the 8.89mm modeled width is narrow for a typical USB-A
-// shell; the true right edge may lie elsewhere, meaning the actual physical gap
-// could be overlap rather than benign zero-gap. Requires re-verification of
-// usb_1's real right edge (sbc library scope) before treating this faceplate
-// geometry as final — out-of-scope for this project-only plan.
+// RESOLVED (Round 2 #62 Task 2b/3): the old "0.0mm gap (merged L-shaped
+// opening)" note here was itself the bug -- a pixel-detected boundary that
+// mis-modeled usb_1 and sfp_1 as sharing an exact edge. A physical-board
+// caliper re-check (2026-07-24, see libraries/sbc/sbc.scad's bpir4 row and
+// RESEARCH.md) found a real ~3.6mm gap there, matching the same
+// "real-gap-not-shared-boundary" pattern already true of the
+// dc_power_1/usbc_pwr_1 pair (~2.3mm). Both //VERIFY flags on the affected
+// edges are dropped in sbc.scad. parts/tray.scad's _faceplate() now unions
+// an explicit support wall into each gap (_io_gap_wall()/_io_gap_wall_geom())
+// so the panel material there is a deliberate, verified feature rather than
+// incidental cutout-box leftover -- checked below.
+
+// Round 2 #62 Task 3: IO-gap bridge-support walls. Recomputes each wall's
+// geometry via the SAME _io_gap_wall_geom() function parts/tray.scad's
+// _faceplate() renders with (single source of truth -- `use`d above), and
+// each connector's own cutout edges via sbc_connector() directly, then
+// checks: (a) the wall band [x0,x1] sits STRICTLY inside the real gap, with
+// positive clearance to both flanking connectors' cutout edges, so a
+// connector's own opening is never intruded on; (b) the wall genuinely has
+// positive width (material is actually present in the gap X-band, not a
+// degenerate/zero-width case).
+function _conn_x_edges(name) =
+    let (c = sbc_connector(BOARD, name))
+    [board_x() + c[1][0], board_x() + c[1][0] + c[2][0]];  // [left edge, right edge], chassis frame
+
+_wall_usb_sfp = _io_gap_wall_geom("usb_1", "sfp_1", _io_wall_w_usb_sfp());
+_wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+_usb1_x = _conn_x_edges("usb_1");   _sfp1_x = _conn_x_edges("sfp_1");
+_dc_x   = _conn_x_edges("dc_power_1"); _usbc_x = _conn_x_edges("usbc_pwr_1");
+
+assert(_wall_usb_sfp[1] - _wall_usb_sfp[0] > 0,
+    "usb_1/sfp_1 support wall has zero/negative width");
+assert(_wall_usb_sfp[0] > _usb1_x[1] && _wall_usb_sfp[1] < _sfp1_x[0],
+    str("usb_1/sfp_1 support wall [", _wall_usb_sfp[0], ",", _wall_usb_sfp[1],
+        "] intrudes into a connector opening (usb_1 right=", _usb1_x[1],
+        ", sfp_1 left=", _sfp1_x[0], ")"));
+
+assert(_wall_dc_usbc[1] - _wall_dc_usbc[0] > 0,
+    "dc_power_1/usbc_pwr_1 support wall has zero/negative width");
+assert(_wall_dc_usbc[0] > _dc_x[1] && _wall_dc_usbc[1] < _usbc_x[0],
+    str("dc_power_1/usbc_pwr_1 support wall [", _wall_dc_usbc[0], ",", _wall_dc_usbc[1],
+        "] intrudes into a connector opening (dc_power_1 right=", _dc_x[1],
+        ", usbc_pwr_1 left=", _usbc_x[0], ")"));
 
 // Item 4: four corner lid posts (side-midspan pair dropped).
 assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
