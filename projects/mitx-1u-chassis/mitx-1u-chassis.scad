@@ -74,6 +74,28 @@ function _gusset_xw()   = 10;
 function _gusset_x()    = rack_support_rail_size()[0] / 2 + _gusset_xw() / 2;
 function _gusset_size() = 15;
 
+// Front intake vents (Task 3): a honeycomb field per side wall, positioned
+// well clear of the rear gusset/tongue zone (which starts at
+// _tongue_y()-wall-_gusset_size(), see the _mitx_gusset() calls below) and
+// vertically margined off the floor and open top. Symmetric on both side
+// walls so the single rear exhaust fan draws from both sides.
+function _side_vent_zmargin() = 6;
+function _side_vent_y0()      = 16;
+function _side_vent_len()     = 80;
+function _side_vent_h()       = _wall_top_z() - 2 * _side_vent_zmargin();
+
+// Rear vent field flanking the fan (Task 3): a flat strip of otherwise-
+// unused rear wall between the fan's own outboard edge and the near side
+// wall's inner face -- clear of the fan's own mounting square (fan_holes()'
+// screws land at that square's corners) and clear of the tongue-flanking
+// gusset (which sits inboard, on the opposite side of the fan from this
+// vent).
+function _fan_vent_x1()  = _fan_cx() - fan_size / 2;   // fan's outboard edge
+function _side_inner_x() = -_clear_w() / 2 + wall;     // left side wall inner face
+function _fan_vent_w()   = 24;
+function _fan_vent_cx()  = (_fan_vent_x1() + _side_inner_x()) / 2;
+function _fan_vent_h()   = _wall_top_z() - 2 * _side_vent_zmargin();
+
 // Fit-asserts
 assert(_bw() <= rack10_clear_width(standard) - 2*wall + 1e-6,
     str("mitx-1u: board width ", _bw(), " > usable ", rack10_clear_width(standard)-2*wall));
@@ -111,6 +133,18 @@ assert(abs(_dc_cx()) - dc_dia/2 >= _gusset_x() + _gusset_xw()/2 - 1e-6,
 // Fan must fit within the rear wall's own height.
 assert(_rear_center_z() - fan_size/2 >= -1e-6 && _rear_center_z() + fan_size/2 <= _wall_top_z() + 1e-6,
     str("mitx-1u: fan_size ", fan_size, " does not fit within rear wall height ", _wall_top_z()));
+// Side intake vents must stay clear of the rear gusset zone (starts at
+// _tongue_y()-wall-_gusset_size(), matching the _mitx_gusset() calls below).
+assert(_side_vent_y0() + _side_vent_len() <= _tongue_y() - wall - _gusset_size() - 1e-6,
+    str("mitx-1u: side intake vent [", _side_vent_y0(), ",", _side_vent_y0()+_side_vent_len(),
+        "] reaches into the rear gusset zone (starts at ", _tongue_y()-wall-_gusset_size(), ")"));
+// Fan-flanking rear vent must fit entirely in the gap between the side
+// wall's inner face and the fan's own outboard edge (not overlap either).
+assert(_fan_vent_cx() - _fan_vent_w()/2 >= _side_inner_x() + 1e-6
+    && _fan_vent_cx() + _fan_vent_w()/2 <= _fan_vent_x1() - 1e-6,
+    str("mitx-1u: fan-flanking vent [", _fan_vent_cx()-_fan_vent_w()/2, ",",
+        _fan_vent_cx()+_fan_vent_w()/2, "] does not fit between the side wall inner face (",
+        _side_inner_x(), ") and the fan's outboard edge (", _fan_vent_x1(), ")"));
 
 module _mitx_faceplate() {
     difference() {
@@ -208,6 +242,39 @@ module _mitx_fan_teardrop(size, depth) {
             }
 }
 
+// Side-wall intake honeycomb vent (Task 3). honeycomb_vent()'s local frame
+// is X=width, Y=height, Z=depth (see honeycomb.scad); rotate([90,0,90]) maps
+// local (x,y,z) -> world (z,x,y) [verified empirically: local depth (Z) ->
+// world X, through the wall thickness; local width (X) -> world Y, along
+// the wall's own length; local height (Y, the bridge-sensitive axis) ->
+// world Z, vertical, so the flat-top hex still bridges the short way].
+// `sx` mirrors _mitx_shell()'s own side-wall loop convention (-1 = left,
+// +1 = right) -- only the depth-axis (world X) anchor differs between the
+// two walls, width/height placement is identical.
+module _mitx_side_vent(sx) {
+    w2 = _clear_w() / 2;
+    x_start = (sx > 0) ? w2 - wall - 1 : -w2 - 1;   // 1mm overcut past the outer face
+    translate([x_start, _side_vent_y0(), _side_vent_zmargin()])
+        rotate([90, 0, 90])
+            honeycomb_vent(_side_vent_len(), _side_vent_h(), wall + 2, cell, hc_wall);
+}
+
+// Rear-wall vent flanking the fan (Task 3), same rotate([-90,0,0]) idiom as
+// the fan/DC-in cutters below (native Z-bore frame -> +Y through the wall,
+// see fans.scad header). Unlike those single-axis cutters (round, no
+// distinct width/height), this rotation also reverses local Y
+// (honeycomb_vent's height) onto world Z -- world_z = tz - local_y,
+// confirmed empirically -- which only flips the field's own top/bottom
+// traversal order, not its shape (a flat-top hex field is top/bottom
+// symmetric), so `tz` is anchored at the vent's own intended top
+// (z0 + height) to land the field at [z0, z0+height] despite the reversal.
+module _mitx_rear_fan_vent() {
+    z0 = _rear_center_z() - _fan_vent_h() / 2;
+    translate([_fan_vent_cx() - _fan_vent_w()/2, _tongue_y() - wall - 1, z0 + _fan_vent_h()])
+        rotate([-90, 0, 0])
+            honeycomb_vent(_fan_vent_w(), _fan_vent_h(), wall + 2, cell, hc_wall);
+}
+
 module mitx_1u_chassis() {
     _mitx_faceplate();
     // off-center board standoffs
@@ -240,11 +307,14 @@ module mitx_1u_chassis() {
         // opening, a teardrop's flat roof would actually hurt fit here.
         translate([_dc_cx(), _tongue_y() - wall - 1, _rear_center_z()])
             rotate([-90, 0, 0]) cylinder(h = wall + 2, d = dc_dia);
+        // intake honeycomb vents, both side walls (Task 3).
+        for (sx = [-1, 1]) _mitx_side_vent(sx);
+        // rear honeycomb vent field flanking the fan (Task 3).
+        _mitx_rear_fan_vent();
     }
     // #40 rear-support tongue: root at _tongue_y() (flush with the rear
     // wall's outer face), projects further +Y into rack_support_plate()'s
     // channel -- see rack_support_tongue()'s consumer-contract doc comment.
     translate([0, _tongue_y(), 0]) rack_support_tongue();
-    // vents in Task 3
 }
 mitx_1u_chassis();

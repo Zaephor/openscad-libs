@@ -51,6 +51,15 @@ assert(_tongue_y() >= _usable_depth(),
     str("mitx-1u: tongue root ", _tongue_y(), " < _usable_depth() ", _usable_depth(),
         " -- rear wall would sit in front of the board's own depth budget"));
 
+// Fan-flanking rear vent (Task 3) must sit on the SAME side as the fan
+// (both negative X) -- a future _fan_cx()/_side_inner_x() sign or
+// side-wall convention change could otherwise silently place it on the
+// wrong side while still passing the main file's own (side-agnostic)
+// fit-assert.
+assert(_fan_vent_cx() < 0 && _fan_cx() < 0,
+    str("mitx-1u: fan-flanking vent x=", _fan_vent_cx(),
+        " expected on the same (negative) side as the fan x=", _fan_cx()));
+
 // No explicit render call needed -- the include above already re-runs
 // mitx-1u-chassis.scad's own trailing mitx_1u_chassis() call (and its
 // top-level fit-asserts) at defaults.

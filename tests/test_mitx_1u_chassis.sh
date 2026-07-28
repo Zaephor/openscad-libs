@@ -22,6 +22,41 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
 fi
 [ -s "$tmp/default.stl" ] || { echo "FAIL: default render produced no/empty STL"; fail=1; }
 
+# Honeycomb vents (Task 3): three fields (2 side intake + 1 rear fan-flanking)
+# each self-recompute + echo HONEYCOMB_WORST_SPAN inside honeycomb.scad --
+# same idiom as tests/test_bpir4_honeycomb_vents.sh / test_fan_grille.sh.
+# Facet count is a real-teeth proxy that the fields are actual hex-prism
+# arrays cut through the walls, not dead/solid space; the worst-span values
+# are the actual self-support regression guard.
+span_lines="$(echo "$out" | grep -o 'HONEYCOMB_WORST_SPAN=[0-9.]*')"
+n_spans="$(echo "$span_lines" | grep -c . || true)"
+if [ "$n_spans" -lt 3 ]; then
+  echo "FAIL: expected 3 HONEYCOMB_WORST_SPAN echoes (2 side vents + 1 rear vent), got $n_spans:"
+  echo "$span_lines"; fail=1
+fi
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  span="$(echo "$line" | cut -d= -f2)"
+  if ! awk -v s="$span" 'BEGIN{exit !(s <= 5.000001)}'; then
+    echo "FAIL: $line exceeds the 5mm self-support ceiling"; fail=1
+  fi
+done <<< "$span_lines"
+
+facets=0
+if [ -s "$tmp/default.stl" ]; then
+  facets=$(python3 - "$tmp/default.stl" <<'PYEOF'
+import struct, sys
+with open(sys.argv[1], "rb") as f:
+    data = f.read()
+print(struct.unpack("<I", data[80:84])[0])
+PYEOF
+)
+  if [ "$facets" -lt 3000 ]; then
+    echo "FAIL: default chassis STL has only $facets facets -- too few for 3 honeycomb vent fields (expected 3000+)"
+    fail=1
+  fi
+fi
+
 # tests/asserts.scad (default params + independent contract checks) must
 # also render clean.
 out="$(run "$tmp/asserts.stl" "$proj/tests/asserts.scad")"
