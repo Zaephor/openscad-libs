@@ -50,6 +50,7 @@ use <fans/fans.scad>;
 - [fan-grille](projects/fan-grille) — flat honeycomb fan finger-guard.
 - [keystone-blank](projects/keystone-blank) — printable caliper-faithful keystone blank insert.
 - [keystone-faceplate](projects/keystone-faceplate) — parametric 1U 10-inch N-port keystone faceplate.
+- [mitx-1u-chassis](projects/mitx-1u-chassis) — 1U 10" rack chassis for a mini-ITX board (front IO, #40 rear mate)
 - [two-piece-box](projects/two-piece-box) — multipart box with exploded view.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.
