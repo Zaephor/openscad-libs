@@ -756,10 +756,49 @@ module sbc_standoffs(b, height, role = undef, dia = -1, bore = -1) {
         }
 }
 
+// Task 3 (#65): compute the inflated [p, s] box a clearance-widened cutout
+// should use, given the connector's own [x,y,z] min-corner p, [w,d,h] extent
+// s, and exit edge e. Factored out of sbc_port_cutout() so the inflation
+// arithmetic is unit-testable without rendering CSG (see sbc_test.scad).
+// Asymmetric by design: clearance grows the opening LATERALLY (in-plane,
+// perpendicular to the exit direction) and UPWARD (+Z) only, never downward.
+// The cutout's bottom always sits on the connector's own z datum (p[2],
+// which is the board's shared per-connector z — sbc_thickness(b) for every
+// lateral/top connector, the board-bottom plane for "bottom" connectors);
+// inflating -Z would eat into the panel floor that an IO-gap support wall
+// (e.g. projects/bpir4-1u-chassis's _io_gap_wall()) stands on directly below
+// that datum, undermining a bridge the design-for-print rules depend on.
+// - lateral edges (xmin/xmax/ymin/ymax): the exit/extrusion axis (X for
+//   xmin/xmax, Y for ymin/ymax) is untouched — "depth" already controls it.
+//   The other in-plane axis (the connector's own board-parallel width) is
+//   the LATERAL one: start -= clearance, size += 2*clearance. Height (Z)
+//   grows UPWARD only: size += clearance, start (z) unchanged.
+// - "top"/"bottom": both X and Y are lateral (the connector's own footprint,
+//   not the exit direction — Z is already the extrusion axis here, entirely
+//   controlled by "depth", and the cutout already extrudes fully through in
+//   Z by design — confirmed against the cube calls below, where the "top"/
+//   "bottom" branches use s[2] only to locate the Z-start offset, never as
+//   a cube dimension), so both inflate the same way as the lateral case's
+//   width; Z (p[2]/s[2]) is left untouched entirely, not even upward.
+function _sbc_cutout_inflate(p, s, e, clearance) =
+    (e == "xmax" || e == "xmin")
+        ? [ [p[0], p[1]-clearance, p[2]], [s[0], s[1]+2*clearance, s[2]+clearance] ]
+    : (e == "ymax" || e == "ymin")
+        ? [ [p[0]-clearance, p[1], p[2]], [s[0]+2*clearance, s[1], s[2]+clearance] ]
+    : (e == "top" || e == "bottom")
+        ? [ [p[0]-clearance, p[1]-clearance, p[2]], [s[0]+2*clearance, s[1]+2*clearance, s[2]] ]
+    : [p, s]; // unknown edge: pass through unchanged, caught by the assert below
+
 // One connector's panel opening, extruded outward along its exit edge.
-module sbc_port_cutout(b, name, depth = 20) {
-    c = sbc_connector(b, name); p = c[1]; s = c[2]; e = c[3];
+// clearance (Task 3, #65, default 0 = exact byte-identical geometry to every
+// pre-#65 caller): optional lateral+upward inflation a downstream chassis
+// project can apply to widen a cutout for fit/tolerance without retuning the
+// connector body data itself — see _sbc_cutout_inflate() above for the full
+// asymmetric-inflation rule and why -Z is deliberately excluded.
+module sbc_port_cutout(b, name, depth = 20, clearance = 0) {
+    c = sbc_connector(b, name); p0 = c[1]; s0 = c[2]; e = c[3];
     o = SBC_OVERLAP;
+    box = _sbc_cutout_inflate(p0, s0, e, clearance); p = box[0]; s = box[1];
     if      (e == "xmax") translate([p[0]+s[0]-o, p[1], p[2]]) cube([depth+o, s[1], s[2]]);
     else if (e == "xmin") translate([p[0]-depth,  p[1], p[2]]) cube([depth+o, s[1], s[2]]);
     else if (e == "ymax") translate([p[0], p[1]+s[1]-o, p[2]]) cube([s[0], depth+o, s[2]]);
@@ -775,9 +814,11 @@ module sbc_port_cutout(b, name, depth = 20) {
     else assert(false, str("sbc: connector ", name, " has bad edge ", e));
 }
 
-// All connectors on an edge → the full panel for that edge (e.g. a router faceplate).
-module sbc_faceplate_cutouts(b, edge, depth = 20) {
-    for (c = sbc_connectors(b)) if (c[3] == edge) sbc_port_cutout(b, c[0], depth);
+// All connectors on an edge → the full panel for that edge (e.g. a router
+// faceplate). clearance (Task 3, #65) passes through to every sbc_port_cutout()
+// call — see that module's comment.
+module sbc_faceplate_cutouts(b, edge, depth = 20, clearance = 0) {
+    for (c = sbc_connectors(b)) if (c[3] == edge) sbc_port_cutout(b, c[0], depth, clearance);
 }
 
 // Visual self-check when opened directly.

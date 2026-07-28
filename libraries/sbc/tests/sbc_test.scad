@@ -458,3 +458,61 @@ assert(_near(_xmin(_rj45_block), 64.0, 0.01) && _near(_xmax(_rj45_block), 122.5,
     "bpir4 rj45_block spans [64.0, 122.5]");
 assert(_xmin(_bpr_rj45[0]) >= _xmin(_rj45_block) && _xmax(_bpr_rj45[3]) <= _xmax(_rj45_block),
     "bpir4 rj45 ports centered/contained within rj45_block envelope");
+
+// --- Task 3 (#65): sbc_port_cutout()/sbc_faceplate_cutouts() clearance param ---
+// _sbc_cutout_inflate(p, s, e, clearance) is the arithmetic sbc_port_cutout()
+// factors its clearance handling through, testable directly without
+// rendering CSG (see sbc.scad's comment above it for the full asymmetric-
+// inflation rule: lateral + upward only, never downward).
+_t3_p = [10, 20, 1.4]; _t3_s = [5, 8, 3];
+// clearance = 0 must be an EXACT no-op for every known edge -- this is what
+// makes the default byte-identical for every pre-#65 caller (e.g. projects/
+// bpir4-1u-chassis/parts/tray.scad's sbc_faceplate_cutouts(BOARD, "ymin",
+// depth = faceplate_th + 2) call, which never passes clearance).
+for (e = sbc_known_edges())
+    assert(_sbc_cutout_inflate(_t3_p, _t3_s, e, 0) == [_t3_p, _t3_s],
+        str("sbc _sbc_cutout_inflate: clearance=0 must be a no-op for edge ", e));
+
+// Explicit clearance, lateral edges: xmin/xmax share X as the exit/extrusion
+// axis (untouched); Y is the lateral in-plane axis (start -=clearance, size
+// +=2*clearance); Z (height) grows UPWARD only (size +=clearance, start
+// unchanged).
+_t3_box_xmax = _sbc_cutout_inflate(_t3_p, _t3_s, "xmax", 1.5);
+assert(_t3_box_xmax == [[10, 18.5, 1.4], [5, 11, 4.5]],
+    "sbc _sbc_cutout_inflate xmax: y-=clearance, w(Y)+=2*clearance, h+=clearance, x/z start unchanged");
+_t3_box_xmin = _sbc_cutout_inflate(_t3_p, _t3_s, "xmin", 1.5);
+assert(_t3_box_xmin == [[10, 18.5, 1.4], [5, 11, 4.5]],
+    "sbc _sbc_cutout_inflate xmin: same rule as xmax (X is the exit axis for both)");
+
+// ymin/ymax: Y is the exit axis (untouched); X is lateral -- this is the
+// exact case the task brief spells out verbatim for a ymin connector.
+_t3_box_ymin = _sbc_cutout_inflate(_t3_p, _t3_s, "ymin", 1.5);
+assert(_t3_box_ymin == [[8.5, 20, 1.4], [8, 8, 4.5]],
+    "sbc _sbc_cutout_inflate ymin: x-=clearance, w(X)+=2*clearance, h+=clearance, y/z start unchanged");
+_t3_box_ymax = _sbc_cutout_inflate(_t3_p, _t3_s, "ymax", 1.5);
+assert(_t3_box_ymax == [[8.5, 20, 1.4], [8, 8, 4.5]],
+    "sbc _sbc_cutout_inflate ymax: same rule as ymin (Y is the exit axis for both)");
+
+// top/bottom: Z is already the full-through-depth extrusion axis (via the
+// "depth" param, confirmed against sbc_port_cutout's own cube calls --
+// s[2]/p[2] are only ever used there to locate the Z-start offset, never as
+// a cube dimension), so BOTH X and Y are lateral and inflate the same way;
+// Z (p[2]/s[2]) is left fully untouched, not even upward.
+_t3_box_top = _sbc_cutout_inflate(_t3_p, _t3_s, "top", 1.5);
+assert(_t3_box_top == [[8.5, 18.5, 1.4], [8, 11, 3]],
+    "sbc _sbc_cutout_inflate top: x/y-=clearance, w/d+=2*clearance each, z/h fully unchanged");
+_t3_box_bottom = _sbc_cutout_inflate(_t3_p, _t3_s, "bottom", 1.5);
+assert(_t3_box_bottom == [[8.5, 18.5, 1.4], [8, 11, 3]],
+    "sbc _sbc_cutout_inflate bottom: same rule as top");
+
+// Smoke-test the actual module wiring (not just the helper function above):
+// sbc_port_cutout()/sbc_faceplate_cutouts() must render without error when
+// clearance is passed, across every edge branch bpir4 actually exercises
+// (ymin lateral, top, bottom, plus the pass-through faceplate call).
+difference() {
+    translate([-5, -5, -5]) cube([160, 110, 20]);
+    sbc_port_cutout("bpir4", "usb_1", clearance = 1.0);       // ymin (lateral)
+    sbc_port_cutout("bpir4", "uart_1", clearance = 1.0);      // top
+    sbc_port_cutout("bpir4", "mpcie_1", clearance = 1.0);     // bottom
+    sbc_faceplate_cutouts("bpir4", "ymin", clearance = 1.0);  // pass-through
+}
