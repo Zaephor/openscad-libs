@@ -63,10 +63,10 @@ constraint — leaving an edge sharp needs no justification.*
 
 ### Pinned nominals
 
-These nominals follow the precedent set in `projects/bpir4-1u-chassis/parts/tray.scad` (lid-post chamfer and fillet both at 1.2 mm) and keystone's print-safety margin (1.15×). Reuse rather than re-derive:
+The 1.2 mm chamfer nominal traces directly to the precedent in `projects/bpir4-1u-chassis/parts/tray.scad` (lid-post chamfer and fillet both at 1.2 mm) — reuse rather than re-derive. The 2.0 mm corner round is a design value chosen for proportion; the keystone library's `_keystone_chamfer_margin()` (1.15×) is a self-support overhang-slope factor, not a chamfer-size source.
 
 - **Exposed-edge chamfer:** ~**1.2 mm** chamfer leg at 45° (band: 0.5–1.5 mm).
-- **Exposed outside-corner round:** ~**2.0 mm** radius on larger flanges and plates; scale down on small parts to keep proportional.
+- **Exposed outside-corner round:** ~**2.0 mm** radius on vertical (plan-view) corners; scale down on small parts to keep proportional. Note: a round on a top horizontal edge starts as a near-flat overhang — see `overhangs-supports.md` for the constraint.
 - **Print-safe floor:** Keep any break **≥ 2 layer heights (0.4 mm)** so it renders at the repo's 0.2 mm layer height.
 
 ### Applies well to
@@ -89,7 +89,7 @@ These nominals follow the precedent set in `projects/bpir4-1u-chassis/parts/tray
 A shared OpenSCAD edge-break primitive is deliberately deferred until a
 second part needs the same primitive — that triggers a standing `2nd-consumer`
 merge into `libraries/`. Parts implement their own breaks for now, as
-`projects/bpir4-1u-chassis/` and `libraries/keystone/` already do.
+`projects/bpir4-1u-chassis/` already does for handling-finish edge-breaking.
 
 ## Repo clearance precedent (bpir4-1u-chassis)
 
