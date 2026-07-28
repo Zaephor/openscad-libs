@@ -91,6 +91,22 @@ function _sbc_rot90(sz) = [sz[1], sz[0], sz[2]];
 // rows from this one line) — pizero/pizero2w define their own separate gpio rows below.
 function _sbc_gpio() = ["gpio", [7.1, 50.0, 1.4], connector_size("gpio_2x20"), "top"];
 
+// bpir4's CN21: ONE physical 4-port ganged RJ45 block (WAN + 3x LAN); "WAN X1"
+// silk marks port 1 of the block, not a separate connector (hardware owner,
+// 2026-07-16). Refdes is CN21 (single component) — CN1 is a small unrelated
+// 2-pin part (silk "+", sits under the "FAN" label) whose footprint happens to
+// sit flush against CN21's own left edge, previously misattributed as port 1.
+// Per-port pitch/width/depth/height [A] from the exact connector datasheet
+// bundled in BPI-R4's own DXF export (`DS/RJ45x4-HRJC-M03C01C10cNL.pdf`, Haoci
+// "1000BASE 1X4Tab-Down RJ45", P/N HRJC-M03C01C10cNL): pitch=width=13.98mm,
+// depth=21.45mm, height=13.60mm. Single source of truth for the four rj45_N
+// port rows AND the rj45_block envelope row below — both read this function
+// rather than repeating the datasheet figures (sbc_connector("bpir4","rj45_1")
+// cannot be called from inside the table literal that defines rj45_1 itself:
+// tried empirically, OpenSCAD raises "Recursion detected calling function
+// '_sbc_table'" because the accessor chain re-invokes the whole table).
+function _sbc_bpir4_rj45_port() = [13.98, 21.45, 13.60];
+
 function _sbc_table() = [
     // [A] https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-mechanical-drawing.pdf
     // corner radius: [A] drawing text "CORNER RADIUS = 3.0mm". thickness: no drawing
@@ -273,42 +289,29 @@ function _sbc_table() = [
           // RESEARCH.md "Task 2 caliper revision" for the full per-connector
           // reconciliation table (incl. the one row, rj45, where the caliper
           // figure is corroboration and the prior [A] datasheet h is KEPT).
-          ["usb_1",       [8.0,    0, 1.4], [5.8,   25.5,  14.1], "ymin"], // CN11 (caliper-confirmed USB3 port). x/w/d [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — supersedes the prior 7.41/8.89/23.16 pixel-detected figures, which mis-modeled this connector as sharing an exact boundary with sfp_1 when a real ~3.6mm gap exists; //VERIFY dropped, see RESEARCH.md). h=14.1 [B] caliper Task 2: bottom->top 15.5 - thickness 1.4 (was 13.5 [C] //VERIFY placeholder, unchanged by this correction)
-          ["sfp_1",       [17.4,   0, 1.4], [16.51, 48.4, 10.4], "ymin"], // CN7+CN8 cage/connector pair. x [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — supersedes the prior pixel-detected 16.3 left edge, which mis-modeled the boundary with usb_1 as touching when a real ~3.6mm gap exists; //VERIFY dropped, see RESEARCH.md). w=16.51 [B] width cross-corroborated against sfp_2 (both exactly 16.51mm, unchanged) (SP2 #21: no-peer vs connectors sfp, literal retained). d=48.4 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement supersedes the prior 53.98mm single-detector-hit figure, //VERIFY dropped). h=10.4 [B] caliper Task 2: bottom->top 11.8 - thickness 1.4 (was 13.4 [C] //VERIFY placeholder; caliper "9.5 alone" figure is the cage's own standalone body height, a corroborating cross-check, not used directly since it isn't board-bottom-referenced)
-          ["sfp_2",       [34.08,  0, 1.4], [16.51, 48.4, 10.4], "ymin"], // CN9+CN20+CN10. [B] width; d=48.4 [B] caliper (Round 2 #62 Task 2: physical-board re-measurement, same fix/basis as sfp_1 — identical cage part, //VERIFY dropped) (SP2 #21: no-peer vs connectors sfp, literal retained). h=10.4, same Task 2 caliper reconciliation as sfp_1 (identical cage part)
-          // ONE physical 4-port ganged RJ45 block (WAN + 3x LAN); "WAN X1" silk
-          // marks port 1 of the block, NOT a separate connector (hardware owner,
-          // 2026-07-16). Refdes is CN21 (single component) — the earlier "CN1"
-          // attribution for port 1 was a misread: CN1 is a small unrelated 2-pin
-          // part (silk "+", sits under the "FAN" label) whose footprint happens
-          // to sit flush against CN21's own left edge; see RESEARCH.md. 4
-          // evenly-pitched ports, pitch/width/depth/height [A] from the exact
-          // connector datasheet bundled in BPI-R4's own DXF export
-          // (`DS/RJ45x4-HRJC-M03C01C10cNL.pdf`, Haoci "1000BASE 1X4Tab-Down
-          // RJ45", P/N HRJC-M03C01C10cNL): pitch=width=13.98mm, depth=21.45mm,
-          // height=13.60mm. block_x0=62.61 [B] re-derived from the BPI-R4
-          // assembly drawing (dark-pixel-run detector, restricted to rows below
-          // CN1's footprint so CN1's box is no longer conflated with CN21's own
-          // left edge) — see RESEARCH.md. Task 2 caliper cross-check: bottom->top
-          // 15.1 - thickness 1.4 = 13.7, within 0.1mm of the exact-datasheet
-          // h=13.60 already stored below — treated as CORROBORATION, not a
-          // replacement (never downgrade an [A] exact-part datasheet figure for
-          // a lower-precision caliper total-height read that already agrees to
-          // within 0.1mm). Task 2 also caliper-measured the block's overall
-          // 4-port physical envelope as 58.3mm(w) x 20.9mm(d) — this is
-          // corroborating context only, not a schema change: it does NOT
-          // replace the per-port pitch/width (13.98, still [A]
-          // datasheet-exact) or depth (21.45);
-          // it narrows (does not resolve) the RESEARCH.md "unreconciled gap"
-          // between the pure pitch-math block end (118.53) and the drawing's
-          // detector-confirmed right edge (122.77) — 62.61+58.3=120.91 sits
-          // between the two. See RESEARCH.md for the full note.
-          ["rj45_1",  [62.61,   0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 1 (WAN)
-          ["rj45_2",  [76.59,   0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 2 (LAN)
-          ["rj45_3",  [90.57,   0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 3 (LAN)
-          ["rj45_4",  [104.55,  0, 1.4], [13.98, 21.45, 13.60], "ymin"], // port 4 (LAN)
-          ["dc_power_1",  [125.2,   0, 1.4], [9.8,    10.71, 10.0], "ymin"], // CN4 "DC12V" barrel jack. x/w [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — right edge = board width 148.0 - 13.0mm-from-right-edge caliper reading = 135.0; width corrected to 9.8mm per the round-2 spec doc — supersedes the prior pixel-detected 124.59/10.03 figures, which mis-modeled this connector as sharing an exact boundary with usbc_pwr_1 when a real ~2.3mm gap exists; //VERIFY dropped on x/w, see RESEARCH.md). [C] //VERIFY height (no top-view Z dimension; generic barrel-jack estimate; not re-measured by this correction)
-          ["usbc_pwr_1",  [137.3,   0, 1.4], [8.7,    9.95,  3.2], "ymin"], // CN5 "PD20V" USB-C PD input. x/w [B] caliper (Round 2 #62 Task 2b: physical-board re-check, 2026-07-24 — right edge = board width 148.0 - 2.0mm-from-right-edge caliper reading = 146.0; width corrected to 8.7mm per the round-2 spec doc — supersedes the prior pixel-detected left edge (134.62) and generic-datasheet width (8.94), which mis-modeled this connector as sharing an exact boundary with dc_power_1 when a real ~2.3mm gap exists; //VERIFY dropped on x/w, see RESEARCH.md). d=9.95 [B] top edge (pre-existing detector-confirmed value, unchanged and not re-measured by this correction — see RESEARCH.md)
+          // Round 3 (#65): full front-row re-caliper, physical board, 2026-07-28
+          // — supersedes every round-2 (#62 Task 2b) figure below. The round-2
+          // pass had collapsed the sfp_1<->sfp_2 gap to 0.17mm.
+          ["usb_1",       [8.0,    0, 1.4], [5.7,   25.5,  13.0], "ymin"], // CN11 (caliper-confirmed USB3 port). x/w/h [B] caliper (round-3 #65: full front-row re-caliper, 2026-07-28, supersedes round-2 #62 Task 2b's 5.8/14.1).
+          ["sfp_1",       [17.5,   0, 1.4], connector_size("sfp"), "ymin"], // CN7+CN8 cage/connector pair. x [B] caliper (round-3 #65: physical-board re-caliper, 2026-07-28, supersedes round-2 #62 Task 2b's 17.4). Body upgraded [B]->[A]: round-3 caliper reading [15.0, 48.5, 9.5] agrees with connector_size("sfp") ([A] TE Connectivity 2007198-1) within 0.5mm on all three axes, which is what justifies adopting the catalog type here in place of sbc's own literal.
+          ["sfp_2",       [35.7,   0, 1.4], connector_size("sfp"), "ymin"], // CN9+CN20+CN10. x [B] caliper (round-3 #65, supersedes round-2 #62 Task 2b's 34.08). Body upgraded [B]->[A], same basis as sfp_1 (identical cage part, same caliper-vs-catalog agreement).
+          // Physical envelope of the CN21 4-port ganged block (58.5mm calipered), wider
+          // than the 4 port pitches (4*13.98 = 55.92) by 2.58mm of end shell. The four
+          // port rows below are the [A] datasheet ports, centered inside this envelope;
+          // this row is what a chassis faceplate must cut, since a 55.92mm opening would
+          // foul the real shell. d/h sourced from _sbc_bpir4_rj45_port() (one source for
+          // the [A] figures, shared with the four port rows below).
+          ["rj45_block", [64.0,   0, 1.4],
+              [58.5, _sbc_bpir4_rj45_port()[1], _sbc_bpir4_rj45_port()[2]], "ymin"], // x/w [B] caliper (round-3 #65, 2026-07-28) — supersedes round-2's unreconciled block-end figures (see _sbc_bpir4_rj45_port() comment for the CN21/datasheet source).
+          // Four ports centered inside rj45_block: block x0=64.0, end shell is
+          // 2.58mm total / 2 = 1.29mm per side, so port 1 x = 64.0 + 1.29 =
+          // 65.29; each subsequent port is +13.98 (the [A] datasheet pitch).
+          ["rj45_1",  [65.29,   0, 1.4], _sbc_bpir4_rj45_port(), "ymin"], // port 1 (WAN)
+          ["rj45_2",  [79.27,   0, 1.4], _sbc_bpir4_rj45_port(), "ymin"], // port 2 (LAN)
+          ["rj45_3",  [93.25,   0, 1.4], _sbc_bpir4_rj45_port(), "ymin"], // port 3 (LAN)
+          ["rj45_4",  [107.23,  0, 1.4], _sbc_bpir4_rj45_port(), "ymin"], // port 4 (LAN)
+          ["dc_power_1",  [124.7,   0, 1.4], [10.0,   13.0,  10.3], "ymin"], // CN4 "DC12V" barrel jack. x/w/d/h [B] caliper (round-3 #65: full front-row re-caliper, 2026-07-28, supersedes round-2 #62 Task 2b's 125.2/9.8/10.71; height upgraded from a [C] //VERIFY generic barrel-jack estimate to a [B] direct caliper reading, //VERIFY dropped).
+          ["usbc_pwr_1",  [139.3,   0, 1.4], [6.7,    6.8,   3.0], "ymin"], // CN5 "PD20V" USB-C PD input. x/w/d/h [B] caliper (round-3 #65: full front-row re-caliper, 2026-07-28, supersedes round-2 #62 Task 2b's 137.3/8.7/9.95/3.2).
           // Non-front-panel, top face (z=thickness, opens +Z, no lateral edge):
           ["uart_1",      [8.0,    10.0, 1.4], [5.0,   10.0,  6.0], "top"], // CON1 console/UART header ("G RX TX" silkscreen labels), does not touch a lateral edge. [C] //VERIFY position (visual crop read only, not pixel-detector-confirmed — search window overlapped CN11's own edges); h=6.0 [B] from Header_PIN 2.54mm.pdf body height
           // NOTE: no Pi-style 40-pin "gpio" header is modeled for bpir4 — the DXF
@@ -693,9 +696,9 @@ function sbc_connector(b, name) =
 // too. One named constant + an explicit board+name allowlist, honored by
 // sbc_placeholder() below — NOT a per-row edit of each affected row's
 // stored y to -2.0 (that would duplicate the single 2.0mm correction value
-// across 9 rows instead of keeping one source of truth for it).
+// across 10 rows instead of keeping one source of truth for it).
 SBC_FRONT_PROTRUSION = 2.0;
-_SBC_BPIR4_FRONT_CONNECTORS = ["usb_1", "sfp_1", "sfp_2",
+_SBC_BPIR4_FRONT_CONNECTORS = ["usb_1", "sfp_1", "sfp_2", "rj45_block",
     "rj45_1", "rj45_2", "rj45_3", "rj45_4", "dc_power_1", "usbc_pwr_1"];
 function _sbc_front_protrusion(b, name) =
     (b == "bpir4" && len([for (n = _SBC_BPIR4_FRONT_CONNECTORS) if (n == name) n]) > 0)
