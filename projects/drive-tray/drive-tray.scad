@@ -1,7 +1,30 @@
 // drive-tray — parametric 1U rack10 storage tray: cols x rows grid of bottom-
-// mounted drives, honeycomb floor vents, rear #40 support tongue. Serves the
-// 2x3.5" (#44) and 6x2.5" (#45) presets. Consumes drives/rack10/rack-support/
-// honeycomb. Prints flat, open-top, support-free.
+// mounted drives, honeycomb floor vents, rear #40 support tongue. Consumes
+// drives/rack10/rack-support/honeycomb. Single-layer v1 (one Z tier of
+// drives; stacking a second tier is a deferred future revision, not this
+// file). Bottom-mount only (drive_holes(faces="bottom"), no side mount).
+// Open-top (no lid). Prints flat, open-top, support-free, long axis (Y,
+// tray depth) in the build plane per rack-support's #40 consumer-contract
+// print-orientation rule (root fibers within layers along the load path,
+// same "floor on the bed" orientation this file already uses).
+//
+// Presets:
+//   #44 -- drive_type="hdd35",   cols=2, rows=1                  (defaults)
+//   #45 -- drive_type="ssd25_9", cols=3, rows=2, drive_gap=2.0
+// #45 needs drive_gap reduced from its 4.0 default: at drive_gap=4.0 the
+// 3-wide ssd25_9 grid (217.55mm) overshoots labrax's usable width
+// (217.2mm) by 0.35mm and aborts the width fit-assert below; drive_gap=2.0
+// (213.55mm) clears it with room to spare and matches the gap Task 3
+// already verified the honeycomb vent placement against for this exact
+// preset shape (task-3-report.md). See tests/test_drive_tray.sh for both
+// presets' locked renders.
+//
+// The depth fit-assert (_usable_depth() below) is vendor-sensitive: it's
+// keyed off rack10_rear_post_y(standard), which differs per rack10 vendor
+// profile. Both presets above are locked against the default
+// standard="labrax" only -- re-check _usable_depth() (and the width assert,
+// against rack10_clear_width(standard)) before assuming either preset fits
+// a different vendor profile.
 use <drives/drives.scad>;
 use <rack10/rack10.scad>;
 use <rack-support/rack-support.scad>;

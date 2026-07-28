@@ -46,6 +46,7 @@ use <fans/fans.scad>;
 - [bpir4-1u-chassis](projects/bpir4-1u-chassis) — 1U 10-inch rack chassis for the BananaPi BPI-R4.
 - [cable-clip](projects/cable-clip) — single-part M3-mounted cable clip.
 - [css610-underdesk-mount](projects/css610-underdesk-mount) — under-desk L-bracket for a MikroTik CSS610 switch
+- [drive-tray](projects/drive-tray) — parametric 1U rack10 drive tray (2×3.5" / 6×2.5"), #40 rear-support mate
 - [fan-grille](projects/fan-grille) — flat honeycomb fan finger-guard.
 - [keystone-blank](projects/keystone-blank) — printable caliper-faithful keystone blank insert.
 - [keystone-faceplate](projects/keystone-faceplate) — parametric 1U 10-inch N-port keystone faceplate.

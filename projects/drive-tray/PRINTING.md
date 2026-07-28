@@ -9,7 +9,13 @@
 | Infill | 20% gyroid |
 | Print speed | 50 mm/s |
 | Supports | None (support-free is a hard project constraint) |
-| Orientation | TODO (flat, open-top — floor on the bed; finalized once walls/tongue land in Task 2) |
+| Orientation | Flat, open-top — floor on the bed |
 
-Notes: TODO — printing guidance pending Task 2/3 geometry (walls, honeycomb
-vents, rear tongue).
+Notes: prints support-free as designed (floor, walls, faceplate, rear #40
+tongue, and the per-cell honeycomb floor vents all print flat with the tray's
+long axis — Y, tray depth — in the build plane, per rack-support's #40
+consumer-contract print-orientation rule). The rear tongue is a modest
+cantilever off the rear wall (see drive-tray.scad's "NO rear buttress shelf"
+comment) — a real but modest print-time risk, slightly past this repo's
+~5-10mm bridging guideline; not support-free-violating, just worth watching
+on a first print.

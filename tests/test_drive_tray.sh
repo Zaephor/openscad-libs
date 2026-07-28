@@ -132,6 +132,70 @@ ok = abs(max(ys) - 240) < 0.05
 sys.exit(0 if ok else 1)
 PY
 
+# Task 4 (#45): the second LOCKED preset (drive_type="ssd25_9", cols=3,
+# rows=2, drive_gap=2.0 -- #44's hdd35/2x1 preset is already the default,
+# checked above) must render clean -- via -D command-line overrides directly
+# against drive-tray.scad, same idiom as bay-enclosure's own Task 4 preset
+# checks (tests/test_bay_enclosure.sh): drive-tray.scad is rendered DIRECTLY
+# here (not through a `use`d/`include`d wrapper), so -D reliably overrides
+# its own top-level Customizer vars (verified in task-1-report.md; the
+# use-scope -D caveat in reference_openscad_gotchas is about threading
+# params INTO `use`d library files, not about overriding the directly-
+# rendered project file's own top-level vars). drive_gap must drop to 2.0
+# here -- at the file's 4.0 default, this 3-wide ssd25_9 grid overshoots
+# labrax's usable width by 0.35mm and the width fit-assert aborts (see
+# drive-tray.scad's header comment); 2.0 is the same gap Task 3 already
+# verified the honeycomb vent placement against for this preset shape.
+out="$(run "$tmp/ssd.stl" "$proj/drive-tray.scad" -D 'drive_type="ssd25_9"' -D 'cols=3' -D 'rows=2' -D 'drive_gap=2.0')"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: #45 preset (ssd25_9 3x2 @ drive_gap=2.0) errored:"; echo "$out"; fail=1
+fi
+[ -s "$tmp/ssd.stl" ] || { echo "FAIL: #45 preset (ssd25_9 3x2 @ drive_gap=2.0) produced no/empty STL"; fail=1; }
+
+# Task 4 (#45): hole-count check for the #45 preset. Can't reuse the
+# _dt_device_frame()-based probe idiom above unmodified: that module is
+# `use`d, and per reference_openscad_gotchas a `use`d module's free
+# variables (cols/rows/drive_type/drive_gap -- read implicitly, not
+# threaded as args) resolve against drive-tray.scad's OWN top-level scope,
+# i.e. always its hdd35/2x1/4.0 DEFAULTS, regardless of anything set here or
+# passed via -D. (Fixing that with `include`-then-override, per asserts.scad's
+# idiom, also unconditionally re-executes drive-tray.scad's own trailing
+# `drive_tray();` call -- confirmed empirically that a bare union of
+# _dt_device_frame() cutters added alongside that DOESN'T separate out as
+# extra CGAL volumes, i.e. Volumes stays flat rather than going to N+2, so
+# that combination can't be used as an exact hole-count discriminator.) So
+# this probe instead reimplements just the small cell-offset/rotation
+# transform inline (_cell_xy()'s formula + _dt_device_frame()'s rotate)
+# against real drives.scad accessors (drive_size()/drive_bottom_holes(),
+# called with an explicit type arg -- not affected by use-scope) -- no
+# device DATA is duplicated, only this test-harness-only arithmetic, needed
+# solely because _dt_device_frame() itself has no way to be pointed at a
+# non-default preset from outside its own file.
+probe="$tmp/holes_ssd25_9.scad"
+cat > "$probe" <<EOF
+use <drives/drives.scad>;
+device_type = "ssd25_9";
+cols = 3; rows = 2; drive_gap = 2.0; // mirrors the -D overrides above
+dsz = drive_size(device_type);
+dlen = dsz[0]; // along Y (depth) -- see drive-tray.scad's _dlen() comment
+dw   = dsz[1]; // across X (width) -- see drive-tray.scad's _dw() comment
+grid_w = cols*dw + (cols-1)*drive_gap;
+echo(str("EXPECT=", cols*rows*len(drive_bottom_holes(device_type))));
+for (c = [0:cols-1]) for (r = [0:rows-1])
+    translate([-grid_w/2 + c*(dw + drive_gap) + dw, r*(dlen + drive_gap), 0])
+        rotate([0, 0, 90])
+        drive_holes(device_type, faces = "bottom", depth = 5);
+EOF
+out="$(run "$tmp/holes45.stl" "$probe")"
+expect="$(echo "$out" | grep -o 'EXPECT=[0-9]*' | tail -1 | cut -d= -f2)"
+volumes="$(echo "$out" | grep -o 'Volumes:[[:space:]]*[0-9]*' | tail -1 | grep -o '[0-9]*$')"
+if [ -z "$expect" ] || [ -z "$volumes" ]; then
+  echo "FAIL: #45 hole-count probe produced no EXPECT/Volumes -- can't verify hole count:"; echo "$out"; fail=1
+elif [ "$((volumes - 1))" -ne "$expect" ]; then
+  echo "FAIL: #45 grid hole count $((volumes - 1)) != expected $expect"
+  fail=1
+fi
+
 # Faceplate bbox (Task 2): X-span == rack10_panel_width("labrax")=254,
 # Z-span == rack10_device_height(1)=43.66 -- same idiom as
 # test_bay_enclosure.sh's faceplate bbox check.
