@@ -68,3 +68,24 @@ rs = rack10_rail_slot();
 assert(len(rs) == 2 && rs[0] > 0 && rs[1] > 0, "rail slot [L,H] positive");
 assert(rs[0] > rs[1], "rail slot elongated along its long axis");
 assert(rs == [10.0, 7.0], "rail slot capsule (spuder [C])");
+
+// --- #70: panel silhouette corner chamfer ---
+pc = rack10_panel_corner_chamfer();
+assert(pc > 0, "panel corner chamfer positive");
+assert(2*pc < rack10_panel_width("labrax"), "chamfer under half panel width");
+assert(2*pc < rack10_device_height(1), "chamfer under half panel height");
+assert(abs(pc - 3.0) < 1e-9, "panel corner chamfer is 3.0 (design value, no tier)");
+
+// Silhouette point count: 8 corners chamfered, 4 when disabled.
+assert(len(rack10_panel_profile_pts(254, 43.66)) == 8, "chamfered profile has 8 points");
+assert(len(rack10_panel_profile_pts(254, 43.66, 0)) == 4, "chamfer=0 profile has 4 points");
+
+// Hole-clearance limit. labrax 1U: 127 + 43.66 - 118.2625 - 38.1 = 14.2975 (top
+// corner binds; the bottom corner allows 15.0875).
+assert(abs(rack10_panel_chamfer_max("labrax", 1) - 14.2975) < 1e-6,
+    "labrax 1U chamfer max");
+assert(pc < rack10_panel_chamfer_max("labrax", 1),
+    "chosen chamfer clears the mounting-hole column");
+assert(abs(rack10_panel_chamfer_max("labrax", 1, 2)
+        - (rack10_panel_chamfer_max("labrax", 1) - 2)) < 1e-9,
+    "chamfer max margin subtracts");

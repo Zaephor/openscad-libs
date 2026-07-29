@@ -60,8 +60,14 @@ panel/faceplate with this library:**
 use <rack10/rack10.scad>;
 
 difference() {
-    rack10_panel("labrax", 2);            // 2U faceplate blank, 3mm thick
+    rack10_panel("labrax", 2);            // 2U faceplate blank, 3mm thick, chamfered corners
     rack10_holes("labrax", 2, "m6");       // M6 clearance holes, both rail columns
+}
+
+// Square-corner panel (pre-#70 style):
+difference() {
+    rack10_panel("labrax", 2, corner_chamfer = 0);
+    rack10_holes("labrax", 2, "m6");
 }
 ```
 
@@ -131,6 +137,9 @@ note.
 | `rack10_screw_clearance(fastener)` | clearance-hole dia for `"m6"`/`"10-32"`, mm |
 | `rack10_flange_width()` | placeholder rail flange width, mm (illustrative, unsourced) |
 | `rack10_flange_thickness()` | placeholder rail flange thickness, mm (illustrative, unsourced) |
+| `rack10_panel_corner_chamfer()` | faceplate silhouette corner chamfer leg, mm (design value, no tier) |
+| `rack10_panel_profile(w, h, chamfer)` | 2D front-elevation outline: `w` × `h` with all four corners chamfered — for consumers building a panel at a non-standard height |
+| `rack10_panel_chamfer_max(standard, u, margin)` | largest chamfer that clears the mounting-hole column centres |
 
 | Module | Produces |
 |---|---|
@@ -139,7 +148,7 @@ note.
 | `rack10_rail_slot()` | rail mounting-slot overall capsule `[L, H]` (long axis horizontal), sourced `[C]`; `rack10_holes()`'s `"slot"` branch derives from it |
 | `rack10_placeholder(standard, u, depth_ftf, hole_type)` | 4-flange rail envelope + front hole strip + `%` keep-out volume (fit-check reference) |
 | `rack10_rackpost_context(standard, device_u, pad_u, depth_ftf, hole_type)` | `rack10_placeholder()` sized to `device_u + 2*pad_u` U and shifted so the device band's bottom sits at `Z=0` — padded rack context around a device (integer U only) |
-| `rack10_panel(standard, u, thickness)` | plain faceplate blank, `u` units tall — subtract `rack10_holes()` to mount it |
+| `rack10_panel(standard, u, thickness, corner_chamfer)` | faceplate blank, `u` units tall, all four front-elevation corners chamfered at 45° — subtract `rack10_holes()` to mount it; pass `corner_chamfer=0` for square corners |
 
 `hole_type` is `"round"` (pass a numeric clearance dia in `dia`), `"m6"` /
 `"10-32"` (dia resolved via `rack10_screw_clearance()`), `"square"`
@@ -155,6 +164,10 @@ under-cut a thicker target. `slot_travel` (default `0`, meaning derive from
 along X for `"slot"` only; pass an explicit value to override the sourced
 default, i.e. ≈±1.5mm of horizontal rackpost-spacing tolerance; ignored for
 every other `hole_type`.
+
+### Panel helper note: 45° chamfer vs radius
+
+The `rack10_panel()` breaks all four front-elevation corners with a **45° chamfer** rather than a radius. A rack panel prints standing on its bottom edge; a true radius at the bottom corners would create a downward-facing overhang exceeding 45° in the first layers, which violates the repository's support-free printing constraint. A 45° chamfer is constant across every corner and prints cleanly without supports.
 
 ## Sources
 

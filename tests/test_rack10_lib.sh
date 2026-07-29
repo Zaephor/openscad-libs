@@ -261,4 +261,69 @@ a, b = tris(sys.argv[1]), tris(sys.argv[2])
 sys.exit(0 if a == b else 1)
 PY
 
+# --- #70: panel silhouette corner chamfer ---
+# The chamfer must NOT change the panel's bounding box (the inherited-consumer
+# contract, and what the existing device_height check above measures), but the
+# extreme |x| = w/2 vertices must span only z in [c, h-c] -- that is the
+# assertion that the corner is genuinely gone rather than merely bevelled
+# somewhere inboard.
+cat > "$tmp/panel_chamfer.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_panel("labrax", 1, 3);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/panel_chamfer.stl" "$tmp/panel_chamfer.scad" 2>/dev/null
+python3 - "$tmp/panel_chamfer.stl" <<'PY' || { echo "rack10_panel corner chamfer wrong"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+vs=set()
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12
+        vs.add(tuple(round(c,4) for c in struct.unpack('<3f',d[b:b+12])))
+xs=[v[0] for v in vs]; ys=[v[1] for v in vs]; zs=[v[2] for v in vs]
+ext=[v for v in vs if abs(abs(v[0])-127.0)<1e-3]
+ok = (abs(min(xs)+127.0)<0.01 and abs(max(xs)-127.0)<0.01           # X span intact
+      and abs(min(ys)+3.0)<0.01 and abs(max(ys))<0.01                # Y = -thickness..0
+      and abs(min(zs))<0.01 and abs(max(zs)-43.66)<0.01              # Z span intact
+      and ext                                                        # edge exists
+      and abs(min(q[2] for q in ext)-3.0)<0.01                       # corner clipped low
+      and abs(max(q[2] for q in ext)-40.66)<0.01)                    # corner clipped high
+sys.exit(0 if ok else 1)
+PY
+
+# Positive control: corner_chamfer=0 restores the pre-#70 square corner.
+cat > "$tmp/panel_square.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_panel("labrax", 1, 3, corner_chamfer = 0);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/panel_square.stl" "$tmp/panel_square.scad" 2>/dev/null
+python3 - "$tmp/panel_square.stl" <<'PY' || { echo "corner_chamfer=0 must give square corners"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+vs=set()
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12
+        vs.add(tuple(round(c,4) for c in struct.unpack('<3f',d[b:b+12])))
+sys.exit(0 if any(abs(abs(v[0])-127.0)<1e-3 and abs(v[2])<1e-3 for v in vs) else 1)
+PY
+
+# Negative control: a negative chamfer asserts.
+cat > "$tmp/panel_neg.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_panel("labrax", 1, 3, corner_chamfer = -1);
+EOF
+out="$(run "$tmp/panel_neg.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  || { echo "negative corner_chamfer must assert"; echo "$out"; exit 1; }
+
+# Negative control: a chamfer past the mounting-hole column asserts.
+cat > "$tmp/panel_toobig.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_panel("labrax", 1, 3, corner_chamfer = 15);
+EOF
+out="$(run "$tmp/panel_toobig.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  || { echo "chamfer past the hole column must assert"; echo "$out"; exit 1; }
+
 echo ok

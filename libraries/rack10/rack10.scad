@@ -227,16 +227,88 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_t
 }
 
 /* [Panel helper] */
+// Faceplate silhouette corner chamfer leg (mm), 45deg, applied to all four
+// corners of a rack panel's front elevation.
+// DESIGN VALUE, not measured -- no provenance tier applies (same class as
+// rack10_flange_width() below). 3.0 reads as a deliberate corner across a
+// 254mm panel and sits near the ~3mm corner radius typical of commercial 1U
+// faceplates.
+// 45deg rather than a radius because a rack panel prints standing on its
+// bottom edge: a true radius turns the two BOTTOM corners into a >45deg
+// downward-facing overhang (0.87mm outward in the first 0.2mm layer at
+// r=3.0), which this repo's support-free rule forbids. A chamfer is a
+// constant 45deg everywhere and prints clean at every corner.
+// DELIBERATE DUPLICATE of rack19_panel_corner_chamfer() (libraries/rack19).
+// The two are NOT cross-imported: 10-inch and 19-inch are sibling standards
+// with no natural dependency direction, and wiring one to the other to borrow
+// a styling constant outlives the reason for it. tests/test_rack_panel_drift.sh
+// guards the pair against drifting apart.
+function rack10_panel_corner_chamfer() = 3.0;
+
+// 2D front-elevation outline of a rack panel: a `w` x `h` rectangle with all
+// four corners chamfered at 45deg by `chamfer`. Origin at the panel's bottom
+// centre, so the outline spans x in [-w/2, w/2] and y in [0, h].
+// Public (and split into a points function + a module) because a consumer
+// sizing a faceplate to its OWN exterior height rather than
+// rack10_device_height() still needs the identical silhouette -- it imports
+// this instead of copying the chamfer number. chamfer = 0 gives square
+// corners (the pre-#70 shape).
+// DELIBERATE DUPLICATE of rack19_panel_profile_pts()/rack19_panel_profile();
+// see rack10_panel_corner_chamfer() above for why, and
+// tests/test_rack_panel_drift.sh for the guard.
+function rack10_panel_profile_pts(w, h, chamfer = rack10_panel_corner_chamfer()) =
+    assert(chamfer >= 0,
+        "rack10_panel_profile: chamfer must be >= 0 (0 = square corners)")
+    assert(2*chamfer < w && 2*chamfer < h,
+        str("rack10_panel_profile: chamfer ", chamfer,
+            " too large for a ", w, "x", h, " panel"))
+    let (x = w/2)
+    chamfer <= 0
+        ? [[-x, 0], [x, 0], [x, h], [-x, h]]
+        : [[-x + chamfer, 0], [x - chamfer, 0], [x, chamfer], [x, h - chamfer],
+           [x - chamfer, h], [-x + chamfer, h], [-x, h - chamfer], [-x, chamfer]];
+
+module rack10_panel_profile(w, h, chamfer = rack10_panel_corner_chamfer()) {
+    polygon(rack10_panel_profile_pts(w, h, chamfer));
+}
+
+// Largest corner chamfer that keeps all four corners clear of the mounting
+// hole COLUMN CENTRES, minus an optional `margin`. Centre-based: a consumer
+// cutting an oversized or elongated hole must pass a margin covering its own
+// half-extent (a 10-32 slot's outer corner needs ~4.5 in X and ~2.5 in Z,
+// which tightens the labrax 1U limit from 14.2975 to 7.2975).
+// Top corners are cut where x + z > w/2 + h - c; bottom corners where
+// x - z > w/2 - c.
+function rack10_panel_chamfer_max(standard, u, margin = 0) =
+    let (w     = rack10_panel_width(standard),
+         h     = rack10_device_height(u),
+         xc    = rack10_hole_h_span(standard) / 2,
+         offs  = rack10_u_hole_offsets(),
+         z_top = (u - 1) * rack10_u() + max(offs),
+         z_bot = min(offs))
+    min(w/2 + h - xc - z_top, w/2 - xc + z_bot) - margin;
+
 // Faceplate blank: vendor panel width × rack10_device_height(u) tall ×
 // `thickness`, front face on Y=0 (grows -Y). Consumer subtracts rack10_holes()
-// for mounting holes.
+// for mounting holes. All four front-elevation corners chamfered at 45° by
+// corner_chamfer.
 // HEIGHT ADVISORY: 1U panel/faceplate exterior height is rack10_device_height(u)
 // (= u*pitch - stack_gap), NOT the raw u*rack10_u() pitch — the stacking gap
 // keeps abutting units from binding. Consumers building rack panels should use
 // this helper (or rack10_device_height()) rather than u*rack10_u().
-module rack10_panel(standard, u, thickness = 3) {
-    translate([-rack10_panel_width(standard)/2, -thickness, 0])
-        cube([rack10_panel_width(standard), thickness, rack10_device_height(u)]);
+module rack10_panel(standard, u, thickness = 3,
+                    corner_chamfer = rack10_panel_corner_chamfer()) {
+    assert(corner_chamfer <= rack10_panel_chamfer_max(standard, u),
+        str("rack10_panel: corner_chamfer ", corner_chamfer,
+            " reaches the mounting-hole column for ", standard, " ", u, "U"));
+    // rotate([90,0,0]) maps local (x,y,z) -> (x, -z, y): the profile's local Y
+    // becomes chassis Z, and the extrusion axis (local Z, 0 -> thickness)
+    // becomes chassis Y running 0 -> -thickness. That reproduces the pre-#70
+    // occupied volume exactly, minus the four corners.
+    rotate([90, 0, 0])
+        linear_extrude(thickness)
+            rack10_panel_profile(rack10_panel_width(standard),
+                                 rack10_device_height(u), corner_chamfer);
 }
 
 // Rail/post envelope — informational placeholder ONLY, NOT measured (LabRax
