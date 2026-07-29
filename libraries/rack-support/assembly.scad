@@ -27,6 +27,15 @@
 // pattern as the front-ear/floor join below, which IS manifold), and is
 // also the more physically sensible shape: the tongue rides as a raised
 // rail on top of a floor that already reaches the plate's mounting face.
+// Running the full-length floor into the plate's own bearing-floor/gusset
+// band DOES create real solid-solid overlap, though (#63) -- measured
+// 875.89mm^3 before the fix below. The keep-out subtraction resolves that
+// without shortening the floor (which would reintroduce the non-manifold
+// join above): rack_support_plate_keepout(), the plate's own published
+// forward envelope (single source of truth -- see that module's doc), is
+// differenced out of this body at the SAME rear-post placement the plate
+// itself uses, carving away just the overlap and leaving the tongue (which
+// legitimately occupies the channel cavity) untouched.
 use <rack-support/rack-support.scad>;
 use <rack10/rack10.scad>;
 
@@ -55,5 +64,8 @@ difference() {
         translate([0, reach, 0]) rack_support_tongue();
     }
     rack10_holes(standard, u, hole_type="slot", dia=rack10_screw_clearance("10-32"));
+    // Clear the plate's forward envelope (see FLOOR-LENGTH note above) --
+    // same placement as the plate itself, so the two can never drift apart.
+    translate([0, rack10_rear_post_y(standard), 0]) rack_support_plate_keepout();
 }
 % rack10_rackpost_context(standard, 1, 1, rack10_depth_preset(standard));
