@@ -62,3 +62,9 @@ assert(rack10_hole_h_centers("deskpi") == [-236.525/2, 236.525/2], "deskpi cente
 // depth_ftf's [C] tier).
 assert(rack10_rear_post_y("labrax") == rack10_depth_preset("labrax"), "labrax rear post y");
 assert(rack10_rear_post_y("tecmojo") == rack10_depth_preset("tecmojo"), "tecmojo rear post y");
+
+// #67: rail mounting-slot capsule, sourced (spuder [C]).
+rs = rack10_rail_slot();
+assert(len(rs) == 2 && rs[0] > 0 && rs[1] > 0, "rail slot [L,H] positive");
+assert(rs[0] > rs[1], "rail slot elongated along its long axis");
+assert(rs == [10.0, 7.0], "rail slot capsule (spuder [C])");

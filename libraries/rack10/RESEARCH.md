@@ -262,15 +262,39 @@ for every other 10in-specific dimension.
 | 1U pitch | 44.45 | [B] | LabRax article (explicit); diagram's 44.50 is a rounding-chain artifact, not used |
 | hole h center-to-center | 236.525 | [B] | LabRax article + Wikimedia diagram, exact match, 2 independent sources |
 | clear/usable width | 222 (ship) / 222.25 (diagram, unresolved) | [B] `//VERIFY` 0.25mm gap unresolved | LabRax article; diagram (8.75in exact) |
-| panel outer width | 254.00 | [B] `//VERIFY` LabRax's own value not stated, only the independent diagram's | Wikimedia diagram (10in nominal, closure-checked against its own 222.25 + 2×15.875) |
-| per-U hole offsets | 6.35 / 22.225 / 38.1 (gaps 15.875/15.875/12.7) | [B] `//VERIFY` LabRax-specific offsets not stated, only hole-count (BOM) + pattern-reuse (diagram) | LabRax BOM ("6 per U") + Wikimedia diagram exact SVG coordinates |
+| panel outer width | 254.00 | [B] | Wikimedia diagram (10in nominal, closure-checked against its own 222.25 + 2×15.875) + spuder generator (rack_width = 254) — 2 independent sources |
+| per-U hole offsets | 6.35 / 22.225 / 38.1 (gaps 15.875/15.875/12.7) | [B] | LabRax BOM ("6 per U") + Wikimedia diagram exact SVG coordinates + spuder generator (u_hole_positions, exact) — 3 independent sources |
 | mounting depth | 240 (ship) | [C] `//VERIFY`, third-party remix only | Printables remix 1499547 description (2x), links same MakerWorld id 1294480 |
+| rail slot capsule | 10.0 × 7.0 (L × H) | [C] | spuder generator (slot_len / slot_height, 254mm branch) — first and only source |
 | M6 clearance | 6.6 | [B] | ISO 273 medium fit, named standard (not fetched); LabRax confirms M6 is its actual fastener |
 | #10-32 clearance | 5.0 | [C] `//VERIFY` | ANSI B18.2, repo `rack19` precedent; LabRax confirms #10-32 as a real alternative + ships a dedicated bolt-together variant |
 | cage-nut square | 9.5 | [B] `//VERIFY`, not used by LabRax | repo `rack19` precedent (Wikipedia Cage nut), carried for future non-LabRax vendors |
 | rail flange width/thickness | — | not numerically confirmed — no tier, visual-only evidence | LabRax STL unreachable; one qualitative CDN thumbnail confirms rail shape family only, no dimension |
 | 1U max device height | 43.66 (exact 43.6626) | [C] `//VERIFY` borrowed by analogy | rack19's [B] value (Wikipedia + Micropolis); no 10in-specific source |
 | stacking gap | 0.79 (total, not per-U) | [C] `//VERIFY` borrowed by analogy | rack19's [B] value; no 10in-specific source |
+
+## spuder 10-Inch-Rack corroboration (#67)
+
+Source: spuder/10-Inch-Rack-OpenSCAD, `10InchRackGenerator.scad` (254mm-rack
+branch) — <https://github.com/spuder/10-Inch-Rack-OpenSCAD>, MIT © 2025 Spencer
+Owen. An independently-authored, shipped, printed parametric 10in rack
+generator. Tier ceiling **[C]** per `docs/LIBRARY-AUTHORING.md` (public SCAD
+library); it raises a value to **[B]** only by joining documentary peers.
+
+| our value | ours | spuder | outcome |
+|---|---|---|---|
+| 1U pitch | 44.45 | 44.45 | agrees; already [B], no change (no governing standard to reach [A]) |
+| hole h span | 236.525 | 236.525 | agrees exactly; already [B], no change |
+| panel outer width | 254 | 254 | **`//VERIFY` cleared → [B]** — the second independent source the tag was waiting on |
+| per-U hole offsets | 6.35 / 22.225 / 38.1 | 6.35 / 22.225 / 38.1 | **`//VERIFY` cleared → [B]** — third independent peer, exact |
+| clear/usable width | 222 (ship) / 222.25 (diagram) | 221.5 | **no tier change — NOT comparable.** spuder's figure is a cap on printed cradle width with clearance already built in (`min(switch_width + 2*case_thickness, 221.5)`), not a measurement of the rack's clear opening. A weak lower bound at best; it is **not** a third opinion in the unresolved 222 / 222.25 question. |
+| rail slot | previously unsourced | capsule 10.0 × 7.0 | **new `rack10_rail_slot()` [C]** — first real source for this geometry |
+
+The rail slot was the only value in this library with no source at all: the
+prior `slot_travel = 4` default was documented in-code as "illustrative, no
+sourced post-tolerance figure". spuder's capsule is expressed as an overall
+length × height, which maps to `rack10_slot_profile(dia, slot_travel)` as
+`dia = 7.0`, `slot_travel = 10.0 - 7.0 = 3.0`.
 
 ## Coverage / gaps for README (Task 6+)
 

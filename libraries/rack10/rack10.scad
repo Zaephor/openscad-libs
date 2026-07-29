@@ -53,9 +53,11 @@ function rack10_known_standards() = ["labrax", "deskpi", "tecmojo"];
 
 // Per-vendor geometry row: [panel_width, hole_h_span, clear_width, depth_ftf] (mm).
 // labrax — see RESEARCH.md for full evidence per field, summarized here:
-//   panel_width  254     [B] //VERIFY not stated by LabRax itself; sourced only
-//                         from the independent, to-scale Wikimedia diagram
-//                         (closure-checked against its own numbers).
+//   panel_width  254     [B] LabRax never states it, but two independent
+//                         sources agree: the to-scale Wikimedia diagram
+//                         (closure-checked against its own numbers) and
+//                         spuder's shipped generator (rack_width = 254). The
+//                         prior //VERIFY waited on exactly this second source.
 //   hole_h_span  236.525 [B] LabRax article + Wikimedia diagram, exact match,
 //                         two independent sources — strongest-confirmed value.
 //   clear_width  222     [B] //VERIFY LabRax's own stated figure; the diagram
@@ -119,7 +121,26 @@ function rack10_hole_h_centers(standard) =
 
 // Three hole centers within one U, Z from that U's lower edge. Gaps
 // 15.875/15.875/12.7 sum to one U. LabRax targets EIA hole compatibility.
-function rack10_u_hole_offsets() = [6.35, 22.225, 38.1]; // //VERIFY 10in uses the 3-hole EIA sub-pattern — confirm in RESEARCH.md; gaps [B]
+// [B] — three independent peers agree on the exact offsets: LabRax's own BOM
+// (hole COUNT, "6 per rack unit (U)"), the Wikimedia diagram's exact SVG
+// coordinates (the 3-hole EIA sub-pattern), and spuder's shipped generator
+// (u_hole_positions, exact match). The prior //VERIFY asked whether 10in
+// adopts the exact EIA offsets rather than a variant; a third independent
+// implementation using the same three numbers answers it. See RESEARCH.md.
+function rack10_u_hole_offsets() = [6.35, 22.225, 38.1];
+
+// Rail mounting-slot overall capsule [L, H] (long axis horizontal), mm.
+// Nullary and NOT vendor-keyed: this is a generic 10in figure, not a
+// per-vendor one — same framing as rack10_u_hole_offsets() above. Maps onto
+// rack10_slot_profile(dia, slot_travel) as dia = H and slot_travel = L - H
+// (the profile is dia tall by dia+slot_travel long), so L is the OVERALL
+// length, not the elongation distance.
+// [C] spuder/10-Inch-Rack-OpenSCAD, 10InchRackGenerator.scad (254mm-rack
+// branch), https://github.com/spuder/10-Inch-Rack-OpenSCAD — MIT (c) 2025
+// Spencer Owen. An independently-authored, shipped, printed parametric 10in
+// rack generator; the only known real-world source for this geometry. Tier
+// ceiling is [C] per docs/LIBRARY-AUTHORING.md (public SCAD library).
+function rack10_rail_slot() = [10.0, 7.0];
 // Every hole-center Z for a `u`-unit stack, ascending. round(...*1e6)/1e6
 // strips ~1e-14mm float summation noise so exact decimals compare with ==.
 function rack10_hole_z(u) =
@@ -154,14 +175,15 @@ module rack10_slot_profile(dia, slot_travel) {
 // 10in hole strip as subtractable solids, both rails, `u` units. Axis along +Y.
 // hole_type: "round" (numeric clearance dia in `dia`), "m6"/"10-32" (dia from
 // rack10_screw_clearance), "square" (rack10_square_size), "slot" (obround,
-// dia + slot_travel along X). dia>0 overrides the clearance for the named-fastener
-// types (m6/10-32) and round/slot; the named clearance is the default only when
-// `dia` is omitted (`round` requires `dia`). `square` always cuts
-// rack10_square_size() — it ignores `dia`. Cutter CENTERED on the
-// front-post plane Y=0 (spans y in [-d/2,+d/2]) so one stamp cuts panels (grow
-// -Y) and rail flanges (grow +Y). depth (`d`) sizes that span; default 40 =
-// -20..+20, enough for realistic panels/rails; a smaller value can under-cut.
-module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_travel = 4) {
+// dia + slot_travel along X, both default to 0 = derive from rack10_rail_slot()).
+// dia>0 overrides the clearance for the named-fastener types (m6/10-32) and
+// round/slot; the named clearance is the default only when `dia` is omitted
+// (`round` requires `dia`). `square` always cuts rack10_square_size() — it
+// ignores `dia`. Cutter CENTERED on the front-post plane Y=0 (spans y in
+// [-d/2,+d/2]) so one stamp cuts panels (grow -Y) and rail flanges (grow +Y).
+// depth (`d`) sizes that span; default 40 = -20..+20, enough for realistic
+// panels/rails; a smaller value can under-cut.
+module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_travel = 0) {
     assert(hole_type == "round" || hole_type == "m6" || hole_type == "10-32"
         || hole_type == "square" || hole_type == "slot",
         str("rack10_holes: unknown hole_type '", hole_type, "'"));
@@ -172,14 +194,20 @@ module rack10_holes(standard, u, hole_type = "round", dia = 0, depth = 0, slot_t
                 if (hole_type == "square")
                     linear_extrude(d) square(rack10_square_size(), center = true);
                 else if (hole_type == "slot") {
-                    // Horizontal obround (racetrack); width from dia (a screw
-                    // clearance), elongated slot_travel along X.
-                    // slot_travel default = 4mm is illustrative, no sourced
-                    // post-tolerance figure. //VERIFY: confirm against real
-                    // rackpost drilling tolerance if available.
-                    assert(dia > 0,
-                        "rack10_holes: slot requires dia>0 (e.g. rack10_screw_clearance(\"m6\"))");
-                    linear_extrude(d) rack10_slot_profile(dia, slot_travel);
+                    // Horizontal obround (racetrack). dia and slot_travel each
+                    // default to 0 = "derive from rack10_rail_slot()", whose
+                    // capsule is [L, H] overall: dia = H, slot_travel = L - H.
+                    // Pass either explicitly to override (e.g.
+                    // dia = rack10_screw_clearance("m6") for a fastener-sized
+                    // slot instead of the sourced one).
+                    assert(dia >= 0,
+                        "rack10_holes: slot dia must be >= 0 (0 = derive from rack10_rail_slot())");
+                    assert(slot_travel >= 0,
+                        "rack10_holes: slot slot_travel must be >= 0 (0 = derive from rack10_rail_slot())");
+                    rs = rack10_rail_slot();
+                    sd = dia > 0 ? dia : rs[1];
+                    st = slot_travel > 0 ? slot_travel : rs[0] - rs[1];
+                    linear_extrude(d) rack10_slot_profile(sd, st);
                 }
                 else {
                     // dia>0 overrides the named-fastener clearance for the named
@@ -237,9 +265,10 @@ module rack10_placeholder(standard, u, depth_ftf, hole_type = "round") {
                 translate([x - fw/2, y, 0]) cube([fw, ft, h]);
                 if (y == 0)  // holes on front flanges only
                     rack10_holes(standard, u, hole_type,
-                        // 5mm: illustrative preview clearance for "round"/"slot" only,
-                        // NOT sourced; slot_travel uses its default.
-                        hole_type == "round" || hole_type == "slot" ? 5 : 0);
+                        // 5mm: illustrative preview clearance for "round" only,
+                        // NOT sourced. "slot" passes 0 to derive the sourced
+                        // capsule from rack10_rail_slot(); "square" ignores dia.
+                        hole_type == "round" ? 5 : 0);
             }
     %translate([-rack10_clear_width(standard)/2, 0, 0])
         cube([rack10_clear_width(standard), depth_ftf, h]);

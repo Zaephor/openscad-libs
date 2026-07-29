@@ -87,14 +87,56 @@ for i in range(n):
 sys.exit(0 if (max(xs)-min(xs))>(max(ys)-min(ys)) else 1)
 PY
 
-# Negative control: slot with dia=0 asserts.
+# Negative control: slot with a NEGATIVE dia asserts. (dia=0 is no longer an
+# error -- it is the "derive from rack10_rail_slot()" sentinel, covered by the
+# positive control below.)
 cat > "$tmp/slotbad.scad" <<'EOF'
 use <rack10/rack10.scad>;
-rack10_holes("labrax", 1, hole_type="slot", dia=0);
+rack10_holes("labrax", 1, hole_type="slot", dia=-1);
 EOF
 out="$(run "$tmp/slotbad.scad")"
 echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
-  || { echo "slot dia=0 must assert"; echo "$out"; exit 1; }
+  || { echo "slot dia<0 must assert"; echo "$out"; exit 1; }
+
+# Negative control: slot with a NEGATIVE slot_travel asserts.
+cat > "$tmp/slotbadtravel.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_holes("labrax", 1, hole_type="slot", slot_travel=-1);
+EOF
+out="$(run "$tmp/slotbadtravel.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  || { echo "slot slot_travel<0 must assert"; echo "$out"; exit 1; }
+
+# Positive control: slot with NO dia and NO slot_travel derives from
+# rack10_rail_slot() and renders clean (this asserted before #67).
+cat > "$tmp/slotderive.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rack10_holes("labrax", 1, hole_type="slot");
+EOF
+out="$(run "$tmp/slotderive.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  && { echo "slot with no dia/slot_travel must derive, not assert"; echo "$out"; exit 1; } || true
+
+# Derivation identity: feeding rack10_rail_slot() through rack10_slot_profile()
+# the documented way (dia=H, slot_travel=L-H) reproduces the sourced capsule --
+# X-span == L (10.0), Y-span == H (7.0). Guards the unit mapping (L is the
+# OVERALL length, not the elongation) against a future edit.
+cat > "$tmp/slot_derive_iso.scad" <<'EOF'
+use <rack10/rack10.scad>;
+rs = rack10_rail_slot();
+linear_extrude(6) rack10_slot_profile(rs[1], rs[0] - rs[1]);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/slot_derive_iso.stl" "$tmp/slot_derive_iso.scad" 2>/dev/null
+python3 - "$tmp/slot_derive_iso.stl" <<'PY' || { echo "derived slot capsule is not 10.0 x 7.0"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs=[];ys=[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); ys.append(y)
+sys.exit(0 if abs((max(xs)-min(xs))-10.0)<0.01 and abs((max(ys)-min(ys))-7.0)<0.01 else 1)
+PY
 
 # Panel height uses device_height (stacking gap), NOT raw u*pitch.
 cat > "$tmp/panel_h.scad" <<'EOF'
