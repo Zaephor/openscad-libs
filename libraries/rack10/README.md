@@ -136,7 +136,7 @@ note.
 |---|---|
 | `rack10_holes(standard, u, hole_type, dia, depth, slot_travel)` | mounting-hole cutter, both rail columns, `u` units (subtract from a consumer solid) |
 | `rack10_slot_profile(dia, slot_travel)` | horizontal obround cross-section (used by `rack10_holes()`'s `"slot"` branch; extrude it directly for a standalone profile) |
-| `rack10_rail_slot()` | rail mounting-slot overall capsule `[L, H]` (long axis horizontal); `rack10_holes()`'s `"slot"` branch derives from it |
+| `rack10_rail_slot()` | rail mounting-slot overall capsule `[L, H]` (long axis horizontal), sourced `[C]`; `rack10_holes()`'s `"slot"` branch derives from it |
 | `rack10_placeholder(standard, u, depth_ftf, hole_type)` | 4-flange rail envelope + front hole strip + `%` keep-out volume (fit-check reference) |
 | `rack10_rackpost_context(standard, device_u, pad_u, depth_ftf, hole_type)` | `rack10_placeholder()` sized to `device_u + 2*pad_u` U and shifted so the device band's bottom sits at `Z=0` — padded rack context around a device (integer U only) |
 | `rack10_panel(standard, u, thickness)` | plain faceplate blank, `u` units tall — subtract `rack10_holes()` to mount it |
@@ -151,9 +151,10 @@ the sourced capsule from `rack10_rail_slot()`, or pass e.g.
 centered on the front-post plane Y=0, spanning Y∈[-20,+20]) covers realistic
 panels (≲20mm) and rail flanges, but a smaller caller-supplied `depth` can
 under-cut a thicker target. `slot_travel` (default `0`, meaning derive from
-`rack10_rail_slot()`) is the elongation distance along X for `"slot"` only;
-pass an explicit value to override the sourced default, i.e. ≈±2mm of
-horizontal rackpost-spacing tolerance; ignored for every other `hole_type`.
+`rack10_rail_slot()` to `3.0mm`, sourced `[C]`) is the elongation distance
+along X for `"slot"` only; pass an explicit value to override the sourced
+default, i.e. ≈±1.5mm of horizontal rackpost-spacing tolerance; ignored for
+every other `hole_type`.
 
 ## Sources
 
