@@ -98,42 +98,48 @@ function keystone_face() = [14.5, 16.0];
 // for every field below unless noted. Returns
 // [back_wall_depth, wall_thickness, mouth_w, mouth_h, top_slit_w,
 //  top_slit_len, top_slit_depth, bot_slit_w, bot_slit_len, bot_slit_depth],
-// all mm, all //VERIFY (single-model reading) except where marked [C]:
+// all mm, all //VERIFY (single-model reading) except where marked [C]. Tier
+// ceiling is [C] per docs/LIBRARY-AUTHORING.md (public SCAD library); every
+// peer for these values is an artifact, so [C] is the ceiling here regardless
+// of count — the same rule already applied to back_wall_depth.
 //   back_wall_depth (10.05) — [C] cross-model corroborated: Model 1 reads
 //     10.05mm, Model 2 ("Voron 0.2r1 Rear Skirt w/keystone", Printables
-//     533549) independently reads ~10.0-10.05mm — two unrelated designs
-//     agreeing on this specific value clears the [C] bar.
+//     533549) reads ~10.0-10.05mm, and spuder's receptacle block depth 9.7mm
+//     — three unrelated designs agreeing on this value range clears the [C] bar.
 //   wall_thickness (1.51) — residual material bridging each slit, same on
 //     top and bottom in Model 1.
-//   mouth_w, mouth_h (15.3, 18.4) — baseline channel cross-section just past
-//     the front lead-in (this library does not model that lead-in chamfer
-//     separately -- see keystone_cutout()'s module comment).
+//   mouth_w (15.3) — [C] corroborated by the receptacle pocket width 14.9mm
+//     (spuder/10-Inch-Rack-OpenSCAD, KeystoneJack.scad).
+//   mouth_h (18.4) — baseline channel cross-section just past the front lead-in
+//     (this library does not model that lead-in chamfer separately -- see
+//     keystone_cutout()'s module comment).
 //   top_slit_w, bot_slit_w (15.3, == mouth_w) — "slit width in X does not
 //     narrow -- each slit runs the full width of the channel."
 //   top_slit_len, bot_slit_len (8.0, 6.5) — top slit runs essentially to the
 //     back wall; bottom slit is shorter (ends ~1.5mm before the back wall).
 //     This top>bottom asymmetry is single-model (Model 2's own close is
 //     symmetric-taper, not corroborating this specific asymmetry).
-//   top_slit_depth, bot_slit_depth (both 2.05) — [C] for the QUALITATIVE
-//     finding that both slits begin at the SAME depth (corroborated
-//     jointly by Model 2, which shows both edges moving together at ~1.5mm
-//     depth in its own reading) -- this is the finding that distinguishes
-//     "standard" from #31's staged "lip" mechanism. The exact 2.05mm value
-//     itself is single-model //VERIFY (Model 2's own specific depth,
-//     1.5mm, differs).
+//   top_slit_depth, bot_slit_depth (both 2.05) — [C] on the quantity
+//     (corroborated by the receptacle's front wall depth 3.0mm, spuder
+//     KeystoneJack.scad). The existing [C] on the QUALITATIVE finding that
+//     both slits begin at the SAME depth (corroborated jointly by Model 2,
+//     which shows both edges moving together at ~1.5mm depth in its own
+//     reading) stays — this qualitative finding distinguishes "standard" from
+//     #31's staged "lip" mechanism. The exact 2.05mm value itself is single-model
+//     with a 1.0mm spread to Model 2 (which reads ~1.5mm).
 function keystone_slot(style = undef) =
     let(s = _keystone_resolve_style(style))
     s == "standard" ? [
-        10.05, // back_wall_depth [C] (1014552 + 533549)
+        10.05, // back_wall_depth [C] (1014552 + 533549 + spuder 9.7mm)
         1.51,  // wall_thickness //VERIFY (1014552)
-        15.3,  // mouth_w //VERIFY (1014552)
+        15.3,  // mouth_w [C] (spuder pocket width 14.9mm)
         18.4,  // mouth_h //VERIFY (1014552)
         15.3,  // top_slit_w //VERIFY (1014552; == mouth_w, full-width slit)
         8.0,   // top_slit_len //VERIFY (1014552)
-        2.05,  // top_slit_depth //VERIFY mm ([C] same-start-depth finding, jointly w/ 533549)
+        2.05,  // top_slit_depth [C] quantity (spuder 3.0mm; [C] same-start-depth finding, jointly w/ 533549)
         15.3,  // bot_slit_w //VERIFY (1014552; == mouth_w)
         6.5,   // bot_slit_len //VERIFY (1014552)
-        2.05   // bot_slit_depth //VERIFY mm ([C] same-start-depth finding, jointly w/ 533549)
+        2.05   // bot_slit_depth [C] quantity (spuder 3.0mm; [C] same-start-depth finding, jointly w/ 533549)
     ] :
     assert(false, str("keystone: keystone_slot has no channel data for style '", s, "'"));
 
@@ -148,36 +154,44 @@ function keystone_slot(style = undef) =
 // [fulcrum_base, fulcrum_protrusion, fulcrum_z, arm_thickness, arm_length,
 //  arm_root_z, topnotch_base, topnotch_protrusion, topnotch_z], all mm, all
 // //VERIFY (single-model mm) except where marked [C]:
-//   fulcrum_base/protrusion (2.0, 1.5) — the bottom fulcrum's triangular notch.
+//   fulcrum_base (2.0) — [C] the bottom fulcrum's triangular notch base, exact
+//     match to spuder's receptacle small catch (KeystoneJack.scad). Post-mirror,
+//     bottom/top assignment matches ours.
+//   fulcrum_protrusion (1.5) — the bottom fulcrum's triangular notch protrusion;
+//     stays //VERIFY (vs spuder's 1.4mm) — spreads 0.1mm; receptacle ledges and
+//     jack tongues mate but are not identical quantities.
 //   fulcrum_z (7.1) — midpoint of the measured 6.1-8.1mm behind-front-face
 //     range (a range, not a point, in the source reading).
 //   arm_thickness, arm_length (1.7, 14.0) — the top flex arm's cantilever
 //     thickness and free length (root fold to where its own notch begins).
 //   arm_root_z (20.0) — depth behind the front face where the arm's root
 //     (hairpin fold) sits.
-//   topnotch_base/protrusion (2.6, 1.0) — the top arm's own triangular notch,
-//     at the arm's FREE TIP (not partway along it -- corrected via an
-//     ordered-vertex re-trace, see RESEARCH.md).
+//   topnotch_base (2.6) — [C] the top arm's own triangular notch base, exact
+//     match to spuder's receptacle large catch (KeystoneJack.scad). Post-mirror,
+//     bottom/top assignment matches ours.
+//   topnotch_protrusion (1.0) — the top arm's notch protrusion; stays //VERIFY
+//     (vs spuder's 1.3mm) — spreads 0.3mm; receptacle ledges and jack tongues
+//     mate but are not identical quantities.
 //   topnotch_z (7.4) — midpoint of the measured 6.1-8.7mm range.
 //   [C]: both models independently corroborate the SHAPE and
 //   position-ORDER-OF-MAGNITUDE of (a) a triangular notch on a solid bottom
 //   fulcrum in the ~6-8.7mm range and (b) a flexing top arm with its own
 //   triangular notch at the arm's free tip -- this is what confirms the
 //   push-to-click, same-depth mechanism (both notches seat where
-//   keystone_slot()'s two slits open). The exact mm figures differ per
-//   model and are NOT numerically corroborated, so every individual number
-//   above stays //VERIFY.
+//   keystone_slot()'s two slits open). fulcrum_base and topnotch_base earn [C]
+//   through exact numerical corroboration with an independent receptacle source,
+//   and agreement on bottom/top assignment (an ordering check) post-mirror.
 function keystone_notch(style = undef) =
     let(s = _keystone_resolve_style(style))
     s == "standard" ? [
-        2.0,  // fulcrum_base //VERIFY (366437)
-        1.5,  // fulcrum_protrusion //VERIFY (366437)
+        2.0,  // fulcrum_base [C] (366437 + spuder 2.0mm exact)
+        1.5,  // fulcrum_protrusion //VERIFY (366437; vs spuder 1.4mm spread 0.1)
         7.1,  // fulcrum_z //VERIFY (366437; midpoint of measured 6.1-8.1mm)
         1.7,  // arm_thickness //VERIFY (366437)
         14.0, // arm_length //VERIFY (366437)
         20.0, // arm_root_z //VERIFY (366437; unmeasurable in 314383)
-        2.6,  // topnotch_base //VERIFY (366437)
-        1.0,  // topnotch_protrusion //VERIFY (366437)
+        2.6,  // topnotch_base [C] (366437 + spuder 2.6mm exact)
+        1.0,  // topnotch_protrusion //VERIFY (366437; vs spuder 1.3mm spread 0.3)
         7.4   // topnotch_z //VERIFY (366437; midpoint of measured 6.1-8.7mm)
     ] :
     assert(false, str("keystone: keystone_notch has no notch data for style '", s, "'"));
@@ -204,15 +218,17 @@ function keystone_opening(style = undef) =
     s == "standard" ? [keystone_slot(s)[2], 22.25] :
     [14.70, 16.40];
 
-// [bw,bh,bd] jack envelope keep-out (X,Y,Z-depth behind panel), mm. bd=28.60
+// [bw,bh,bd] jack's own envelope (X,Y,Z-depth behind panel), mm. bd=28.60
 // //VERIFY: Samm Teknoloji drawing's single labelled overall-depth dimension
 // (assembled jack + rear wire cap) — a single, non-decomposed reading from
 // one vendor drawing, not STL/mesh-derived and not corroborated by a second
 // source, so it does not earn [C] or [B]. Confirm against a second jack's
 // drawing (or an STL/caliper measurement) before treating as load-bearing.
 // bw/bh //VERIFY: the drawing's orthographic view callouts (~17-20mm range)
-// could not be confidently axis-mapped this pass; seeded as a conservative
-// keep-out margin above keystone_opening().
+// could not be confidently axis-mapped this pass. This pass's corroboration
+// source (spuder/10-Inch-Rack-OpenSCAD, KeystoneJack.scad) is a receptacle
+// (a plate block with a keystone pocket), not a jack, so it provides no
+// comparable value for jack envelope.
 function keystone_body()            = [17.5, 19.5, 28.60];
 // [min,max] accepted faceplate thickness, mm. tmin=1.5 [A] Samm Teknoloji
 // drawing's suggested cutout-panel thickness (1.50~1.60, both Metal and

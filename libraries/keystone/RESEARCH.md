@@ -649,6 +649,54 @@ Specimen A (Tecmojo) was re-measured to correct earlier interpretations in #54:
 - **Lug** — previously modeled as a `[7.8, 1.2, 7.0, 6.6]` wedge ramp; caliper re-measurement confirms it is a **plain rectangular block** `[7.8, 1.1, 1.1, 6.8]` (w, prot, zlen, z0) with no wedge profile. The dominant numeric change is the Z-length re-measurement (7.0mm → 1.1mm), not merely the wedge-to-block shape correction — supersedes the #54 Tecmojo-nominal wedge interpretation.
 - **Latch tip/peak/extension** — re-measured to `[9.2, 15.0, 3.6, 5.0, 0.9, 2.2, 4.5, 3.1, 3.1]` (tip_z changed 5.2→5.0mm, hook_peak changed 4.3→4.5mm, hook_zext changed 3.0→3.1mm), all `[B]` caliper from the user's physical insert (2026-07-23). These correct #54's earlier Tecmojo-nominal values carried from the first pass's less-resolved read.
 
+## spuder 10-Inch-Rack corroboration (#67)
+
+Source: spuder/10-Inch-Rack-OpenSCAD, `KeystoneJack.scad` —
+<https://github.com/spuder/10-Inch-Rack-OpenSCAD>, MIT © 2025 Spencer Owen.
+
+**What this part is.** Despite its filename and variable names (`jack_width`,
+`jack_height`), the module is **not a jack — it is the receptacle**: a plate
+block with a keystone pocket a real jack snaps into. Outer solid 19.9 × 9.7 ×
+27.5, a 14.9 × 16.3 front aperture, a 14.9 × 24.4 latch-flex pocket beginning
+3mm deep, and Y-protruding catch ledges (1.4 / 1.3) at the pocket's Z extremes.
+The part is mirrored in Z as authored, so declared catch positions invert:
+post-mirror the assignment is 2.0 bottom / 2.6 top, matching ours. It therefore
+corroborates our receptacle API (`keystone_slot()`, `keystone_cutout()`,
+`keystone_boss()`) and says nothing about `keystone_body()`.
+
+Tier ceiling is **[C]** per `docs/LIBRARY-AUTHORING.md` (public SCAD library).
+Every peer for these values is an artifact, so **[C]** is the ceiling here no
+matter how many agree — the same rule already applied to `back_wall_depth`.
+
+| our value | ours | source | outcome |
+|---|---|---|---|
+| `keystone_slot()[2]` mouth_w | 15.3 | pocket width 14.9 | **`//VERIFY` → [C]** |
+| `keystone_slot()[6]`/`[9]` slit_depth | 2.05 | front wall depth 3.0 | **`//VERIFY` → [C]**; conflict below |
+| `keystone_slot()[0]` back_wall_depth | 10.05 | block depth 9.7 | stays [C]; third peer |
+| `keystone_notch()[0]` fulcrum_base | 2.0 | small catch length 2.0 | **`//VERIFY` → [C]**, exact |
+| `keystone_notch()[6]` topnotch_base | 2.6 | large catch length 2.6 | **`//VERIFY` → [C]**, exact |
+| `keystone_notch()[1]`/`[7]` protrusions | 1.5 / 1.0 | 1.4 / 1.3 | stay `//VERIFY`; spreads 0.1 / 0.3 |
+| `keystone_opening("face")` | 14.70 × 16.40 | 14.9 × 16.3 | stays **[A]** (ceiling); consistency note only |
+| `keystone_body()` | 17.5 × 19.5 × 28.60 | — | **no comparable value** (source is a receptacle) |
+
+### Unresolved conflicts (recorded, not resolved)
+
+1. **Front wall depth — ours 2.05, source 3.0.** Ours is the **safe** side: the
+   slit opens earlier, giving the tongue more clearance. Cutting at 3.0 when
+   reality is 2.05 would drive the tongue into solid material.
+2. **Slit-inclusive void height — ours 22.25, source 24.4.** Ours is the
+   **risky** side: a short pocket can block tongue deployment. Partly mitigated
+   because `keystone_cutout()` deliberately runs both slits clean through the
+   walls to the back wall, so the rendered void is not bounded at 22.25 the way
+   the raw measurement is. `keystone_opening("standard")[1]` keeps its value and
+   its `//VERIFY`.
+
+Neither can be closed by another artifact — a third artifact adds a third number
+at the same [C] ceiling. The route out is a direct caliper measurement of a
+physical faceplate/coupler, which would land `[B] caliper` and outrank every
+artifact source. The prior caliper session measured the **jack**
+(`keystone_insert_*`), never a receptacle.
+
 ## Sources
 
 - [Samm Teknoloji A.Ş., "Unshielded ISO/IEC Keystone Jack" mechanical drawing](https://telecom.samm.com/Data/EditorFiles/Datasheets/9-copper-network-products/Unshielded-ISO-IEC-Keystone-Jack-Drawing-Samm-Teknoloji.pdf) — tier A — backs `keystone_opening()`, `keystone_plate_thickness()[0]` (tmin); also the sole (single, non-decomposed) reading behind `keystone_body()[2]` (bd), which stays `//VERIFY` since one non-decomposed reading doesn't earn a tier
@@ -661,3 +709,4 @@ Specimen A (Tecmojo) was re-measured to correct earlier interpretations in #54:
 - ["Voron 0.2r1 Rear Skirt w/keystone", Printables 533549](https://www.printables.com/model/533549) — tier C (`back_wall_depth`, same-depth top/bottom slit start, jointly with 1014552) / `//VERIFY` (mouth/window specifics, single-model) — `"standard"` slot/channel geometry (#38), 3mf-sourced mesh
 - ["SMA-Keystone Modul", Printables 366437](https://www.printables.com/model/366437) — tier C (front face; fulcrum-notch and arm-notch shape+position, jointly with 314383) / `//VERIFY` (exact notch/arm mm, body envelope, single-model) — `"standard"` insert/module geometry (#38), single-STL whole-mechanism read
 - ["SFP+ Cable Keystone Jack", Printables 314383](https://www.printables.com/model/314383) — tier C (fulcrum-notch and arm-notch shape+position, jointly with 366437) / `//VERIFY` (exact notch/arm mm, body envelope, single-model) — `"standard"` insert/module geometry (#38), split Left/Right/Hook parts
+- [spuder/10-Inch-Rack-OpenSCAD, `KeystoneJack.scad`](https://github.com/spuder/10-Inch-Rack-OpenSCAD) — tier C — MIT © 2025 Spencer Owen. **A receptacle, not a jack**, despite its filename and variable names. Backs `keystone_slot()` mouth_w and slit-depth, `keystone_notch()` fulcrum_base/topnotch_base (exact, and matching bottom/top assignment once its Z-mirror is applied); third peer for `back_wall_depth`. Provides no value comparable to `keystone_body()`.

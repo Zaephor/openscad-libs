@@ -82,7 +82,7 @@ assert(len(o) == 2 && o[0] > 0 && o[1] > 0, "opening [ow,oh] positive");
 
 b = keystone_body();
 assert(len(b) == 3 && b[0] > 0 && b[1] > 0 && b[2] > 0, "body [bw,bh,bd] positive");
-// Body (jack keep-out) must cover the FACE in X,Y. The "standard" opening is
+// Body (jack's own envelope) must cover the FACE in X,Y. The "standard" opening is
 // intentionally taller than the jack (slit clearance margin), so it may
 // exceed the body height -- compare the body to the face, not the opening.
 f = keystone_face();
