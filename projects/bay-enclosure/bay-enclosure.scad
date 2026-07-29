@@ -245,7 +245,7 @@ module bay_enclosure() {
             // the tongue's own footprint the shelf largely survives, because
             // the keep-out's wedge is triangular in YZ and so only reaches
             // Z=ft near the mounting face: measured over the engagement span
-            // at Z in [0,ft], 1075.02mm^3 remains at |X| > 30.6 (tied into
+            // at Z in [0,ft], 1075.776mm^3 remains at |X| > 30.6 (tied into
             // the side walls) plus wedge-shaped remnants inboard of that.
             // Under the tongue itself only the film remains.
             translate([fx0, 0, 0]) {

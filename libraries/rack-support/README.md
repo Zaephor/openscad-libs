@@ -218,9 +218,10 @@ structural analysis (creep) pass that motivated this library.
   face and whose horizontal leg runs forward along the consumer's floor top.
   Sizing it from `rack_support_rail_size()[1]` (the tongue's height) makes
   the apex flush with the tongue's top face and braces the full root
-  cross-section without introducing a new dimension. All of `Y < body_reach`
-  is free of the plate — its measured `ymin` is `227.999 ≈ body_reach` — so
-  this costs nothing in clearance. Both shipped references do it
+  cross-section without introducing a new dimension. The plate's own solid
+  material starts at `ymin ≈ 227.999` (essentially `body_reach`), so `Y <
+  body_reach` is free of the plate and this costs nothing in clearance. Both
+  shipped references do it
   (`assembly.scad`, `bay-enclosure`); note `bay-enclosure`'s wedge rises
   from its own thinner floor (`floor_th`), not from `floor_thickness()`, or
   it would float. What this buys is an in-layer anchor for the tongue's

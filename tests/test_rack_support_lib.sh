@@ -395,11 +395,20 @@ PY
 # lives above Z=ft, where a moat confined to Z in [0,ft] cannot reach), the
 # PRE-FIX keep-out also reports 2 at margins 0.1/0.2 -- verified directly
 # against the pre-fix module. So this check is a general "tongue is still
-# attached" guard (it would catch a lost gusset, or a keep-out that grew
-# above ft), NOT a sharp guard against the moat itself. Check (d) below is
-# the one that fails on the pre-fix geometry, and is why (c) alone is not
-# enough. Nonzero margins are exercised anyway: at margin=0 there is no moat
-# to carve at all, so a margin-0-only check proves nothing about margin.
+# attached" guard against a keep-out that grows into the moat band, NOT a
+# sharp guard against the moat itself -- check (d) below is the one that
+# fails on the pre-fix geometry, and is why (c) alone is not enough.
+#
+# This check does NOT catch a lost root gusset either, and that is not a
+# hypothetical: once the margin clamp closes the moat (post-fix library),
+# the shelf reconnects to the tongue across the real 2D face at Y=reach on
+# its own, gusset or no gusset. Verified by negative control -- deleting the
+# gusset call from a consumer and re-rendering against THIS post-fix library
+# still reports Volumes: 2 here, even though the tongue's first printed
+# layer collapses back to an isolated, unanchored island (see the actual
+# C1 claim, checked below by (e)). Nonzero margins are exercised anyway: at
+# margin=0 there is no moat to carve at all, so a margin-0-only check
+# proves nothing about margin.
 check_tray_connectivity() { # <margin>
   local m="$1"
   local scad="$tmp/connectivity_$m.scad"
@@ -449,18 +458,21 @@ check_tray_connectivity 0.2
 for m in 0 0.1 0.2; do
   cat > "$tmp/keepout_ymin_$m.scad" <<EOF
 use <rack-support/rack-support.scad>;
+echo(rack_support_engagement_depth());
 rack_support_plate_keepout($m);
 EOF
-  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/keepout_ymin_$m.stl" "$tmp/keepout_ymin_$m.scad" 2>/dev/null
-  python3 - "$tmp/keepout_ymin_$m.stl" <<'PY' || { echo "rack_support_plate_keepout() reaches past the plate's mouth plane (Y=-engagement_depth()) -- margin is carving a -Y moat at the tongue root; see (d1) above"; exit 1; }
+  out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/keepout_ymin_$m.stl" "$tmp/keepout_ymin_$m.scad" 2>&1)"
+  ed="$(echo "$out" | grep -oE 'ECHO: [0-9.]+' | grep -oE '[0-9.]+')"
+  python3 - "$tmp/keepout_ymin_$m.stl" "$ed" <<'PY' || { echo "rack_support_plate_keepout() reaches past the plate's mouth plane (Y=-engagement_depth()) -- margin is carving a -Y moat at the tongue root; see (d1) above"; exit 1; }
 import struct,sys
 d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+ed=float(sys.argv[2])
 ys=[]
 for i in range(n):
     for v in range(3):
         b=off+i*50+12+v*12
         ys.append(struct.unpack('<3f',d[b:b+12])[1])
-sys.exit(0 if min(ys) > -12 - 0.05 else 1)
+sys.exit(0 if min(ys) > -ed - 0.05 else 1)
 PY
 done
 
@@ -488,5 +500,62 @@ if [ -f "$tmp/keepout_xmoat.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
   echo "rack_support_plate_keepout(0.2) extends past the channel cavity's own half-width near the mouth -- margin is carving a +-X moat along the tongue's flanks; see (d2) above:"
   echo "$out"; exit 1
 fi
+
+# (e) GUSSET REGRESSION GUARD -- neither (c) nor (d) verifies the actual C1
+# claim (final-fix re-review, Important #1): material anchoring the
+# tongue's first printed layer at its root. Verified by negative control
+# in this checkout: once the margin clamp closes the moat, deleting
+# consumer_body()'s own root gusset (the _rack_support_yz_prism() call in
+# tray_body() above) still passes (c) at every margin -- the shelf
+# reconnects to the tongue across the real 2D face at Y=reach on its own,
+# so Volumes: 2 holds with or without the gusset. (c)/(d) are therefore no
+# regression guard at all for a silently-lost gusset; this probe is.
+#
+# Probe the anchor band directly behind the tongue root, in the tongue's
+# first printed layer above the bearing floor: X +-rail_size()[0]/2, Y
+# [reach-2,reach] (forward of the tongue itself, which starts at Y=reach --
+# only the gusset can put material here), Z [ft,ft+0.2]. A fully-solid
+# band would be rw*2*0.2 = 16.0mm^3; require most of that (>8.0mm^3, well
+# above the 0mm^3 a missing gusset leaves and well below the true value, so
+# neither hull()-sphere slack nor mesh noise can cause a false pass). This
+# checks consumer_body() alone, not the margin-differenced body: the
+# gusset is a per-consumer obligation this library cannot build itself
+# (see the README consumer contract), only detect the absence of in a
+# reference consumer -- margin plays no part in whether it exists.
+cat > "$tmp/gusset_anchor.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+u = 1;
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rw  = rack_support_rail_size()[0];
+reach = rpy - rack_support_engagement_depth();
+$(tray_body)
+intersection() {
+    consumer_body();
+    translate([-rw/2, reach - 2, ft]) cube([rw, 2, 0.2]);
+}
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/gusset_anchor.stl" "$tmp/gusset_anchor.scad" 2>/dev/null
+python3 - "$tmp/gusset_anchor.stl" <<'PY' || { echo "tongue-root anchor band (X +-rail_size()[0]/2, Y[reach-2,reach], Z[ft,ft+0.2]) has too little material -- the 45deg root gusset that anchors the tongue's first printed layer appears to be missing or shrunk; see (e) above"; exit 1; }
+import struct,sys
+def stl_volume(path):
+    try:
+        d = open(path, 'rb').read()
+    except FileNotFoundError:
+        return 0.0
+    n = struct.unpack('<I', d[80:84])[0]; off = 84
+    vol = 0.0
+    for i in range(n):
+        pts = []
+        for v in range(3):
+            b = off + i*50 + 12 + v*12
+            pts.append(struct.unpack('<3f', d[b:b+12]))
+        x1,y1,z1 = pts[0]; x2,y2,z2 = pts[1]; x3,y3,z3 = pts[2]
+        vol += (x1*(y2*z3-y3*z2) - y1*(x2*z3-x3*z2) + z1*(x2*y3-x3*y2)) / 6.0
+    return abs(vol)
+sys.exit(0 if stl_volume(sys.argv[1]) > 8.0 else 1)
+PY
 
 echo ok
