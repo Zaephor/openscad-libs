@@ -206,22 +206,36 @@ module drive_tray() {
             // geometry + a real intersection() boolean against
             // rack_support_plate(standard, device_u) translated to
             // rack10_rear_post_y(standard)): a shelf there -- at ANY width,
-            // even just the tongue's own rw -- occupies the EXACT same
-            // Y=[_reach(),rpy] x Z=[0,ft] space rack_support_plate()'s own
-            // bearing floor already fills once assembled (that floor spans
-            // the full mouth-through-panel Y range, not just under the
-            // channel cavity), producing a real ~960mm^3 solid-solid
-            // interference, not a coincident-face touch -- confirmed by
+            // even just the tongue's own rw -- lands in Y=[_reach(),rpy] x
+            // Z=[0,ft], which rack_support_plate()'s own solid material
+            // already fills there. The dominant offender (#63) was the
+            // plate's 45deg gusset, originally built FULL panel-width (not
+            // narrowed to slot_w+2*gusset_rib() the way it is now) -- it
+            // alone made the plate's solid envelope span the ENTIRE panel
+            // over that Y-Z range, so any buttress shelf reaching the
+            // rear-post plane collided with it regardless of the shelf's
+            // own width or X placement; the bearing floor is only
+            // slot_w (~40.8mm) wide and was never more than a secondary
+            // contributor. Measured ~960mm^3 of real solid-solid
+            // interference for a tongue-width (rw) shelf -- confirmed by
             // dumping the intersection's own triangle data (all non-
-            // degenerate facets bounded exactly by rw/ft/[_reach(),rpy]).
-            // Two rigid printed parts can't occupy that shared volume, so
-            // any buttress in this span would physically block full
-            // insertion. See task-2-report.md for the full write-up; this
-            // is a tension in rack-support's own consumer-contract guidance
-            // (its own assembly.scad reference tray appears to have the
-            // same unverified collision), not something fixable from this
-            // consumer alone. Left as a flagged concern: the tongue's own
-            // 12mm reach (rack_support_engagement_depth()) prints as a
+            // degenerate facets bounded exactly by rw/ft/[_reach(),rpy]),
+            // not a coincident-face touch. Two rigid printed parts can't
+            // occupy that shared volume, so any buttress in this span
+            // would physically block full insertion. assembly.scad's own
+            // reference tray had this SAME collision (measured, not
+            // speculative: 875.89mm^3, confirmed by rendering it directly)
+            // until it was fixed by subtracting rack_support_plate_keepout()
+            // against it -- not an open tension in rack-support's
+            // guidance, just a contract both shipped consumers had to
+            // catch up to. rack_support_plate_keepout() is now the
+            // supported way for any consumer that DOES want a buttress in
+            // this span to stay clear of the plate's envelope; drive-tray
+            // doesn't need it since it simply omits the shelf and measures
+            // clean (24 facets, 0.00mm^3 coincident-face touch at
+            // Y=228/Z=0 -- not a collision; see tests/test_drive_tray.sh).
+            // Left as a flagged, knowingly accepted concern: the tongue's
+            // own 12mm reach (rack_support_engagement_depth()) prints as a
             // modest, stocky (40x10mm cross-section) cantilever off the
             // rear wall's full-height, full-width anchor face at _reach()
             // -- right at this repo's own ~5-10mm "usually fine, minor

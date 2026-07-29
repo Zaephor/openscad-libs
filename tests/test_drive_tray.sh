@@ -214,5 +214,76 @@ ok = abs(xspan - 254) < 0.05 and abs(zspan - 43.66) < 0.05
 sys.exit(0 if ok else 1)
 PY
 
+
+# --- rack_support_plate() interference probe (#63 Task 5) ---
+# drive_tray() deliberately omits a rear buttress shelf under the tongue's
+# engagement span (see the "NO rear buttress shelf" comment above _dt_faceplate's
+# union() in drive-tray.scad) specifically because one would collide with
+# rack_support_plate()'s envelope -- confirm that omission actually keeps this
+# consumer clean against the plate at the SAME placement (rack10_rear_post_y)
+# both parts use. Measured directly (this task, before any change): 24
+# triangles in the exported STL, all vertices at Y=228 (==
+# rack10_rear_post_y("labrax") - rack_support_engagement_depth() = 240-12) or
+# Z=0, signed-tetra volume sum ~1.3e-5mm^3 -- floating-point noise around an
+# EXACT 0.00mm^3, not residual interference. This is the same coincident-face
+# TOUCH artifact class test_bay_enclosure.sh's own keepout probe documents (a
+# non-manifold sliver: facets present, zero volume) -- NOT OpenSCAD's literal
+# CGAL "is empty" result, so this probe can't use the is-empty text idiom the
+# way tests/test_rack_support_lib.sh's minimal reference-stub probe does; it
+# checks volume instead, same as test_bay_enclosure.sh's real-consumer probe.
+# The 1.0mm^3 bound below is pure headroom above the measured ~1.3e-5, not a
+# load-bearing threshold -- still ~5 orders of magnitude below the ~960mm^3 a
+# real buttress-shelf collision measures at (see drive-tray.scad's comment).
+#
+# CRITICAL: scripts/openscad.sh only sets OPENSCADPATH to libraries/, so a
+# probe .scad that `use`s drive-tray.scad by bare libname would silently fail
+# to resolve it -- OpenSCAD prints "WARNING: Ignoring unknown module/function"
+# per undefined symbol and happily renders an empty/undef model, which still
+# prints plausible Simple/Facets/Volumes lines and would pass a naive check
+# (this exact trap produced false results earlier in this plan, see
+# test_bay_enclosure.sh). `use <$proj/...>` below is an ABSOLUTE path
+# (bypasses OPENSCADPATH lookup entirely), and stderr is grepped for the
+# failure signatures regardless.
+stl_volume() {
+  python3 - "$1" <<'PY'
+import struct, sys
+try:
+    d = open(sys.argv[1], "rb").read()
+except FileNotFoundError:
+    print(0.0); sys.exit(0)
+n = struct.unpack("<I", d[80:84])[0]; off = 84
+vol = 0.0
+for i in range(n):
+    pts = []
+    for v in range(3):
+        b = off + i*50 + 12 + v*12
+        pts.append(struct.unpack("<3f", d[b:b+12]))
+    x1,y1,z1 = pts[0]; x2,y2,z2 = pts[1]; x3,y3,z3 = pts[2]
+    vol += (x1*(y2*z3-y3*z2) - y1*(x2*z3-x3*z2) + z1*(x2*y3-x3*y2)) / 6.0
+print(abs(vol))
+PY
+}
+
+cat > "$tmp/plate_interference.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+use <$proj/drive-tray.scad>;
+standard = "labrax";
+rpy = rack10_rear_post_y(standard);
+intersection() {
+    translate([0, rpy, 0]) rack_support_plate(standard, 1);
+    drive_tray();
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/plate_interference.stl" "$tmp/plate_interference.scad" 2>&1)"
+if echo "$out" | grep -qiE 'Ignoring unknown|Can.t open library'; then
+  echo "FAIL: plate interference probe failed to resolve drive-tray.scad (undef-poisoned model):"
+  echo "$out"; fail=1
+else
+  vol="$(stl_volume "$tmp/plate_interference.stl")"
+  awk -v v="$vol" 'BEGIN { exit !(v < 1.0) }' \
+    || { echo "FAIL: drive_tray() interferes with rack_support_plate() -- volume ${vol}mm^3 (want ~0, a real buttress-shelf collision measures ~960mm^3)"; fail=1; }
+fi
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
