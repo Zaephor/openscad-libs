@@ -96,24 +96,55 @@ fi
 # Gusset presence (Z-datum fix, #40 review): the 45deg gusset is now built
 # full panel-width and only survives as ribs flanking the slot (its central
 # slot-width band gets removed by the same cut that carves the channel
-# cavity -- see module doc). Probe the flank region (X=25, just outside
-# slot_w/2=~20.4) in the mouth zone (Y=-6, inside [-ed,0]=[-12,0]) at a low
-# Z band (Z in [1,3], inside the gusset's cross-section height there --
-# at Y=-6 the triangle's height is Y+ed=6, well above this band, and
-# entirely below the slot cavity's Z-floor of floor_t=2..12.4, so this
+# cavity -- see module doc). Probe the flank region -- X derived from the
+# same accessors the module reads (slot_w/2 + gusset_rib()/2, the rib
+# band's own midpoint; NOT re-literaled -- a rib-width change must not
+# silently make this probe land outside the rib by luck the way the old
+# hardcoded X=25 did) -- in the mouth zone (Y=-6, inside [-ed,0]=[-12,0])
+# at a low Z band (Z in [1,3], inside the gusset's cross-section height
+# there -- at Y=-6 the triangle's height is Y+ed=6, well above this band,
+# and entirely below the slot cavity's Z-floor of floor_t=2..12.4, so this
 # probe is unambiguously the gusset rib, not the floor or the cavity roof)
 # -- must be non-empty. Confirms the flanking-rib redesign actually leaves
 # real bracing material, not just an empty central cut.
 cat > "$tmp/probe_gusset.scad" <<'EOF'
 use <rack-support/rack-support.scad>;
+rs = rack_support_rail_size();
+cl = rack_support_slot_clearance();
+slot_w = rs[0] + 2 * cl;
+rib = rack_support_gusset_rib();
+probe_x = slot_w / 2 + rib / 2;
 intersection() {
     rack_support_plate("labrax", 1);
-    translate([25, -6, 1]) cube([2, 2, 2]);
+    translate([probe_x - 1, -6, 1]) cube([2, 2, 2]);
 }
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/probe_gusset.stl" "$tmp/probe_gusset.scad" 2>/dev/null
 if [ ! -s "$tmp/probe_gusset.stl" ]; then
   echo "gusset flank rib (Z-datum fix) unexpectedly empty -- bracing material missing"; exit 1
+fi
+
+# Negative control (#63 Task 1/2): the narrowed gusset's actual claim is
+# that it does NOT reach beyond the rib -- nothing currently tested that
+# absence. Same Y/Z band as the positive probe above, X well past the
+# rib's outer edge (slot_w/2 + gusset_rib(), +5mm clearance) -- must be
+# EMPTY. Derived from accessors, same "is empty" idiom as the slot-cavity
+# probes.
+cat > "$tmp/probe_gusset_negative.scad" <<'EOF'
+use <rack-support/rack-support.scad>;
+rs = rack_support_rail_size();
+cl = rack_support_slot_clearance();
+slot_w = rs[0] + 2 * cl;
+rib = rack_support_gusset_rib();
+neg_x = slot_w / 2 + rib + 5;
+intersection() {
+    rack_support_plate("labrax", 1);
+    translate([neg_x, -6, 1]) cube([2, 2, 2]);
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/probe_gusset_negative.stl" "$tmp/probe_gusset_negative.scad" 2>&1)"
+if [ -f "$tmp/probe_gusset_negative.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
+  echo "gusset extends beyond its narrowed rib width -- negative control unexpectedly non-empty:"; echo "$out"; exit 1
 fi
 
 # Rear mounting holes penetrate: probe a small box straddling one hole
@@ -197,5 +228,111 @@ out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/probe_mate.st
 if [ -f "$tmp/probe_mate.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
   echo "rack_support_plate/rack_support_tongue clip through each other at the documented placement (expected empty intersection):"; echo "$out"; exit 1
 fi
+
+# --- rack_support_plate_keepout() real-consumer interference tests (#63 Task 2) ---
+# A minimal consumer body reproducing assembly.scad's reference stub tray
+# (front ear panel + floor reaching the mounting plane + tongue seated in
+# the channel -- same accessor-derived dims/placement as that file; kept
+# here rather than reused from assembly.scad because that file is a script,
+# not a module, so `use` cannot import its top-level geometry, and this
+# suite must defend the library without depending on a projects/ file).
+# All probe coordinates are accessor calls inside the .scad, never -D
+# injection (use does not import top-level variables).
+tray_body() {
+cat <<'EOF'
+module consumer_body() {
+    union() {
+        translate([-rack10_panel_width(standard)/2, -3, 0])
+            cube([rack10_panel_width(standard), 3, rack10_device_height(u)]);
+        translate([-rw/2, 0, 0]) cube([rw, rpy, ft]);
+        translate([0, reach, 0]) rack_support_tongue();
+    }
+}
+EOF
+}
+
+# (a) Interference: a consumer that differences the published keepout out of
+# its own body, at the SAME placement it uses for the plate (the documented
+# consumer contract in the module doc), must reach ZERO interference with
+# the plate -- intersection() must be EMPTY. Task 1's narrowed gusset alone
+# only reduced the collision (3554.86mm^3 -> 1333.51mm^3); this closes it.
+cat > "$tmp/interference.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+u = 1;
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rw  = rack_support_rail_size()[0];
+reach = rpy - rack_support_engagement_depth();
+$(tray_body)
+intersection() {
+    translate([0, rpy, 0]) rack_support_plate(standard, u);
+    difference() {
+        consumer_body();
+        translate([0, rpy, 0]) rack_support_plate_keepout();
+    }
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/interference.stl" "$tmp/interference.scad" 2>&1)"
+if [ -f "$tmp/interference.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
+  echo "consumer body (keepout subtracted) still interferes with the plate -- keepout envelope incomplete:"; echo "$out"; exit 1
+fi
+
+# (b) PAIRED -- tongue survives, checked by volume (not mere presence): an
+# over-broad keepout that also eats the channel cavity would still pass (a)
+# by deleting the consumer's own tongue, AND would still leave the probe
+# band file non-empty (a cavity-less draft measurably erodes the tongue but
+# does not erase it -- verified during development: it left ~58% of the
+# tongue's volume, 2799mm^3 of 4800mm^3, so a plain non-empty/exists check
+# does NOT catch it). So this asserts the FULL undamaged volume survives:
+# intersect the differenced consumer with the tongue's own bounding band
+# (X +-rail_size()[0]/2 with slight slack, Y [rpy-ed,rpy], Z
+# [ft,ft+rail_size()[1]]) and require its volume equal
+# rail_size()[0]*ed*rail_size()[1] exactly (nothing else occupies that band
+# in consumer_body -- the floor tops out at Z=ft, the probe starts there --
+# so any deficit against the tongue's own volume is erosion by the keepout).
+cat > "$tmp/interference_tongue_survives.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+u = 1;
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rw  = rack_support_rail_size()[0];
+rs  = rack_support_rail_size();
+ed  = rack_support_engagement_depth();
+reach = rpy - ed;
+slack = 0.1;
+$(tray_body)
+intersection() {
+    difference() {
+        consumer_body();
+        translate([0, rpy, 0]) rack_support_plate_keepout();
+    }
+    translate([-rs[0]/2 - slack, rpy - ed, ft])
+        cube([rs[0] + 2 * slack, ed, rs[1]]);
+}
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/interference_tongue_survives.stl" "$tmp/interference_tongue_survives.scad" 2>/dev/null
+python3 - "$tmp/interference_tongue_survives.stl" <<'PY' || { echo "keepout eroded the consumer's own tongue (paired assertion failed) -- rack_support_plate_keepout() is over-broad, must exactly exclude the channel cavity"; exit 1; }
+import struct,sys
+try:
+    d=open(sys.argv[1],'rb').read()
+except FileNotFoundError:
+    sys.exit(1)
+n=struct.unpack('<I',d[80:84])[0]; off=84
+vol=0.0
+for i in range(n):
+    pts=[]
+    for v in range(3):
+        b=off+i*50+12+v*12
+        pts.append(struct.unpack('<3f',d[b:b+12]))
+    x1,y1,z1=pts[0]; x2,y2,z2=pts[1]; x3,y3,z3=pts[2]
+    vol += (x1*(y2*z3-y3*z2) - y1*(x2*z3-x3*z2) + z1*(x2*y3-x3*y2))/6.0
+vol = abs(vol)
+want = 40 * 12 * 10  # rail_size()[0] * engagement_depth() * rail_size()[1]
+sys.exit(0 if abs(vol - want) < 1.0 else 1)
+PY
 
 echo ok

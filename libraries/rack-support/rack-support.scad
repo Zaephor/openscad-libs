@@ -129,6 +129,67 @@ module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
     }
 }
 
+// The plate's forward-projecting solid envelope, for consumers to
+// difference() out of their own body at the SAME placement they use for the
+// plate. Two rigid printed parts cannot share volume; before this existed the
+// interface was an unwritten assumption and both shipped consumers violated
+// it (#63).
+//
+// CRITICAL: the channel cavity is SUBTRACTED from this envelope -- the
+// consumer's tongue legitimately occupies it. An envelope that includes the
+// cavity deletes the caller's own tongue, which makes the interference test
+// pass for entirely the wrong reason. tests/test_rack_support_lib.sh carries a
+// paired assertion against exactly that failure.
+//
+// Composed only from the SAME accessors rack_support_plate() reads (single
+// source of truth -- no re-literaled numbers) and covers only the part of
+// the envelope that projects past the mounting face (local Y<0): the
+// panel-internal portion (Y in [0,thickness]) is never reached by a
+// consumer body that stops at the mounting face the way the reference stub
+// tray does (see assembly.scad), so it's left out to avoid over-claiming.
+//
+// margin inflates the envelope for assembly clearance (default 0 = exact):
+// grows the wedge's two free vertices (mouth point further out, top point
+// higher) and the floor slab's reach/width -- NOT the channel cavity cut,
+// which must stay exactly the tongue's own clearance envelope regardless of
+// margin, or growing margin would eat into the tongue's reserved volume.
+module rack_support_plate_keepout(margin = 0) {
+    rs      = rack_support_rail_size();
+    cl      = rack_support_slot_clearance();
+    ed      = rack_support_engagement_depth();
+    ft      = rack_support_floor_thickness();
+    rib     = rack_support_gusset_rib();
+    slot_w  = rs[0] + 2 * cl;
+    slot_h  = rs[1] + cl;
+    m       = margin;
+    // Same eps-overlap technique as rack_support_plate()'s own cavity cut
+    // (see that module's comment): the cavity cutter's bottom face would
+    // otherwise sit exactly coincident with the floor slab's top face over
+    // the mouth region (Y<0, outside any panel-internal material), leaving
+    // CGAL a zero-thickness sliver and a non-manifold result.
+    eps = 0.01;
+    difference() {
+        union() {
+            // 45deg gusset wedge -- mirrors rack_support_plate()'s own
+            // wedge shape/width exactly (single source of truth: same
+            // slot_w + 2*gusset_rib() term), margin grows the two outer
+            // vertices away from the wall/floor corner (which stays fixed).
+            _rack_support_yz_prism([[0, 0], [-ed - m, 0], [0, ed + m]],
+                                    slot_w + 2 * rib + 2 * m);
+            // Bearing-floor slab's mouth-projecting portion only (Y in
+            // [-ed,0]; the plate's own floor additionally spans into the
+            // panel at Y in [0,thickness], omitted here per the module doc).
+            translate([-slot_w/2 - m, -ed - m, 0])
+                cube([slot_w + 2 * m, ed + m, ft]);
+        }
+        // Channel cavity -- mirrors rack_support_plate()'s own cavity cut
+        // (same slot_w/ft/slot_h terms, over the mouth-projecting Y-range)
+        // so the two can never drift apart.
+        translate([-slot_w/2, -ed, ft - eps])
+            cube([slot_w, ed, slot_h + eps]);
+    }
+}
+
 // The mating tongue a consumer tray unions at its rear, centered on the
 // tray width, projecting +Y to slide into rack_support_plate()'s forward-
 // opening (-Y) channel. Sized from rack_support_rail_size(); reaches

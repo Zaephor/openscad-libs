@@ -12,3 +12,7 @@ rack_support_plate("labrax", 1);
 
 // tongue renders clean; X/Y/Z spans proven in the bash STL check.
 rack_support_tongue();
+
+// keepout envelope renders clean; composition + cavity-exclusion covered
+// by the real-consumer interference tests in the bash STL check.
+rack_support_plate_keepout();
