@@ -56,6 +56,17 @@ post_edge_inset  = 6;    // lid-post inset from the front/rear interior edges
 csk_head_extra   = 2.6;  // M3 countersink head dia over the clearance hole (=> ~6mm 90-deg CSK head)
 lid_vent_band_w  = 60;   // width of the lid vent band over the SoC/SFP hot zone (centered, clear of posts at +/-78.7)
 board_side_gap   = 1.0;  // board edge -> corner-post clearance
+// Per-side running clearance between a front-panel connector's real body and
+// the faceplate opening sbc_faceplate_cutouts() cuts for it (Round 3 #65).
+// Design fit-value (design-for-print running clearance, consistent with this
+// project's other running-clearance precedents -- wall_gap, underside_
+// clearance), NOT a measured/spec tier: never cite this as [A]/[B]/[C]. Eats
+// io_port_clearance off EACH side of every connector's cutout, so two
+// adjacent cutouts' EFFECTIVE gap shrinks by 2x this value versus the
+// connectors' nominal body-edge gap -- see parts/tray.scad's
+// _io_gap_wall_geom(), which accounts for exactly this when sizing the IO
+// gap bridge-support walls.
+io_port_clearance = 0.4;
 
 // ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
 // their defaults in each entry file (assembly.scad, parts/tray.scad,
@@ -129,8 +140,17 @@ function rear_wall_y(ee = enable_exhaust) = board_y() + int_depth(ee); // outer 
 // height the ledge leaves for the lid.
 function _front_conn_max_h() =
     max([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin") c[2][2]]);
+// io_port_clearance (Round 3 #65 Task 3/4) inflates every ymin faceplate
+// cutout UPWARD in Z (see sbc.scad's _sbc_cutout_inflate(): "top" edge grows
+// size[2] += clearance, start z unchanged) -- so the tallest INFLATED cutout
+// top sits io_port_clearance above the nominal _front_conn_max_h() top. Must
+// be included here or the "+1mm above tops" margin below is measured from
+// the wrong (nominal, not inflated) top and silently erodes toward the
+// project's 2-perimeter min rib (>=0.8mm @ 0.4mm nozzle -- see parts/
+// tray.scad's _io_wall_w_rj45_dc() comment for the same 2-perimeter/0.4mm-
+// nozzle precedent).
 function _vent_band_z0() =
-    board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + 1; // 1mm above tops
+    board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + io_port_clearance + 1; // 1mm above INFLATED cutout tops
 function rack_depth_eff() = rack_depth < 0 ? rack10_depth_preset(STD) : rack_depth;
 
 // Fan must physically fit the 1U internal height when exhaust is on.

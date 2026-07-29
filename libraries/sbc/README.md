@@ -275,7 +275,7 @@ source of truth for the dimension, instead of two copies that could drift.
 touched by this. Full 51-row verdict table: `RESEARCH.md`, "SP2 connector
 reconcile — Task 1".
 
-**Sourced (21 of 51)** — mapped to a catalog type:
+**Sourced (23 of 51)** — mapped to a catalog type:
 
 | Board | Sourced connectors | Catalog type(s) |
 |---|---|---|
@@ -284,13 +284,13 @@ reconcile — Task 1".
 | pi5 | `gpio`, `usb3`, `usbc_pwr`, `hdmi_1`, `hdmi_2` | `gpio_2x20`, `usb_a_stack2_shielded`, `usb_c`, `micro_hdmi` |
 | pizero | `gpio`, `minihdmi` | `gpio_2x20`, `mini_hdmi` |
 | pizero2w | `gpio` | `gpio_2x20` |
-| bpir4 | *(none)* | — |
+| bpir4 | `sfp_1`, `sfp_2` *(adopted round-3 #65 — see below; none at SP2 Task 1 time)* | `sfp` |
 
-**Literal (30 of 51)** — unchanged, for one of three reasons:
+**Literal (28 of 51)** — unchanged, for one of three reasons:
 
-- **No catalog peer at all (13)**: `av_jack` (pi3b/pi3bplus/pi4b),
+- **No catalog peer at all (11)**: `av_jack` (pi3b/pi3bplus/pi4b),
   `csi_dsi_1`/`csi_dsi_2` (pi5), `csi` (pizero2w), `pcie_fpc` (pi5), the pi5
-  `rj45`/`usb2` combo shell, `sfp_1`/`sfp_2` (bpir4), `dc_power_1` (bpir4
+  `rj45`/`usb2` combo shell, `dc_power_1` (bpir4
   barrel jack), `uart_1` (bpir4 console header) — genuinely distinct part
   classes the catalog doesn't model, not gaps to fill.
 - **A peer exists but disagrees by >0.5mm on some axis (13)**, and neither
@@ -304,11 +304,14 @@ reconcile — Task 1".
   data-correction problem, not a sourcing one; flagged rather than silently
   patched.
 
-**bpir4 sources nothing** — all 10 of its connectors landed
-different/error/no-peer against the catalog, consistent with it already
-being the board with the weakest connector provenance (no refdes text on
-its source DXF at all — see Sources above). This pass leaves bpir4 exactly
-as literal as before.
+**bpir4 now sources 2 of its 10 connectors** — `sfp_1`/`sfp_2` adopt the
+`sfp` catalog type as of round-3 (#65): a physical-board re-caliper
+(2026-07-24/2026-07-28) brought the cage reading within 0.5mm of the
+catalog body on all three axes, obsoleting the original SP2 Task 1
+`no-peer` verdict (see `RESEARCH.md`, bpir4 SP2 table + "BPI-R4 corrections
+round 3 (#65)"). The remaining 8 bpir4 connectors are still literal,
+consistent with it being the board with the weakest connector provenance
+overall (no refdes text on its source DXF at all — see Sources above).
 
 **Grounding**: no adopted body was a downgrade — where sbc's own tier was
 already the stronger one (e.g. pi4b/pi5 `hdmi_1`/`hdmi_2`, whose `[A]`
@@ -419,10 +422,16 @@ only a vendor DXF + a separate assembly PNG):
   geometry plus the separate vendor assembly-drawing silhouette (pixel-
   measured off a calibrated render), not from dimensioned CAD text. Body
   depths/heights are frequently estimated from generic connector datasheets.
-  The **3-gang LAN RJ45 (CN21)** is split into 3 **equal** ports (`rj45_2`/
-  `rj45_3`/`rj45_4`) — the overall envelope is `[B]` pixel-detected, but no
-  internal divider is dimensioned anywhere, so the even trisection itself is
-  `[C]` //VERIFY.
+  **CN21 is ONE physical 4-port ganged RJ45 block** (WAN + 3×LAN: `rj45_1`
+  = WAN, `rj45_2`/`rj45_3`/`rj45_4` = LAN), not a separate WAN jack plus a
+  distinct 3-port LAN group — that earlier two-connector reading is
+  discredited/superseded (see `RESEARCH.md`). Per-port pitch/width/depth/
+  height (13.98/13.98/21.45/13.60mm) are `[A]`, read from the exact
+  bundled connector datasheet (`HRJC-M03C01C10cNL.pdf`). The block's own
+  overall physical envelope (`rj45_block`, 58.5mm wide) is `[B]` caliper
+  (round-3 #65) and is what the faceplate cutout actually uses, since it's
+  wider than the sum of the 4 port pitches alone (the end shell overhangs
+  the outermost ports).
 - **No Pi-style `"gpio"` header is modeled for `bpir4`.** The DXF's
   `PIN_TOP` layer shows no 2×20/2.54mm THT grid anywhere on the board — any
   GPIO/pin header is undimensioned in available sources, and is a

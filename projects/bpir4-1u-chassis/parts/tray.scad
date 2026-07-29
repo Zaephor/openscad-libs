@@ -90,47 +90,68 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
     }
 }
 
-// IO-gap wall widths (Round 2 #62 Task 3): print-safety design constants
-// (design-for-print: kept < the real gap so a connector opening can never
-// be intruded on; wide enough for >=2 perimeters at a 0.4mm nozzle), not
+// IO-gap wall widths (Round 2 #62 Task 3; third wall + gap figures updated
+// Round 3 #65 -- see libraries/sbc/sbc.scad's bpir4 row, whose full front-row
+// re-caliper shifted every gap): print-safety design constants (design-for-
+// print: kept < the EFFECTIVE gap -- i.e. after io_port_clearance (params.scad)
+// eats into both flanking cutouts -- so a connector opening can never be
+// intruded on; wide enough for >=2 perimeters at a 0.4mm nozzle), not
 // sbc-owned data. Exposed as FUNCTIONS (not module-local variables) so
 // tests/asserts.scad's `use <../parts/tray.scad>` can call the exact same
 // values `_faceplate()` renders with, instead of re-typing them -- `use`
 // only imports functions/modules, never plain variables (see reference_
 // openscad_gotchas), so a local variable here would be invisible there.
-function _io_wall_w_usb_sfp() = 2.5;  // usb_1 <-> sfp_1 gap (~3.6mm real gap)
-function _io_wall_w_dc_usbc() = 1.5;  // dc_power_1 <-> usbc_pwr_1 gap (~2.3mm real gap)
+function _io_wall_w_usb_sfp() = 2.5;  // usb_1 <-> sfp_1 gap (3.8mm real gap, Round 3 #65)
+function _io_wall_w_dc_usbc() = 1.5;  // dc_power_1 <-> usbc_pwr_1 gap (4.6mm real gap, Round 3 #65)
+// rj45_block <-> dc_power_1 gap (2.2mm real gap, Round 3 #65 -- this named
+// wall didn't exist before the round-3 re-caliper; the block/dc figures were
+// previously unreconciled). Narrowed to 1.0mm rather than the ~half-the-gap
+// sizing the other two walls use: io_port_clearance (0.4mm/side) eats 0.8mm
+// total out of this already-tight 2.2mm gap, leaving only 1.4mm of EFFECTIVE
+// clearance -- a 1.5mm wall would clip the clearance-inflated cutout edges
+// (1.5 > 1.4). 1.0mm clears (1.4 > 1.0) and still gives >2 perimeters at a
+// 0.4mm nozzle.
+function _io_wall_w_rj45_dc() = 1.0;
 
-// IO-gap bridge-support wall geometry (Round 2 #62 Task 3): the bpir4 board
-// has real, small physical gaps between two front-connector pairs --
-// usb_1<->sfp_1 (~3.6mm) and dc_power_1<->usbc_pwr_1 (~2.3mm), see
+// IO-gap bridge-support wall geometry (Round 2 #62 Task 3; third wall +
+// clearance-aware assert added Round 3 #65): the bpir4 board has real, small
+// physical gaps between front-connector pairs -- usb_1<->sfp_1 (3.8mm),
+// dc_power_1<->usbc_pwr_1 (4.6mm), and rj45_block<->dc_power_1 (2.2mm), see
 // libraries/sbc/sbc.scad's bpir4 row -- that sbc_faceplate_cutouts() already
-// cuts as two SEPARATE boxes, incidentally leaving the gap band uncut. This
+// cuts as separate boxes, incidentally leaving each gap band uncut. This
 // function/module pair makes that break EXPLICIT rather than relying on the
 // cutout boxes' exact edges never drifting into each other: a wall centered
-// in the gap, narrower than the gap by design (`w` < the computed gap,
-// asserted below) so at these tight (2.3/3.6mm) tolerances neither
-// connector's own opening can ever be intruded on. Positions are computed
-// from sbc_connector(BOARD, name) -- single source of truth, never
-// hand-literaled (see #62 Task 3 brief). Z-extent: from the panel base
-// (Z=0 -- already solid there for every front connector, since all four
-// share the same board-local z=1.4 cutout-bottom offset) up through the
-// TALLER of the two flanking cutouts' tops, so the wall intersects the FULL
-// Z-height of both openings it separates, not just one -- this stays safely
-// under _vent_band_z0() (>=1mm above the single tallest front connector
-// overall, see params.scad).
+// in the gap, narrower than the EFFECTIVE gap by design (`w` < gap -
+// 2*clearance, asserted below) so at these tight tolerances neither
+// connector's own (clearance-inflated) opening can ever be intruded on.
+// Positions are computed from sbc_connector(BOARD, name) -- single source of
+// truth, never hand-literaled (see #62 Task 3 brief). Z-extent: from the
+// panel base (Z=0 -- already solid there for every front connector, since
+// all four share the same board-local z=1.4 cutout-bottom offset) up through
+// the TALLER of the two flanking cutouts' tops, so the wall intersects the
+// FULL Z-height of both openings it separates, not just one -- this stays
+// safely under _vent_band_z0() (>=1mm above the single tallest front
+// connector overall, see params.scad).
 // Returns [x0, x1, z1] (chassis frame): wall spans X in [x0,x1], Z in
 // [0,z1], full panel-thickness Y -- the function is the single source of
 // truth both `_io_gap_wall()` (renders it) and tests/asserts.scad (checks
 // it against the connectors' own cutout edges) call.
-function _io_gap_wall_geom(name_l, name_r, w) =
+// clearance defaults to params.scad's io_port_clearance -- a plain
+// project-wide global, never module-parameter-shadowed the way enable_exhaust
+// is (see params.scad's rear_off() comment for why that distinction matters
+// to a `use`-scoped default-param lookup) -- the SAME per-side clearance
+// sbc_faceplate_cutouts() actually applies when `_faceplate()` cuts the
+// openings, so the assert below reflects the real (post-clearance) opening
+// edges rather than the nominal body edges.
+function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance) =
     let (cl = sbc_connector(BOARD, name_l), cr = sbc_connector(BOARD, name_r),
          xl = cl[1][0] + cl[2][0],   // left connector's right edge (board-local)
          xr = cr[1][0],              // right connector's left edge (board-local)
-         gap = xr - xl)
-    assert(gap > w,
-        str("_io_gap_wall: ", name_l, "/", name_r, " gap ", gap,
-            "mm too narrow for a ", w, "mm wall"))
+         gap = xr - xl,
+         eff_gap = gap - 2*clearance) // gap after clearance inflates both flanking cutout edges
+    assert(eff_gap > w,
+        str("_io_gap_wall: ", name_l, "/", name_r, " effective gap ", eff_gap,
+            "mm (nominal ", gap, "mm - 2x", clearance, "mm clearance) too narrow for a ", w, "mm wall"))
     let (xc = board_x() + (xl + xr) / 2,                                 // gap midpoint, chassis X
          zt = board_z() + max(cl[1][2] + cl[2][2], cr[1][2] + cr[2][2])) // taller opening top, chassis Z
     [xc - w/2, xc + w/2, zt];
@@ -162,9 +183,14 @@ module _faceplate(ear_hole_type = ear_hole_type) {
             else
                 rack10_holes(STD, 1, hole_type = ear_hole_type);
             // BPI-R4 front-panel connector openings (ymin edge), at the board's
-            // chassis position. depth clears the panel thickness.
+            // chassis position. depth clears the panel thickness. clearance
+            // (Round 3 #65) widens every opening by io_port_clearance per side
+            // for connector-body fit/tolerance -- see params.scad's
+            // io_port_clearance comment and _io_gap_wall_geom() above, which
+            // accounts for the same inflation when sizing the gap walls.
             translate([board_x(), board_y(), board_z()])
-                sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2);
+                sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2,
+                    clearance = io_port_clearance);
             // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
             // hex-hole cutter across the connector cluster, from just above the
             // tallest connector to just below the ledge — straight cross-chassis
@@ -191,10 +217,11 @@ module _faceplate(ear_hole_type = ear_hole_type) {
                     honeycomb_vent(bx1 - bx0, z1 - z0, faceplate_th + 2,
                                     honeycomb_cell, honeycomb_wall);
         }
-        // Explicit bridge-support walls in the two real IO gaps (see
+        // Explicit bridge-support walls in the three real IO gaps (see
         // _io_gap_wall()/_io_gap_wall_geom() above for the reasoning).
         _io_gap_wall("usb_1", "sfp_1", _io_wall_w_usb_sfp());
         _io_gap_wall("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+        _io_gap_wall("rj45_block", "dc_power_1", _io_wall_w_rj45_dc());
     }
 }
 

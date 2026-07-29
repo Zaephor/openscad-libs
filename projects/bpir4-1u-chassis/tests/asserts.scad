@@ -83,15 +83,27 @@ assert(_ix - _lid_post_od()/2 >= board_w()/2,
 // Vent band starts above the tallest front connector.
 assert(_vent_band_z0() > board_z() + sbc_thickness(BOARD),
     "vent band must start above the PCB");
-// #56 Task 3: lock the tallest ymin (front) connector height so a future sbc
-// data change that re-tallens the band is caught. After the Task 1/2 caliper
-// revision (thickness 1.6->1.4, per-connector reconciliation) the tallest
-// front connector is usb_1/USB3 at h=14.1 (bottom->top 15.5 - thickness 1.4),
-// NOT the old SFP h=13.4 placeholder -- SFP dropped to h=10.4 and is now the
-// SHORTEST of the big front connectors. Bound is 14.1 + 0.1mm margin.
-assert(_front_conn_max_h() <= 14.2 + 1e-6,
+// Round 3 #65 final-review fix: the check above only guards against the band
+// dropping below the PCB itself -- it doesn't catch the rib above the
+// TALLEST INFLATED cutout top eroding thin. io_port_clearance inflates every
+// ymin cutout UPWARD in Z (sbc.scad's _sbc_cutout_inflate()), so the real rib
+// is measured from board_z()+thickness+_front_conn_max_h()+io_port_clearance,
+// not from the nominal top. Locks the rib at >=1mm above the inflated top so
+// this class of erosion (silently shrunk from the intended 1.0mm to 0.6mm
+// when io_port_clearance was introduced without updating _vent_band_z0())
+// can't recur if either constant changes again.
+_inflated_cutout_top = board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + io_port_clearance;
+assert(_vent_band_z0() - _inflated_cutout_top >= 1 - 1e-6,
+    str("vent-band rib above inflated cutout top (", _vent_band_z0() - _inflated_cutout_top,
+        "mm) is below the intended 1mm minimum"));
+// #56 Task 3 (retargeted Round 3 #65): lock the tallest ymin (front) connector
+// height so a future sbc data change that re-tallens the band is caught. The
+// round-3 full front-row re-caliper dropped usb_1/USB3 from h=14.1 to h=13.0,
+// making the RJ45 block (h=13.60, from _sbc_bpir4_rj45_port(), see sbc.scad's
+// bpir4 row) the new tallest front connector. Bound is 13.60 + 0.1mm margin.
+assert(_front_conn_max_h() <= 13.7 + 1e-6,
     str("tallest front connector ", _front_conn_max_h(),
-        " unexpectedly > 14.2 (front-connector height regression?)"));
+        " unexpectedly > 13.7 (front-connector height regression?)"));
 // RESOLVED (Round 2 #62 Task 2b/3): the old "0.0mm gap (merged L-shaped
 // opening)" note here was itself the bug -- a pixel-detected boundary that
 // mis-modeled usb_1 and sfp_1 as sharing an exact edge. A physical-board
@@ -119,8 +131,10 @@ function _conn_x_edges(name) =
 
 _wall_usb_sfp = _io_gap_wall_geom("usb_1", "sfp_1", _io_wall_w_usb_sfp());
 _wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+_wall_rj45_dc = _io_gap_wall_geom("rj45_block", "dc_power_1", _io_wall_w_rj45_dc());
 _usb1_x = _conn_x_edges("usb_1");   _sfp1_x = _conn_x_edges("sfp_1");
 _dc_x   = _conn_x_edges("dc_power_1"); _usbc_x = _conn_x_edges("usbc_pwr_1");
+_rjblk_x = _conn_x_edges("rj45_block");
 
 assert(_wall_usb_sfp[1] - _wall_usb_sfp[0] > 0,
     "usb_1/sfp_1 support wall has zero/negative width");
@@ -135,6 +149,14 @@ assert(_wall_dc_usbc[0] > _dc_x[1] && _wall_dc_usbc[1] < _usbc_x[0],
     str("dc_power_1/usbc_pwr_1 support wall [", _wall_dc_usbc[0], ",", _wall_dc_usbc[1],
         "] intrudes into a connector opening (dc_power_1 right=", _dc_x[1],
         ", usbc_pwr_1 left=", _usbc_x[0], ")"));
+
+// Round 3 #65: third IO gap wall (rj45_block <-> dc_power_1), same checks.
+assert(_wall_rj45_dc[1] - _wall_rj45_dc[0] > 0,
+    "rj45_block/dc_power_1 support wall has zero/negative width");
+assert(_wall_rj45_dc[0] > _rjblk_x[1] && _wall_rj45_dc[1] < _dc_x[0],
+    str("rj45_block/dc_power_1 support wall [", _wall_rj45_dc[0], ",", _wall_rj45_dc[1],
+        "] intrudes into a connector opening (rj45_block right=", _rjblk_x[1],
+        ", dc_power_1 left=", _dc_x[0], ")"));
 
 // Item 4: four corner lid posts (side-midspan pair dropped).
 assert(len(_lid_post_xy()) == 4, str("expected 4 corner posts, got ", len(_lid_post_xy())));
@@ -162,8 +184,11 @@ assert(abs((_xy[3][1] + _od2) - (rear_wall_y() - wall)) < 1e-6,
 // --- #23 regression lock: bpir4 front RJ45 is ONE 4-port ganged block (#8
 // re-model). The faceplate cuts these openings generically from
 // sbc_connectors(), so this guards the faceplate opening against any sbc change
-// that silently alters it. The 62.61/118.53/13.98 numbers below are EXPECTED-
+// that silently alters it. The 65.29/121.21/13.98 numbers below are EXPECTED-
 // VALUE regression guards (not a data source — the data lives in sbc.scad).
+// Retargeted Round 3 #65: the round-3 physical-board re-caliper of
+// rj45_block (see sbc.scad's bpir4 row) shifted the port span from
+// 62.61/118.53 to 65.29/121.21 — supersedes round-2's unreconciled figures.
 _rj45 = [for (c = sbc_connectors(BOARD))
             if (c[3] == "ymin" &&
                 (c[0] == "rj45_1" || c[0] == "rj45_2" ||
@@ -176,13 +201,32 @@ for (i = [1:len(_rj45)-1])
         str("bpir4 RJ45: ports not contiguous at index ", i,
             " (x0=", _rj45[i][1][0], ")"));
 // Block span (board frame) and per-port width.
-assert(abs(_rj45[0][1][0] - 62.61) < 1e-6,
-    str("bpir4 RJ45: block x0 ", _rj45[0][1][0], " != 62.61"));
-assert(abs((_rj45[3][1][0] + _rj45[3][2][0]) - 118.53) < 1e-6,
-    str("bpir4 RJ45: block x1 ", _rj45[3][1][0] + _rj45[3][2][0], " != 118.53"));
+assert(abs(_rj45[0][1][0] - 65.29) < 1e-6,
+    str("bpir4 RJ45: block x0 ", _rj45[0][1][0], " != 65.29"));
+assert(abs((_rj45[3][1][0] + _rj45[3][2][0]) - 121.21) < 1e-6,
+    str("bpir4 RJ45: block x1 ", _rj45[3][1][0] + _rj45[3][2][0], " != 121.21"));
 for (c = _rj45)
     assert(abs(c[2][0] - 13.98) < 1e-6,
         str("bpir4 RJ45: ", c[0], " width ", c[2][0], " != 13.98"));
+
+// rj45_block physical envelope (the 58.5mm calipered end-to-end shell,
+// wider than the 4 port pitches — see sbc.scad's bpir4 row comment). 64.0/
+// 122.5 are, again, EXPECTED-VALUE regression guards over sbc-owned data,
+// not the source. Also guards that the four ports sit centered inside the
+// envelope (equal end-shell margin on both sides), which is what makes a
+// single generically-cut opening correct for all four ports.
+_rj45_block  = sbc_connector(BOARD, "rj45_block");
+_rjb_x0 = _rj45_block[1][0];
+_rjb_x1 = _rjb_x0 + _rj45_block[2][0];
+assert(abs(_rjb_x0 - 64.0) < 1e-6,
+    str("bpir4 RJ45 block envelope x0 ", _rjb_x0, " != 64.0"));
+assert(abs(_rjb_x1 - 122.5) < 1e-6,
+    str("bpir4 RJ45 block envelope x1 ", _rjb_x1, " != 122.5"));
+_rj45_ports_x0 = _rj45[0][1][0];
+_rj45_ports_x1 = _rj45[3][1][0] + _rj45[3][2][0];
+assert(abs((_rj45_ports_x0 - _rjb_x0) - (_rjb_x1 - _rj45_ports_x1)) < 1e-6,
+    str("bpir4 RJ45 ports not centered in block envelope: left margin ",
+        _rj45_ports_x0 - _rjb_x0, "mm, right margin ", _rjb_x1 - _rj45_ports_x1, "mm"));
 
 // Underside worst-case clearance: standoff gap must exceed the tallest
 // underside module keep-out by at least underside_clearance.

@@ -89,9 +89,14 @@ assert(len([for (e = sbc_known_edges()) if (e == "top") e]) == 1,
 
 // --- BPI-R4 ---
 assert(sbc_size("bpir4") == [148.0, 100.5], "bpir4 size");
-// The 2xSFP + 4xRJ45 variant: exactly 2 sfp_* and 4 rj45_* connectors.
+// The four numbered RJ45 ports, named explicitly (round-3 #65): a "rj45"
+// prefix filter would also match the new rj45_block envelope row, which is
+// one physical shell, not a fifth port.
+_bpir4_rj45_ports = ["rj45_1", "rj45_2", "rj45_3", "rj45_4"];
+// The 2xSFP + 4xRJ45 variant: exactly 2 sfp_* and 4 numbered rj45 ports.
 assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "sfp"))  1]) == 2, "bpir4 has 2 sfp");
-assert(len([for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) 1]) == 4, "bpir4 has 4 rj45");
+assert(len([for (c = sbc_connectors("bpir4")) if (len([for (n = _bpir4_rj45_ports) if (n == c[0]) n]) > 0) 1]) == 4,
+    "bpir4 has 4 rj45 (numbered ports only, excludes rj45_block envelope)");
 // Thickness caliper-revised Task 2: 1.6 -> 1.4.
 assert(sbc_thickness("bpir4") == 1.4, "bpir4 thickness caliper-revised Task 2");
 
@@ -108,8 +113,8 @@ assert(sbc_connector("bpir4", "sim_1")[2] == connector_size("sim_2ff"),
     "bpir4 sim_1 body sourced from connectors sim_2ff");
 assert(sbc_connector("bpir4", "microsd_1")[2] == connector_size("microsd"),
     "bpir4 microsd_1 body sourced from connectors microsd");
-assert(sbc_connector("bpir4", "m2modem_1")[2] == connector_size("m2_key_b"),
-    "bpir4 m2modem_1 body sourced from connectors m2_key_b");
+assert(sbc_connector("bpir4", "m2modem_1")[2] == _rot90(connector_size("m2_key_b")),
+    "bpir4 m2modem_1 socket body yaw-rotated (round-3 #65)");
 
 // --- Task 5: module/card keep-out envelopes (bottom sockets + m2modem_1) ---
 for (n = ["m2modem_1_card", "mpcie_1_card", "mpcie_2_card", "m2_ssd_1_card"])
@@ -200,15 +205,16 @@ assert(_dip[2][2] == 9.0, "bpir4 dip_1 h caliper-revised round 2 #62 Task 2");
 
 // --- Round-2 (#62) Task 2: front-connector +2mm protrusion coverage ---
 // sbc_placeholder() shifts a connector's rendered Y start by
-// _sbc_front_protrusion(b, name) (0 unless it's one of bpir4's own 9
-// front-panel connectors). This locks the ALLOWLIST itself: exactly the 9
-// named bpir4 front connectors get the 2.0mm protrusion, every other bpir4
-// connector gets 0, and every OTHER board's "ymin" connectors (which sit
-// flush in reality) get 0 too -- a board+name check, not an edge-only check.
-// (2.0 is hardcoded here, not sbc.scad's own SBC_FRONT_PROTRUSION constant:
-// `use` doesn't import top-level variables, only modules/functions — same
-// reason SBC_OVERLAP is never referenced from this test file either.)
-_bpir4_front_connectors = ["usb_1", "sfp_1", "sfp_2",
+// _sbc_front_protrusion(b, name) (0 unless it's one of bpir4's own 10
+// front-panel connectors, round-3 #65 adds rj45_block). This locks the
+// ALLOWLIST itself: exactly the 10 named bpir4 front connectors get the
+// 2.0mm protrusion, every other bpir4 connector gets 0, and every OTHER
+// board's "ymin" connectors (which sit flush in reality) get 0 too -- a
+// board+name check, not an edge-only check. (2.0 is hardcoded here, not
+// sbc.scad's own SBC_FRONT_PROTRUSION constant: `use` doesn't import
+// top-level variables, only modules/functions — same reason SBC_OVERLAP is
+// never referenced from this test file either.)
+_bpir4_front_connectors = ["usb_1", "sfp_1", "sfp_2", "rj45_block",
     "rj45_1", "rj45_2", "rj45_3", "rj45_4", "dc_power_1", "usbc_pwr_1"];
 for (n = _bpir4_front_connectors)
     assert(_sbc_front_protrusion("bpir4", n) == 2.0,
@@ -233,12 +239,63 @@ for (c = _bpr_bottom)
 for (n = ["mpcie_1", "mpcie_2", "m2_ssd_1"])
     assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,
         str("bpir4 has exactly one ", n));
-assert(sbc_connector("bpir4", "mpcie_1")[2] == connector_size("mpcie"),
-    "bpir4 mpcie_1 body sourced from connectors mpcie");
-assert(sbc_connector("bpir4", "mpcie_2")[2] == connector_size("mpcie"),
-    "bpir4 mpcie_2 body sourced from connectors mpcie");
+// --- Round-3 (#65) Task 1: socket yaw-rotation fixes ---
+// m2modem_1 and mpcie sockets' long axes must be perpendicular to their
+// cards' long axes (sockets are the thing the cards plug into). #62 rotated
+// the cards but not the sockets — #65 fixes the sockets to match. m2_ssd_1
+// stays unrotated since its card was never rotated.
+assert(sbc_connector("bpir4", "mpcie_1")[2] == _rot90(connector_size("mpcie")),
+    "bpir4 mpcie_1 socket body yaw-rotated (round-3 #65)");
+assert(sbc_connector("bpir4", "mpcie_2")[2] == _rot90(connector_size("mpcie")),
+    "bpir4 mpcie_2 socket body yaw-rotated (round-3 #65)");
 assert(sbc_connector("bpir4", "m2_ssd_1")[2] == connector_size("m2_key_m"),
-    "bpir4 m2_ssd_1 body sourced from connectors m2_key_m");
+    "bpir4 m2_ssd_1 socket stays UNROTATED (its card was never rotated)");
+// --- Round-3 (#65) Task 1: socket-inside-card + socket-vs-socket/foreign-card asserts ---
+// Each socket sits within its own card's XY footprint (it is the thing the
+// card plugs into), and no socket overlaps another socket or a foreign card.
+// The exact-equality socket-rotation asserts (Step 2 above) are the regression
+// lock that would have caught the unrotated sockets immediately.
+function _aabb_contains(inner, outer) =
+    _xmin(inner) >= _xmin(outer) - _eps &&
+    _xmax(inner) <= _xmax(outer) + _eps &&
+    _ymin(inner) >= _ymin(outer) - _eps &&
+    _ymax(inner) <= _ymax(outer) + _eps;
+_m2modem_1_socket = sbc_connector("bpir4", "m2modem_1");
+_m2modem_1_card_env = sbc_connector("bpir4", "m2modem_1_card");
+_mpcie_1_socket = sbc_connector("bpir4", "mpcie_1");
+_mpcie_1_card_env = sbc_connector("bpir4", "mpcie_1_card");
+_mpcie_2_socket = sbc_connector("bpir4", "mpcie_2");
+_mpcie_2_card_env = sbc_connector("bpir4", "mpcie_2_card");
+_m2_ssd_1_socket = sbc_connector("bpir4", "m2_ssd_1");
+_m2_ssd_1_card_env = sbc_connector("bpir4", "m2_ssd_1_card");
+assert(_aabb_contains(_m2modem_1_socket, _m2modem_1_card_env),
+    "bpir4 m2modem_1 socket sits within its own card's footprint (#65)");
+assert(_aabb_contains(_mpcie_1_socket, _mpcie_1_card_env),
+    "bpir4 mpcie_1 socket sits within its own card's footprint (#65)");
+assert(_aabb_contains(_mpcie_2_socket, _mpcie_2_card_env),
+    "bpir4 mpcie_2 socket sits within its own card's footprint (#65)");
+assert(_aabb_contains(_m2_ssd_1_socket, _m2_ssd_1_card_env),
+    "bpir4 m2_ssd_1 socket sits within its own card's footprint (#65)");
+// mpcie_1 and mpcie_2 are both on the bottom face (same Z plane) and must not
+// overlap in XY (different sockets, same board level).
+assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_socket),
+    "bpir4 mpcie_1 socket must not overlap mpcie_2 socket (both bottom-face, #65)");
+// Socket-vs-foreign-card overlap checks on same edge (Z-plane): no socket may
+// overlap a foreign card on its own Z level (e.g. bottom-face mpcie_1_socket
+// must not overlap bottom-face mpcie_2_card or m2_ssd_1_card). Top-face
+// m2modem_1 has no other top-face cards to check against.
+assert(!_aabb_overlap(_mpcie_1_socket, _mpcie_2_card_env),
+    "bpir4 mpcie_1 socket must not overlap mpcie_2_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_mpcie_1_socket, _m2_ssd_1_card_env),
+    "bpir4 mpcie_1 socket must not overlap m2_ssd_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_mpcie_2_socket, _mpcie_1_card_env),
+    "bpir4 mpcie_2 socket must not overlap mpcie_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_mpcie_2_socket, _m2_ssd_1_card_env),
+    "bpir4 mpcie_2 socket must not overlap m2_ssd_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_m2_ssd_1_socket, _mpcie_1_card_env),
+    "bpir4 m2_ssd_1 socket must not overlap mpcie_1_card (foreign card, same edge, #65)");
+assert(!_aabb_overlap(_m2_ssd_1_socket, _mpcie_2_card_env),
+    "bpir4 m2_ssd_1 socket must not overlap mpcie_2_card (foreign card, same edge, #65)");
 // mpcie_1/mpcie_2 share the same (mirrored) x — two parallel underside slots.
 assert(sbc_connector("bpir4", "mpcie_1")[1][0] == sbc_connector("bpir4", "mpcie_2")[1][0],
     "bpir4 mpcie_1/mpcie_2 share the same x column");
@@ -253,7 +310,9 @@ assert(_m2ssd[1][2] - _m2ssd[2][2] == -_m2ssd[2][2],
 
 // bpir4 RJ45 is ONE physical 4-port ganged block (WAN + 3x LAN), not a lone WAN
 // jack + separate 3-port block. => 4 ports, uniform width, constant pitch.
-_bpr_rj45 = [for (c = sbc_connectors("bpir4")) if (_starts(c[0], "rj45")) c];
+// Selected by explicit name (round-3 #65): a "rj45" prefix filter would also
+// match the new rj45_block envelope row, which is the shell, not a 5th port.
+_bpr_rj45 = [for (c = sbc_connectors("bpir4")) if (len([for (n = _bpir4_rj45_ports) if (n == c[0]) n]) > 0) c];
 assert(len(_bpr_rj45) == 4, "bpir4 4 rj45 ports");
 for (c = _bpr_rj45)
     assert(c[2][0] == _bpr_rj45[0][2][0], "bpir4 rj45 uniform port width");
@@ -340,48 +399,119 @@ assert(sbc_connector("pi3b", "usb2_2")[2] == [17, 9, 16.0],
     "pi3b usb2_2 (error verdict) stays literal");
 assert(sbc_connector("pi4b", "usb3")[2] == [17, 18.75, 16.0],
     "pi4b usb3 (different, marginal) stays literal");
-// Task 2: h revised from caliper bottom->top figures (thickness now 1.4) —
-// w/d unchanged at the time, still literal (no catalog peer). Round 2 #62
-// Task 2b later revised w/d too (x-edge gap correction) — see below.
-// Round 2 (#62) Task 2: d revised 53.98->48.4 from a physical-board caliper
-// re-measurement (both cages, identical part) — w/h unchanged, still literal.
-assert(sbc_connector("bpir4", "sfp_1")[2] == [16.51, 48.4, 10.4],
-    "bpir4 sfp_1 (no-peer) stays literal, d caliper-revised round 2 #62 Task 2");
-assert(sbc_connector("bpir4", "sfp_2")[2] == [16.51, 48.4, 10.4],
-    "bpir4 sfp_2 (no-peer) stays literal, d caliper-revised round 2 #62 Task 2, same fix as sfp_1");
+// Round-3 (#65): sfp_1/sfp_2 are no longer "no-peer, literal" — a fresh
+// caliper reading agreed with connector_size("sfp") within 0.5mm on all
+// three axes, so both rows now adopt the catalog type (tier [B]->[A]).
+assert(sbc_connector("bpir4", "sfp_1")[2] == connector_size("sfp"),
+    "bpir4 sfp_1 body sourced from connectors sfp (round-3 #65 catalog adoption)");
+assert(sbc_connector("bpir4", "sfp_2")[2] == connector_size("sfp"),
+    "bpir4 sfp_2 body sourced from connectors sfp (round-3 #65 catalog adoption, same fix as sfp_1)");
 assert(sbc_connector("pi3b", "av_jack")[2] == [6, 6, 6.0],
     "pi3b av_jack (no-peer) stays literal");
 
-// --- Round 2 (#62) Task 2b: usb_1/sfp_1/dc_power_1/usbc_pwr_1 x-edge gap
-// correction --- The prior pixel-detected data modeled two adjacent
-// connector pairs (usb_1/sfp_1 and dc_power_1/usbc_pwr_1) sharing an exact X
-// boundary (0mm gap); a physical-board caliper re-check (2026-07-24) found
-// real gaps and corrected the affected x/w (and usb_1's d). usb_1's h and
-// sfp_1's w/d/h are unchanged, already covered by the asserts above.
-assert(sbc_connector("bpir4", "usb_1")[2] == [5.8, 25.5, 14.1],
-    "bpir4 usb_1 w/d caliper-revised round 2 #62 Task 2b (x-edge gap correction)");
+// --- Round 3 (#65): full front-row x-position re-caliper, physical board,
+// 2026-07-28 --- supersedes every round-2 (#62 Task 2b) x/w figure below,
+// including the two gap regressions the prior round introduced.
+assert(sbc_connector("bpir4", "usb_1")[2] == [5.7, 25.5, 13.0],
+    "bpir4 usb_1 w/h caliper-revised round-3 #65");
 assert(sbc_connector("bpir4", "usb_1")[1][0] == 8.0,
-    "bpir4 usb_1 x caliper-revised round 2 #62 Task 2b");
-assert(sbc_connector("bpir4", "sfp_1")[1][0] == 17.4,
-    "bpir4 sfp_1 x caliper-revised round 2 #62 Task 2b");
-assert(sbc_connector("bpir4", "dc_power_1")[1][0] == 125.2
-    && sbc_connector("bpir4", "dc_power_1")[2][0] == 9.8,
-    "bpir4 dc_power_1 x/w caliper-revised round 2 #62 Task 2b");
-assert(sbc_connector("bpir4", "usbc_pwr_1")[1][0] == 137.3
-    && sbc_connector("bpir4", "usbc_pwr_1")[2][0] == 8.7,
-    "bpir4 usbc_pwr_1 x/w caliper-revised round 2 #62 Task 2b");
+    "bpir4 usb_1 x caliper-revised round-3 #65");
+assert(sbc_connector("bpir4", "sfp_1")[1][0] == 17.5,
+    "bpir4 sfp_1 x caliper-revised round-3 #65");
+assert(sbc_connector("bpir4", "sfp_2")[1][0] == 35.7,
+    "bpir4 sfp_2 x caliper-revised round-3 #65");
+assert(sbc_connector("bpir4", "dc_power_1")[1][0] == 124.7
+    && sbc_connector("bpir4", "dc_power_1")[2] == [10.0, 13.0, 10.3],
+    "bpir4 dc_power_1 x/w/d/h caliper-revised round-3 #65");
+assert(sbc_connector("bpir4", "usbc_pwr_1")[1][0] == 139.3
+    && sbc_connector("bpir4", "usbc_pwr_1")[2] == [6.7, 6.8, 3.0],
+    "bpir4 usbc_pwr_1 x/w/d/h caliper-revised round-3 #65");
 
 // Gap regressions: Task 3 (faceplate bridge-support walls) places support
-// geometry into these two specific gaps and depends on them staying real,
-// non-zero spans, not the old 0mm shared-boundary reading.
+// geometry into these gaps and depends on them staying real, non-zero
+// spans, not a 0mm shared-boundary reading.
 _usb_1 = sbc_connector("bpir4", "usb_1");
+_rj45_block = sbc_connector("bpir4", "rj45_block");
 _dc_power_1 = sbc_connector("bpir4", "dc_power_1");
 _usbc_pwr_1 = sbc_connector("bpir4", "usbc_pwr_1");
-assert(_near(_xmin(_sfp_1) - _xmax(_usb_1), 3.6, 0.2),
-    "bpir4 usb_1<->sfp_1 gap ~3.6mm (round 2 #62 Task 2b x-edge correction)");
+assert(_near(_xmin(_sfp_1) - _xmax(_usb_1), 3.8, 0.2),
+    "bpir4 usb_1<->sfp_1 gap ~3.8mm (round-3 #65 x-edge re-caliper)");
 assert(_xmin(_sfp_1) - _xmax(_usb_1) > 0,
     "bpir4 usb_1<->sfp_1 must have a real positive gap, not share a boundary");
-assert(_near(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1), 2.3, 0.2),
-    "bpir4 dc_power_1<->usbc_pwr_1 gap ~2.3mm (round 2 #62 Task 2b x-edge correction)");
+assert(_near(_xmin(_sfp_2) - _xmax(_sfp_1), 3.7, 0.2),
+    "bpir4 sfp_1<->sfp_2 gap ~3.7mm (round-3 #65 x-edge re-caliper)");
+assert(_xmin(_sfp_2) - _xmax(_sfp_1) > 0,
+    "bpir4 sfp_1<->sfp_2 must have a real positive gap, not share a boundary");
+assert(_near(_xmin(_dc_power_1) - _xmax(_rj45_block), 2.2, 0.2),
+    "bpir4 rj45_block<->dc_power_1 gap ~2.2mm (round-3 #65)");
+assert(_xmin(_dc_power_1) - _xmax(_rj45_block) > 0,
+    "bpir4 rj45_block<->dc_power_1 must have a real positive gap, not share a boundary");
+assert(_near(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1), 4.6, 0.2),
+    "bpir4 dc_power_1<->usbc_pwr_1 gap ~4.6mm (round-3 #65 x-edge re-caliper)");
 assert(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1) > 0,
     "bpir4 dc_power_1<->usbc_pwr_1 must have a real positive gap, not share a boundary");
+
+// rj45_block: the physical CN21 shell envelope must span [64.0, 122.5], and
+// the 4 numbered ports must sit centered inside it (not clipping either end).
+assert(_near(_xmin(_rj45_block), 64.0, 0.01) && _near(_xmax(_rj45_block), 122.5, 0.01),
+    "bpir4 rj45_block spans [64.0, 122.5]");
+assert(_xmin(_bpr_rj45[0]) >= _xmin(_rj45_block) && _xmax(_bpr_rj45[3]) <= _xmax(_rj45_block),
+    "bpir4 rj45 ports centered/contained within rj45_block envelope");
+
+// --- Task 3 (#65): sbc_port_cutout()/sbc_faceplate_cutouts() clearance param ---
+// _sbc_cutout_inflate(p, s, e, clearance) is the arithmetic sbc_port_cutout()
+// factors its clearance handling through, testable directly without
+// rendering CSG (see sbc.scad's comment above it for the full asymmetric-
+// inflation rule: lateral + upward only, never downward).
+_t3_p = [10, 20, 1.4]; _t3_s = [5, 8, 3];
+// clearance = 0 must be an EXACT no-op for every known edge -- this is what
+// makes the default byte-identical for every pre-#65 caller (e.g. projects/
+// bpir4-1u-chassis/parts/tray.scad's sbc_faceplate_cutouts(BOARD, "ymin",
+// depth = faceplate_th + 2) call, which never passes clearance).
+for (e = sbc_known_edges())
+    assert(_sbc_cutout_inflate(_t3_p, _t3_s, e, 0) == [_t3_p, _t3_s],
+        str("sbc _sbc_cutout_inflate: clearance=0 must be a no-op for edge ", e));
+
+// Explicit clearance, lateral edges: xmin/xmax share X as the exit/extrusion
+// axis (untouched); Y is the lateral in-plane axis (start -=clearance, size
+// +=2*clearance); Z (height) grows UPWARD only (size +=clearance, start
+// unchanged).
+_t3_box_xmax = _sbc_cutout_inflate(_t3_p, _t3_s, "xmax", 1.5);
+assert(_t3_box_xmax == [[10, 18.5, 1.4], [5, 11, 4.5]],
+    "sbc _sbc_cutout_inflate xmax: y-=clearance, w(Y)+=2*clearance, h+=clearance, x/z start unchanged");
+_t3_box_xmin = _sbc_cutout_inflate(_t3_p, _t3_s, "xmin", 1.5);
+assert(_t3_box_xmin == [[10, 18.5, 1.4], [5, 11, 4.5]],
+    "sbc _sbc_cutout_inflate xmin: same rule as xmax (X is the exit axis for both)");
+
+// ymin/ymax: Y is the exit axis (untouched); X is lateral -- this is the
+// exact case the task brief spells out verbatim for a ymin connector.
+_t3_box_ymin = _sbc_cutout_inflate(_t3_p, _t3_s, "ymin", 1.5);
+assert(_t3_box_ymin == [[8.5, 20, 1.4], [8, 8, 4.5]],
+    "sbc _sbc_cutout_inflate ymin: x-=clearance, w(X)+=2*clearance, h+=clearance, y/z start unchanged");
+_t3_box_ymax = _sbc_cutout_inflate(_t3_p, _t3_s, "ymax", 1.5);
+assert(_t3_box_ymax == [[8.5, 20, 1.4], [8, 8, 4.5]],
+    "sbc _sbc_cutout_inflate ymax: same rule as ymin (Y is the exit axis for both)");
+
+// top/bottom: Z is already the full-through-depth extrusion axis (via the
+// "depth" param, confirmed against sbc_port_cutout's own cube calls --
+// s[2]/p[2] are only ever used there to locate the Z-start offset, never as
+// a cube dimension), so BOTH X and Y are lateral and inflate the same way;
+// Z (p[2]/s[2]) is left fully untouched, not even upward.
+_t3_box_top = _sbc_cutout_inflate(_t3_p, _t3_s, "top", 1.5);
+assert(_t3_box_top == [[8.5, 18.5, 1.4], [8, 11, 3]],
+    "sbc _sbc_cutout_inflate top: x/y-=clearance, w/d+=2*clearance each, z/h fully unchanged");
+_t3_box_bottom = _sbc_cutout_inflate(_t3_p, _t3_s, "bottom", 1.5);
+assert(_t3_box_bottom == [[8.5, 18.5, 1.4], [8, 11, 3]],
+    "sbc _sbc_cutout_inflate bottom: same rule as top");
+
+// Smoke-test the actual module wiring (not just the helper function above):
+// sbc_port_cutout()/sbc_faceplate_cutouts() must render without error when
+// clearance is passed, across every edge branch bpir4 actually exercises
+// (ymin lateral, top, bottom, plus the pass-through faceplate call).
+difference() {
+    translate([-5, -5, -5]) cube([160, 110, 20]);
+    sbc_port_cutout("bpir4", "usb_1", clearance = 1.0);       // ymin (lateral)
+    sbc_port_cutout("bpir4", "uart_1", clearance = 1.0);      // top
+    sbc_port_cutout("bpir4", "mpcie_1", clearance = 1.0);     // bottom
+    sbc_faceplate_cutouts("bpir4", "ymin", clearance = 1.0);  // pass-through
+}
