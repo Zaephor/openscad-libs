@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts.scad — render-time invariants for the fan-grille project.
 // `use` doesn't import variables (see reference_openscad_gotchas), so the
 // default-render check below relies on fan-grille.scad's own top-level

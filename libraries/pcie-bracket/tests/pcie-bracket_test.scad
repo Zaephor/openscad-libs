@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // pcie-bracket library test — Task 2 (data accessors) + Task 3 (geometry).
 // pcie_bracket_size(t) field order: [height, foot_width, thickness]
 // (see pcie-bracket.scad header for why tab_len/card_off are NOT fields here.)

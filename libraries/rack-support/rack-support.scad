@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // rack-support — generic rear-support faceplate + slide-in tongue/slot mating
 // interface for rack10 device trays (#40). The rear plate bolts to the rear
 // rack posts and presents a forward-facing channel; a consumer tray adds

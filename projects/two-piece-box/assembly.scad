@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // two-piece-box — multipart assembly with tuneable exploded view.
 // Render: make render P=two-piece-box
 use <parts/body.scad>;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Assert-only test for the heatset library. No geometry — run via
 // OPENSCADPATH=$PWD/libraries scripts/openscad.sh --export-format stl -o /dev/null libraries/heatset/tests/heatset_test.scad
 use <heatset/heatset.scad>;

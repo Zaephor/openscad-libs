@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts.scad — render-time invariants for the keystone-blank project.
 // Rendered by tests/test_keystone_blank.sh. `use` doesn't import variables,
 // so keystone_blank()'s own fit/latch_wall (0.2/1.0) can't be overridden from

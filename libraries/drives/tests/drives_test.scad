@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Assert-only test for the drives library. Run via:
 // OPENSCADPATH=$PWD/libraries scripts/openscad.sh --export-format stl -o /dev/null \
 //   libraries/drives/tests/drives_test.scad

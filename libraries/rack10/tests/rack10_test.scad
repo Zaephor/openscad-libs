@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <rack10/rack10.scad>;
 
 assert(rack10_u() == 44.45, "1U pitch");

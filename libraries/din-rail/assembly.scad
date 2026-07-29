@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // din-rail/assembly.scad — din_clip() / din_rail_profile() mate demo (Task 3).
 // Geometric correctness gate for the snap clip: places the reference rail
 // profile and the printable clip in their seated (mated) pose so

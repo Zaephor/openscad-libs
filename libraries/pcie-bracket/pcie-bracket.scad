@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // pcie-bracket — PCIe/PCI expansion-slot I/O bracket geometry (low-profile +
 // full-height card classes). Data + geometry (Task 3 adds pcie_bracket() /
 // pcie_bracket_mount_holes()) — see README "Status".

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // render_faceplate.scad — isolates _faceplate() for the honeycomb-vent test
 // (tests/test_bpir4_honeycomb_vents.sh). `use` doesn't import variables (see
 // reference_openscad_gotchas), so the cooling/ear-hole toggles + params.scad

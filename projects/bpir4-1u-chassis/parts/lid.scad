@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // lid part — flat cover, flush top, countersunk M3 into tray posts.
 
 /* [Cooling] */

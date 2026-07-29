@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // rack10 — 10-inch mini-rack mechanical reference, vendor-keyed.
 // Datum: millimeters. X centered on rack width (X=0 at rack centerline).
 // Z=0 at the bottom of the U-stack (+Z = upward, stacking U-by-U).

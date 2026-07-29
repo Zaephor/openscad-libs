@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // heatset — brass heat-set threaded insert dimension reference (soldering-iron
 // installed, knurled/barbed body, common 3D-printing style). Sizes M2-M6,
 // "standard" (not "short") length variant. Datum: millimeters.

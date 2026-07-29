@@ -2,6 +2,7 @@
   "name": "rack19",
   "description": "19-inch EIA-310-D rack mechanical reference: panel/opening widths, per-U hole pattern, cage-nut hole size, device height/stacking gap.",
   "version": "0.3.0",
+  "license": "CC-BY-NC-SA-4.0",
   "sources": [
     "https://en.wikipedia.org/wiki/19-inch_rack",
     "https://en.wikipedia.org/wiki/Cage_nut",

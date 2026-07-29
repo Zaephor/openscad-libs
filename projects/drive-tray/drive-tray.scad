@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // drive-tray — parametric 1U rack10 storage tray: cols x rows grid of bottom-
 // mounted drives, honeycomb floor vents, rear #40 support tongue. Consumes
 // drives/rack10/rack-support/honeycomb. Single-layer v1 (one Z tier of

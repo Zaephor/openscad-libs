@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <din-rail/din-rail.scad>;
 assert(din_known_rails() == ["ts35-7.5","ts35-15"], "rail list");
 assert(din_rail_size("ts35-7.5")[0] == 35, "ts35 width");

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <keystone/keystone.scad>;
 // Printable keystone blank insert. Tune fit/latch_wall on the bench (P1S/PETG).
 fit = 0.2;         // slot-engagement clearance

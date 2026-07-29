@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // bpir4-1u-chassis — multipart assembly with exploded view + fit reference.
 // Render: make render P=bpir4-1u-chassis
 

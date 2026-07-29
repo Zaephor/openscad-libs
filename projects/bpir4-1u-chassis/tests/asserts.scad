@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts.scad — render-time invariants for the chassis geometry.
 // Rendered by tests/test_bpir4_chassis_lib.sh; any failed assert -> ERROR in stderr.
 // Declared here + in each entry file; params.scad consumes only.

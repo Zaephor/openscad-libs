@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <multibuild/multibuild.scad>
 // Render mount in red, hole cavity in blue-ish via a thin shell, for the
 // verify-scad-geometry skill's side-profile overlap view. The mount is

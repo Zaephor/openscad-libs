@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // bay-enclosure — parametric 1U/2U rack10 enclosure for a front-accessible bay
 // device (5.25" optical / 3.5" bay accessory). Side-rail mount, open front cutout
 // exposing the device face, rear #40 support tongue. Consumes drives/rack10/

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts.scad — negative-control regression for bay-enclosure's height
 // fit-assert. Rendered directly by tests/test_bay_enclosure.sh.
 //

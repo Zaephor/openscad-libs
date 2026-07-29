@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // keystone/assembly.scad — keystone_insert() + keystone_cutout()/boss()
 // consumer-pattern demo (#38, updated #54). check.sh compiles this file with
 // its own Customizer defaults below.

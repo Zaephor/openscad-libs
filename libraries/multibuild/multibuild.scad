@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // multibuild — MultiBoard-compatible grid + mount interface.
 // Datum: millimeters. Mount-feature axis = Z; feature plugs into the board
 // in -Z (board mount surface at Z=0); consumer part body sits at +Z.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <../css610-underdesk-mount.scad>;
 
 // Data asserts verify device dimensions.

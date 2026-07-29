@@ -26,6 +26,21 @@ bash scripts/new-project.sh _cok
 : > projects/_cok/renders/_cok.png
 bash scripts/check.sh || { echo "valid tree failed check"; cleanup; exit 1; }
 
+# Every .scad under libraries/ and projects/ must carry the SPDX header on line 1.
+cp libraries/_clib/_clib.scad "$tmp/_clib.scad.bak"
+tail -n +2 "$tmp/_clib.scad.bak" > libraries/_clib/_clib.scad
+if bash scripts/check.sh >/dev/null 2>&1; then echo "missing SPDX header not caught"; cleanup; exit 1; fi
+cp "$tmp/_clib.scad.bak" libraries/_clib/_clib.scad
+
+# lib.json must declare a license.
+cp libraries/_clib/lib.json "$tmp/lib.json.bak"
+jq 'del(.license)' "$tmp/lib.json.bak" > libraries/_clib/lib.json
+if bash scripts/check.sh >/dev/null 2>&1; then echo "lib.json missing license not caught"; cleanup; exit 1; fi
+cp "$tmp/lib.json.bak" libraries/_clib/lib.json
+
+# The restored tree passes again — proves the two checks above failed for the stated reason.
+bash scripts/check.sh || { echo "restored tree failed check"; cleanup; exit 1; }
+
 # A project missing PRINTING.md must fail.
 bash scripts/new-project.sh _cbad
 : > projects/_cbad/renders/_cbad.png

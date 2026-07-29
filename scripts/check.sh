@@ -12,8 +12,8 @@ for d in libraries/*/; do
   name="$(basename "$d")"
   [ -f "$d/README.md" ] || err "$name: missing README.md"
   if [ -f "$d/lib.json" ]; then
-    jq -e '(.name|type=="string" and (.|length>0)) and (.description|type=="string" and (.|length>0)) and (.version|type=="string" and (.|length>0)) and (.sources|type=="array")' "$d/lib.json" >/dev/null 2>&1 \
-      || err "$name: lib.json missing required fields (name, description, version, sources[])"
+    jq -e '(.name|type=="string" and (.|length>0)) and (.description|type=="string" and (.|length>0)) and (.version|type=="string" and (.|length>0)) and (.license|type=="string" and (.|length>0)) and (.sources|type=="array")' "$d/lib.json" >/dev/null 2>&1 \
+      || err "$name: lib.json missing required fields (name, description, version, license, sources[])"
   else
     err "$name: missing lib.json"
   fi
@@ -41,6 +41,12 @@ while IFS= read -r -d '' f; do
   if ! "$ROOT/scripts/openscad.sh" --export-format echo -o /dev/null "$f" >/dev/null 2>&1; then
     err "compile failed: $f"
   fi
+done < <(find libraries projects -name '*.scad' -print0 2>/dev/null)
+
+# Every .scad must declare the repo license on line 1 (templates excluded, as above).
+while IFS= read -r -d '' f; do
+  head -n 1 "$f" | grep -qx '// SPDX-License-Identifier: CC-BY-NC-SA-4.0' \
+    || err "missing SPDX header (line 1): $f"
 done < <(find libraries projects -name '*.scad' -print0 2>/dev/null)
 
 if [ "$errors" -gt 0 ]; then

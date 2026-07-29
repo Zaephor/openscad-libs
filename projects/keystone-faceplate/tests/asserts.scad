@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts.scad — render-time invariants + drift checks for the faceplate.
 // Rendered by tests/test_keystone_faceplate.sh. `use` doesn't import variables,
 // so params are threaded as module args (see reference_openscad_gotchas).

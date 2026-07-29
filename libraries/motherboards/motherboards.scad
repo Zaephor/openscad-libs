@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // motherboards — PC motherboard mechanical mounting reference (mini-ITX / microATX / ATX).
 // Datum: board REAR-LEFT corner at origin. +X = board WIDTH (along rear I/O edge),
 // +Y = board DEPTH (rear -> front), PCB bottom on Z=0. Rear I/O edge at Y=0.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // cable-clip — single-part project: a printable cable clip.
 // Render: make render P=cable-clip
 

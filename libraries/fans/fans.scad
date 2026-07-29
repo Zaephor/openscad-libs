@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // fans — PC fan mechanical mounting reference.
 // Default orientation: airflow along +Z; square frame centered in X/Y; bottom on Z=0.
 // Roles: data functions / fan_placeholder() / fan_holes(), fan_bore().

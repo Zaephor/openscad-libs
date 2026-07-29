@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // __NAME__ library.
 // Multi-role component convention (see docs/LIBRARY-AUTHORING.md):
 //   1. Data        — functions returning constants / [x,y] coord lists

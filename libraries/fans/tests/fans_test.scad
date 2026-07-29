@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Assert-only test for the fans library. No geometry — run via test_fans_lib.sh.
 use <fans/fans.scad>;
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // keystone-faceplate — parametric 1U 10-inch rack keystone faceplate.
 // Standalone; N standard keystone ports on a rack10 panel. Support-free flat
 // print. Render: make render P=keystone-faceplate

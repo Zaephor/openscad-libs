@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // vesa — VESA FDMI (MIS) display-mount hole patterns.
 // Data are FUNCTIONS (use<> does not import variables). Default orientation:
 // pattern plane in X/Y, origin centered in X/Y, bottom face on Z=0; mm; central $fn.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // drives — storage-drive mechanical reference (envelope, mount holes, connector
 // positions) for 3.5"/2.5"/U.2 block drives and M.2 (2230/2242/2260/2280) cards.
 // Datum: bottom-face minimum corner at the origin. +X = drive LENGTH (long axis),

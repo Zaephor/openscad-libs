@@ -2,6 +2,7 @@
   "name": "rack10",
   "description": "10-inch mini-rack mechanical reference, vendor-keyed (LabRax/DeskPi RackMate/TecMojo): 1U pitch, hole center-to-center span, usable/panel widths, per-U hole pattern, device height/stacking gap. No governing standard exists for 10in racks; all values corroborated across the designer's own article and an independent to-scale diagram.",
   "version": "0.3.0",
+  "license": "CC-BY-NC-SA-4.0",
   "sources": [
     "https://the-diy-life.com/introducing-lab-rax-a-3d-printable-modular-10-rack-system/",
     "https://makerworld.com/en/models/1294480-lab-rax-10-server-rack-5u",

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <sbc/sbc.scad>;
 use <connectors/connectors.scad>;
 

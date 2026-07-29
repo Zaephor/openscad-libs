@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // honeycomb_vent(width, height, depth, cell, wall) — self-supporting hex-hole
 // vent cutter for ventilation openings and cutouts.
 //

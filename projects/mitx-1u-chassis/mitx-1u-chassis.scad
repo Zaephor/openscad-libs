@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // mitx-1u-chassis — 1U 10" rack chassis for a mini-ITX board, front-IO
 // appliance (IO shield + power button front), external DC-in, fan+honeycomb,
 // rear #40 support mate. Consumes motherboards/rack10/rack-support/fans/honeycomb.

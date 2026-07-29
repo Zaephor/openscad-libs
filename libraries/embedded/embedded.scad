@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // embedded — ESP32/ESP8266 microcontroller dev-board mechanical reference
 // (esp32_devkitc, esp8266_nodemcu, wemos_d1_mini, esp32_c3_devkitm,
 // esp32_s3_devkitc). Board outline, corner radius, PCB thickness, mounting-hole

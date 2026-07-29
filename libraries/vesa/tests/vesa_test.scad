@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Assert-only test for the vesa library. Run via
 // scripts/openscad.sh --export-format stl -o /dev/null libraries/vesa/tests/vesa_test.scad
 use <vesa/vesa.scad>;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // din-rail library.
 // EN 60715 TS35 top-hat DIN rail: profile data (Task 2) + support-free
 // mounting clip (Task 3). See RESEARCH.md for tiered dimensional sourcing.

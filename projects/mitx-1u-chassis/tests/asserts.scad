@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts.scad — default-params render + independent contract checks for
 // mitx-1u-chassis (the fit-asserts themselves live in the main .scad,
 // evaluated whenever it's rendered/included -- see that file). Rendered

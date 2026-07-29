@@ -2,7 +2,7 @@
 
 ## Libraries (`libraries/<name>/`)
 - Provide reusable real-world data and component helpers — not finished printable items.
-- Required: `README.md`, `lib.json` (`name`, `description`, `version`, `sources[]`).
+- Required: `README.md`, `lib.json` (`name`, `description`, `version`, `license`, `sources[]`).
 - Imported namespaced: `use <name/file.scad>;`.
 - **Multi-role convention** — a component exposes, where applicable:
   1. **Data** — functions returning constants + `[x,y]` hole-coordinate lists (expose as functions; `use` does not import variables).
@@ -22,6 +22,10 @@
 
 ## Before pushing
 - `make check` — conventions + compile must pass.
+- Every `.scad` under `libraries/` and `projects/` must open with
+  `// SPDX-License-Identifier: CC-BY-NC-SA-4.0` on line 1, and every
+  `libraries/*/lib.json` must carry `"license": "CC-BY-NC-SA-4.0"`. `make check`
+  enforces both; the scaffolding templates already emit them.
 - `make render P=<project>` — refresh renders (CI also regenerates on `main`).
 - `make test` — tooling test suite.
 - If you add or remove a library or project — or materially change a library's public API or Sources — update the top-level `README.md` Libraries/Projects lists and that library's own `README.md` in the same change. (The top README is the repo's index; keep it in sync so it doesn't drift.)

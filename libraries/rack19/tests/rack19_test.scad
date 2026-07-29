@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <rack19/rack19.scad>;
 
 assert(rack19_u() == 44.45, "1U pitch");

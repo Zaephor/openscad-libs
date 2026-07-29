@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // asserts_depth.scad — negative-control regression for drive-tray's grid-
 // depth fit-assert (_usable_depth(), Task 2). Rendered directly by
 // tests/test_drive_tray.sh. Same include-then-override idiom as

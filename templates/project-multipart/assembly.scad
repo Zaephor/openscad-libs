@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // __NAME__ — multipart assembly with tuneable exploded view.
 // Render: make render P=__NAME__
 

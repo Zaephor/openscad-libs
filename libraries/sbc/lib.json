@@ -2,6 +2,7 @@
   "name": "sbc",
   "description": "Single-board-computer mechanical reference (Raspberry Pi Model-B family + Raspberry Pi Zero family + BananaPi BPI-R4): board outline, corner radius, PCB thickness, mounting-hole coordinates, connector footprints, placeholder envelope, and hole/cutout stamp modules.",
   "version": "0.3.0",
+  "license": "CC-BY-NC-SA-4.0",
   "sources": [
     "https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-mechanical-drawing.pdf",
     "https://datasheets.raspberrypi.com/rpi3/raspberry-pi-3-b-plus-mechanical-drawing.pdf",

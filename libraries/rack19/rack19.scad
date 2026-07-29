@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // rack19 — 19-inch EIA-310-D rack mechanical reference.
 // Datum: millimeters. X centered on rack width (X=0 at rack centerline).
 // Z=0 at the bottom of the U-stack (+Z = upward, stacking U-by-U).

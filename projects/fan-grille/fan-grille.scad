@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // fan-grille — flat, support-free honeycomb finger-guard for a case fan.
 // Square plate at the fan footprint + solid border + a honeycomb_vent field
 // over the opening + corner mount holes. Prints flat (plate_th is the short

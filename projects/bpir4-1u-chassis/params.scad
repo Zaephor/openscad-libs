@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // params.scad — the ONLY hand-typed constants for the bpir4-1u-chassis, plus
 // helper functions that DERIVE everything else live from the libraries.
 // Rule: no library-owned dimension is duplicated here; only values no library

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // connectors — common connector body (housing/shell) envelope reference.
 // Datum: millimeters. Mounting/panel face on Z=0; centered in X.
 // Opening axis is per-type: `+Y` for panel connectors (USB/RJ45/HDMI —

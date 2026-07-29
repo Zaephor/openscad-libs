@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Assert-only test for the keystone library. Run via:
 //   scripts/openscad.sh --export-format stl -o /dev/null libraries/keystone/tests/keystone_test.scad
 // (assert failures surface on stderr; OpenSCAD exit code on assert files is unreliable.)

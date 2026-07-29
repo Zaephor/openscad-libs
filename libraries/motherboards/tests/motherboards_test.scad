@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Assert-only test for the motherboards library. No geometry — run via
 // tests/test_motherboards_lib.sh. Structural invariants only: this file does NOT
 // hardcode standoff coordinates (those are reconstructed data verified in

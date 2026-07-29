@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // render_lid_posts.scad — isolates _lid_posts() for the corner-post
 // bond-both-walls/fillet/chamfer test (tests/test_bpir4_corner_posts.sh) and
 // for verify-scad-geometry overlay checks. `use` doesn't import variables

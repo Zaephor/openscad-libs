@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // css610-underdesk-mount — L-bracket (printed L+R pair) to hang a MikroTik
 // CSS610-8G-2S+IN under a desk: bolts to the device side M3 pattern, top flange
 // flush with the device top, wood screws up into the desk. Standalone (no libs);

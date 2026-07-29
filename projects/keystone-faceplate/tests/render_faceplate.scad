@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // render_faceplate.scad — isolates the faceplate for verify-scad-geometry.
 // Params threaded as args (use-scope; -D would false-pass).
 use <keystone/keystone.scad>;

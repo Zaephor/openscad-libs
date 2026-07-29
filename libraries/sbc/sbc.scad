@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // sbc — single-board-computer mechanical reference (Raspberry Pi Model-B family:
 // pi3b, pi3bplus, pi4b, pi5; Raspberry Pi Zero family: pizero, pizero2w; BananaPi
 // bpir4). Board outline, mounting holes, connector footprints, the placeholder

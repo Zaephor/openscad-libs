@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 use <rack-support/rack-support.scad>;
 assert(rack_support_rail_size() == [40, 10], "rail size");
 assert(rack_support_slot_clearance() == 0.4, "slot clearance");

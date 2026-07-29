@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // rack-support reference demo (#40) — a MINIMAL stub tray (front ears + short
 // floor + rack_support_tongue()) slid into rack_support_plate(). Demonstrator
 // only; real device trays are #41-45. Render: make render P=... (or dind), or

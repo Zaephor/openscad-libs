@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // keystone — keystone-jack snap-footprint reference (de-facto interchangeable
 // standard: one snap profile fits any compliant jack/plate). Datum: millimeters.
 // DEFAULT ORIENTATION (panel-mount): panel FRONT face at Z=0, centered in X/Y,
