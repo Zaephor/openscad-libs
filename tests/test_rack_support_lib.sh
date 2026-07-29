@@ -288,10 +288,11 @@ fi
 # does NOT catch it). So this asserts the FULL undamaged volume survives:
 # intersect the differenced consumer with the tongue's own bounding band
 # (X +-rail_size()[0]/2 with slight slack, Y [rpy-ed,rpy], Z
-# [ft,ft+rail_size()[1]]) and require its volume equal
-# rail_size()[0]*ed*rail_size()[1] exactly (nothing else occupies that band
-# in consumer_body -- the floor tops out at Z=ft, the probe starts there --
-# so any deficit against the tongue's own volume is erosion by the keepout).
+# [ft,ft+rail_size()[1]]) and require its volume equal the SAME band
+# intersected with a lone reference rack_support_tongue() at the same
+# placement (rendered separately below) -- not a hand-computed literal
+# (single source of truth: the expected volume comes from the accessor-
+# driven module itself, same as the actual volume under test).
 cat > "$tmp/interference_tongue_survives.scad" <<EOF
 use <rack-support/rack-support.scad>;
 use <rack10/rack10.scad>;
@@ -299,8 +300,8 @@ standard = "labrax";
 u = 1;
 rpy = rack10_rear_post_y(standard);
 ft  = rack_support_floor_thickness();
-rw  = rack_support_rail_size()[0];
 rs  = rack_support_rail_size();
+rw  = rs[0];
 ed  = rack_support_engagement_depth();
 reach = rpy - ed;
 slack = 0.1;
@@ -315,24 +316,52 @@ intersection() {
 }
 EOF
 "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/interference_tongue_survives.stl" "$tmp/interference_tongue_survives.scad" 2>/dev/null
-python3 - "$tmp/interference_tongue_survives.stl" <<'PY' || { echo "keepout eroded the consumer's own tongue (paired assertion failed) -- rack_support_plate_keepout() is over-broad, must exactly exclude the channel cavity"; exit 1; }
+
+# Reference volume for the comparison above: the SAME probe band intersected
+# with a lone, undamaged rack_support_tongue() at the same placement (no
+# keepout involved) -- this is the "what a fully-surviving tongue in this
+# band looks like" ground truth, derived from the accessor-driven module,
+# not a re-literaled number.
+cat > "$tmp/tongue_reference.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rs  = rack_support_rail_size();
+ed  = rack_support_engagement_depth();
+reach = rpy - ed;
+slack = 0.1;
+intersection() {
+    translate([0, reach, 0]) rack_support_tongue();
+    translate([-rs[0]/2 - slack, rpy - ed, ft])
+        cube([rs[0] + 2 * slack, ed, rs[1]]);
+}
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tongue_reference.stl" "$tmp/tongue_reference.scad" 2>/dev/null
+
+python3 - "$tmp/interference_tongue_survives.stl" "$tmp/tongue_reference.stl" <<'PY' || { echo "keepout eroded the consumer's own tongue (paired assertion failed) -- rack_support_plate_keepout() is over-broad, must exactly exclude the channel cavity"; exit 1; }
 import struct,sys
-try:
-    d=open(sys.argv[1],'rb').read()
-except FileNotFoundError:
-    sys.exit(1)
-n=struct.unpack('<I',d[80:84])[0]; off=84
-vol=0.0
-for i in range(n):
-    pts=[]
-    for v in range(3):
-        b=off+i*50+12+v*12
-        pts.append(struct.unpack('<3f',d[b:b+12]))
-    x1,y1,z1=pts[0]; x2,y2,z2=pts[1]; x3,y3,z3=pts[2]
-    vol += (x1*(y2*z3-y3*z2) - y1*(x2*z3-x3*z2) + z1*(x2*y3-x3*y2))/6.0
-vol = abs(vol)
-want = 40 * 12 * 10  # rail_size()[0] * engagement_depth() * rail_size()[1]
-sys.exit(0 if abs(vol - want) < 1.0 else 1)
+
+def stl_volume(path):
+    try:
+        d = open(path, 'rb').read()
+    except FileNotFoundError:
+        return 0.0
+    n = struct.unpack('<I', d[80:84])[0]; off = 84
+    vol = 0.0
+    for i in range(n):
+        pts = []
+        for v in range(3):
+            b = off + i*50 + 12 + v*12
+            pts.append(struct.unpack('<3f', d[b:b+12]))
+        x1,y1,z1 = pts[0]; x2,y2,z2 = pts[1]; x3,y3,z3 = pts[2]
+        vol += (x1*(y2*z3-y3*z2) - y1*(x2*z3-x3*z2) + z1*(x2*y3-x3*y2)) / 6.0
+    return abs(vol)
+
+actual = stl_volume(sys.argv[1])
+want   = stl_volume(sys.argv[2])
+sys.exit(0 if want > 0 and abs(actual - want) < 1.0 else 1)
 PY
 
 echo ok
