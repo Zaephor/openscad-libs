@@ -200,6 +200,19 @@ module bay_enclosure() {
             // (see _usable_depth()'s assert above), so there's no device
             // clearance to protect here; the extra bearing width is free
             // structure, not a fit risk.
+            //
+            // This ramp+shelf, together with the floor slab it rises from
+            // (both built out to rpy, above), necessarily project INTO
+            // rack_support_plate()'s own forward-mounted envelope — the two
+            // are separate printed parts that cannot share volume (#63:
+            // measured 3554.86mm^3 of real solid-solid interference here
+            // before this fix). What makes this assemblable is the
+            // difference() below against rack_support_plate_keepout(0.2),
+            // the plate's own published forward envelope (single source of
+            // truth, rack-support.scad) — it carves away exactly the
+            // overlap while excluding the channel cavity, so the tongue
+            // unioned in afterward is left untouched. See that module's doc
+            // and assembly.scad's FLOOR-LENGTH note for the same pattern.
             translate([fx0, 0, 0]) {
                 _be_yz_wedge([[ramp_y0, floor_th], [reach, floor_th], [reach, ft]], 0, fw);
                 translate([0, reach, floor_th]) cube([fw, rpy - reach, ft - floor_th]);
@@ -252,6 +265,16 @@ module bay_enclosure() {
         // clears all of it), so this single difference() only ever removes
         // material from the walls, never the floor.
         _be_device_frame() drive_holes(device_type, faces = "side", depth = 2 * wall + 2);
+
+        // Clear rack_support_plate()'s forward-mounted envelope (see the
+        // rear-buttress comment above) — same placement (rpy) the plate
+        // itself is mounted at, so the two can never drift apart. A small
+        // 0.2mm assembly-clearance margin (vs. assembly.scad's exact
+        // margin=0 reference stub) since this is a real printed consumer,
+        // not a demonstrator. This subtraction happens INSIDE this
+        // difference(), i.e. strictly before the tongue is unioned in
+        // below, so it can never remove any of the tongue's own material.
+        translate([0, rpy, 0]) rack_support_plate_keepout(0.2);
     }
 
     // Rear #40 support tongue — placement formula per rack-support's own

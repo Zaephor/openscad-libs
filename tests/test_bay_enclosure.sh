@@ -162,5 +162,121 @@ check_side_holes "bay525_hh"
 check_side_holes "bay525_fh"
 check_side_holes "bay35"
 
+# --- rack_support_plate_keepout() interference test (#63 Task 4) ---
+# The real shipped consumer, differenced against rack_support_plate_keepout()
+# (published in Task 2), must not solid-solid interfere with
+# rack_support_plate() at the SAME placement (rack10_rear_post_y) both parts
+# use -- the actual bug this fix exists for (measured 3554.86mm^3 of real
+# interference before it). Unlike the minimal reference stub tray probed in
+# tests/test_rack_support_lib.sh (which achieves a true CGAL "is empty"
+# result), bay_enclosure()'s own eps-overlap seams leave a near-zero-volume
+# degenerate sliver here rather than a literal empty result, so this checks
+# computed STL volume against a tight epsilon instead of the is-empty idiom
+# -- still four orders of magnitude below the pre-fix figure.
+#
+# CRITICAL: scripts/openscad.sh only sets OPENSCADPATH to libraries/, so a
+# probe .scad that `use`s bay-enclosure.scad by bare libname would silently
+# fail to resolve it -- OpenSCAD prints "WARNING: Ignoring unknown module/
+# function" per undefined symbol and happily renders an empty/undef model,
+# which still prints plausible Simple/Facets/Volumes lines and would pass a
+# naive check (this exact trap produced two false results during the
+# original investigation of this bug). `use <$proj/...>` below is an
+# ABSOLUTE path (bypasses OPENSCADPATH lookup entirely -- same idiom
+# tests/test_keystone_faceplate.sh already uses to reach a projects/ file),
+# and stderr is grepped for the failure signatures regardless.
+stl_volume() {
+  python3 - "$1" <<'PY'
+import struct, sys
+try:
+    d = open(sys.argv[1], "rb").read()
+except FileNotFoundError:
+    print(0.0); sys.exit(0)
+n = struct.unpack("<I", d[80:84])[0]; off = 84
+vol = 0.0
+for i in range(n):
+    pts = []
+    for v in range(3):
+        b = off + i*50 + 12 + v*12
+        pts.append(struct.unpack("<3f", d[b:b+12]))
+    x1,y1,z1 = pts[0]; x2,y2,z2 = pts[1]; x3,y3,z3 = pts[2]
+    vol += (x1*(y2*z3-y3*z2) - y1*(x2*z3-x3*z2) + z1*(x2*y3-x3*y2)) / 6.0
+print(abs(vol))
+PY
+}
+
+cat > "$tmp/keepout_interference.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+use <$proj/bay-enclosure.scad>;
+standard = "labrax";
+rpy = rack10_rear_post_y(standard);
+intersection() {
+    translate([0, rpy, 0]) rack_support_plate(standard, 1);
+    bay_enclosure();
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/keepout_interference.stl" "$tmp/keepout_interference.scad" 2>&1)"
+if echo "$out" | grep -qiE 'Ignoring unknown|Can.t open library'; then
+  echo "FAIL: keepout interference probe failed to resolve bay-enclosure.scad (undef-poisoned model):"
+  echo "$out"; fail=1
+else
+  vol="$(stl_volume "$tmp/keepout_interference.stl")"
+  awk -v v="$vol" 'BEGIN { exit !(v < 1.0) }' \
+    || { echo "FAIL: bay_enclosure() still interferes with rack_support_plate() -- volume ${vol}mm^3 (want ~0, was 3554.86 before the keepout fix)"; fail=1; }
+fi
+
+# PAIRED -- the consumer's own rear tongue survives the keepout subtraction,
+# checked by volume (same technique as tests/test_rack_support_lib.sh's Task
+# 2 paired check): an over-broad keepout that also erodes the channel cavity
+# would still pass the interference check above by silently deleting
+# bay_enclosure()'s own tongue. Intersect the real consumer with the
+# tongue's own bounding band (accessor-derived, not a hardcoded literal) and
+# require its volume equal the SAME band intersected with a lone reference
+# rack_support_tongue() at the documented placement, rendered separately.
+cat > "$tmp/keepout_tongue_survives.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+use <$proj/bay-enclosure.scad>;
+standard = "labrax";
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rs  = rack_support_rail_size();
+ed  = rack_support_engagement_depth();
+slack = 0.1;
+intersection() {
+    bay_enclosure();
+    translate([-rs[0]/2 - slack, rpy - ed, ft])
+        cube([rs[0] + 2 * slack, ed, rs[1]]);
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/keepout_tongue_survives.stl" "$tmp/keepout_tongue_survives.scad" 2>&1)"
+if echo "$out" | grep -qiE 'Ignoring unknown|Can.t open library'; then
+  echo "FAIL: tongue-survival probe failed to resolve bay-enclosure.scad (undef-poisoned model):"
+  echo "$out"; fail=1
+fi
+
+cat > "$tmp/tongue_reference.scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rs  = rack_support_rail_size();
+ed  = rack_support_engagement_depth();
+reach = rpy - ed;
+slack = 0.1;
+intersection() {
+    translate([0, reach, 0]) rack_support_tongue();
+    translate([-rs[0]/2 - slack, rpy - ed, ft])
+        cube([rs[0] + 2 * slack, ed, rs[1]]);
+}
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/tongue_reference.stl" "$tmp/tongue_reference.scad" 2>/dev/null
+
+actual_vol="$(stl_volume "$tmp/keepout_tongue_survives.stl")"
+want_vol="$(stl_volume "$tmp/tongue_reference.stl")"
+awk -v a="$actual_vol" -v w="$want_vol" 'BEGIN { d = a - w; if (d < 0) d = -d; exit !(w > 0 && d < 1.0) }' \
+  || { echo "FAIL: keepout eroded bay_enclosure()'s own tongue (paired assertion) -- actual ${actual_vol}mm^3 vs reference ${want_vol}mm^3"; fail=1; }
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
