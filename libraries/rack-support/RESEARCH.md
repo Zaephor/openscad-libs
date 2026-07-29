@@ -2,12 +2,14 @@
 
 Evidence/provenance log for `rack-support.scad`'s mating-interface accessors
 (`rack_support_rail_size()`, `rack_support_slot_clearance()`,
-`rack_support_engagement_depth()`, `rack_support_floor_thickness()`). Unlike
-most libraries in this repo, these four values are **not** measured or spec-sourced dimensions of a real-world
-part — there is no vendor part, standard, or physical artifact to measure.
-They are **DESIGN values**: fit-clearance and engagement choices for a
-slide-in tongue/slot mechanism this library itself defines (rear-support
-plate presenting a channel; a consumer tray's `rack_support_tongue()` slides
+`rack_support_engagement_depth()`, `rack_support_floor_thickness()`,
+`rack_support_gusset_rib()`) and the `rack_support_plate_keepout()` module's
+`margin` default. Unlike most libraries in this repo, these values are
+**not** measured or spec-sourced dimensions of a real-world part — there is
+no vendor part, standard, or physical artifact to measure. They are
+**DESIGN values**: fit-clearance and engagement choices for a slide-in
+tongue/slot mechanism this library itself defines (rear-support plate
+presenting a channel; a consumer tray's `rack_support_tongue()` slides
 into it). Per `docs/LIBRARY-AUTHORING.md`'s tier ladder ([A] datasheet/spec,
 [B] corroborated peers, [C] STL/SCAD reverse-engineering), none of those
 tiers apply to a value with no external authority to cite — inventing a
@@ -94,6 +96,46 @@ size()[1]=10mm` cross-section within a 1U device envelope (`rack10_device_
 height(1)` ≈ 43.66mm). `//VERIFY design`, same footing as the other three
 mating-interface values — pending a physical print/load check.
 
+## `rack_support_gusset_rib() = 10` mm (each of two ribs flanking the channel)
+
+Width of the 45° gusset rib left standing on either side of the channel
+slot, after the channel-cavity cut removes the gusset's central,
+slot-width band (see `rack_support_plate()`'s own header comment for the
+cut geometry). An earlier revision built the gusset full panel-width
+before that cut, which made the plate's solid envelope span the entire
+panel over `Z` in `[0, engagement_depth]` — that collided with any
+consumer body reaching the rear post plane (#63, measured 875.89mm³ and
+3554.86mm³ interference in this library's own reference tray and the
+`bay-enclosure` project respectively). No external spec exists for a
+mechanism this library invents; 10mm is a plain engineering judgment —
+wide enough that each rib stays solidly bonded to both the bearing floor
+slab and the mounting wall (this library's own structural role: the
+gusset braces the floor's cantilever, see that module's Z-DATUM comment),
+while narrow enough to leave most of the panel width free for consumer
+geometry per `design-for-print` guidance on keeping ribs/gussets minimal
+rather than over-built. `//VERIFY design`, same footing as the other
+mating-interface values — pending a physical print/load check.
+
+## `rack_support_plate_keepout(margin)` default `= 0` mm
+
+`margin` inflates the keep-out envelope's two free gusset-wedge vertices
+and the floor slab's reach/width, for a consumer that wants assembly
+clearance beyond an exact fit (the channel-cavity cut itself is excluded
+from `margin`'s effect — see the module's own header comment and the
+README's "channel-cavity exclusion" note). The default of `0` mm gives the
+exact envelope `rack_support_plate()` actually occupies — no external spec
+governs this either, and unlike the other DESIGN values above it isn't
+even a fit-clearance choice: it is the identity/no-op default for an
+inflation parameter, chosen so a consumer that doesn't need extra margin
+gets a keep-out that matches the plate's real solid material exactly, per
+this library's own single-source-of-truth structure (the keep-out is
+composed from the same accessors the plate itself reads) and
+`design-for-print` guidance to avoid unnecessary blanket clearance.
+`bay-enclosure` overrides it to `0.2`mm for its own assembly-clearance
+reasons (see that project's own comment at the subtraction site); that
+override is project-local judgment, not a change to this library's
+default. `//VERIFY design`.
+
 ## Relationship to `rack10_rear_post_y()` (Task 1)
 
 `rack-support.scad` `use`s `rack10/rack10.scad` for the rear plate's
@@ -102,8 +144,10 @@ Task 1, wraps `rack10_depth_preset(standard)`) as the Y coordinate where the
 rear-support plate mounts to the rear rack posts. That function's own tier
 is `[C]//VERIFY` (it inherits `depth_ftf`'s tier — see
 `libraries/rack10/RESEARCH.md`) and is **not** re-derived or re-tiered here;
-this file only documents the four DESIGN-value accessors this library adds.
-The rear-mirror-of-front-mounting assumption itself (rack10 has no modeled
+this file only documents the DESIGN-value accessors this library adds
+(the four mating-interface values above, plus `rack_support_gusset_rib()`
+and `rack_support_plate_keepout()`'s `margin` default). The
+rear-mirror-of-front-mounting assumption itself (rack10 has no modeled
 rear rack posts) remains `//VERIFY`. `rack_support_plate()` (Task 3) now
 mounts at that Y coordinate, and `rack_support_tongue()` + the
 `assembly.scad` reference demo (Task 4) confirm — via `verify-scad-geometry`

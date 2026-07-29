@@ -33,6 +33,7 @@ rack_support_rail_size();        // [40, 10]  -- tongue [width_X, height_Z] mm
 rack_support_slot_clearance();   // 0.4        -- per-side slide fit gap, mm
 rack_support_engagement_depth(); // 12         -- tongue insertion depth (Y), mm
 rack_support_floor_thickness();  // 2          -- plate bearing-floor material thickness, mm
+rack_support_gusset_rib();       // 10         -- width of each rib flanking the channel, mm
 ```
 
 ## Functions
@@ -43,6 +44,7 @@ rack_support_floor_thickness();  // 2          -- plate bearing-floor material t
 | `rack_support_slot_clearance()` | per-side running gap between tongue and slot, mm |
 | `rack_support_engagement_depth()` | Y depth the tongue must insert into the channel to be seated, mm |
 | `rack_support_floor_thickness()` | `rack_support_plate()`'s bearing-floor material thickness, mm — the floor's TOP face (Z = this value) is the actual load-bearing contact datum, not Z=0. `rack_support_tongue()` reads the same accessor to seat on that datum, so plate and tongue can never drift apart independently. |
+| `rack_support_gusset_rib()` | Width (mm) of each of the two 45° gusset ribs flanking the channel, one on either side of the slot. The gusset is **not** built full panel-width (#63): its central, slot-width band is cut away by the same `difference()` that carves the channel cavity, leaving only these two ribs — still bonded to both the bearing floor and the mounting wall — free to span the rest of the panel for consumer geometry. |
 
 See `RESEARCH.md`: these are **DESIGN values** (fit-clearance/engagement
 choices for a mechanism this library defines), not measured or spec-sourced
@@ -59,9 +61,15 @@ hole_type, dia)` stamps the rear pattern — front hole layout reused on this
 plane, single source of truth, never re-literaled); the body grows `+Y`
 into the rack. A forward-opening (`-Y`) channel accepts a consumer's
 `rack_support_tongue()`, bounded by a bearing floor and braced by a 45°
-gusset (built full panel-width, surviving as two ribs flanking the slot
-after the channel cut — see the module's own header comment for the
-geometric reasoning). The mouth is chamfered for slide-in lead-in.
+gusset narrowed to two ribs (`rack_support_gusset_rib()` wide each)
+flanking the slot — **not** built full panel-width. An earlier,
+full-panel-width gusset made the plate's solid envelope span the entire
+panel over `Z` in `[0, engagement_depth]`, which collided with any
+consumer body reaching the rear post plane (#63); narrowing it to two ribs
+still bonds the bearing floor to the mounting wall while leaving the rest
+of the panel free for consumer geometry — see
+`rack_support_plate_keepout()` below for the accessor that lets a consumer
+stay clear of what remains. The mouth is chamfered for slide-in lead-in.
 
 **Z-datum:** per `rack10.scad`'s "Z=0 at the bottom of the U-stack" datum,
 ALL of this plate's solid material stays at `Z>=0` — it must never intrude
@@ -91,6 +99,37 @@ bevel is needed. The end face is flat/vertical (no overhang on its own);
 see the placement formula and buttressing note below for what the
 *consumer* must do to keep the tongue support-free once it's welded onto a
 real tray floor.
+
+### `rack_support_plate_keepout(margin = 0)`
+
+The plate's forward-projecting solid envelope, for a consumer to
+`difference()` out of its own body at the **same placement** it uses for
+`rack_support_plate()` itself (the rear-post plane,
+`rack10_rear_post_y(standard)`). Two rigid printed parts cannot occupy the
+same volume — a consumer body reaching the rear post plane (e.g. a
+buttress under the tongue, or any wall/shelf that extends that far back)
+**will** physically intersect the plate unless this keep-out is subtracted
+first. Composed from the same accessors `rack_support_plate()` reads
+(single source of truth — no re-literaled numbers) and mirrors the plate's
+narrowed gusset wedge (`rack_support_gusset_rib()`) and bearing-floor slab,
+covering only the part of the envelope that projects past the mounting
+face (local `Y<0`); the panel-internal portion (`Y` in `[0, thickness]`) is
+left out since a consumer body that stops at the mounting face never
+reaches it.
+
+`margin` (default `0` = exact fit) inflates the envelope for assembly
+clearance: it grows the gusset wedge's two free vertices and the floor
+slab's reach/width outward. **Do not let `margin` touch the channel
+cavity** — the module subtracts the exact channel-cavity cut (the same
+`slot_w`/`floor_thickness`/`slot_h` terms `rack_support_plate()` itself
+cuts) back out of the envelope *regardless of `margin`*, because that
+cavity is where the consumer's own tongue legitimately lives. This
+exclusion is not a simplification to skip: an envelope that omits it would
+delete the caller's own tongue on `difference()`, making an interference
+check against it pass for entirely the wrong reason (the tongue itself
+would vanish, not just clear the plate). `tests/test_rack_support_lib.sh`
+carries a dedicated regression assertion against exactly that failure
+mode.
 
 ## Consumer contract (#41-45 design rules)
 
@@ -130,15 +169,39 @@ structural analysis (creep) pass that motivated this library.
   to meet the tongue's underside with **no unsupported gap** — e.g. by
   running the tray's own floor at the same `Z` height as the tongue's
   underside for the last `engagement_depth()` mm (as `assembly.scad`'s stub
-  tray does), or by adding a 45° buttress ramping from the tray's local
-  floor up to `floor_thickness()` before the tongue root. A floor that
-  simply stops short of the tongue's Z-start leaves the tongue as an
-  unsupported horizontal shelf (a real overhang, not printable without
-  support) — verified while building `assembly.scad` (a floor stopping
-  exactly at the tongue's own front face reproduced a CGAL non-manifold
-  "touching only along an edge" defect; extending the floor to fully
-  overlap the tongue's footprint in `Y` fixed both the manifold defect and
-  the overhang).
+  tray does). A floor that simply stops short of the tongue's Z-start
+  leaves the tongue as an unsupported horizontal shelf (a real overhang,
+  not printable without support) — verified while building `assembly.scad`
+  (a floor stopping exactly at the tongue's own front face reproduced a
+  CGAL non-manifold "touching only along an edge" defect; extending the
+  floor to fully overlap the tongue's footprint in `Y` fixed both the
+  manifold defect and the overhang). This is still required — the
+  manifold/overhang reasoning above is real — but bringing a body up to
+  meet the tongue's underside is not enough on its own: **that same body
+  now reaches the rear post plane, where `rack_support_plate()` has its own
+  solid material** (panel, bearing floor, gusset ribs). A consumer body
+  that reaches `rack10_rear_post_y(standard)` **will** physically intersect
+  the plate unless `rack_support_plate_keepout()` is subtracted from it
+  first, at the same placement used for the tongue:
+
+  ```
+  body_reach = rack10_rear_post_y(standard) - rack_support_engagement_depth()
+  difference() {
+      // ... consumer body, including its floor-to-tongue-underside fill ...
+      translate([0, rack10_rear_post_y(standard), 0]) rack_support_plate_keepout();
+  }
+  ```
+
+  An earlier revision of this guidance recommended closing that gap with
+  *"a 45° buttress ramping from the tray's local floor up to
+  `floor_thickness()` before the tongue root"* — that shape reaches the
+  rear post plane and collided with the plate's (then full-panel-width)
+  gusset in both this library's own `assembly.scad` reference tray
+  (875.89mm³ measured interference) and the real shipped `bay-enclosure`
+  project (3554.86mm³ measured interference) — see #63. Do not add a
+  freestanding buttress ramp there; use `rack_support_plate_keepout()`
+  instead, which is guaranteed by construction to stay clear of whatever
+  material `rack_support_plate()` actually contains.
 
 ## Sources
 
@@ -155,8 +218,13 @@ full rationale; summary:
 
 ## Coverage
 
-- **Modeled:** `rack_support_plate()`, `rack_support_tongue()`, the four
-  mating-interface accessors, a reference-tray fit-check `assembly.scad`.
-- **Unify audit:** no current in-repo rear-support consumer — existing
-  1U-family libraries (`bpir4-1u-chassis`, `keystone-faceplate`) are
-  front-only; #41-45 will be the first consumers of this library.
+- **Modeled:** `rack_support_plate()`, `rack_support_tongue()`,
+  `rack_support_plate_keepout()`, the five mating-interface/geometry
+  accessors, a reference-tray fit-check `assembly.scad`.
+- **Unify audit:** three in-repo rear-support consumers as of #63 — this
+  library's own `assembly.scad` reference tray, the real shipped
+  `projects/bay-enclosure`, and `projects/drive-tray` (clean without a
+  buttress shelf, so it needs no keep-out subtraction) — all three now
+  measure zero real interference with `rack_support_plate()`'s envelope.
+  Other 1U-family libraries (`bpir4-1u-chassis`, `keystone-faceplate`)
+  remain front-only and are not consumers of this library.

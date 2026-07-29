@@ -138,7 +138,7 @@ PY
 # against drive-tray.scad, same idiom as bay-enclosure's own Task 4 preset
 # checks (tests/test_bay_enclosure.sh): drive-tray.scad is rendered DIRECTLY
 # here (not through a `use`d/`include`d wrapper), so -D reliably overrides
-# its own top-level Customizer vars (verified in task-1-report.md; the
+# its own top-level Customizer vars (the
 # use-scope -D caveat in reference_openscad_gotchas is about threading
 # params INTO `use`d library files, not about overriding the directly-
 # rendered project file's own top-level vars). drive_gap must drop to 2.0

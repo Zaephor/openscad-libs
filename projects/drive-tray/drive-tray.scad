@@ -15,10 +15,9 @@
 // #45 needs drive_gap reduced from its 4.0 default: at drive_gap=4.0 the
 // 3-wide ssd25_9 grid (217.55mm) overshoots labrax's usable width
 // (217.2mm) by 0.35mm and aborts the width fit-assert below; drive_gap=2.0
-// (213.55mm) clears it with room to spare and matches the gap Task 3
-// already verified the honeycomb vent placement against for this exact
-// preset shape (task-3-report.md). See tests/test_drive_tray.sh for both
-// presets' locked renders.
+// (213.55mm) clears it with room to spare and matches the gap already
+// verified against the honeycomb vent placement for this exact preset
+// shape. See tests/test_drive_tray.sh for both presets' locked renders.
 //
 // The depth fit-assert (_usable_depth() below) is vendor-sensitive: it's
 // keyed off rack10_rear_post_y(standard), which differs per rack10 vendor
@@ -55,8 +54,8 @@ hc_wall = 1.2;   // gap between hex holes (named hc_wall -- `wall` above is the 
 // BOTTOM_35 near-edge hole lands at tray-frame X-offset 6.35mm from the cell
 // edge -- inside a 6mm inset, i.e. INSIDE the vent field). 10mm clears every
 // bottom mount hole (all >=1.9mm solid margin between hole edge and field
-// edge) for BOTH the hdd35 #44 preset and the ssd25_9 #45-shaped preset (see
-// task-3-report.md); every drive-tray bottom-hole pattern happens to sit
+// edge) for BOTH the hdd35 #44 preset and the ssd25_9 #45-shaped preset;
+// every drive-tray bottom-hole pattern happens to sit
 // close to the cell's X edges (never near the interior), so a uniform inset
 // clears them via X-exclusion alone regardless of Y position.
 vent_inset = 10;
