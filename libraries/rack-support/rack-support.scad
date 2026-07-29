@@ -20,6 +20,14 @@ function rack_support_engagement_depth() = 12;     // tongue insertion depth Y  
 // seat on the SAME datum: single source of truth for both consumers of
 // this number. //VERIFY design
 function rack_support_floor_thickness() = 2;
+// Width of the 45deg gusset rib flanking EACH side of the channel. The gusset
+// was originally built full panel-width, which made the plate's solid envelope
+// span the entire 254mm panel over Z in [0,ed] -- that collided with any
+// consumer body reaching the rear post plane (#63). Narrowed to two ribs that
+// still bond the bearing floor to the mounting wall while leaving the rest of
+// the panel free for consumer geometry. DESIGN value (no external spec exists
+// for a mechanism this library invents), bench-tunable P1S/PETG. //VERIFY design
+function rack_support_gusset_rib() = 10;
 
 /* [Rear plate] */
 // Convex prism from 3 [Y,Z] points, extruded along X (width xw, X-centered).
@@ -49,10 +57,10 @@ module _rack_support_yz_prism(pts, xw) {
 // README). The channel cavity sits above the floor (Z in [floor_t,
 // floor_t+slot_h]). The 45deg gusset that braces the floor's cantilever also
 // stays at Z in [0,ed] -- since that overlaps the cavity's Z-range in the
-// slot's own X-band, the gusset is built full panel-width (not slot-width);
-// the difference() below removes its central slot-width portion (same
-// material the cavity removes from the floor there) and leaves two ribs
-// flanking the slot, bonded to both the floor slab and the mounting wall.
+// slot's own X-band, the gusset is narrowed to slot-width plus two flanking
+// ribs (rack_support_gusset_rib() wide each) bonded to both the floor slab and
+// the mounting wall. This frees the rest of the panel for consumer geometry
+// that may reach the rear-post plane (#63).
 // Support-free: printed mouth-up (-Y up), each layer's material footprint
 // shrinks monotonically going up -- the gusset narrows to zero at the mouth
 // while the floor/wall stay continuous -- so every layer is supported by a
@@ -83,13 +91,14 @@ module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
             // 45deg gusset: right angle at the wall/floor corner (Y=0,Z=0),
             // equal legs (both = ed) along the wall (up) and along the floor
             // (out to the mouth) -> hypotenuse at exactly 45deg from
-            // vertical. Built full panel-width (xw=w, not slot_w): its
-            // central slot-width band gets removed below by the same
-            // difference() that cuts the channel cavity (that band sits
-            // directly under the cavity, Z in [floor_t,ed] there), leaving
-            // ribs flanking the slot that are solidly bonded to both the
-            // floor slab (Z in [0,floor_t], all X) and the mounting wall.
-            _rack_support_yz_prism([[0, 0], [-ed, 0], [0, ed]], w);
+            // vertical. Narrowed to slot_w + 2 * gusset_rib(): the central
+            // slot-width band is removed below by the same difference() that
+            // cuts the channel cavity (that band sits directly under the cavity,
+            // Z in [floor_t,ed] there), leaving ribs flanking the slot that are
+            // solidly bonded to both the floor slab (Z in [0,floor_t], all X)
+            // and the mounting wall. The narrowed envelope frees the rest of the
+            // panel for consumer geometry.
+            _rack_support_yz_prism([[0, 0], [-ed, 0], [0, ed]], slot_w + 2 * rack_support_gusset_rib());
         }
         // The channel cavity the tongue slides into (opens -Y, floor top at
         // Z=floor_t): from the bearing floor's top up by slot_h, tongue-
