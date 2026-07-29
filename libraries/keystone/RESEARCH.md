@@ -55,10 +55,13 @@ both axes. **[B]** corroborating.
 
 ## `keystone_body()` — `[17.5, 19.5, 28.60]` mm — mixed
 
+**Role: the jack's own envelope** (what `bd=28.60` measures, what the
+existing body-vs-face test assumes), not a keep-out around the port.
+
 - `bd` (28.60, Z-depth) — **`//VERIFY`**. Samm Teknoloji drawing carries a
   single labelled overall-depth dimension (28.60mm) next to the isometric
   view of the assembled jack + rear wire cap. Read as the full front-to-back
-  keep-out (jack body + dressed wire cap), not decomposed into sub-lengths in
+  jack envelope (jack body + dressed wire cap), not decomposed into sub-lengths in
   the source drawing. This is a single, non-decomposed reading from one
   vendor drawing — not STL/mesh-derived (so it doesn't earn `[C]`) and not
   corroborated by a second source (so it doesn't earn `[B]` either). Confirm
@@ -68,10 +71,9 @@ both axes. **[B]** corroborating.
   front/side/top views carry several width/height callouts in the
   17-20mm range (e.g. 17.45, 19.40, 16.05, 16.90), but this pass could not
   confidently map each callout to a specific view/axis from the extracted
-  drawing text/geometry. Seeded as a conservative keep-out margin above
-  `keystone_opening()` rather than a specific measured envelope. Re-check
-  against the same drawing (or a second jack's drawing) before treating as
-  load-bearing for a tight-clearance placeholder.
+  drawing text/geometry. They are unresolved dimensions of the jack body itself.
+  Re-check against the same drawing (or a second jack's drawing) before treating as
+  load-bearing.
 
 ## `keystone_plate_thickness()` — `[1.5, 3.0]` mm — mixed
 
