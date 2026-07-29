@@ -43,8 +43,14 @@ to make a real mounting panel/faceplate with this library:**
 use <rack19/rack19.scad>;
 
 difference() {
-    rack19_panel(2);       // 2U faceplate blank, 3mm thick
+    rack19_panel(2);            // 2U faceplate blank, 3mm thick, chamfered corners
     rack19_holes(2, "square");  // cage-nut square holes, both rail columns
+}
+
+// Square-corner panel (pre-#70 style):
+difference() {
+    rack19_panel(2, corner_chamfer = 0);
+    rack19_holes(2, "square");
 }
 ```
 
@@ -104,14 +110,18 @@ is a future enhancement, not supported here).
 | `rack19_flange_thickness()` | rail flange sheet-metal thickness (informational default), mm |
 | `rack19_known_depths()` | valid `rack19_depth_preset()` names |
 | `rack19_depth_preset(name)` | illustrative post face-to-face mounting depth, mm |
+| `rack19_panel_corner_chamfer()` | faceplate silhouette corner chamfer leg, mm (design value, no tier) |
+| `rack19_panel_profile_pts(w, h, chamfer)` | 2D point array: `w` × `h` with all four corners chamfered — for consumers building a panel at a non-standard height |
+| `rack19_panel_chamfer_max(u, margin)` | largest chamfer that clears the mounting-hole column centres |
 
 | Module | Produces |
 |---|---|
 | `rack19_holes(u, hole_type, dia, depth, slot_travel)` | mounting-hole cutter, both rail columns, `u` units (subtract from a consumer solid) |
 | `rack19_slot_profile(dia, slot_travel)` | horizontal obround cross-section (used by `rack19_holes()`'s `"slot"` branch; extrude it directly for a standalone profile) |
+| `rack19_panel_profile(w, h, chamfer)` | 2D front-elevation outline: `w` × `h` with all four corners chamfered at 45° (for consumers building at non-standard height) |
 | `rack19_placeholder(u, depth_ftf, hole_type)` | 4-flange rail envelope + front hole strip + `%` keep-out volume (fit-check reference) |
 | `rack19_rackpost_context(device_u, pad_u, depth_ftf, hole_type)` | `rack19_placeholder()` sized to `device_u + 2*pad_u` U and shifted so the device band's bottom sits at `Z=0` — padded rack context around a device (integer U only) |
-| `rack19_panel(u, thickness)` | plain 19in faceplate blank, `u` units tall — subtract `rack19_holes()` to mount it |
+| `rack19_panel(u, thickness, corner_chamfer)` | 19in faceplate blank, `u` units tall, all four front-elevation corners chamfered at 45° by `corner_chamfer` (default 3.0mm) — subtract `rack19_holes()` to mount it |
 
 `hole_type` is `"square"` (cage-nut, `dia` ignored), `"tapped"` (pass a
 thread string in `dia`, resolved via `rack19_screw_clearance()`), `"round"`
@@ -124,6 +134,24 @@ backs this default).
 the default (40mm, spanning Y∈[-20,+20] centered on the front-post plane)
 covers realistic panels (≲20mm) and rail flanges, but a smaller
 caller-supplied `depth` can under-cut a thicker target.
+
+### Faceplate corner chamfer (design note)
+
+`rack19_panel_corner_chamfer()` returns **3.0mm**, a **45-degree chamfer leg**
+on all four front-elevation corners of a panel — **NOT a radius**. This
+distinction matters for 3D printing: a true radius at the bottom corners of a
+vertically-printed panel creates downward-facing overhangs steeper than 45°
+(geometry makes the overhang unavoidable at small radii when the panel is thin
+relative to the corner roundness), which violates this repo's support-free
+design rule. A 45° chamfer, by contrast, is a constant 45° everywhere and
+prints clean without supports.
+
+This value deliberately **matches `rack10_panel_corner_chamfer()`** from the
+10-inch rack library — the two are **independent copies**, not imports, because
+10-inch and 19-inch are sibling standards with no natural dependency direction.
+`tests/test_rack_panel_drift.sh` guards the pair against drifting apart by
+comparing both the constants and the actual profile point lists (geometry, not
+just a number).
 
 ## Sources
 

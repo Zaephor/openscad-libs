@@ -113,6 +113,54 @@ span=max(zs)-min(zs)
 sys.exit(0 if abs(span-43.66)<0.01 else 1)   # 44.45 - 0.79 = 43.66
 PY
 
+# #70: rack19_panel() with chamfered corners spans its expected X/Y/Z box and
+# the chamfer-extreme vertices sit at the expected Z bounds.
+cat > "$tmp/panel_chamfer19.scad" <<'EOF'
+use <rack19/rack19.scad>;
+rack19_panel(1, 3);
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/panel_chamfer19.stl" "$tmp/panel_chamfer19.scad" 2>/dev/null
+python3 - "$tmp/panel_chamfer19.stl" <<'PY' || { echo "rack19_panel chamfered geometry wrong"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+xs,ys,zs=[],[],[]
+for i in range(n):
+    for v in range(3):
+        base=off+i*50+12+v*12
+        x,y,z=struct.unpack('<3f',d[base:base+12]); xs.append(x); ys.append(y); zs.append(z)
+# Bounds: X span ±241.3 (482.6/2), Y span -3..0 (thickness=3), Z span 0..43.66 (device_height(1))
+dx,dy,dz=max(xs)-min(xs),max(ys)-min(ys),max(zs)-min(zs)
+dev_h = 44.45 - 0.79  # rack19_device_height(1) = 43.66
+if not (abs(dx-482.6)<0.01 and abs(dy-3)<0.01 and abs(dz-dev_h)<0.01):
+    print(f'bbox mismatch: dx={dx} (want ~482.6), dy={dy} (want ~3), dz={dz} (want ~{dev_h})')
+    sys.exit(1)
+# Chamfer=3.0: extreme |x|=241.3 vertices must span Z in [3.0, dev_h-3.0]
+c=3.0
+extreme_x_verts = [z for x,y,z in zip(xs,ys,zs) if abs(abs(x)-241.3)<0.01]
+if extreme_x_verts and (min(extreme_x_verts)<c-0.01 or max(extreme_x_verts)>dev_h-c+0.01):
+    print(f'chamfer extreme |x| spans wrong Z: min={min(extreme_x_verts)} (want ~{c}), max={max(extreme_x_verts)} (want ~{dev_h-c})')
+    sys.exit(1)
+sys.exit(0)
+PY
+
+# Negative control 1: negative chamfer asserts.
+cat > "$tmp/panel_bad_chamf1.scad" <<'EOF'
+use <rack19/rack19.scad>;
+rack19_panel(1, 3, corner_chamfer = -1);
+EOF
+out="$(run "$tmp/panel_bad_chamf1.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  || { echo "negative chamfer must assert"; echo "$out"; exit 1; }
+
+# Negative control 2: chamfer past the hole column asserts.
+cat > "$tmp/panel_bad_chamf2.scad" <<'EOF'
+use <rack19/rack19.scad>;
+rack19_panel(1, 3, corner_chamfer = 100);
+EOF
+out="$(run "$tmp/panel_bad_chamf2.scad")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed' \
+  || { echo "chamfer past hole column must assert"; echo "$out"; exit 1; }
+
 
 # #7 rackpost context (parity). rack19_u()=44.45; default hole_type square.
 zbox19() { python3 - "$1" <<'PY'

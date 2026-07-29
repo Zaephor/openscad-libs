@@ -43,3 +43,13 @@ assert(round(rack19_device_height(2)*1e6)/1e6 == round((2*rack19_u() - rack19_st
     "device_height u=2");
 assert(rack19_stack_gap() > 0 && rack19_stack_gap() < 2, "stack_gap sane small value");
 assert(rack19_device_height(1) < rack19_u(), "device_height must be under 1U pitch");
+
+// --- #70: panel silhouette corner chamfer (peer of rack10) ---
+pc = rack19_panel_corner_chamfer();
+assert(pc > 0, "panel corner chamfer positive");
+assert(2*pc < rack19_panel_width(), "chamfer under half panel width");
+assert(2*pc < rack19_device_height(1), "chamfer under half panel height");
+assert(abs(pc - 3.0) < 1e-9, "panel corner chamfer is 3.0 (design value, no tier)");
+assert(len(rack19_panel_profile_pts(482.6, 43.66)) == 8, "chamfered profile has 8 points");
+assert(len(rack19_panel_profile_pts(482.6, 43.66, 0)) == 4, "chamfer=0 profile has 4 points");
+assert(pc < rack19_panel_chamfer_max(1), "chosen chamfer clears the mounting-hole column");
