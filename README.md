@@ -53,4 +53,31 @@ use <fans/fans.scad>;
 - [mitx-1u-chassis](projects/mitx-1u-chassis) — 1U 10" rack chassis for a mini-ITX board (front IO, #40 rear mate)
 - [two-piece-box](projects/two-piece-box) — multipart box with exploded view.
 
+## License
+
+Copyright (c) 2026 Zaephor.
+
+Licensed under [Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International](LICENSE) (`CC-BY-NC-SA-4.0`). You may use, modify, print, and
+share this work for **non-commercial** purposes, with attribution, and any
+derivative you share must carry the same license.
+
+**Commercial use** — selling prints, bundling this work into a product, or any
+other revenue-generating use — is **not** granted by the public license. It is
+available separately: [open an
+issue](https://github.com/Zaephor/openscad-libs/issues) to discuss terms.
+
+**Dimensional data is not claimed.** The measured values in `RESEARCH.md` files
+and returned by data accessors (`rack10_u()`, `keystone_pitch()`, and the rest)
+are facts about physical objects, not creative expression. Reuse the numbers for
+any purpose, commercial included. What the license covers is the expression
+around them: prose, organization, provenance analysis, and all geometry code.
+
+**Third-party sources.** External references are cited for provenance (see
+[docs/LIBRARY-AUTHORING.md](docs/LIBRARY-AUTHORING.md)), which is a repo
+convention independent of licensing. Where third-party *code* is ever
+incorporated, its own license notice is preserved alongside it — for example
+[spuder/10-Inch-Rack-OpenSCAD](https://github.com/spuder/10-Inch-Rack-OpenSCAD)
+(MIT, © 2025 Spencer Owen).
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for conventions.

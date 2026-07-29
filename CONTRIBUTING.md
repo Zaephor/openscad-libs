@@ -37,3 +37,16 @@ GL-less sandboxes. To render there, use the dind sidecar:
 This runs the same pipeline inside a Docker container (OpenSCAD 2021.01 + xvfb +
 software GL), matching CI output. CI (`render.yml`) renders natively with its own
 xvfb and does not use this path.
+
+## License and contributions
+
+This repository is licensed under [CC BY-NC-SA
+4.0](LICENSE); commercial use is retained by the author and available by
+arrangement (see the top-level [README](README.md#license)).
+
+By submitting a contribution — pull request, patch, or otherwise — you grant the
+repository owner a perpetual, worldwide, irrevocable, royalty-free right to use,
+modify, and relicense that contribution, **including under commercial terms**.
+You keep your own copyright and may use your contribution however you like. This
+grant exists so the commercial tier stays viable without having to track down
+every past contributor.
