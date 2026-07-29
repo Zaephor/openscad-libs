@@ -167,12 +167,29 @@ check_side_holes "bay35"
 # (published in Task 2), must not solid-solid interfere with
 # rack_support_plate() at the SAME placement (rack10_rear_post_y) both parts
 # use -- the actual bug this fix exists for (measured 3554.86mm^3 of real
-# interference before it). Unlike the minimal reference stub tray probed in
+# interference before it, reduced to 1333.51mm^3 by Task 1's gusset-narrowing
+# alone). Unlike the minimal reference stub tray probed in
 # tests/test_rack_support_lib.sh (which achieves a true CGAL "is empty"
-# result), bay_enclosure()'s own eps-overlap seams leave a near-zero-volume
-# degenerate sliver here rather than a literal empty result, so this checks
-# computed STL volume against a tight epsilon instead of the is-empty idiom
-# -- still four orders of magnitude below the pre-fix figure.
+# result), this probe measures an EXACT 0.0mm^3 (verified directly: all 24
+# triangle vertices in the resulting STL sit at Y=rpy identically, i.e. the
+# result is a flat, zero-thickness sheet, not a 3D solid) with 24 facets and
+# a CGAL non-manifold warning -- a coincident-face TOUCH, not residual
+# interference. Cause: rack_support_plate_keepout()'s wedge mirrors
+# rack_support_plate()'s own wedge shape exactly (see that module's doc,
+# rack-support.scad), and margin only grows the wedge's two free vertices
+# (mouth point, top point) -- its third vertex, anchored at the wall/floor
+# corner, is deliberately left fixed regardless of margin, so it stays flush
+# with the plate's matching corner even at margin=0.2. That fixed corner is
+# the exact face producing this sliver. Same artifact class as the plate x
+# drive_tray() coincident touch this plan's own Task 5 documents (24 facets,
+# 0.00mm^3, at Y=rpy/Z=0) -- a known, accepted non-manifold-touch signature
+# in this codebase, not a defect. The check below still uses a volume
+# threshold (< 1.0mm^3) rather than the is-empty text idiom, since this
+# real-consumer geometry's coincident touch is a non-manifold sliver (some
+# facets, zero volume) rather than OpenSCAD's literal empty-result case; the
+# 1.0mm^3 bound is pure headroom above the measured-exact 0.0, not a
+# load-bearing threshold -- still 3+ orders of magnitude below the pre-fix
+# 1333.51mm^3 figure.
 #
 # CRITICAL: scripts/openscad.sh only sets OPENSCADPATH to libraries/, so a
 # probe .scad that `use`s bay-enclosure.scad by bare libname would silently
