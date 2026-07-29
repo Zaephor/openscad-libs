@@ -174,16 +174,31 @@ check_side_holes "bay35"
 # triangle vertices in the resulting STL sit at Y=rpy identically, i.e. the
 # result is a flat, zero-thickness sheet, not a 3D solid) with 24 facets and
 # a CGAL non-manifold warning -- a coincident-face TOUCH, not residual
-# interference. Cause: rack_support_plate_keepout()'s wedge mirrors
-# rack_support_plate()'s own wedge shape exactly (see that module's doc,
-# rack-support.scad), and margin only grows the wedge's two free vertices
-# (mouth point, top point) -- its third vertex, anchored at the wall/floor
-# corner, is deliberately left fixed regardless of margin, so it stays flush
-# with the plate's matching corner even at margin=0.2. That fixed corner is
-# the exact face producing this sliver. Same artifact class as the plate x
-# drive_tray() coincident touch this plan's own Task 5 documents (24 facets,
-# 0.00mm^3, at Y=rpy/Z=0) -- a known, accepted non-manifold-touch signature
-# in this codebase, not a defect. The check below still uses a volume
+# interference.
+#
+# CAUSE (measured; an earlier revision of this comment blamed the keep-out
+# wedge's margin-fixed corner vertex, which the geometry rules out -- the
+# sheet's facets span |X| 30.601 to 75.425 and Z 0 to 43.66, i.e. the side
+# walls, and the wedge never exceeds |X| 30.601 / Z 12.201, so it cannot be
+# producing them): rack_support_plate_keepout() deliberately OMITS the
+# plate's panel-internal portion, Y in [0,thickness] (documented at
+# rack-support.scad's keep-out doc), so the keep-out's rearmost bound IS the
+# mounting-face plane, Y=rpy. bay_enclosure()'s own floor and side walls also
+# run exactly to Y=rpy, and the plate has material there, so the two solids
+# share that entire plane -- every vertex of the 24 facets sits at Y=240.0000
+# exactly. margin cannot help: it has no +Y component at all (see the
+# keep-out doc), so no margin value opens a gap at the mounting face.
+#
+# This is also why the minimal stub tray in tests/test_rack_support_lib.sh
+# reaches a true CGAL "is empty" while this real consumer does not: the
+# plate's cavity cut runs through the panel, so the stub tray's only material
+# at Y=rpy lies inside the cavity band where the plate is void, whereas
+# bay_enclosure() has walls and a full-width floor outside that band. Same
+# artifact class as the plate x drive_tray() coincident touch this plan's own
+# Task 5 documents (24 facets, 0.00mm^3, at Y=rpy/Z=0) -- a known, accepted
+# non-manifold-touch signature in this codebase, not a defect.
+#
+# The check below still uses a volume
 # threshold (< 1.0mm^3) rather than the is-empty text idiom, since this
 # real-consumer geometry's coincident touch is a non-manifold sliver (some
 # facets, zero volume) rather than OpenSCAD's literal empty-result case; the
@@ -294,6 +309,49 @@ actual_vol="$(stl_volume "$tmp/keepout_tongue_survives.stl")"
 want_vol="$(stl_volume "$tmp/tongue_reference.stl")"
 awk -v a="$actual_vol" -v w="$want_vol" 'BEGIN { d = a - w; if (d < 0) d = -d; exit !(w > 0 && d < 1.0) }' \
   || { echo "FAIL: keepout eroded bay_enclosure()'s own tongue (paired assertion) -- actual ${actual_vol}mm^3 vs reference ${want_vol}mm^3"; fail=1; }
+
+# CONNECTIVITY -- the tongue must still be ATTACHED, not merely present. The
+# volume assertion above cannot see this: the keep-out's cavity exclusion
+# preserves the tongue's volume exactly by design, so a tongue floating free
+# of the body measures identical to a properly anchored one. And it really can
+# float: the keep-out necessarily deletes this project's ramp+shelf over the
+# tongue's whole engagement span (that volume belongs to rack_support_plate()'s
+# own bearing floor), leaving only a sub-layer eps film there. What holds the
+# tongue on is the 45deg root gusset forward of the root -- measured 40.0000mm^3
+# of solid in X +-20 / Y [227,228] / Z [2,3], and a full 16.0000mm^3 (40 x 2 x
+# 0.2) across the tongue's first printed layer band, i.e. a real in-layer
+# anchor.
+#
+# Worth recording precisely because the naive reading of this check is wrong:
+# this project reported a single solid BEFORE the gusset existed too, but only
+# because _be_yz_wedge()'s hull() spheres (r=0.001) left a 0.0000mm^3,
+# sub-micron ridge at the ramp apex bridging the severed region -- verified by
+# probing it directly. So "Volumes: 2" here was, pre-gusset, held up by an
+# artifact no slicer would ever emit; it is now held up by real material. That
+# also means this check is a regression guard for THIS consumer, not a probe of
+# rack_support_plate_keepout()'s margin contract -- tests/test_rack_support_lib.sh
+# checks (c)/(d) own that, and (d) is the one with teeth against the moat.
+#
+# CGAL counts the unbounded outer volume, so one solid reports "Volumes: 2"
+# (same convention the side-hole counter above relies on).
+cat > "$tmp/connectivity.scad" <<EOF
+use <$proj/bay-enclosure.scad>;
+bay_enclosure();
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/connectivity.stl" "$tmp/connectivity.scad" 2>&1)"
+if echo "$out" | grep -qiE 'Ignoring unknown|Can.t open library'; then
+  echo "FAIL: connectivity probe failed to resolve bay-enclosure.scad (undef-poisoned model):"
+  echo "$out"; fail=1
+else
+  volumes="$(echo "$out" | grep -o 'Volumes:[[:space:]]*[0-9]*' | tail -1 | grep -o '[0-9]*$')"
+  if [ -z "$volumes" ]; then
+    echo "FAIL: bay_enclosure() render produced no CGAL Volumes: line -- cannot verify it is a single solid:"
+    echo "$out"; fail=1
+  elif [ "$volumes" -ne 2 ]; then
+    echo "FAIL: bay_enclosure() is not a single solid -- CGAL reports Volumes: $volumes (want 2). The rear tongue has most likely been detached from the body; check the 45deg root gusset and rack_support_plate_keepout()'s margin."
+    fail=1
+  fi
+fi
 
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

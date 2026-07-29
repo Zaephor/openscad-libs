@@ -148,11 +148,39 @@ module rack_support_plate(standard, u, thickness = 3, hole_type = "round") {
 // consumer body that stops at the mounting face the way the reference stub
 // tray does (see assembly.scad), so it's left out to avoid over-claiming.
 //
-// margin inflates the envelope for assembly clearance (default 0 = exact):
-// grows the wedge's two free vertices (mouth point further out, top point
-// higher) and the floor slab's reach/width -- NOT the channel cavity cut,
-// which must stay exactly the tongue's own clearance envelope regardless of
-// margin, or growing margin would eat into the tongue's reserved volume.
+// margin inflates the envelope for assembly clearance (default 0 = exact),
+// but ONLY outward from the channel cavity's own XY footprint. The cavity cut
+// is never inflated -- it must stay exactly the tongue's own clearance
+// envelope regardless of margin, or growing margin would eat into the
+// tongue's reserved volume. That asymmetry is what constrains where margin
+// may grow: any keep-out growth into the ring of consumer material
+// immediately surrounding the cavity's footprint carves a margin-wide MOAT
+// there, and that moat is the only thing joining the consumer's in-cavity
+// geometry (its tongue, whose underside band the cavity exclusion preserves)
+// to the rest of its body. An earlier revision grew the wedge's mouth vertex
+// to Y=-ed-m and the floor slab to Y=-ed-m / X=+-(slot_w/2+m); on the
+// reference stub-tray shape that severed the tongue outright (measured: one
+// solid at margin=0, two at margin=0.1 and 0.2, the second being the tongue
+// plus its 4.8mm^3 underside film). So:
+//   * the floor slab is pinned to the cavity's exact XY footprint
+//     (X +-slot_w/2, Y [-ed,0]) and does not scale with margin at all;
+//   * the wedge grows only its apex (+Z) and its width (+-X) -- both away
+//     from the cavity -- plus the 45deg hypotenuse offset that follows from
+//     raising the apex (the hypotenuse line is z = y + ed + m either way, so
+//     this preserves the full m/sqrt(2) perpendicular clearance against the
+//     plate's own gusset face that the old mouth-vertex growth gave);
+//   * the wedge's mouth vertex is CLAMPED at Y=-ed, which turns the triangle
+//     into a quadrilateral (extra vertex at [-ed, m]). At margin=0 the two
+//     coincide and the shape is bit-identical to the original triangle.
+//
+// margin opens NO clearance at the mounting face (+Y): the keep-out's
+// rearmost bound is the mounting-face plane Y=0 by construction (the
+// panel-internal portion is deliberately omitted, above) and margin has no
+// +Y component. A consumer whose own body also runs to that plane therefore
+// shares it with the plate no matter what margin it passes, and cannot use
+// margin to eliminate the resulting coincident-face touch or CGAL
+// non-manifold warning -- see tests/test_bay_enclosure.sh's interference
+// check, which documents exactly that signature.
 module rack_support_plate_keepout(margin = 0) {
     rs      = rack_support_rail_size();
     cl      = rack_support_slot_clearance();
@@ -172,15 +200,24 @@ module rack_support_plate_keepout(margin = 0) {
         union() {
             // 45deg gusset wedge -- mirrors rack_support_plate()'s own
             // wedge shape/width exactly (single source of truth: same
-            // slot_w + 2*gusset_rib() term), margin grows the two outer
-            // vertices away from the wall/floor corner (which stays fixed).
-            _rack_support_yz_prism([[0, 0], [-ed - m, 0], [0, ed + m]],
+            // slot_w + 2*gusset_rib() term). margin raises the apex and
+            // widens the prism; the mouth vertex stays clamped at Y=-ed so
+            // the growth never reaches into the cavity's -Y neighbourhood
+            // (see the moat discussion in the module doc). The 4th point
+            // [-ed, m] is where the raised hypotenuse now meets that clamp;
+            // at margin=0 it collapses onto [-ed, 0] and this is the same
+            // triangle as before.
+            _rack_support_yz_prism([[0, 0], [-ed, 0], [-ed, m], [0, ed + m]],
                                     slot_w + 2 * rib + 2 * m);
             // Bearing-floor slab's mouth-projecting portion only (Y in
             // [-ed,0]; the plate's own floor additionally spans into the
             // panel at Y in [0,thickness], omitted here per the module doc).
-            translate([-slot_w/2 - m, -ed - m, 0])
-                cube([slot_w + 2 * m, ed + m, ft]);
+            // Pinned to the cavity's exact XY footprint and NOT grown by
+            // margin: the plate's own floor is exactly slot_w wide and
+            // reaches exactly -ed, so this already covers all of it, and any
+            // growth here is pure moat (module doc).
+            translate([-slot_w/2, -ed, 0])
+                cube([slot_w, ed, ft]);
         }
         // Channel cavity -- mirrors rack_support_plate()'s own cavity cut
         // (same slot_w/ft/slot_h terms, over the mouth-projecting Y-range)

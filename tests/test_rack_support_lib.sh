@@ -241,10 +241,19 @@ fi
 tray_body() {
 cat <<'EOF'
 module consumer_body() {
+    rh = rack_support_rail_size()[1];   // tongue height == root-gusset rise == run (45deg)
     union() {
         translate([-rack10_panel_width(standard)/2, -3, 0])
             cube([rack10_panel_width(standard), 3, rack10_device_height(u)]);
         translate([-rw/2, 0, 0]) cube([rw, rpy, ft]);
+        // 45deg tongue-root gusset, mirroring assembly.scad's own (and the
+        // README consumer contract's "45deg root gussets at ...
+        // tongue-to-body junctions"). Load-bearing for check (c) below: the
+        // keep-out necessarily deletes the floor under the tongue's whole
+        // engagement span (the plate's bearing floor lives there), so this
+        // gusset -- forward of the root, where the plate never reaches -- is
+        // what keeps the tongue attached to the body at all.
+        _rack_support_yz_prism([[reach - rh, ft], [reach, ft], [reach, ft + rh]], rw);
         translate([0, reach, 0]) rack_support_tongue();
     }
 }
@@ -363,5 +372,121 @@ actual = stl_volume(sys.argv[1])
 want   = stl_volume(sys.argv[2])
 sys.exit(0 if want > 0 and abs(actual - want) < 1.0 else 1)
 PY
+
+# (c) CONNECTIVITY -- the missing half of (b). (b) measures the tongue's
+# VOLUME inside its own band, which the cavity exclusion preserves exactly;
+# it says nothing about whether the tongue is still ATTACHED to the body. It
+# is blind to detachment by construction, and detachment really happened: an
+# earlier rack_support_plate_keepout() grew its floor slab by margin in -Y
+# and +-X while (correctly) never growing the cavity exclusion, which carved
+# a margin-wide moat around the cavity's footprint -- exactly the material
+# joining the tongue to the rest of the tray. Measured on this same reference
+# shape: one solid at margin=0, TWO at margin=0.1 and 0.2, the second being
+# the tongue plus its 4804.80mm^3 band (tongue + eps film), severed.
+#
+# CGAL's own render-summary "Volumes:" line is the cheapest reliable probe
+# here (same line tests/test_bay_enclosure.sh's side-hole counter already
+# reads). It counts the unbounded outer volume too, so ONE solid reports
+# "Volumes: 2" and a tongue split off reports 3 -- calibrated against this
+# exact geometry, not assumed: on the GUSSET-LESS tray this printed 2 / 3 / 3
+# for margins 0 / 0.1 / 0.2 pre-fix and prints 2 / 2 / 2 now.
+#
+# SCOPE, measured rather than assumed: with the root gusset now present (it
+# lives above Z=ft, where a moat confined to Z in [0,ft] cannot reach), the
+# PRE-FIX keep-out also reports 2 at margins 0.1/0.2 -- verified directly
+# against the pre-fix module. So this check is a general "tongue is still
+# attached" guard (it would catch a lost gusset, or a keep-out that grew
+# above ft), NOT a sharp guard against the moat itself. Check (d) below is
+# the one that fails on the pre-fix geometry, and is why (c) alone is not
+# enough. Nonzero margins are exercised anyway: at margin=0 there is no moat
+# to carve at all, so a margin-0-only check proves nothing about margin.
+check_tray_connectivity() { # <margin>
+  local m="$1"
+  local scad="$tmp/connectivity_$m.scad"
+  cat > "$scad" <<EOF
+use <rack-support/rack-support.scad>;
+use <rack10/rack10.scad>;
+standard = "labrax";
+u = 1;
+rpy = rack10_rear_post_y(standard);
+ft  = rack_support_floor_thickness();
+rw  = rack_support_rail_size()[0];
+reach = rpy - rack_support_engagement_depth();
+$(tray_body)
+difference() {
+    consumer_body();
+    translate([0, rpy, 0]) rack_support_plate_keepout($m);
+}
+EOF
+  local out volumes
+  out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/connectivity_$m.stl" "$scad" 2>&1)"
+  volumes="$(echo "$out" | grep -o 'Volumes:[[:space:]]*[0-9]*' | tail -1 | grep -o '[0-9]*$')"
+  if [ -z "$volumes" ]; then
+    echo "connectivity check at margin=$m produced no CGAL Volumes: line -- cannot verify the tongue is still attached:"
+    echo "$out"; exit 1
+  fi
+  if [ "$volumes" -ne 2 ]; then
+    echo "rack_support_plate_keepout($m) DETACHED the consumer's tongue -- CGAL reports Volumes: $volumes (want 2, i.e. a single solid). margin must not carve a moat around the channel cavity's footprint; see that module's doc."
+    exit 1
+  fi
+}
+check_tray_connectivity 0
+check_tray_connectivity 0.1
+check_tray_connectivity 0.2
+
+# (d) MARGIN CONTAINMENT -- the sharp guard on the invariant that makes (c)
+# hold for any consumer, gusset or not: margin may only inflate the keep-out
+# AWAY from the channel cavity's own XY footprint, never into the ring of
+# consumer material surrounding it (see rack_support_plate_keepout()'s doc).
+# Both probes below discriminate against the pre-fix module by a wide, verified
+# margin, so a reintroduced moat fails here even though (c) would not.
+#
+# (d1) No -Y growth: the keep-out's rearmost forward reach is the plate's own
+# mouth plane, Y=-engagement_depth(), for EVERY margin. Pre-fix this measured
+# -12.201 at margin=0.2 (= -ed - margin - hull-sphere slack); it now measures
+# -12.001. The 0.05 tolerance covers _rack_support_yz_prism()'s 0.001 sphere
+# radius while leaving the pre-fix value failing by 4x the tolerance.
+for m in 0 0.1 0.2; do
+  cat > "$tmp/keepout_ymin_$m.scad" <<EOF
+use <rack-support/rack-support.scad>;
+rack_support_plate_keepout($m);
+EOF
+  "$root/scripts/openscad.sh" --export-format binstl -o "$tmp/keepout_ymin_$m.stl" "$tmp/keepout_ymin_$m.scad" 2>/dev/null
+  python3 - "$tmp/keepout_ymin_$m.stl" <<'PY' || { echo "rack_support_plate_keepout() reaches past the plate's mouth plane (Y=-engagement_depth()) -- margin is carving a -Y moat at the tongue root; see (d1) above"; exit 1; }
+import struct,sys
+d=open(sys.argv[1],'rb').read(); n=struct.unpack('<I',d[80:84])[0]; off=84
+ys=[]
+for i in range(n):
+    for v in range(3):
+        b=off+i*50+12+v*12
+        ys.append(struct.unpack('<3f',d[b:b+12])[1])
+sys.exit(0 if min(ys) > -12 - 0.05 else 1)
+PY
+done
+
+# (d2) No +-X growth of the bearing-floor slab: near the mouth the 45deg wedge
+# has almost no height, so the slab alone sets the keep-out's X extent there.
+# Probe a box just OUTSIDE the cavity's own half-width (slot_w/2 + 0.02, i.e.
+# inside what margin=0.2 used to add) in that mouth band, below the cavity's
+# own Z-floor so the cavity exclusion cannot be what empties it -- must be
+# EMPTY, same "is empty" idiom as the cavity/hole probes above. Pre-fix this
+# probe measured 0.0288mm^3 of keep-out material.
+cat > "$tmp/keepout_xmoat.scad" <<'EOF'
+use <rack-support/rack-support.scad>;
+rs = rack_support_rail_size();
+cl = rack_support_slot_clearance();
+ed = rack_support_engagement_depth();
+ft = rack_support_floor_thickness();
+slot_w = rs[0] + 2 * cl;
+intersection() {
+    rack_support_plate_keepout(0.2);
+    translate([slot_w/2 + 0.02, -ed + 0.1, ft - 0.5]) cube([0.16, 0.4, 0.45]);
+}
+EOF
+out="$("$root/scripts/openscad.sh" --export-format binstl -o "$tmp/keepout_xmoat.stl" "$tmp/keepout_xmoat.scad" 2>&1)"
+if [ -f "$tmp/keepout_xmoat.stl" ] || ! echo "$out" | grep -qi 'is empty'; then
+  echo "rack_support_plate_keepout(0.2) extends past the channel cavity's own half-width near the mouth -- margin is carving a +-X moat along the tongue's flanks; see (d2) above:"
+  echo "$out"; exit 1
+fi
 
 echo ok

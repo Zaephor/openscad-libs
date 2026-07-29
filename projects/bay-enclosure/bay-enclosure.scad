@@ -174,6 +174,19 @@ module bay_enclosure() {
     ramp_margin_min = 3;                        // sanity minimum: flat floor-run (Y=0..ramp_y0) before the rear ramp must be at least this deep
     assert(ramp_y0 > ramp_margin_min,
         "bay-enclosure: usable depth too short for the tongue's buttress ramp");
+    rs      = rack_support_rail_size();         // tongue [width_X, height_Z]
+    gus_top = ft + rs[1];                       // root-gusset apex Z == the tongue's own TOP face (braces the full root cross-section; no new dimension invented)
+    gus_run = gus_top - floor_th;               // 45deg -> run == rise, measured from THIS project's own (thinner) floor top, not from ft
+    gus_y0  = reach - gus_run;                  // gusset's forward root
+    // The gusset rises above the device's underside plane (Z=floor_th) over
+    // the tongue's X-band, which is INSIDE the device's own width, so it can
+    // only be built behind the device's rear face. _usable_depth()'s assert
+    // above bounds the device conservatively; this one gates on the ACTUAL
+    // device length, since that is the real obstruction (all three LOCKED
+    // presets clear it with room: gus_y0=217.2 vs. 200/200/170mm devices).
+    assert(gus_y0 >= _dlen(),
+        str("bay-enclosure: device depth ", _dlen(), " reaches past the tongue root gusset at ",
+            gus_y0, " -- no room for the 45deg root gusset the rack-support consumer contract requires"));
 
     difference() {
         union() {
@@ -189,9 +202,10 @@ module bay_enclosure() {
             translate([fx0, 0, 0]) cube([fw, rpy, floor_th]);
 
             // Rear buttress: rack-support's (#40) consumer contract requires
-            // the tongue's underside (Z=ft) be met by solid floor with no
-            // unsupported gap — this project's own floor is thinner
-            // (floor_th) than that bearing datum (ft), so it must ramp up
+            // the body to reach the tongue's underside datum (Z=ft) flush,
+            // with no stacked-but-non-overlapping join, up to the tongue root
+            // — this project's own floor is thinner (floor_th) than that
+            // bearing datum (ft), so it must ramp up
             // first. 45deg wedge (ramp run == ramp rise == ft-floor_th) from
             // ramp_y0 up to the tongue root (reach), then a flat ft-thick
             // shelf under the tongue's whole engagement span (reach..rpy).
@@ -213,10 +227,53 @@ module bay_enclosure() {
             // overlap while excluding the channel cavity, so the tongue
             // unioned in afterward is left untouched. See that module's doc
             // and assembly.scad's FLOOR-LENGTH note for the same pattern.
+            //
+            // WHAT THAT CARVES AWAY IS THE TONGUE'S OWN SUPPORT. Over the
+            // tongue's engagement span (Y in [reach,rpy]) this shelf is
+            // exactly where rack_support_plate()'s bearing floor goes, so the
+            // keep-out deletes it there, leaving only the eps film the cavity
+            // exclusion preserves (~0.01mm, well under one layer — no slicer
+            // emits it). The tongue's 40 x 12mm underside is therefore a real
+            // overhang, unavoidably so for any consumer of this interface. It
+            // is made printable by the 45deg root gusset below, which anchors
+            // the tongue's first layer forward of the root; what remains is
+            // the same knowingly-accepted residual risk drive-tray.scad
+            // already documents for its own tongue (a stocky 40x10mm
+            // cross-section cantilevering engagement_depth()=12mm off an
+            // anchored root — at the repo's ~5-10mm "minor droop" guideline,
+            // slightly past it, a real but modest print-time risk). Away from
+            // the tongue's own footprint the shelf largely survives, because
+            // the keep-out's wedge is triangular in YZ and so only reaches
+            // Z=ft near the mounting face: measured over the engagement span
+            // at Z in [0,ft], 1075.02mm^3 remains at |X| > 30.6 (tied into
+            // the side walls) plus wedge-shaped remnants inboard of that.
+            // Under the tongue itself only the film remains.
             translate([fx0, 0, 0]) {
                 _be_yz_wedge([[ramp_y0, floor_th], [reach, floor_th], [reach, ft]], 0, fw);
                 translate([0, reach, floor_th]) cube([fw, rpy - reach, ft - floor_th]);
             }
+
+            // 45deg tongue-root gusset — the anchor the paragraph above
+            // refers to, and the rack-support consumer contract's own
+            // requirement ("45deg root gussets at ... tongue-to-body
+            // junctions"). Right triangle in YZ: vertical leg on the tongue's
+            // front face (Y=reach, Z from floor_th up to gus_top = the
+            // tongue's top face), horizontal leg on this project's floor top
+            // (Z=floor_th, back to gus_y0). Equal legs -> hypotenuse exactly
+            // 45deg, footprint shrinking monotonically upward off a base that
+            // sits on the solid floor slab: support-free, no floating start.
+            // Note it rises from floor_th, NOT from ft — this project's floor
+            // is thinner than the bearing datum, and a wedge based at ft
+            // would float over the stretch forward of ramp_y0. Extruded
+            // across the tongue's own width (rs[0]) rather than the full
+            // floor width, to keep the intrusion into the device's Y-budget
+            // as small as possible (see gus_y0's assert). Whole wedge lives
+            // at Y <= reach, which rack_support_plate() never reaches
+            // (measured ymin 227.999 ~= reach), so it costs nothing in
+            // clearance — it is inside this difference() anyway, so that
+            // claim is enforced, not assumed.
+            _be_yz_wedge([[gus_y0, floor_th], [reach, floor_th], [reach, gus_top]],
+                         -rs[0] / 2, rs[0] / 2);
 
             // Front floor/faceplate joint: NO gusset here, on purpose --
             // (this used to be a wall-X-band-only wedge; removed after
@@ -268,12 +325,27 @@ module bay_enclosure() {
 
         // Clear rack_support_plate()'s forward-mounted envelope (see the
         // rear-buttress comment above) — same placement (rpy) the plate
-        // itself is mounted at, so the two can never drift apart. A small
-        // 0.2mm assembly-clearance margin (vs. assembly.scad's exact
-        // margin=0 reference stub) since this is a real printed consumer,
-        // not a demonstrator. This subtraction happens INSIDE this
-        // difference(), i.e. strictly before the tongue is unioned in
-        // below, so it can never remove any of the tongue's own material.
+        // itself is mounted at, so the two can never drift apart. This
+        // subtraction happens INSIDE this difference(), i.e. strictly before
+        // the tongue is unioned in below, so it can never remove any of the
+        // tongue's own material.
+        //
+        // The 0.2mm margin (vs. assembly.scad's exact margin=0 reference
+        // stub) earns its keep here, but not where "real printed consumer,
+        // not a demonstrator" used to imply. Measured: the plate's forward
+        // envelope reaches X=+-30.401, and so does keepout(0) — flush, zero
+        // lateral clearance — while keepout(0.2) reaches +-30.601 and Z
+        // 12.201 vs. the plate's 11.951. Because THIS project's floor runs
+        // the full device width it really does have material out at X in
+        // [30.4,30.6], so the margin buys a genuine 0.2mm gap along the
+        // plate's gusset-rib flanks and over its apex. What it does NOT buy
+        // is any clearance at the mounting face: margin has no +Y component,
+        // so this body still shares the Y=rpy plane with the plate (a
+        // benign, exactly-0.000000mm^3 coincident-face touch — see
+        // tests/test_bay_enclosure.sh, which documents that signature and
+        // its real cause). Margin is also no longer free to carve into the
+        // ring of material around the channel cavity, which is what kept the
+        // rear tongue attached; see rack_support_plate_keepout()'s own doc.
         translate([0, rpy, 0]) rack_support_plate_keepout(0.2);
     }
 

@@ -118,8 +118,27 @@ left out since a consumer body that stops at the mounting face never
 reaches it.
 
 `margin` (default `0` = exact fit) inflates the envelope for assembly
-clearance: it grows the gusset wedge's two free vertices and the floor
-slab's reach/width outward. **Do not let `margin` touch the channel
+clearance, but only *outward from the channel cavity's own XY footprint*: it
+raises the gusset wedge's apex and widens the prism in `X`. It does **not**
+extend the envelope past the plate's mouth plane
+(`Y = -engagement_depth()`), and the bearing-floor slab is pinned to the
+cavity's exact footprint. Growth into the ring of consumer material
+immediately around the cavity would carve a `margin`-wide moat there, and
+that ring is the only thing joining a consumer's tongue to the rest of its
+body — an earlier revision did exactly that and severed the reference stub
+tray's tongue outright at `margin = 0.1`. `tests/test_rack_support_lib.sh`
+checks `(d)` assert the containment directly.
+
+`margin` also opens **no clearance at the mounting face** (`+Y`): the
+keep-out's rearmost bound is that plane by construction (the panel-internal
+portion is deliberately omitted, above) and `margin` has no `+Y` component.
+A consumer whose own body also runs to the rear post plane therefore shares
+that plane with the plate at any `margin`, and **cannot** raise `margin` to
+eliminate the resulting coincident-face touch or CGAL non-manifold warning.
+That touch is benign — it measures exactly `0.000000mm³` — and
+`tests/test_bay_enclosure.sh` documents the signature.
+
+**Do not let `margin` touch the channel
 cavity** — the module subtracts the exact channel-cavity cut (the same
 `slot_w`/`floor_thickness`/`slot_h` terms `rack_support_plate()` itself
 cuts) back out of the envelope *regardless of `margin`*, because that
@@ -166,42 +185,80 @@ structural analysis (creep) pass that motivated this library.
 - **Buttressing (support-free requirement):** `rack_support_tongue()`'s
   underside sits at `rack_support_floor_thickness()` (2mm), not at the
   consumer's own local `Z=0` floor datum. A consumer's floor must reach up
-  to meet the tongue's underside with **no unsupported gap** — e.g. by
-  running the tray's own floor at the same `Z` height as the tongue's
-  underside for the last `engagement_depth()` mm (as `assembly.scad`'s stub
-  tray does). A floor that simply stops short of the tongue's Z-start
-  leaves the tongue as an unsupported horizontal shelf (a real overhang,
-  not printable without support) — verified while building `assembly.scad`
-  (a floor stopping exactly at the tongue's own front face reproduced a
-  CGAL non-manifold "touching only along an edge" defect; extending the
-  floor to fully overlap the tongue's footprint in `Y` fixed both the
-  manifold defect and the overhang). This is still required — the
-  manifold/overhang reasoning above is real — but bringing a body up to
-  meet the tongue's underside is not enough on its own: **that same body
-  now reaches the rear post plane, where `rack_support_plate()` has its own
-  solid material** (panel, bearing floor, gusset ribs). A consumer body
-  that reaches `rack10_rear_post_y(standard)` **will** physically intersect
-  the plate unless `rack_support_plate_keepout()` is subtracted from it
-  first, at the same placement used for the tongue:
+  to meet that datum flush — but **only forward of the tongue root**
+  (`Y < body_reach`). Read the next two bullets together with this one;
+  taken alone this instruction used to contradict the keep-out subtraction
+  below.
+
+  Forward of the root, running the floor up to the tongue's underside `Z` is
+  required for a real reason: a floor that stops short of the tongue's
+  Z-start meets it only along a 1D edge, which CGAL reports as non-manifold
+  (reproduced while building `assembly.scad`) and which leaves the tongue an
+  unsupported shelf. Bring the floor to `floor_thickness()` before the root,
+  ramping at 45° if the consumer's own floor is thinner (as `bay-enclosure`
+  does, `floor_th` 1.2mm → 2mm).
+
+- **The tongue's engagement span is inherently unsupported — do not try to
+  fill it.** Over `Y` in `[body_reach, rack10_rear_post_y(standard)]`, the
+  volume beneath the tongue's underside belongs to `rack_support_plate()`'s
+  own bearing floor. Two rigid printed parts cannot share it, so whatever a
+  consumer builds there is exactly what `rack_support_plate_keepout()`
+  deletes; all that survives is a sub-layer `eps` film (measured on the
+  reference stub tray: 4.8001mm³ = 40 × 12 × 0.01, ~1/20 of a layer height —
+  no slicer emits it). Filling this span is therefore not merely redundant,
+  it is self-cancelling, and an earlier revision of this section wrongly
+  told consumers to do it. The tongue's 40 × 12mm underside is a genuine
+  overhang in **every** consumer of this interface.
+
+- **Anchor the tongue with a 45° root gusset instead** (this is the
+  "tongue-to-body junction" case of the root-gusset rule above, and it is
+  what makes the overhang printable rather than merely acknowledged). Put
+  material **above** `Z = rack_support_floor_thickness()` at
+  `Y < body_reach`: a 45° wedge whose vertical leg is the tongue's own front
+  face and whose horizontal leg runs forward along the consumer's floor top.
+  Sizing it from `rack_support_rail_size()[1]` (the tongue's height) makes
+  the apex flush with the tongue's top face and braces the full root
+  cross-section without introducing a new dimension. All of `Y < body_reach`
+  is free of the plate — its measured `ymin` is `227.999 ≈ body_reach` — so
+  this costs nothing in clearance. Both shipped references do it
+  (`assembly.scad`, `bay-enclosure`); note `bay-enclosure`'s wedge rises
+  from its own thinner floor (`floor_th`), not from `floor_thickness()`, or
+  it would float. What this buys is an in-layer anchor for the tongue's
+  first printed layer, the same role `drive-tray`'s full-height rear wall
+  plays for its tongue. The residual risk is then the same one
+  `drive-tray.scad` documents and knowingly accepts: a stocky 40 × 10mm
+  cross-section cantilevering `engagement_depth()` (12mm) off an anchored
+  root.
+
+- **Subtract the plate's keep-out.** Bringing a body up to the tongue's
+  underside means **that same body now reaches the rear post plane, where
+  `rack_support_plate()` has its own solid material** (panel, bearing floor,
+  gusset ribs). A consumer body that reaches `rack10_rear_post_y(standard)`
+  **will** physically intersect the plate unless
+  `rack_support_plate_keepout()` is subtracted from it first, at the same
+  placement used for the tongue:
 
   ```
   body_reach = rack10_rear_post_y(standard) - rack_support_engagement_depth()
   difference() {
-      // ... consumer body, including its floor-to-tongue-underside fill ...
+      // ... consumer body, incl. its floor-to-underside fill FORWARD of
+      // body_reach and its 45deg tongue root gusset ...
       translate([0, rack10_rear_post_y(standard), 0]) rack_support_plate_keepout();
   }
+  // ... then union the tongue itself, at translate([0, body_reach, 0]) ...
   ```
 
-  An earlier revision of this guidance recommended closing that gap with
-  *"a 45° buttress ramping from the tray's local floor up to
-  `floor_thickness()` before the tongue root"* — that shape reaches the
-  rear post plane and collided with the plate's (then full-panel-width)
-  gusset in both this library's own `assembly.scad` reference tray
-  (875.89mm³ measured interference) and the real shipped `bay-enclosure`
-  project (3554.86mm³ measured interference) — see #63. Do not add a
-  freestanding buttress ramp there; use `rack_support_plate_keepout()`
-  instead, which is guaranteed by construction to stay clear of whatever
-  material `rack_support_plate()` actually contains.
+  An earlier revision of this guidance recommended closing the gap with *"a
+  45° buttress ramping from the tray's local floor up to
+  `floor_thickness()` before the tongue root"* **and carrying it through the
+  engagement span** — that shape reaches the rear post plane and collided
+  with the plate's (then full-panel-width) gusset in both this library's own
+  `assembly.scad` reference tray (875.89mm³ measured interference) and the
+  real shipped `bay-enclosure` project (3554.86mm³ measured interference) —
+  see #63. Do not add a freestanding buttress ramp through that span; ramp
+  up forward of the root, gusset the root, and subtract
+  `rack_support_plate_keepout()`, which is guaranteed by construction to stay
+  clear of whatever material `rack_support_plate()` actually contains.
 
 ## Sources
 
