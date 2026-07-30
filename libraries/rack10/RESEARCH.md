@@ -253,7 +253,32 @@ for every other 10in-specific dimension.
 - Same non-per-U-multiplication note as rack19 applies here too:
   `rack10_device_height(u)` should be `u * 44.45 - 0.79`, not a per-U-scaled
   variant.
-- Consumer note: bpi-r4 chassis to replace its project-local `stack_gap` with `rack10_stack_gap()` (post-wave).
+- **Retrofit evaluated and rejected:** bpi-r4 chassis evaluated replacing its
+  project-local `stack_gap = 0.45` with `rack10_stack_gap() = 0.79`, but the
+  retrofit breaks the chassis's own fan-fit constraint. The project's 0.45 is
+  the **maximum stacking gap** that still admits a 40mm fan in 1U: `rack10_u() -
+  floor_th - lid_th - fan_size = 44.45 − 2 − 2 − 40 = 0.45`. Adopting 0.79
+  leaves only 39.66 mm internal height and trips the fan-fit assert by 0.34 mm.
+  The retrofit remains permanently rejected unless the project's fan size
+  requirement changes.
+
+### Observed spread: three independently-authored values
+
+A single 10in rack generator, independently authored with no connection to
+LabRax, produces conflicting guidance:
+
+- `10InchRackGenerator.scad` (spuder / public MIT-licensed OpenSCAD library):
+  computes device height as `height = 44.45 * rack_height`, i.e. **no stacking
+  gap at all** (0.00 mm). Tier **[C]** (public parametric SCAD library, first and
+  only source for this value).
+
+- **Observed spread:** 0.00 mm (spuder) … 0.45 mm (bpi-r4 chassis fan-fit budget)
+  … 0.79 mm (EIA-310 borrowed by analogy).
+
+- `rack10_stack_gap()` **remains 0.79 and remains [C] //VERIFY** — one disagreeing
+  artifact does not resolve a value borrowed from a documentary source. If a
+  caliper check of a real LabRax part contradicts the 0.79 figure in the future,
+  revise independently of rack19 per the existing `//VERIFY` tag.
 
 ## Summary table for Task 2+
 

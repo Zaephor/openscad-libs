@@ -33,8 +33,23 @@ function _underside_max_hang() =
 // with underside_clearance to spare — keeps the flat, stackable underside
 // (no floor recesses).
 standoff_h = _underside_max_hang() + underside_clearance;
-stack_gap    = 0.45;  // 1U device-height gap below pitch (rack lib has no
-                      // device-height fn — see spec "Library gap noted")
+// stack_gap: 1U device-height relief below the 44.45mm pitch.
+// DELIBERATE DEVIATION from rack10_stack_gap() (0.79) — do NOT "fix" this to
+// consume the lib accessor; it breaks the fan. 0.45 is the MAXIMUM gap that
+// still fits a 40mm fan in 1U at floor_th + lid_th = 4.0:
+//     rack10_u() - floor_th - lid_th - fan_size = 44.45 - 2 - 2 - 40 = 0.45
+// Adopting 0.79 leaves int_h() = 39.66 and trips the fan-fit assert below by
+// 0.34mm. That assert (`fan_size <= int_h()`) is already the guard — any
+// change to fan_size, floor_th, or lid_th that breaks this budget fails there,
+// so no second assert is added here.
+// Kept as a literal, deliberately NOT derived from the fan budget: a stacking
+// gap is a property of the rack, not of whichever fan this chassis uses, and a
+// larger fan_size must fail loudly at that assert rather than silently eat
+// rack clearance.
+// Direction of risk: a smaller gap makes the device TALLER, so this is the
+// more binding-prone side of the EIA-310 figure, not the safer side. Accepted:
+// it is still a real gap, and the one inspectable 10in generator applies none.
+stack_gap    = 0.45;
 wall_gap     = 0.25;  // lid-to-wall running clearance per side
 // Heat-set insert sizes (generic brand — see #6 spec, RESEARCH.md). Bores +
 // boss OD derive from the heatset lib; no local insert-dim literals.
