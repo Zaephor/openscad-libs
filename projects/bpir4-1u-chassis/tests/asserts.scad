@@ -282,4 +282,12 @@ for (h = sbc_holes_xy(BOARD, "structural-mount"))
                 h[0], ",", h[1], "] — installed module would collide"));
     }
 
+// #70: the rear outer corner chamfer must not thin the corner below the wall
+// thickness. A chamfer leg c leaves (2*wall - c)/sqrt(2) of material along the
+// corner diagonal, so c <= wall*(2 - sqrt(2)) = 1.406mm at wall = 2.4.
+// design-for-print house-rules: never break an edge if it undersizes a wall.
+assert(_tray_rear_corner_chamfer() <= wall*(2 - sqrt(2)) + 1e-9,
+    str("bpir4: rear corner chamfer ", _tray_rear_corner_chamfer(),
+        " exceeds the wall-thickness limit ", wall*(2 - sqrt(2))));
+
 // Render nothing (pure assert file).

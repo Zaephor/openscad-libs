@@ -26,6 +26,14 @@ honeycomb pattern over the board's hot zone (`lid_vents`, on by default),
 also support-free. Rack ears default to slotted mounting holes
 (`ear_hole_type`), with round options available.
 
+**Chamfered corners (#70):** the faceplate blank's front-elevation
+silhouette imports `rack10_panel_profile()` from the `rack10` library rather
+than hand-rolling a cube, so its four corners get the same 3.0mm 45-degree
+chamfer as the other rack10 faceplates (keystone-faceplate, mitx-1u). The
+tray's two rear outer vertical corners get their own, smaller 1.2mm 45-degree
+chamfer — see `PRINTING.md` for the wall-thickness reasoning and the accepted
+lid-lip trade-off at those two corners.
+
 All hardware dimensions are pulled live from the repo libraries (`sbc`,
 `rack10`, `fans`).
 

@@ -17,6 +17,18 @@ use <fans/fans.scad>;
 use <heatset/heatset.scad>;
 use <honeycomb/honeycomb.scad>;
 
+// Rear outer vertical corner chamfers. 1.2mm, NOT the faceplate's 3.0mm: the
+// limit here is wall*(2 - sqrt(2)) = 1.406mm, above which the material left
+// along the corner diagonal drops under the 2.4mm wall thickness (at 1.2 the
+// diagonal keeps 2.546mm; at 3.0 only 1.273mm). Same leg as the lid posts'
+// own chamfer, so this project carries one chamfer number for its own geometry.
+// KNOWN AND ACCEPTED: above z = ext_h() - lid_th the corner is the wall/2 lid
+// lip, so the chamfer tapers that lip to nothing across its last 1.2mm at each
+// rear corner. The lid shelf is inboard and untouched -- the lid still seats;
+// it loses lip retention across ~1.2mm at two corners. A 2.0mm radius would
+// have cost 2mm of lip instead. Not a defect to "fix" later.
+function _tray_rear_corner_chamfer() = 1.2;
+
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
 module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
@@ -41,6 +53,19 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
             cube([body_w() - wall, dd - lip + 1, lid_th + 1]);
         // Rear-wall fan bores or passive vents.
         _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
+        // Rear outer vertical corner chamfers (see _tray_rear_corner_chamfer()
+        // above), full exterior height so the cut is a constant XY
+        // cross-section extruded straight up -- vertical-axis only, no
+        // overhang, trivially support-free. Each triangle's right-angle
+        // vertex sits exactly at the corner point (+/-body_w()/2,
+        // rear_wall_y(ee)); the two other legs run INTO the material
+        // (-X,-Y for the +X corner; +X,-Y for the -X corner).
+        c = _tray_rear_corner_chamfer();
+        ry = rear_wall_y(enable_exhaust);
+        for (sx = [-1, 1])
+            translate([sx*body_w()/2, ry, -1])
+                linear_extrude(height = ext_h() + 2)
+                    polygon([[0, 0], [-sx*c, 0], [0, -c]]);
     }
 }
 
@@ -168,9 +193,16 @@ module _io_gap_wall(name_l, name_r, w) {
 module _faceplate(ear_hole_type = ear_hole_type) {
     union() {
         difference() {
-            // Panel blank (own height = ext_h(); width from the library).
-            translate([-panel_w()/2, -faceplate_th, 0])
-                cube([panel_w(), faceplate_th, ext_h()]);
+            // Panel blank: the rack10 library's chamfered front-elevation
+            // silhouette (rack10_panel_profile), extruded to faceplate_th.
+            // Sized to this chassis's OWN ext_h(), not rack10_device_height(1)
+            // -- bpir4 carries a local stack_gap, and reconciling that is a
+            // separate change; this call must not move the chassis height.
+            // Importing the silhouette (rather than re-typing the chamfer)
+            // keeps the corner in one place: rack10_panel_corner_chamfer().
+            rotate([90, 0, 0])
+                linear_extrude(faceplate_th)
+                    rack10_panel_profile(panel_w(), ext_h());
             // Rack mounting holes on the ears: slot (default) for post-spacing
             // tolerance, or a round type. Width from the 10-32 screw clearance.
             // "round" has no library-resolved clearance (unlike "m6"/"10-32",
