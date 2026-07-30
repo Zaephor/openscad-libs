@@ -349,6 +349,13 @@ function _sbc_table() = [
           // ambiguous-axis caliper figure (SSOT: use the accessor, don't invent a
           // rotated literal to force-fit one axis).
           ["microsd_1", [81.8, 100.5-14.5, 1.4], connector_size("microsd"), "ymax"], // [B] caliper x; body from connectors microsd (see axis note above)
+          // Inserted-card keep-out (#76). Y is the measured axis: the card tip
+          // stands 2.3mm proud of the board's rear edge [B] (caliper), so the
+          // start is 100.5 + 2.3 - 15.0. Body from connectors microsd_card
+          // (SSOT). X and Z are INFERRED, not measured -- X assumes the card
+          // centres in the socket's 16.44mm width, Z tracks the socket datum;
+          // no consumer reads either (only Y drives rear clearance).
+          ["microsd_1_card", [84.52, 100.5+2.3-15.0, 1.4], connector_size("microsd_card"), "ymax"],
           // 7x status LEDs, no connector type fits a point indicator LED (why-
           // comment per SSOT: connectors.scad's catalog is panel/socket bodies,
           // not indicator lights) — board-literal, tier [C]//VERIFY for d/h (only

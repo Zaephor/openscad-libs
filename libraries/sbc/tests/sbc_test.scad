@@ -40,7 +40,11 @@ _lateral_edges = ["xmin", "xmax", "ymin", "ymax"];
 // bpir4 dip_1 (Task 2): caliper-confirmed to physically overhang the board's
 // xmax edge by 2mm ("+2mm overhang off x=148") — a real, deliberately-modeled
 // exception to the generic within-envelope check below, not a data bug.
-_overhang_exceptions = [["bpir4", "dip_1"]];
+// bpir4 microsd_1_card (#76): an INSERTED card stands 2.3mm proud of the
+// board's ymax edge [B] (caliper) -- a deliberate keep-out that models real
+// installed hardware, not a data bug. This is the first LATERAL overhang row,
+// which is why the touch check above grew its `ex` branch.
+_overhang_exceptions = [["bpir4", "dip_1"], ["bpir4", "microsd_1_card"]];
 function _is_overhang_exception(b, name) =
     len([for (x = _overhang_exceptions) if (x[0] == b && x[1] == name) x]) > 0;
 module _check_connectors(b) {
@@ -48,15 +52,18 @@ module _check_connectors(b) {
     for (c = sbc_connectors(b)) {
         p = c[1]; s = c[2]; e = c[3];
         is_lateral = len([for (le = _lateral_edges) if (le == e) 1]) > 0;
+        ex = _is_overhang_exception(b, c[0]);
         if (is_lateral) {
-            touch = e == "xmax" ? _near(p[0] + s[0], sz[0])
-                  : e == "xmin" ? _near(p[0], 0)
-                  : e == "ymax" ? _near(p[1] + s[1], sz[1])
-                  : e == "ymin" ? _near(p[1], 0)
+            // Exception rows may protrude PAST their edge (an inserted card
+            // stands proud of the board); everything else must end on it.
+            touch = e == "xmax" ? (ex ? p[0] + s[0] >= sz[0] - 0.6 : _near(p[0] + s[0], sz[0]))
+                  : e == "xmin" ? (ex ? p[0]        <= 0.6         : _near(p[0], 0))
+                  : e == "ymax" ? (ex ? p[1] + s[1] >= sz[1] - 0.6 : _near(p[1] + s[1], sz[1]))
+                  : e == "ymin" ? (ex ? p[1]        <= 0.6         : _near(p[1], 0))
                   : false;
-            assert(touch, str(b, " connector ", c[0], " must touch edge ", e));
+            assert(touch, str(b, " connector ", c[0], " must reach edge ", e));
         }
-        if (!_is_overhang_exception(b, c[0]))
+        if (!ex)
             assert(p[0] >= -0.6 && p[0] + s[0] <= sz[0] + 0.6 &&
                    p[1] >= -0.6 && p[1] + s[1] <= sz[1] + 0.6,
                    str(b, " connector ", c[0], " within envelope"));
@@ -116,6 +123,17 @@ assert(sbc_connector("bpir4", "microsd_1")[2] == connector_size("microsd"),
     "bpir4 microsd_1 body sourced from connectors microsd");
 assert(sbc_connector("bpir4", "m2modem_1")[2] == _rot90(connector_size("m2_key_b")),
     "bpir4 m2modem_1 socket body yaw-rotated (round-3 #65)");
+
+// #76: inserted-microSD keep-out. The card stands proud of the board's rear
+// edge, so this row deliberately overhangs -- see _overhang_exceptions.
+_sd_card = [for (c = sbc_connectors("bpir4")) if (c[0] == "microsd_1_card") c][0];
+assert(!is_undef(_sd_card), "bpir4 has microsd_1_card");
+assert(_sd_card[3] == "ymax", "microsd_1_card is a ymax row");
+// Body is SSOT'd to the connectors type, not retyped here.
+assert(_sd_card[2] == connector_size("microsd_card"), "microsd_1_card body from connectors");
+// The load-bearing number: the card tip stands 2.3mm past the rear edge.
+assert(abs((_sd_card[1][1] + _sd_card[2][1]) - (sbc_size("bpir4")[1] + 2.3)) < 1e-9,
+    "microsd_1_card protrudes 2.3mm past the board rear edge");
 
 // --- Task 5: module/card keep-out envelopes (bottom sockets + m2modem_1) ---
 for (n = ["m2modem_1_card", "mpcie_1_card", "mpcie_2_card", "m2_ssd_1_card"])
