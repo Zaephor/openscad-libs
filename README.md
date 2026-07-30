@@ -51,6 +51,7 @@ use <fans/fans.scad>;
 - [keystone-blank](projects/keystone-blank) — printable caliper-faithful keystone blank insert.
 - [keystone-faceplate](projects/keystone-faceplate) — parametric 1U 10-inch N-port keystone faceplate.
 - [mitx-1u-chassis](projects/mitx-1u-chassis) — 1U 10" rack chassis for a mini-ITX board (front IO, #40 rear mate)
+- [rack10-device-tray](projects/rack10-device-tray) — parametric 1U 10" cradle tray for rigid-box devices (GS308/GS308T/RLA-PS1), #40 rear mate
 - [two-piece-box](projects/two-piece-box) — multipart box with exploded view.
 
 ## License
