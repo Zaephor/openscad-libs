@@ -60,6 +60,7 @@ function _connector_table() = [
     ["m2_modem_card", [30, 52, 3.8],    "+Z"], // footprint [A] M.2 max module envelope for the 2242/3042/3052 length family (governing industry form-factor spec); h=3.8 [B]/[C] //VERIFY double-sided-populated worst-case estimate, not a cited PCI-SIG height-code (S1-S3/D1-D5) table value
     ["m2_2280_card",  [22, 80, 3.8],    "+Z"], // footprint [A] M.2 2280 industry-standard card form factor; h=3.8 [B]/[C] //VERIFY double-sided-populated worst-case estimate, not a cited PCI-SIG height-code table value
     ["mpcie_card",    [30, 50.95, 5],   "+Z"], // footprint [A] full-size Mini Card industry-standard form factor (30x50.95mm); h=5 [B]/[C] //VERIFY RF-can-populated estimate ("~4-5mm tall w/ RF cans"), not a hard spec
+    ["microsd_card",  [11.0, 15.0, 1.00], "+Y"],  // [A] SD Association microSD physical form factor (15.0 x 11.0 x 1.0mm). "+Y" (not "+Z" like the cards above): microSD slides in horizontally alongside its own connector's axis, it does not seat vertically into an edge connector.
 ];
 function connector_known_types() = [for (e = _connector_table()) e[0]];
 function _connector_row(type) =

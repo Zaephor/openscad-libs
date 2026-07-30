@@ -102,7 +102,7 @@ Valid `type` keys (`connector_known_types()`): `usb_a`, `usb_a_stack2`,
 `usb_a_stack2_shielded`, `usb_c`, `micro_usb`, `rj45`, `rj45_stack2`,
 `rj45_shallow`, `hdmi`, `mini_hdmi`, `micro_hdmi`, `pcie_x1`, `pcie_x4`,
 `pcie_x8`, `pcie_x16`, `gpio_2x20`, `sfp`, `microsd`, `sim_2ff`, `m2_key_b`,
-`m2_key_m`, `mpcie`.
+`m2_key_m`, `mpcie`, `m2_modem_card`, `m2_2280_card`, `mpcie_card`, `microsd_card`.
 
 ## Sources
 
@@ -132,6 +132,7 @@ pending stronger corroboration.
 | TE Connectivity `2199119-5` "M.2 NGFF... B Keying Code... 67 Position" product page | A | `m2_key_b` |
 | TE Connectivity `2199119` series, Key M variant (`1-2199119-5`, same-series cross-reference) | B | `m2_key_m` |
 | "0.80mm Pitch Mini PCI Express H=5.2mm Connector" customer drawing (DWG S650S5281XXXXM431XX) | A | `mpcie` (X-axis cross-checked against the industry-standard Mini Card 30x50.95mm form factor, also A) |
+| [SD Association microSD Physical Form Factor](https://www.sdcard.org/) | A | `microsd_card` (15.0 x 11.0 x 1.0mm form factor; inserted-card envelope, not the socket body) |
 
 `sbc.scad` and `motherboards.scad` rows (`hdmi`, `usb_c`/`usbc_pwr`,
 `gpio`, `rj45*`, `mobo_pcie_ports()`) were read as **read-only
