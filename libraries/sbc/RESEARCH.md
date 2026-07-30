@@ -1633,6 +1633,37 @@ which this same caliper pass triggered for these two rows plus `usb_1`).
 Every other row above is a `[B]` caliper replacement of a prior `[B]`
 caliper figure — value change, no tier change.
 
+### BPI-R4 #76: inserted microSD card keep-out (`microsd_1_card`)
+
+`microsd_1` (above) models the empty **socket** — it does not capture that,
+with a card physically inserted, the card's own body stands proud of the
+board's rear (`ymax`) edge. A caliper measurement (2026-07-29, physical
+board with a card inserted) found the card tip protrudes **2.3mm** past the
+board's 100.5mm rear edge — `[B]` (caliper). Nothing in the prior data
+captured this, so a consumer sizing chassis rear clearance from `sbc` alone
+had no way to know the card was there.
+
+Added `microsd_1_card` (`ymax`) as a keep-out row alongside the existing
+inserted-media keep-out cards (`m2modem_1_card`, `mpcie_1_card`,
+`mpcie_2_card`, `m2_ssd_1_card`). Its body is sourced from
+`connector_size("microsd_card")` (Task 1 of this plan, `[A]` SD Association
+microSD form factor `[11.0, 15.0, 1.0]`) rather than retyped, per SSOT. Y is
+the measured axis: the row starts at `100.5 + 2.3 - 15.0`, so its far edge
+lands at `100.5 + 2.3`, matching the caliper reading exactly. X and Z are
+**inferred, not measured** — X assumes the card centres in the socket's
+16.44mm width (`connector_size("microsd")`'s width field), Z tracks the
+socket's own Z datum — and are labelled `//VERIFY`-adjacent as inferred in
+the row comment; no consumer reads either field, only Y drives rear
+clearance.
+
+This is the board's (and the library's) **first laterally-overhanging**
+keep-out row — every prior overhang exception (`dip_1`) is an `edge="top"`
+row, which never exercises the lateral "must touch its edge" check in
+`sbc_test.scad`. That check is generalised from "ends exactly at the edge"
+to "reaches at least the edge" for rows in `_overhang_exceptions`; every
+other row keeps the strict form, and the full `sbc_known_boards()` sweep
+confirms no other board's connectors moved.
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps

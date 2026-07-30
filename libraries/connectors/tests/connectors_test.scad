@@ -11,7 +11,7 @@ assert(connector_known_types() == [
     /* SP1 additions: */ "usb_a_stack2_shielded", "rj45_shallow",
     /* SFP type (#14): */ "sfp",
     /* Task 1 additions: */ "microsd", "sim_2ff", "m2_key_b", "m2_key_m", "mpcie",
-    /* card/module keep-out envelopes: */ "m2_modem_card", "m2_2280_card", "mpcie_card"],
+    /* card/module keep-out envelopes: */ "m2_modem_card", "m2_2280_card", "mpcie_card", "microsd_card"],
     "type list");
 
 // opening axes (fixed design decision)
@@ -49,6 +49,13 @@ assert(connector_opening("mpcie")    == "+Z", "mpcie opening");
 assert(connector_size("m2_modem_card") == [30, 52, 3.8],    "m2_modem_card body"); // [A] M.2 2242/3042/3052 max module envelope
 assert(connector_size("m2_2280_card")  == [22, 80, 3.8],    "m2_2280_card body");  // [A] M.2 2280 form factor
 assert(connector_size("mpcie_card")    == [30, 50.95, 5],   "mpcie_card body");    // footprint [A] Mini Card form factor; h [B]/[C] //VERIFY RF-can estimate
+
+// microSD card envelope: [A] SD Association physical form factor.
+assert(connector_size("microsd_card") == [11.0, 15.0, 1.00], "microsd_card body");
+// Inserts along Y like its own connector, NOT +Z like the M.2/mPCIe cards
+// (those seat vertically into edge connectors; microSD slides horizontally).
+assert(connector_opening("microsd_card") == "+Y", "microsd_card opening");
+
 assert(connector_opening("m2_modem_card") == "+Z", "m2_modem_card opening");
 assert(connector_opening("m2_2280_card")  == "+Z", "m2_2280_card opening");
 assert(connector_opening("mpcie_card")    == "+Z", "mpcie_card opening");

@@ -290,4 +290,13 @@ assert(_tray_rear_corner_chamfer() <= wall*(2 - sqrt(2)) + 1e-9,
     str("bpir4: rear corner chamfer ", _tray_rear_corner_chamfer(),
         " exceeds the wall-thickness limit ", wall*(2 - sqrt(2))));
 
+// #76: rear datums must stay DERIVED. Guards against someone re-literalising
+// them, which is how the microSD collision existed in the first place.
+assert(abs(_rear_media_protrusion() - 2.3) < 1e-9,
+    str("bpir4: rear media protrusion ", _rear_media_protrusion(), " != 2.3 (microsd_1_card)"));
+assert(abs(fan_plenum - (fan_default_thickness(fan_size) + wall + fan_board_gap
+                         + _rear_media_protrusion())) < 1e-9, "bpir4: fan_plenum not derived");
+assert(abs(rear_gap - (wall + rear_clearance + _rear_media_protrusion())) < 1e-9,
+    "bpir4: rear_gap not derived");
+
 // Render nothing (pure assert file).

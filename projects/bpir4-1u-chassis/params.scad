@@ -33,6 +33,15 @@ function _underside_max_hang() =
 // with underside_clearance to spare — keeps the flat, stackable underside
 // (no floor recesses).
 standoff_h = _underside_max_hang() + underside_clearance;
+// Max protrusion of any rear-edge (edge="ymax") item PAST the board's rear
+// edge, 0 if none — read live from the sbc row, never re-literalled here.
+// Mirrors _underside_max_hang() above, which does the same for edge="bottom".
+// Derived rather than hand-set so a future inserted-media keep-out row (the
+// SIM sockets are push-push and currently unmodelled) widens the rear datums
+// on its own instead of silently re-creating a collision.
+function _rear_media_protrusion() =
+    max([0, for (c = sbc_connectors(BOARD)) if (c[3] == "ymax")
+             c[1][1] + c[2][1] - sbc_size(BOARD)[1]]);
 // stack_gap: 1U device-height relief below the 44.45mm pitch.
 // DELIBERATE DEVIATION from rack10_stack_gap() (0.79) — do NOT "fix" this to
 // consume the lib accessor; it breaks the fan. 0.45 is the MAXIMUM gap that
@@ -103,8 +112,13 @@ fan_board_gap = 1.5;   // clearance between interior fan face and board rear edg
 // the wall's interior face) plus fan_board_gap, so the plenum can never
 // under-clear the board regardless of fan_size (see the depth-clearance
 // assert below, which makes any future under-clearance fail loudly).
-fan_plenum = fan_default_thickness(fan_size) + wall + fan_board_gap;
-rear_gap   = 4.0;      // same when fans off
+fan_plenum = fan_default_thickness(fan_size) + wall + fan_board_gap + _rear_media_protrusion();
+// rear_clearance: air gap kept between the rear wall's inner face and whatever
+// stands furthest off the board's rear edge. Was implicit in the old
+// `rear_gap = 4.0` literal (4.0 - 2.4 wall); named here so the passive mode
+// states its clearance as explicitly as the active mode does via fan_board_gap.
+rear_clearance = 1.6;
+rear_gap       = wall + rear_clearance + _rear_media_protrusion();
 lid_vents  = true;
 
 // ---- rack ear hole type: ear_hole_type is likewise declared with its default
