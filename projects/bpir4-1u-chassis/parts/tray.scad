@@ -363,24 +363,28 @@ module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fa
     _lid_posts(enable_exhaust = enable_exhaust);
     // Board standoff posts — only the structural-mount holes (M.2/heatsink/
     // keep-out holes are excluded; see sbc hole roles).
-    translate([board_x(), board_y(), floor_th]) {
-        sbc_standoffs(BOARD, standoff_h, role = "structural-mount",
-            dia = _board_standoff_od(), bore = board_insert_bore());
-        // #75: heat-set lead-in at each post mouth, so an M2.5 insert starts
-        // square instead of cocked. The lib pocket is cut ON TOP of
-        // sbc_standoffs()' existing through-bore rather than replacing it: that
-        // bore already bottoms on the floor at standoff_h (6.2mm), leaving
-        // 0.46mm of relief below the 5.74mm insert — MORE than heatset_pocket()'s
-        // own 0.4mm cavity — so the only geometry this adds is the 0.4mm mouth
-        // chamfer. Layering also keeps the pocket from ever being the deepest
-        // cut, which matters because standoff_h is derived from the board's
-        // underside keep-outs and could shrink below the 6.14mm pocket depth
-        // (guarded in tests/asserts.scad).
-        // Positions come from the same sbc_holes() role filter sbc_standoffs()
-        // is called with, so the pockets cannot drift from their posts.
-        for (h = sbc_holes(BOARD, "structural-mount"))
-            translate([h[0], h[1], standoff_h]) heatset_pocket(board_insert_size);
-    }
+    translate([board_x(), board_y(), floor_th])
+        difference() {
+            sbc_standoffs(BOARD, standoff_h, role = "structural-mount",
+                dia = _board_standoff_od(), bore = board_insert_bore());
+            // #75: heat-set lead-in at each post mouth, so an M2.5 insert starts
+            // square instead of cocked. heatset_pocket() is a NEGATIVE cutter
+            // (union of solid cylinders meant for a consumer difference()), so
+            // it must be subtracted here, not unioned as a bare sibling. The
+            // cut lands ON TOP of sbc_standoffs()' existing through-bore rather
+            // than replacing it: that bore already bottoms on the floor at
+            // standoff_h (6.2mm), leaving 0.46mm of relief below the 5.74mm
+            // insert — MORE than heatset_pocket()'s own 0.4mm cavity — so the
+            // only geometry this actually removes beyond the existing bore is
+            // the 0.4mm mouth chamfer. Layering also keeps the pocket from ever
+            // being the deepest cut, which matters because standoff_h is
+            // derived from the board's underside keep-outs and could shrink
+            // below the 6.14mm pocket depth (guarded in tests/asserts.scad).
+            // Positions come from the same sbc_holes() role filter sbc_standoffs()
+            // is called with, so the pockets cannot drift from their posts.
+            for (h = sbc_holes(BOARD, "structural-mount"))
+                translate([h[0], h[1], standoff_h]) heatset_pocket(board_insert_size);
+        }
 }
 
 tray();
