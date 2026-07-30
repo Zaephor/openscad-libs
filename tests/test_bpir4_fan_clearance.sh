@@ -22,8 +22,13 @@
 # (verified against this repo's OpenSCAD build) a `-D` override on such a
 # global wins over a later plain re-assignment of the SAME name later in the
 # same include chain -- so `-D fan_board_gap=<n>` is a valid, real way to
-# force the pre-fix plenum value here (12.4+(-0.4) = 12.0, exactly the old
-# literal) without editing any file.
+# force the pre-fix plenum value here without editing any file.
+#
+# #76 update: fan_plenum now also adds _rear_media_protrusion() (2.3mm, the
+# inserted microSD's rear overhang), so GAP = fan_board_gap +
+# _rear_media_protrusion() rather than GAP = fan_board_gap alone. Forcing
+# fan_board_gap=-2.7 (was -0.4 pre-#76) reproduces the SAME historical
+# GAP=-0.4mm / fan_plenum=12.0 case: -2.7 + 2.3 = -0.4.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
@@ -61,15 +66,15 @@ else
 fi
 
 # --- (2) RED reproduction + negative test with teeth: force the historical
-# fan_plenum=12.0 value via -D fan_board_gap=-0.4 (12.4 + -0.4 = 12.0, the
-# exact old literal). The new depth-clearance assert must FIRE (render
-# aborts) and its message must name the actual numbers, including the
-# historical -0.4mm gap. ---
-old_out="$("$osc" -D "fan_board_gap=-0.4" --export-format stl -o /dev/null "$probe" 2>&1)"
-echo "RED (forced fan_board_gap=-0.4, i.e. old fan_plenum=12.0):"
+# fan_plenum=12.0 value via -D fan_board_gap=-2.7 (12.4 + -2.7 + 2.3 = 12.0,
+# the exact old literal -- see the #76 `-D` override note above). The new
+# depth-clearance assert must FIRE (render aborts) and its message must name
+# the actual numbers, including the historical -0.4mm gap. ---
+old_out="$("$osc" -D "fan_board_gap=-2.7" --export-format stl -o /dev/null "$probe" 2>&1)"
+echo "RED (forced fan_board_gap=-2.7, i.e. old fan_plenum=12.0):"
 echo "$old_out" | grep -iE 'Assertion .* failed' | sed 's/^/  /'
 if ! echo "$old_out" | grep -qiE 'Assertion .* failed'; then
-  echo "FAIL: forcing the pre-fix plenum (fan_board_gap=-0.4) should ABORT the render on the new depth-clearance assert, but did not:"
+  echo "FAIL: forcing the pre-fix plenum (fan_board_gap=-2.7) should ABORT the render on the new depth-clearance assert, but did not:"
   echo "$old_out"
   fail=1
 elif ! echo "$old_out" | grep -q 'intrudes into the board'; then

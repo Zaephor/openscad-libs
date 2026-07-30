@@ -67,6 +67,24 @@ M.2-2280). No modules are assumed absent; dimensions derive from the
 board's bottom-face data, ensuring flat, stackable underside geometry with
 no floor recesses.
 
+**Rear clearance / inserted microSD (#76):** an inserted microSD card
+stands 2.3mm proud of the board's rear edge — modelled as the sbc library's
+`microsd_1_card` row — and both rear datums derive from it
+(`_rear_media_protrusion()` in `params.scad`) rather than a fixed literal, so
+a future rear-edge keep-out (the SIM sockets are push-push and still
+unmodelled) would widen the datums on its own instead of silently
+re-creating a collision. `fan_plenum` (active mode) and `rear_gap` (passive
+mode) both add the protrusion on top of their existing clearance —
+`fan_board_gap` (1.5mm) and `rear_clearance` (1.6mm) respectively — so
+clearance stays strictly greater than the obstruction rather than being
+replaced by it. Overall chassis depth is 119.7mm active / 109.8mm passive
+(both grew by the same 2.3mm).
+
+The card is **install-once by design**: it is seated once at assembly, and
+changing it afterward means removing the lid and unbolting one fan. This is
+a deliberate trade-off, not a limitation to be fixed later — there is no
+rear access slot, and none is planned.
+
 ## Assembly reference
 
 `assembly.scad` has a `show_rack` toggle (`/* [Show] */` group) that renders
