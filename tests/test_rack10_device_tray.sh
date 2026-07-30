@@ -225,11 +225,20 @@ fi
 # Positive control (T4): GS308T preset (device_size=[158,101,30],
 # secure_holes=[]) -- a RESEARCHED NEGATIVE, not a placeholder (see
 # README.md's Presets section) -- must render clean and stamp 0
-# countersunk holes. device_size[1]/[2] (depth/height) don't affect any
-# drawn geometry (floor/walls run to _reach() regardless of device depth;
+# countersunk holes. device_size[1] (depth) doesn't affect any drawn
+# geometry (floor/walls run to _reach() regardless of device depth).
+# device_size[2] (height, 30 here vs. the default's 26) DOES change the
+# drawn geometry: with port_cutout=[0,0] (both fixtures), _port_h() falls
+# back to _dh() (rack10-device-tray.scad's device height), so the two
+# renders being diffed cut differently-sized port openings. That's fine
+# for this comparison because both are simple rectangular-prism
+# subtractions, and a rectangular cutout's facet COUNT is invariant to its
+# size (still 8 triangles either way) -- so the facet-count match below
+# still isolates "0 countersunk holes" and isn't defeated by the height
+# difference. It would NOT be safe to assume device_size height changes
+# are facet-count-invisible in general (e.g. a non-rectangular cutout).
 # retention_height, not device height, sets wall height; the device
-# fit-viz box is preview-only, excluded from export), so its facet count
-# must match the no_secure_holes.scad baseline exactly.
+# fit-viz box is preview-only, excluded from export.
 out_gs308t="$(run "$tmp/gs308t.stl" "$proj/tests/gs308t.scad")"
 if echo "$out_gs308t" | grep -qiE 'ERROR:|Assertion .* failed|Ignoring unknown|Can.t open library'; then
   echo "FAIL: tests/gs308t.scad errored:"; echo "$out_gs308t"; fail=1

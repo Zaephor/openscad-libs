@@ -43,9 +43,9 @@ tier only, per this repo's provenance rule — no fetch/tooling narrative).
   this preset, don't "fix" the empty list thinking it's an oversight.
 - **RLA-PS1:** the official datasheet publishes the envelope only, with no
   mounting-hole drawing. Reolink ships a paper mounting template in the
-  box, but its hole positions weren't reachable from any online source
-  checked; one independent community rack-mount design confirms underside
-  screw slots exist but publishes no numbers. `secure_holes` is a
+  box, but no dimensions are published for it; one independent community
+  rack-mount design confirms underside screw slots exist but publishes no
+  numbers. `secure_holes` is a
   `//VERIFY` placeholder pending a caliper pass or the physical template.
 
 **Before printing a secure-hole cutout for any preset, caliper the physical
