@@ -14,6 +14,19 @@
   and hot-zone vent band (same honeycomb hex pattern as the faceplate,
   toggled via `lid_vents`) are all cut straight through the lid's short
   vertical (thickness) axis.
+- Chamfered corners (#70), both support-free: the faceplate blank's silhouette
+  corners (imported from `rack10_panel_profile()`) are a constant 45 degrees
+  at every corner, same reasoning as every other rack10 faceplate. The tray's
+  two rear outer vertical corners are chamfered at 1.2mm (not the faceplate's
+  3.0mm — the limit here is `wall*(2 - sqrt(2))` = 1.406mm, above which the
+  material left along the corner diagonal drops under the 2.4mm wall
+  thickness), cut as a constant-cross-section vertical extrusion (no taper
+  along Z), so it prints clean without support like the lid posts' own
+  chamfer. Known and accepted consequence: above the lid ledge that corner is
+  the wall/2 lid lip, so the chamfer tapers the lip to nothing across its
+  last 1.2mm at each rear corner — the lid shelf is inboard and untouched, so
+  the lid still seats; it just loses lip retention across ~1.2mm at those two
+  corners.
 - Heat-set inserts: M2.5 in the board standoffs (installed top-down), M3 in the
   lid posts. Install with a soldering iron before assembly.
 - Fasteners: M2.5 × 6 mm (board), M3 × 8 mm countersunk (lid), M3 (fans).
