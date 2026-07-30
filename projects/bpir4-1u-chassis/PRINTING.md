@@ -28,7 +28,12 @@
   the lid still seats; it just loses lip retention across ~1.2mm at those two
   corners.
 - Heat-set inserts: M2.5 in the board standoffs (installed top-down), M3 in the
-  lid posts. Install with a soldering iron before assembly.
+  lid posts. Install with a soldering iron before assembly. Both the board
+  standoffs and the lid posts present a heat-set lead-in chamfer at the mouth
+  (`heatset_pocket()`, #75), so an insert starts square instead of cocked. The
+  board standoffs' bore already ran fully through the post and bottomed on the
+  floor before this change, so relief below the insert's seat was already
+  present -- #75 added only the lead-in, not new relief.
 - Fasteners: M2.5 × 6 mm (board), M3 × 8 mm countersunk (lid), M3 (fans).
 - Fan mode: set `enable_exhaust=false` (via the OpenSCAD Customizer's
   `[Cooling]` group, or `-D enable_exhaust=false` on the command line, or

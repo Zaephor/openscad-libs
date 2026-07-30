@@ -299,4 +299,15 @@ assert(abs(fan_plenum - (fan_default_thickness(fan_size) + wall + fan_board_gap
 assert(abs(rear_gap - (wall + rear_clearance + _rear_media_protrusion())) < 1e-9,
     "bpir4: rear_gap not derived");
 
+// #75: the heat-set pocket must fit inside the standoff post. standoff_h is
+// DERIVED from the board's underside keep-out rows, so a future re-caliper that
+// lowers it must trip here rather than silently cutting a pocket deeper than
+// the post that holds it. Current margin is only 0.06mm, which is why this
+// assert exists at all.
+assert(heatset_insert_length(board_insert_size) + heatset_lead_in(board_insert_size)
+       <= standoff_h + 1e-9,
+    str("bpir4: ", board_insert_size, " pocket depth ",
+        heatset_insert_length(board_insert_size) + heatset_lead_in(board_insert_size),
+        " exceeds standoff_h ", standoff_h));
+
 // Render nothing (pure assert file).
