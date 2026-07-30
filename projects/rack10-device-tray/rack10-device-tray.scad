@@ -9,14 +9,16 @@
 // device bottom — shape only, NOT sourced positions/diameter; dia is an
 // M3 screw-CLEARANCE figure, not a measured device hole).
 //
-// This file (Tasks 1-2 of a 4-task plan): scaffold, params, fit-asserts,
+// This file (Tasks 1-3 of a 4-task plan): scaffold, params, fit-asserts,
 // cradle floor + side/rear walls (T1), front rack faceplate (#70
 // rack10_panel() chamfered silhouette) with ear mounting holes + port
-// cutout, and countersunk bottom secure-hole cutters (T2). Honeycomb
-// vents + rear #40 tongue (Task 3), and docs/render (Task 4) land in
-// later commits. See projects/drive-tray/drive-tray.scad for the closest
-// shipped peer this design follows (_reach() placement idiom, honeycomb
-// floor vents, #40 tongue anchoring, the vent-vs-mount-hole clash lesson).
+// cutout, and countersunk bottom secure-hole cutters (T2), a single square
+// honeycomb floor vent field and the rear #40 rack_support_tongue() mate
+// (T3). Docs/render (Task 4) lands in a later commit. See
+// projects/drive-tray/drive-tray.scad for the closest shipped peer this
+// design follows (_reach() placement idiom, honeycomb floor vents, #40
+// tongue anchoring, the vent-vs-mount-hole clash lesson, and the
+// full-height-rear-wall-as-tongue-anchor pattern this file also uses).
 use <rack10/rack10.scad>;
 use <rack-support/rack-support.scad>;
 use <honeycomb/honeycomb.scad>;
@@ -40,7 +42,15 @@ port_cutout  = [0, 0];            // [w,h]; [0,0] => full device face minus fram
 /* [Print] */
 wall = 2.4; floor_th = 3.0; faceplate_th = 3.0; fit_clearance = 0.5;
 retention_height = 20; csk_dia = 8;
-cell = 8.0; hc_wall = 1.2;   // T3 honeycomb params
+
+/* [Vent] */
+cell = 8.0; hc_wall = 1.2;
+// Clearance from both secure_holes (their csk_dia clearance) and the
+// interior side/rear walls kept around the single floor honeycomb field
+// below -- same vent_inset lesson drive-tray.scad's own header comment
+// documents (a smaller inset there measurably overlapped a bottom mount
+// hole by ~2mm). See _vent_y0()/_vent_x_half() below for how it's applied.
+vent_inset = 10;
 
 function _dw() = device_size[0];
 function _dd() = device_size[1];
@@ -122,6 +132,30 @@ assert(_port_w()/2 <= _panel_max_x(floor_th) + 1e-6
         " clips the #70 chamfered panel corner (max half-width ",
         min(_panel_max_x(floor_th), _panel_max_x(floor_th + _port_h())), ")"));
 
+// Honeycomb floor vent field (T3): a single SQUARE hex-cell region cut
+// straight through the floor, inset clear of both the countersunk
+// secure_holes and the interior side/rear walls by vent_inset. secure_holes
+// (this file's presets) all sit at the SAME mid-device Y, so rather than
+// splitting the field around them (which the brief's "a square honeycomb
+// field" -- singular -- argues against), it's placed entirely BEHIND them,
+// toward the rear wall: the floor already runs to _reach() regardless of
+// device depth (see _reach()'s own comment), so there is ample open room
+// back there even for a shallow device like the GS308 default. Y0 falls
+// back to a flat vent_inset front margin when secure_holes is empty (the
+// GS308T scenario).
+function _vent_y0() = (len(secure_holes) > 0)
+    ? max([for (h = secure_holes) h[1] + csk_dia/2]) + vent_inset
+    : vent_inset;
+function _vent_y1() = _reach() - wall - vent_inset;
+function _vent_x_half() = _cradle_w()/2 - vent_inset;
+function _vent_side() = min(2 * _vent_x_half(), _vent_y1() - _vent_y0());
+
+assert(_vent_side() > 2*cell,
+    str("rack10-device-tray: honeycomb vent field side ", _vent_side(),
+        "mm too small to fit even one cell (cell=", cell,
+        "mm) after clearing secure_holes/walls by vent_inset=", vent_inset,
+        "mm -- widen the device/floor or shrink vent_inset/cell"));
+
 // Front rack faceplate: rack10_panel() (#70 chamfered silhouette, front
 // face Y=0 growing -Y -- matches this file's own Y=0 tray-floor/faceplate
 // frame, see header) with ear mounting holes and a port opening framing
@@ -162,6 +196,31 @@ module rack10_device_tray() {
             // Front rack faceplate (ear holes + port cutout already cut
             // internally, see _dt_faceplate()).
             _dt_faceplate();
+
+            // Rear #40 support tongue (T3): root at _reach(), tip lands at
+            // rack10_rear_post_y(standard) -- rack-support's own consumer-
+            // contract placement formula (see _reach()'s comment above).
+            // The rear wall built above already spans Z in [0,
+            // retention_height] (20 > the tongue's Z-band [
+            // rack_support_floor_thickness(), +rack_support_rail_size()[1]]
+            // = [2,12]) at this SAME X/Y footprint, so it backs the tongue's
+            // ENTIRE root cross-section with solid material on every printed
+            // layer -- the same "full-height wall as in-layer anchor" role
+            // drive-tray.scad's own rear wall plays for its tongue, which
+            // rack-support/README.md's Consumer contract explicitly
+            // recognises as an alternative to a separate 45deg root gusset
+            // ("What this buys is an in-layer anchor for the tongue's first
+            // printed layer, the same role drive-tray's full-height rear
+            // wall plays for its tongue"). No extra gusset is added here.
+            // Nothing in this tray's body reaches past _reach() (the
+            // tongue's own engagement span, Y in [_reach(),
+            // rack10_rear_post_y(standard)], is left unfilled -- that
+            // volume belongs to rack_support_plate()'s own bearing floor),
+            // so rack_support_plate_keepout() is not needed either -- the
+            // README's "preferred simpler route". Verified with a 0mm^3
+            // intersection() probe against rack_support_plate() at the rear
+            // post plane -- see tests/test_rack10_device_tray.sh.
+            translate([0, _reach(), 0]) rack_support_tongue();
         }
 
         // Countersunk bottom secure-hole cutters: a through-hole (screw
@@ -175,6 +234,16 @@ module rack10_device_tray() {
                 translate([0, 0, -1]) cylinder(h = floor_th + 2, d = h[2], $fn = 32);   // through-hole
                 cylinder(h = (csk_dia - h[2]) / 2 + 0.01, d1 = csk_dia, d2 = h[2], $fn = 32); // countersink, opens down at z=0
             }
+
+        // Honeycomb floor vent (T3): straight through Z (flat floor, no
+        // bridge orientation change needed -- honeycomb_vent()'s own
+        // self-support design handles the hex-cell ceilings, same "cuts
+        // straight down through the flat floor" idiom drive-tray.scad and
+        // fan-grille.scad both use). depth = floor_th + 2 / Z=-1 start
+        // mirrors the same 1mm-margin oversize-cut convention the
+        // secure-hole cutters above use.
+        translate([-_vent_side()/2, _vent_y0(), -1])
+            honeycomb_vent(_vent_side(), _vent_side(), floor_th + 2, cell, hc_wall);
     }
 
     // Device fit-visualisation box, preview-only (% excludes from export).
