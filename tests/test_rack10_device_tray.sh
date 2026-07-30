@@ -222,6 +222,27 @@ elif [ "$f_default" -le "$f_noholes" ]; then
   fail=1
 fi
 
+# Positive control (T4): GS308T preset (device_size=[158,101,30],
+# secure_holes=[]) -- a RESEARCHED NEGATIVE, not a placeholder (see
+# README.md's Presets section) -- must render clean and stamp 0
+# countersunk holes. device_size[1]/[2] (depth/height) don't affect any
+# drawn geometry (floor/walls run to _reach() regardless of device depth;
+# retention_height, not device height, sets wall height; the device
+# fit-viz box is preview-only, excluded from export), so its facet count
+# must match the no_secure_holes.scad baseline exactly.
+out_gs308t="$(run "$tmp/gs308t.stl" "$proj/tests/gs308t.scad")"
+if echo "$out_gs308t" | grep -qiE 'ERROR:|Assertion .* failed|Ignoring unknown|Can.t open library'; then
+  echo "FAIL: tests/gs308t.scad errored:"; echo "$out_gs308t"; fail=1
+fi
+[ -s "$tmp/gs308t.stl" ] || { echo "FAIL: tests/gs308t.scad render produced no/empty STL"; fail=1; }
+f_gs308t="$(facets "$out_gs308t")"
+if [ -z "$f_gs308t" ]; then
+  echo "FAIL: could not read CGAL Facets: count from gs308t render"; fail=1
+elif [ "$f_gs308t" != "$f_noholes" ]; then
+  echo "FAIL: gs308t render facets ($f_gs308t) != secure_holes=[] baseline facets ($f_noholes) -- expected 0 countersunk holes"
+  fail=1
+fi
+
 # Negative control (T2): tests/asserts_port.scad overrides port_cutout so
 # its top edge lands in the #70 panel's top chamfer band and clips the
 # corner -- MUST abort the port-in-panel fit-assert.
