@@ -44,12 +44,20 @@ function heatset_lead_in(s)       = _heatset_row(s)[5];
    manufacturer crack-risk floor, distinct from the SPIROL-derived optimum
    boss_od already in the table; prefer heatset_boss(size, wall=heatset_min_wall(size))
    over the 2.5x boss_od default when packing bosses tightly.
-   M2.5/M3 = 1.6 [A]/[B] (CNC Kitchen W=1.6 + ruthex W(min.)=1.6 agree; see
-   RESEARCH.md "Cross-brand M2.5/M3 (Task #6)"). Other sizes have no researched
-   min-wall figure yet — assert rather than invent one. */
+   SPARSE BY DESIGN: only sizes with a researched figure appear. A size absent
+   from this table asserts rather than returning an invented number — M4/M5/M6
+   have no consumer and no researched figure, and tests/test_heatset_lib.sh uses
+   M4 as its negative control for exactly that behaviour.
+   Row: [size, min_wall] mm. */
+function _heatset_min_wall_table() = [
+    ["M2",   1.6], // [A] PEM microPEM MSIA/MSIB SI-9 "Min. Wall Thickness" row for M2 — but that family's insert body (3.2mm OD / 2.85mm hole) differs from the IUTA/IUTB/IUTC family backing this table's other M2 columns (3.73mm OD / 3.23mm hole); cross-family/hole-size transfer is an open, explicitly recorded gap, not confirmed — ships as the more conservative of two disagreeing manufacturer figures (PEM 1.6 vs. ruthex 1.3); see RESEARCH.md "M2 min-wall (#77)"
+    ["M2.5", 1.6], // [A]/[B] CNC Kitchen W=1.6 + ruthex W(min.)=1.6 agree; see RESEARCH.md "Cross-brand M2.5/M3 (Task #6)"
+    ["M3",   1.6], // [A]/[B] CNC Kitchen W=1.6 + ruthex W(min.)=1.6 agree; see RESEARCH.md "Cross-brand M2.5/M3 (Task #6)"
+];
 function heatset_min_wall(s) =
-    s == "M2.5" || s == "M3" ? 1.6
-    : assert(false, str("heatset: min_wall not yet researched for '", s, "'"));
+    let (r = [for (e = _heatset_min_wall_table()) if (e[0] == s) e])
+    assert(len(r) == 1, str("heatset: min_wall not yet researched for '", s, "'"))
+    r[0][1];
 
 /* [Placeholder] — insert envelope: top (install) face at Z=0, body grows -Z.
    Knurl approximated as a plain cylinder at nominal OD. For fit/viz only. */
@@ -86,7 +94,10 @@ module heatset_pocket(size, melt_relief = true) {
    effective wall thickness around the insert is actually
    `wall - (insert_od - pilot_dia)/2`, i.e. less than requested. At very
    small `wall` values this can size the boss narrower than the insert
-   itself; no guard is implemented for that case. Consumer idiom:
+   itself; no guard is implemented for that case. Confirmed
+   pilot-referenced against the manufacturers' own W definition
+   (RESEARCH.md, "W datum" (#77)) — this composition is not a bug.
+   Consumer idiom:
    difference() { heatset_boss(size, h); heatset_pocket(size); } */
 module heatset_boss(size, height, wall = -1) {
     od = (wall < 0) ? heatset_boss_od(size) : heatset_pilot_dia(size) + 2 * wall;

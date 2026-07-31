@@ -116,6 +116,7 @@ difference() {
 | `heatset_insert_length(size)` | standard-length insert body length, mm |
 | `heatset_pilot_dia(size)` | recommended pilot/installation hole diameter, mm |
 | `heatset_boss_od(size)` | recommended boss outer diameter, mm |
+| `heatset_min_wall(size)` | minimum boss wall around the install hole, mm — the manufacturer crack-risk floor, distinct from `heatset_boss_od()`'s optimum. **Only `M2`, `M2.5`, `M3`; other sizes assert.** |
 | `heatset_lead_in(size)` | hole-mouth chamfer depth, mm (chamfer always cut at 45°) |
 
 | Module | Produces |
@@ -177,6 +178,17 @@ Full evidence log, per-source fetch notes, and the sanity-check tables
   is carried from this repo's general 45°-chamfer convention, not a
   fetched primary source. `[C] //VERIFY` on all 6 sizes — the weakest
   value in the table.
+- **`min_wall` coverage** — `heatset_min_wall()` covers `M2`, `M2.5` and `M3`
+  only; `M4`, `M5` and `M6` assert rather than return an invented number.
+  M2.5/M3 are `[A]`/`[B]` (CNC Kitchen and ruthex agreeing). M2 is `[A]`
+  (a real PEM microPEM MSIA/MSIB datasheet figure) but with an open,
+  explicitly recorded cross-family gap — that PEM figure is validated for a
+  smaller insert body/hole than the IUTA/IUTB/IUTC family backing this
+  table's other M2 columns, and it disagrees with ruthex's own smaller
+  figure for a closer-matching hole size — see `RESEARCH.md`, "M2 min-wall
+  (#77)". CNC Kitchen's published `W` for M4 (2.1) and M5 (2.6) is on
+  record in `RESEARCH.md`'s boss-OD cross-check but deliberately not lifted
+  into the accessor: no consumer needs it.
 - **M5 `pilot_dia` outlier** — insertguide.com's M5 figure (6.8mm)
   disagrees with PEM (6.43) and CNC Kitchen (6.4), which tightly agree
   with each other. The table carries PEM's 6.43 as canonical; insertguide's

@@ -33,9 +33,17 @@ for (s = heatset_known_sizes())
 
 // min-wall accessor (manufacturer minimum, distinct from derived boss_od)
 assert(heatset_min_wall("M3") > 0, "M3 min_wall > 0");
+assert(heatset_min_wall("M2") > 0, "M2 min_wall > 0");
 // wall-based boss OD (pilot + 2*wall) stays under the crude 2.5x boss_od proxy.
 assert(heatset_pilot_dia("M3") + 2*heatset_min_wall("M3") <= heatset_boss_od("M3"),
     "wall-based OD within boss_od proxy");
+assert(heatset_pilot_dia("M2") + 2*heatset_min_wall("M2") <= heatset_boss_od("M2"),
+    "M2 wall-based OD within boss_od proxy");
+// Drift lock: the sparse-table rewrite must not move the two values bpir4's lid
+// posts and board standoffs already derive their OD from. These pass before the
+// refactor too — they are regression locks, not red-first feature tests.
+assert(heatset_min_wall("M2.5") == 1.6, "M2.5 min_wall unchanged by table refactor");
+assert(heatset_min_wall("M3") == 1.6, "M3 min_wall unchanged by table refactor");
 
 echo("heatset_test OK");
 
