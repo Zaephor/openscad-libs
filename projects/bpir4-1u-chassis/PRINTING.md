@@ -10,8 +10,13 @@
   crown). The hex cells are flat-top, so their only bridge is the hex's top
   edge — measured worst case 4.05 mm, under the reliably-self-supporting
   bridging ceiling, and asserted at render time by `honeycomb_vent()` itself.
-  Every other downward-facing surface in those openings is a hex side facet at
-  30 degrees from vertical. The faceplate's above-IO intake vents are the same
+  Active mode also keeps a solid bearing pad around each of the 8 fan mount
+  screws; the pad's underside arc and the 4.3 mm screw-hole crown are curved
+  downward-facing surfaces up to 90 degrees from vertical, same order as the
+  hex bridge (4.05 mm) and anchored the same way — by solid wall on both
+  sides, not a progressive overhang. Every other downward-facing surface in
+  those openings is a hex side facet at 30 degrees from vertical. The
+  faceplate's above-IO intake vents are the same
   honeycomb pattern, and the 4
   corner lid posts are full-height square columns bonded to **both** walls
   of their corner (fillet on the two internal post-wall junctions, chamfer

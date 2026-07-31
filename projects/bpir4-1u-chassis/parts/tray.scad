@@ -51,7 +51,8 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
         lip = wall/2;
         translate([-(body_w()/2 - lip), y0 - 1, ext_h() - lid_th])
             cube([body_w() - wall, dd - lip + 1, lid_th + 1]);
-        // Rear-wall fan bores or passive vents.
+        // Rear-wall openings: honeycomb hex field over the fan band, both
+        // fan/passive modes (see _rear_openings()).
         _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
         // Rear outer vertical corner chamfers (see _tray_rear_corner_chamfer()
         // above), full exterior height so the cut is a constant XY
