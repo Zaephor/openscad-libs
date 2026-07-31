@@ -319,3 +319,81 @@ three-brand agreement.
   CNC Kitchen + ruthex agreeing) is now on record — distinct from the
   SPIROL-derived optimum boss OD already in the flat table. No current lib
   value contradicts it; it is additive.
+
+## M2 min-wall (#77)
+
+Purpose: `heatset_min_wall()` shipped covering M2.5/M3 only and asserted for
+every other size. A consumer needs M2, so this pass asks whether any
+manufacturer publishes a minimum boss wall for an M2 heat-set insert.
+
+### Sources consulted
+
+| Source | Result |
+|---|---|
+| PEM SI datasheet | Yes, on a page #6 never opened. Page **SI-9**, the microPEM® Symmetrical Thru-Threaded MSIA™/MSIB™ metric table, carries an explicit **"Min. Wall Thickness"** column (footnote: "Refers to wall diameter of boss as tested in ABS and polycarbonate") with a row for **M2 = 1.6 mm**. Caveat: this is a different, smaller insert body than the IUTA™/IUTB™/IUTC™ family already backing this table's other M2 columns — microPEM's M2 is 3.2 mm OD over a 2.85 mm hole, versus IUTA/IUTB/IUTC's 3.73 mm OD over a 3.23 mm hole (see Verdict). Page SI-25's generic "Hole Preparation Guidelines" diagram gives only a dimensionless **Boss Dia. = 2 x Insert Dia.** ratio (no numeric wall mm value, and no per-size table) and states "Thinner walls and bosses may be used but will affect performance" — no hard floor stated at that generic level. |
+| CNC Kitchen dimension table | Confirmed, correcting nothing: the table covers **M3, M4, M5, 1/4"-20** (plus M3/M4/M5 "Short" length variants) only — no M2, M2.5, or M6 row, exactly as #6 recorded. The table's own diagram also settles the `W`-datum question below. |
+| ruthex RX-M2x4 | Yes. ruthex's own RX-M2x4 retail-packaging artwork carries a dimensioned install diagram: installation hole **Ø3.2**, with **"min. 1.3"** (mm) wall dimensioned immediately outside that hole — the same hole-referenced convention CNC Kitchen uses for `W`. Insert body Ø3.6 (D1) / Ø3.1 tip (D2) / length 4.0. This **disagrees** with PEM's 1.6 mm figure above (see Verdict). |
+| Böllhoff IMTEC | Negative on every axis — a genuinely new source this pass. Böllhoff's AMTEC® catalog (IMTEC® is their in-mould variant of the same underlying product families: HITSERT®/SONICSERT®/QUICKSERT®/EXPANSIONSERT®/SPREDSERT®) has **no M2 size at all** — its metric range starts at **M2.5** (EXPANSIONSERT® 1). The catalog's "Recommended wall thicknesses" entry is a qualitative 1-4 relative ranking across insert *types*, not a numeric per-size mm figure, for any size. |
+| insertguide.com | Corroborates the M2 pilot-hole figure already on record (3.1 mm) but gives **no numeric minimum-wall-thickness figure for any size** on its dedicated minimum-wall-thickness reference page — only a qualitative per-size sensitivity ranking (M2: "Very sensitive to small geometry changes"). `[C]` ceiling, and no number to use even at that tier. |
+
+### Verdict
+
+**M2 min-wall = 1.6 mm, tier [A].**
+
+Two manufacturers publish a numeric M2 wall figure, and they disagree: PEM's
+microPEM® MSIA™/MSIB™ metric table (SI-9) gives an explicit **1.6 mm**
+"Min. Wall Thickness" for M2, tested in ABS/PC per its own footnote; ruthex's
+RX-M2x4 packaging gives **1.3 mm** for the same size. They do not corroborate
+to `[B]` (they disagree, not agree) and come from two different insert body
+styles: PEM's microPEM family is a smaller, symmetrical (non-barbed) design
+that does not match the IUTA/IUTB/IUTC dimensions already used for this
+table's other M2 columns, whereas ruthex's RX-M2x4 body (3.6 mm OD / 3.2 mm
+hole) is within 0.13/0.03 mm of them and is the better dimensional match —
+but PEM's figure carries a stated test methodology that ruthex's packaging
+label does not.
+
+Given a genuine, unresolved disagreement between the only two manufacturer
+figures for a crack-risk *floor* value, this table ships the more
+conservative (larger) of the two, **1.6 mm**, on the same safe-direction
+principle this library already applies via SPIROL's decreasing-multiplier
+rule: too much wall costs boss diameter, too little costs a cracked print.
+ruthex's 1.3 mm is recorded here, not discarded, so a stronger tie-breaker
+(a third manufacturer, or physical testing) can revisit it later.
+
+Resulting boss outer diameter: `pilot_dia(M2) + 2 x 1.6` = `3.23 + 3.2`
+= **6.43 mm**, against M2.5/M3's 7.21 mm.
+
+### Scope
+
+M4, M5 and M6 remain unresearched in `heatset_min_wall()` and continue to
+assert. Note that CNC Kitchen's `W` for M4 (2.1) and M5 (2.6) is already on
+record in this file's boss-OD cross-check above; it was deliberately not lifted
+into the accessor this pass — no consumer needs it.
+
+## `W` datum — measured from the hole or from the insert? (#77)
+
+`heatset_boss(size, height, wall)` composes its outer diameter as
+`pilot_dia + 2*wall`. Whether that is the right composition depends on which
+diameter the manufacturers' `W` is measured from.
+
+**Verdict: pilot-referenced.**
+
+Three independent manufacturer diagrams, read directly this pass, all
+dimension the wall/min. figure from the installation/pilot hole edge
+outward to the boss's outer surface — never from the (larger) installed
+insert body:
+
+- CNC Kitchen's "Dimensions & Design Recommendations" diagram: the `W`
+  extension line begins exactly where `ØD3` (installation hole diameter)'s
+  extension line ends — `W` is the material outside the hole, not outside
+  the insert.
+- ruthex's RX-M2x4 packaging diagram: "min. 1.3" is dimensioned immediately
+  outside the Ø3.2 installation-hole callout — the identical convention.
+- PEM's own generic "Hole Preparation Guidelines" diagram (SI-25): "Wall
+  Thickness" is called out as the material between the receiving hole
+  (labeled "Insert Dia." in PEM's own diagram — the hole the insert
+  occupies) and the boss's outer diameter.
+
+`heatset_boss()`'s `od = pilot_dia + 2*wall` composition is therefore the
+correct reading of the manufacturers' own convention. No undersizing bug
+exists in that composition; no new backlog item is needed for this question.
