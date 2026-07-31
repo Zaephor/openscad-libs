@@ -240,6 +240,22 @@ function _pcie_tab_depth() = 15;
 function _pcie_cutout_width_frac() = 0.65;
 function _pcie_cutout_height_frac() = 0.55;
 
+// Card-slot I/O window as a public accessor, in THIS bracket's own local
+// frame (the header datum: X centered on 0 at the card-slot centerline, Z
+// measured from the Z=0 fold datum, same frame pcie_bracket_size() uses).
+//   [cx, cz, w, h] -- cx/cz are the window's CENTER (both, consistently:
+//   cx is always 0 since the plate is X-centered; cz is h_bracket/2 since
+//   the window is vertically centered on the faceplate), w/h its size.
+//   Low corner = [cx - w/2, cz - h/2].
+// pcie_bracket() below cuts its own window from THIS function -- a chassis
+// that needs a matching panel aperture must do the same rather than
+// re-deriving the _pcie_cutout_*_frac() math (single source of truth).
+function pcie_bracket_window(t) =
+    let (sz = pcie_bracket_size(t),
+         w  = sz[1] * _pcie_cutout_width_frac(),
+         hw = sz[0] * _pcie_cutout_height_frac())
+    [0, sz[0] / 2, w, hw];
+
 // Small Z epsilon so the faceplate box volumetrically overlaps the foot box
 // at the Z=0 fold datum (both boxes otherwise only share a zero-volume
 // face) -- avoids a coincident-face CGAL edge case in the union(). Print-
@@ -291,14 +307,12 @@ module pcie_bracket(type, blank = false, screw = "m3") {
             translate([-fw / 2, 0, -eps]) cube([fw, th, h + eps]);
         }
         if (!blank) {
-            // Card-slot cutout: sized from THIS bracket's own envelope only
-            // (see _pcie_cutout_*_frac() above), centered in X, sitting
-            // within the faceplate's Z=[0,h] span with margin top/bottom so
-            // it never reaches the Z=0 fold datum / foot region.
-            cw = fw * _pcie_cutout_width_frac();
-            ch = h * _pcie_cutout_height_frac();
-            cz = (h - ch) / 2;
-            translate([-cw / 2, -1, cz]) cube([cw, th + 2, ch]);
+            // Card-slot cutout, from pcie_bracket_window() -- the same
+            // accessor an external consumer cuts its panel aperture from,
+            // so the two can never drift apart.
+            win = pcie_bracket_window(type);
+            translate([win[0] - win[2] / 2, -1, win[1] - win[3] / 2])
+                cube([win[2], th + 2, win[3]]);
         }
         // Screw hole through the foot (Z axis, per pcie_bracket_mount_holes()).
         pcie_bracket_mount_holes(type, depth = th + 1, screw = screw);

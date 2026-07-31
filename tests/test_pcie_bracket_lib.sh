@@ -152,4 +152,34 @@ import sys
 sys.exit(0 if float('$vol_fh_blank') > float('$vol_fh') else 1)
 " || { echo "blank=true volume ($vol_fh_blank) not greater than windowed volume ($vol_fh) -- card cutout not detected"; exit 1; }
 
+# pcie_bracket_window() must describe the window pcie_bracket() ACTUALLY cuts,
+# in the rendered solid -- not merely be self-consistent with it. A consumer
+# (e.g. a chassis cutting a matching panel aperture from this accessor) relies
+# on the returned rect really being a through-void at those coordinates, so the
+# probes below are taken against the RENDERED bracket, not against the same
+# arithmetic: the window centre must be empty and the material immediately
+# outside each window edge must be solid. Envelope sanity is asserted in-model.
+for probe in "win_centre:empty" "win_beyond_x:solid" "win_above_z:solid"; do
+  name="${probe%%:*}"; want="${probe##*:}"
+  cat > "$tmp/$name.scad" <<EOF
+use <pcie-bracket/pcie-bracket.scad>;
+t = "full-height";
+w = pcie_bracket_window(t);
+sz = pcie_bracket_size(t);
+assert(w[1] - w[3]/2 > 0 && w[1] + w[3]/2 < sz[0], "pcie_bracket_window escapes the faceplate Z span");
+assert(w[2] < sz[1], "pcie_bracket_window wider than the bracket");
+px = (("$name" == "win_beyond_x") ? w[0] + w[2]/2 + 1.5 : w[0]);
+pz = (("$name" == "win_above_z") ? w[1] + w[3]/2 + 1.5 : w[1]);
+intersection() {
+    pcie_bracket(t);
+    translate([px - 0.5, -1, pz - 0.5]) cube([1, sz[2] + 2, 1]);
+}
+EOF
+  runbin "$tmp/$name.scad" "$tmp/$name.stl" >/dev/null 2>&1
+  got="empty"; [ -s "$tmp/$name.stl" ] && [ "$(volume "$tmp/$name.stl")" != "0" ] && got="solid"
+  [ "$got" = "$want" ] || {
+    echo "pcie_bracket_window() probe '$name' expected $want but rendered $got -- the accessor does not match the window pcie_bracket() cuts"
+    exit 1; }
+done
+
 echo ok
