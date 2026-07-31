@@ -28,8 +28,8 @@ assert(_button_x() + button_dia/2 < _io_x0(),
 // slot cluster opposite the IO cluster. A future data/formula change that
 // collapsed them onto the same side (or overlapping) would otherwise pass
 // every other fit-assert (both individually still fit within the panel).
-assert(_pcie_x0() >= _io_x1(),
-    str("mitx-2u: PCIe slot [", _pcie_x0(), ",", _pcie_x1(),
+assert(_pcie_slot_x0() >= _io_x1(),
+    str("mitx-2u: PCIe slot [", _pcie_slot_x0(), ",", _pcie_slot_x1(),
         "] expected clear of (right of) the IO cutout's high edge ", _io_x1()));
 
 // One column of rack10 mounting holes per U is 3 holes -- 2U -> 6 hole

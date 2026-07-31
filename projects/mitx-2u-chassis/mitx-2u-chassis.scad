@@ -52,17 +52,21 @@ function _io()    = mobo_io_cutout("itx");
 function _io_x0() = _board_x() + _io()[0];              // world low (left) edge
 function _io_x1() = _board_x() + _io()[0] + _io()[1];   // world high (right) edge
 
-// First (only, slots=1) PCIe slot's world X span -- mobo_pcie_first_xy is
-// in the SAME component-up local frame as mobo_io_cutout/mobo_standoff_xy
-// (motherboards.scad), so it shares _board_x() too, NOT board_offset alone
-// -- verified empirically: translating this block by board_offset alone
-// (the plan's original Task-1 draft) puts the PCIe cutout's world X past
-// the panel's own half-width entirely (a silent no-op cut, same failure
-// shape as the mount-hole mirror bug -- see CORRECTION 2026-07-31 in the
-// plan's Global Constraints for that one).
-function _pcie_x0() = _board_x() + mobo_pcie_first_xy("itx")[0];
-function _pcie_x1() = _pcie_x0() + mobo_pcie_slot_w();
-function _pcie_cx()  = (_pcie_x0() + _pcie_x1()) / 2;   // slot centerline -- pcie_bracket()'s own local X=0 datum
+// PCIe slot: mobo_pcie_first_xy is [x,y] board-local (low-X edge of the
+// slot), in the SAME component-up local frame as mobo_io_cutout/
+// mobo_standoff_xy (motherboards.scad), so it shares _board_x() too, NOT
+// board_offset alone -- verified empirically: translating this block by
+// board_offset alone (the plan's original Task-1 draft) put the PCIe
+// cutout's world X past the panel's own half-width entirely (a silent
+// no-op cut, same failure shape as the mount-hole mirror bug -- see
+// CORRECTION 2026-07-31 in the plan's Global Constraints for that one).
+function _pcie_xy()      = mobo_pcie_first_xy("itx");
+function _pcie_slot_x0() = _board_x() + _pcie_xy()[0];
+function _pcie_slot_x1() = _pcie_slot_x0() + mobo_pcie_slot_w();
+// pcie_bracket()'s own local X=0 is the card-slot CENTERLINE (its header
+// datum comment), not the board corner -- so its world placement tracks
+// the slot's centerline, not board_offset directly.
+function _pcie_slot_cx() = _pcie_slot_x0() + mobo_pcie_slot_w()/2;
 
 // Power button: sits in the off-center gap on the panel's low-X side,
 // beside the IO window (board_offset shifts the board toward +X to open
@@ -96,10 +100,13 @@ assert(_board_x() - wall >= -rack10_clear_width(standard)/2 - 1e-6
 // IO cutout right edge vs. the panel's own outer bound (mitx-1u idiom).
 assert(_io_x1() <= rack10_panel_width(standard)/2 - 1e-6,
     str("mitx-2u: IO cutout right edge ", _io_x1(), " > panel half-width ", rack10_panel_width(standard)/2));
-// PCIe slot cutout vs. the panel's own outer bound (opposite/high-X side
-// from the IO window, per mobo_pcie_first_xy's own X-flip convention).
-assert(_pcie_x1() <= rack10_panel_width(standard)/2 - 1e-6,
-    str("mitx-2u: PCIe slot cutout right edge ", _pcie_x1(), " > panel half-width ", rack10_panel_width(standard)/2));
+// PCIe slot cutout vs. the panel's own outer bound (both edges -- opposite/
+// high-X side from the IO window, per mobo_pcie_first_xy's own X-flip
+// convention).
+assert(_pcie_slot_x0() >= -rack10_panel_width(standard)/2 + 1e-6
+    && _pcie_slot_x1() <= rack10_panel_width(standard)/2 - 1e-6,
+    str("mitx-2u: PCIe slot cutout [", _pcie_slot_x0(), ",", _pcie_slot_x1(),
+        "] exceeds panel +-", rack10_panel_width(standard)/2));
 // Button hole vs. the panel's own outer bounds (both edges, since it's a hole).
 assert(_button_x() - button_dia/2 >= -rack10_panel_width(standard)/2 + 1e-6
     && _button_x() + button_dia/2 <= rack10_panel_width(standard)/2 - 1e-6,
@@ -147,11 +154,9 @@ module mitx_2u_chassis() {
     translate([_board_x(), 0, floor_th])
         mobo_standoffs("itx", standoff_h, role="structural-mount");
     % translate([_board_x(), 0, floor_th+standoff_h]) mobo_placeholder("itx");
-    // LP-profile PCIe bracket keep-out preview, centered on the slot's own
-    // world X -- pcie_bracket()'s local X=0 is its card-slot centerline
-    // (pcie-bracket.scad header), NOT the board's own corner-frame origin,
-    // so it uses _pcie_cx() here, not _board_x().
-    % translate([_pcie_cx(), 0, floor_th+standoff_h]) pcie_bracket("low-profile");
+    // LP card keep-out preview, tracked to the slot's own world centerline
+    // (pcie_bracket()'s local X=0 datum), NOT board_offset directly.
+    % translate([_pcie_slot_cx(), 0, floor_th+standoff_h]) pcie_bracket("low-profile");
     // walls/floor/rear/tongue/vents in Tasks 2-3
 }
 mitx_2u_chassis();

@@ -67,8 +67,8 @@ fi
 # dead space) -- same probe idiom as mitx-1u-chassis's own test. Positive
 # controls (off-cutout material) prove the probes are actually discriminating.
 # Numeric literals below match the default geometry: _board_x()=-65,
-# _io_x0()=-67.62, _io_x1()=91.13 (Z=[8,52.45]); _pcie_x0()=91.13,
-# _pcie_x1()=103.13 (Z=[7,19]); _button_x()=-97.31 (Z mid=44.055).
+# _io_x0()=-67.62, _io_x1()=91.13 (Z=[8,52.45]); _pcie_slot_x0()=91.13,
+# _pcie_slot_x1()=103.13 (Z=[7,19]); _button_x()=-97.31 (Z mid=44.055).
 probe_empty() { # $1 = probe .scad body (intersection block), $2 = description
   rm -f "$tmp/p.stl"
   cat > "$tmp/p.scad" <<EOF

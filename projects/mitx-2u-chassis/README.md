@@ -56,7 +56,7 @@ fan/honeycomb vent — Tasks 2-3.
   `intersection()` against the faceplate slab: empty result). Task 2 cuts
   the real hole into the floor, where the bracket's foot actually lands.
   The `%pcie_bracket("low-profile")` keep-out preview is still rendered
-  here (centered on the slot's own world X via `_pcie_cx()`, since
+  here (centered on the slot's own world X via `_pcie_slot_cx()`, since
   `pcie_bracket()`'s local X=0 is its own card-slot centerline, not the
   board's corner-frame origin) so the alignment is visible ahead of Task 2.
 - **Off-panel + off-board guards.** Because `board_offset` moves the IO
