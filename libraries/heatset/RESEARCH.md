@@ -360,6 +360,52 @@ rule: too much wall costs boss diameter, too little costs a cracked print.
 ruthex's 1.3 mm is recorded here, not discarded, so a stronger tie-breaker
 (a third manufacturer, or physical testing) can revisit it later.
 
+**Cross-family/cross-hole-size applicability — an unresolved gap, stated
+explicitly.** The paragraph above leaned on SPIROL's "multiplier decreases
+as insert diameter increases" rule to call 1.6 mm the conservative choice.
+On review, that overreaches: SPIROL's rule describes how the *insert
+diameter itself* should scale a wall/boss multiplier within a comparable
+design — it says nothing about whether a min-wall figure PEM validated
+around one specific pilot hole size safely carries over to a *different,
+larger* pilot hole from an unrelated product family. That is a distinct
+question, and the two hole sizes here are not close: PEM's microPEM
+MSIA/MSIB validated 1.6 mm around a **2.85 mm** hole (wall:hole ratio
+1.6/2.85 = **0.561**), while this table's M2 row (IUTA/IUTB/IUTC) uses a
+**3.23 mm** pilot. Composing `pilot_dia + 2×wall` with the *same absolute*
+1.6 mm around that larger hole gives a wall:hole ratio of 1.6/3.23 =
+**0.495** — a *smaller* relative-wall ratio than what PEM's own data point
+actually represents, not a larger one. If the crack-risk mechanism scales
+with wall:hole ratio (a hoop-stress/expansion-during-installation view, not
+implausible, and roughly what SPIROL's own multiplier framing implies once
+expressed as a ratio rather than an absolute), holding the absolute number
+fixed while the hole grows is arguably the *less* conservative direction,
+not the more conservative one — the opposite of what the paragraph above
+claimed.
+
+For reference, ruthex's own RX-M2x4 hole (3.2 mm) is essentially identical
+to this row's 3.23 mm pilot — a materially closer hole-size match than
+PEM's microPEM figure — and ruthex's wall:hole ratio (1.3/3.2 = 0.406) sits
+close to the same barbed-3D-printing-style family's own M2.5/M3 ratio
+(CNC Kitchen/ruthex 1.6/4.0 = 0.400), i.e. that family's ratio is close to
+flat across M2→M3. No source in this pass publishes a min-wall figure
+tested around a hole in the ~3.2 mm class *and* validated for the
+IUTA/IUTB/IUTC-style larger insert body at once — that specific combination
+is genuinely unresolved, not just under-documented.
+
+**What the `[A]` tier does and does not cover here:** `[A]` certifies that
+1.6 mm is a real, fetched-and-read, tested PEM figure for an M2 insert — it
+does **not** certify that 1.6 mm is validated for a boss built around this
+library's specific 3.23 mm pilot hole. That transfer is untested by any
+source read this pass. The number ships anyway, not because the transfer
+has been shown safe, but because: it is still real vendor data (not
+invented) for the correct nominal thread size; it is the larger of the only
+two real per-size M2 figures found, which is the conventional
+err-on-the-side-of-more-material choice for a floor value when a
+correction's direction is genuinely ambiguous; and no third source exists
+to arbitrate. A future pass with a manufacturer figure tested specifically
+around a ~3.2 mm-class M2 hole, or physical print-test data, should
+supersede this reasoning rather than be read as already settled by it.
+
 Resulting boss outer diameter: `pilot_dia(M2) + 2 x 1.6` = `3.23 + 3.2`
 = **6.43 mm**, against M2.5/M3's 7.21 mm.
 
