@@ -69,11 +69,13 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
     }
 }
 
-// Rear-wall openings. Fans on: `fan_count` bores + screw holes across the
-// wall, vertically centered on the interior clearance, axis rotated onto +Y
-// so the (default Z-axis) fan cutters punch straight through the wall. Fans
-// off: a self-supporting honeycomb hex vent over the same fan footprint
-// (see the honeycomb_vent() call below).
+// Rear-wall openings. BOTH fan modes cut the same self-supporting honeycomb
+// hex field over the fan footprint; fans on additionally keeps a solid
+// bearing pad around each mount screw and cuts the screw holes through those
+// pads. The rear wall is vertical, so a round bore here would lie on a
+// HORIZONTAL axis and present a 90-degree-from-vertical overhang at its
+// crown -- see the honeycomb_vent() call below for why a teardrop is not the
+// alternative.
 //
 // rear_wall_y(ee = enable_exhaust) is the wall's outer (rearmost) face; the
 // wall itself occupies [rear_wall_y()-wall, rear_wall_y()] (see
@@ -83,37 +85,46 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
 // module's own enable_exhaust parameter -- see params.scad's "ee defaults
 // to..." comment for why a plain no-arg call can't see it.
 module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
-    yw = rear_wall_y(enable_exhaust); // rear wall outer (rearmost) face
-    zc = floor_th + int_h()/2;        // vertical center of interior clearance
-    if (enable_exhaust) {
-        span = fan_count * fan_size;
-        x0   = -span/2 + fan_size/2;  // first fan center
-        for (i = [0 : fan_count-1])
-            translate([x0 + i*fan_size, yw - wall, zc])
-                rotate([-90, 0, 0]) {  // Z-axis cutters -> +Y, through the wall
-                    fan_bore(fan_size, depth = wall);
-                    fan_holes(fan_size, depth = wall);
-                }
-    } else {
-        // Passive honeycomb: self-supporting hex vent over the same
-        // fan_count*fan_size footprint the active fans would occupy
-        // (X centered on 0, Z band centered on zc), cut fully through the
-        // rear wall. Same rotate([90,0,0]) idiom as the faceplate band (see
-        // _faceplate()): local X (honeycomb's `width`) stays chassis X;
-        // local Y (honeycomb's `height`) becomes chassis Z (the fan_size
-        // band around zc); local Z (honeycomb's `depth`, its extrusion /
-        // cut-through axis) becomes chassis -Y, punching through the rear
-        // wall — `wall + 2` gives a 1mm overcut on both faces, matching the
-        // old slot cutter's overcut. Translate places the honeycomb's local
-        // (0,0,0) corner at (x=-span/2, y=yw+1 [outer wall face + 1mm
-        // overcut], z=zc-fan_size/2), so after rotation the cut spans
-        // Y=[yw-wall-1, yw+1] through the wall and Z=[zc-fan_size/2,
-        // zc+fan_size/2] centered on zc.
-        span = fan_count * fan_size;
-        translate([-span/2, yw + 1, zc - fan_size/2])
+    yw   = rear_wall_y(enable_exhaust); // rear wall outer (rearmost) face
+    zc   = floor_th + int_h()/2;        // vertical center of interior clearance
+    cs   = _fan_x_centres(fan_size, fan_count);  // thermally placed, see params.scad
+    band = _fan_band_x(fan_size, fan_count);     // [lo, hi] union of the footprints
+    difference() {
+        // Honeycomb over the fan footprint -- BOTH modes. Self-supporting by
+        // construction (honeycomb_vent asserts its own worst-case hex span
+        // against the 5mm ceiling), so the rear wall needs no teardrop and no
+        // round bore. A 45deg teardrop of the old 36.8mm bore does NOT fit
+        // here: it needs r*sqrt(2)=26.02mm above zc and only 20mm is available
+        // to the lid ledge -- see README.
+        // rotate([90,0,0]) maps honeycomb_vent's local frame onto the chassis:
+        // local X stays chassis X; local Y (height) becomes chassis Z (the
+        // fan_size band around zc); local Z (depth, the cut-through axis)
+        // becomes chassis -Y, punching through the rear wall -- wall+2 gives a
+        // 1mm overcut on both faces.
+        // ONE wide band spanning both fans, not one per fan: the larger open
+        // area and better passive-mode flow were preferred over closing the
+        // ~19.4mm inter-fan strip, which has no fan behind it.
+        translate([band[0], yw + 1, zc - fan_size/2])
             rotate([90, 0, 0])
-                honeycomb_vent(span, fan_size, wall + 2, honeycomb_cell, honeycomb_wall);
+                honeycomb_vent(band[1] - band[0], fan_size, wall + 2,
+                               honeycomb_cell, honeycomb_wall);
+        // Active only: keep a solid bearing pad around each mount screw, so the
+        // M3 head/nut seats on material rather than on the 1.2mm hex lattice.
+        // Pad centres come from fan_mount_holes() (single source of truth) --
+        // never a retyped +/- fan_hole_spacing/2. With #74's split placement
+        // the inner screws sit 27.4mm apart, so all 8 pads stay separate
+        // (they merged only in the old butted layout).
+        if (enable_exhaust)
+            for (cx = cs)
+                for (p = fan_mount_holes(fan_size, "structural-mount"))
+                    translate([cx + p[0], yw - wall - 1, zc + p[1]])
+                        rotate([-90, 0, 0]) cylinder(h = wall + 2, d = fan_pad_dia);
     }
+    // Active only: the mount screw holes themselves, cut through the pads.
+    if (enable_exhaust)
+        for (cx = cs)
+            translate([cx, yw - wall, zc])
+                rotate([-90, 0, 0]) fan_holes(fan_size, depth = wall);
 }
 
 // IO-gap wall widths (Round 2 #62 Task 3; third wall + gap figures updated

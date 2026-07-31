@@ -9,6 +9,7 @@ ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
 include <../params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
+use <fans/fans.scad>;
 use <../parts/tray.scad>;   // for _lid_post_xy() (post-count invariant)
 
 // Board must fit within the body width (between the posts).
@@ -309,5 +310,15 @@ assert(heatset_insert_length(board_insert_size) + heatset_lead_in(board_insert_s
     str("bpir4: ", board_insert_size, " pocket depth ",
         heatset_insert_length(board_insert_size) + heatset_lead_in(board_insert_size),
         " exceeds standoff_h ", standoff_h));
+
+// #66: the fan mount pads must be big enough to seat an M3 head on solid
+// material rather than on the surrounding 1.2mm hex lattice. Reads the hole
+// diameter from the fans lib rather than restating it, so a future
+// fan_mount_hole_dia() change trips this instead of silently under-sizing.
+_fan_hole_dia = fan_mount_holes(fan_size, "structural-mount")[0][3];
+assert(fan_pad_dia >= _fan_hole_dia + 2*2,
+    str("bpir4: fan_pad_dia ", fan_pad_dia,
+        " too small to seat an M3 head on solid material around a ",
+        _fan_hole_dia, "mm hole (need >= ", _fan_hole_dia + 4, ")"));
 
 // Render nothing (pure assert file).

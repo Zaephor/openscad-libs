@@ -9,12 +9,21 @@ two internal post↔wall junctions, chamfer on the one exposed free edge —
 no angled buttress). Rear exhaust fans are behind an `enable_exhaust` toggle
 exposed in the assembly customizer alongside `fan_size`/`fan_count`; the
 toggle drives geometry end-to-end via the Customizer (or
-`-D enable_exhaust=false`) — active mode is the full-depth box with rear
-fan bores, **passive mode is a shorter box** (no fan plenum) with a
-self-supporting honeycomb hex vent over the same fan footprint, replacing
-the fan bores. The rear exhaust fan mounts on the tray's interior rear-wall
-face (screwed in from inside the case, airflow venting out through the wall
-bore); `fan_plenum` auto-derives from the fan's own depth
+`-D enable_exhaust=false`) — active mode is the full-depth box,
+**passive mode is a shorter box** (no fan plenum). Both modes cut the same
+self-supporting honeycomb hex field over the fan footprint; active mode adds
+the fan mount screw holes and a solid bearing pad around each one
+(`fan_pad_dia`), so an M3 head seats on material rather than on the 1.2mm
+lattice. The active opening is a honeycomb grille rather than an open bore
+because the rear wall is vertical: a bore through it lies on a horizontal
+axis and leaves an unsupported near-flat arc at its crown, and the usual
+remedy does not fit here — a 45° teardrop of the 36.8mm bore needs 26.02mm of
+headroom above the bore centre and the lid ledge leaves only 20mm. The
+honeycomb also moves slightly more air than the bores did, because the two
+fans are placed on their thermal targets rather than butted (below) and the
+vent band is correspondingly wider. The rear exhaust fan mounts on the tray's
+interior rear-wall face (screwed in from inside the case, airflow venting out
+through the vent); `fan_plenum` auto-derives from the fan's own depth
 (`fan_default_thickness()`, `libraries/fans/fans.scad`) plus a clearance
 margin, so the fan can never be placed closer to the board than that margin
 allows. Intake air runs through
@@ -79,6 +88,18 @@ mode) both add the protrusion on top of their existing clearance —
 clearance stays strictly greater than the obstruction rather than being
 replaced by it. Overall chassis depth is 119.7mm active / 109.8mm passive
 (both grew by the same 2.3mm).
+
+**Fan placement (#74):** the two fans are not evenly spaced. Their X centres
+are derived from the board's own connector rows (`_fan_x_centres()` in
+`params.scad`) and land on the two things that need the air: one over the
+centre of the SFP+ cage pair, one over the centre of the RJ45 block. The
+earlier layout butted the pair about the chassis centreline, which left
+roughly a third of the SFP zone outside the fan footprint on a board whose
+SFP+ thermal load is its documented weak point. Deriving the centres rather
+than typing them means a future re-caliper of the board moves the fans with
+it. A single fan (`fan_count=1`) goes to the SFP zone; three or more fall
+back to even spacing. Because the fan position is moulded into the rear wall,
+changing it later means reprinting the tray.
 
 The card is **install-once by design**: it is seated once at assembly, and
 changing it afterward means removing the lid and unbolting one fan. This is
