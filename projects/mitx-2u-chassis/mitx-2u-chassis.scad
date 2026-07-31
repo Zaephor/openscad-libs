@@ -105,6 +105,51 @@ function _rear_flank_cx() = _gusset_x() + _gusset_xw()/2 + max(fan_size, dc_dia)
 function _fan_cx() = -_rear_flank_cx();
 function _dc_cx()  =  _rear_flank_cx();
 
+// Front/side intake vents (Task 3): a honeycomb field per side wall, clear
+// of the rear gusset/tongue zone (starts at _tongue_y()-wall-_gusset_size(),
+// see the _mitx2_gusset() calls below) and vertically margined off the floor
+// and open top -- same _side_vent_y0()/_side_vent_len() idiom as
+// mitx-1u-chassis.scad's own side vent. Both walls share the same Y-range;
+// only the Z-band differs (see _side_vent_r_h() below) because the RIGHT
+// wall additionally has to clear the LP-card keep-out (Tasks 1-2's
+// lp_card_h / _pcie_slot_cx() sit close to this wall's own inner face -- see
+// the PCIe floor mount hole fit-assert above), which the LEFT wall (no PCIe
+// hardware nearby) doesn't need to worry about.
+function _side_vent_y0()      = 16;
+function _side_vent_len()     = 80;
+function _side_vent_zmargin() = 6;
+// Left wall (sx=-1): full ceiling-to-floor band (mirrors mitx-1u-chassis.scad).
+function _side_vent_h() = _wall_top_z() - 2 * _side_vent_zmargin();
+// Right wall (sx=+1): the LP card's own keep-out envelope (Tasks 1-2's
+// standoff_h+mobo_thickness()+lp_card_h fit-assert, see above) tops out at
+// this Z -- the vent band on THIS wall is pinned entirely above it so it
+// can't collide with the card regardless of the card's own (unmodeled)
+// width; a slightly tighter ceiling margin (_side_vent_r_ceil_margin(), 3mm
+// vs the left wall's 6mm) buys back some of the headroom this constraint
+// costs, while still leaving a real solid strip at the wall's own top edge.
+function _card_top_z()              = floor_th + standoff_h + mobo_thickness() + lp_card_h;
+function _side_vent_r_ceil_margin() = 3;
+function _side_vent_r_z0()          = _card_top_z();
+function _side_vent_r_h()           = _wall_top_z() - _side_vent_r_ceil_margin() - _side_vent_r_z0();
+
+// Rear vent field flanking the fan (Task 3): a flat strip of otherwise-
+// unused rear wall between the fan's own outboard edge (_fan_cx()-fan_size/2
+// -- the SAME conservative bound the fit-assert below uses; fan_size/2=30
+// safely covers the real bore (r=fan_size*0.92/2=27.6) and the mount screws'
+// corners (hole_spacing/2 + mount_dia/2 = 25+2.15=27.15), both < 30) and the
+// near (left) side wall's inner face -- same fixed-width idiom as
+// mitx-1u-chassis.scad's own _fan_vent_w() (a literal, NOT derived from the
+// gap -- a derived width would always trivially fit by construction and the
+// fit-assert below could never actually catch a real collision). Reuses
+// _side_vent_zmargin()'s full-height band -- this side has no PCIe hardware
+// nearby (that's on the RIGHT, at _pcie_slot_cx()>0), so no LP-card
+// constraint applies here.
+function _fan_vent_x1()  = _fan_cx() - fan_size / 2;   // fan's outboard edge
+function _side_inner_x() = -_clear_w() / 2 + wall;     // left side wall inner face
+function _fan_vent_w()   = 12;
+function _fan_vent_cx()  = (_fan_vent_x1() + _side_inner_x()) / 2;
+function _fan_vent_h()   = _wall_top_z() - 2 * _side_vent_zmargin();
+
 // Fan bore teardrop geometry (mitx-1u-chassis.scad's _mitx_fan_teardrop()
 // idiom, see that file for the full "why" -- a plain 45deg teardrop's ideal
 // apex, r*sqrt(2) above center, can exceed the rear wall's own headroom to
@@ -221,6 +266,28 @@ assert(_pcie_slot_cx() - wall >= -rack10_clear_width(standard)/2 - 1e-6
     && _pcie_slot_cx() + wall <= rack10_clear_width(standard)/2 + 1e-6,
     str("mitx-2u: PCIe floor mount hole x=", _pcie_slot_cx(),
         " falls outside the floor's interior span +-", rack10_clear_width(standard)/2));
+// Side intake vents must stay clear of the rear gusset zone (starts at
+// _tongue_y()-wall-_gusset_size(), matching the _mitx2_gusset() calls below)
+// -- same guard as mitx-1u-chassis.scad's own side vent, shared by both walls.
+assert(_side_vent_y0() + _side_vent_len() <= _tongue_y() - wall - _gusset_size() - 1e-6,
+    str("mitx-2u: side intake vent [", _side_vent_y0(), ",", _side_vent_y0()+_side_vent_len(),
+        "] reaches into the rear gusset zone (starts at ", _tongue_y()-wall-_gusset_size(), ")"));
+// Right-side vent's Z-band must have real headroom above the LP-card
+// keep-out envelope -- a large enough lp_card_h/heatsink_ceiling could
+// otherwise squeeze this band to zero or negative height (honeycomb_vent()
+// itself would reject a height below one hex's own flat-to-flat span, but
+// this project-level guard catches it first with a clearer message).
+assert(_side_vent_r_h() >= cell - 1e-6,
+    str("mitx-2u: right side vent headroom ", _side_vent_r_h(),
+        "mm above the LP-card keep-out (top at ", _card_top_z(),
+        ") is too tight for cell=", cell, " (reduce lp_card_h/heatsink_ceiling or cell)"));
+// Fan-flanking rear vent must fit entirely in the gap between the left side
+// wall's inner face and the fan's own outboard edge (not overlap either).
+assert(_fan_vent_cx() - _fan_vent_w()/2 >= _side_inner_x() + 1e-6
+    && _fan_vent_cx() + _fan_vent_w()/2 <= _fan_vent_x1() - 1e-6,
+    str("mitx-2u: fan-flanking vent [", _fan_vent_cx()-_fan_vent_w()/2, ",",
+        _fan_vent_cx()+_fan_vent_w()/2, "] does not fit between the side wall inner face (",
+        _side_inner_x(), ") and the fan's outboard edge (", _fan_vent_x1(), ")"));
 
 module _mitx2_faceplate() {
     difference() {
@@ -315,6 +382,35 @@ module _mitx2_fan_teardrop(size, depth, max_reach) {
             }
 }
 
+// Side-wall intake honeycomb vent (Task 3). honeycomb_vent()'s local frame
+// is X=width, Y=height, Z=depth (see honeycomb.scad); rotate([90,0,90]) maps
+// local (x,y,z) -> world (z,x,y) -- same idiom (and verified mapping) as
+// mitx-1u-chassis.scad's own _mitx_side_vent(). `sx` mirrors _mitx2_shell()'s
+// own side-wall loop convention (-1 = left, +1 = right); the RIGHT wall uses
+// the LP-card-constrained Z-band (_side_vent_r_z0()/_side_vent_r_h()), the
+// LEFT wall uses the full ceiling-to-floor band -- see those functions'
+// comments above for why they differ.
+module _mitx2_side_vent(sx) {
+    w2 = _clear_w() / 2;
+    x_start = (sx > 0) ? w2 - wall - 1 : -w2 - 1;   // 1mm overcut past the outer face
+    z0 = (sx > 0) ? _side_vent_r_z0() : _side_vent_zmargin();
+    h  = (sx > 0) ? _side_vent_r_h()  : _side_vent_h();
+    translate([x_start, _side_vent_y0(), z0])
+        rotate([90, 0, 90])
+            honeycomb_vent(_side_vent_len(), h, wall + 2, cell, hc_wall);
+}
+
+// Rear-wall vent flanking the fan (Task 3), same rotate([-90,0,0]) idiom as
+// the fan/DC-in cutters below (native Z-bore frame -> +Y through the wall) --
+// see mitx-1u-chassis.scad's _mitx_rear_fan_vent() for the full "why" on the
+// z0+height anchor (local Y reversal onto world Z).
+module _mitx2_rear_fan_vent() {
+    z0 = _rear_center_z() - _fan_vent_h() / 2;
+    translate([_fan_vent_cx() - _fan_vent_w()/2, _tongue_y() - wall - 1, z0 + _fan_vent_h()])
+        rotate([-90, 0, 0])
+            honeycomb_vent(_fan_vent_w(), _fan_vent_h(), wall + 2, cell, hc_wall);
+}
+
 module mitx_2u_chassis() {
     _mitx2_faceplate();
     // off-center board standoffs -- SAME _board_x() offset as the
@@ -353,11 +449,14 @@ module mitx_2u_chassis() {
         // the Task 1 keep-out preview's floor_th+standoff_h).
         translate([_pcie_slot_cx(), 0, floor_th])
             pcie_bracket_mount_holes("low-profile", depth=_pcie_mount_depth(), screw=pcie_screw);
+        // intake honeycomb vents, both side walls (Task 3).
+        for (sx = [-1, 1]) _mitx2_side_vent(sx);
+        // rear honeycomb vent field flanking the fan (Task 3).
+        _mitx2_rear_fan_vent();
     }
     // #40 rear-support tongue: root at _tongue_y() (flush with the rear
     // wall's outer face), projects further +Y into rack_support_plate()'s
     // channel -- see rack_support_tongue()'s consumer-contract doc comment.
     translate([0, _tongue_y(), 0]) rack_support_tongue();
-    // vents in Task 3
 }
 mitx_2u_chassis();

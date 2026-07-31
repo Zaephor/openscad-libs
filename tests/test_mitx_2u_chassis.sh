@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Verifies the mitx-2u-chassis project (Task 1 scope: faceplate ears + IO
-# cutout + button + PCIe aperture/bracket keep-out + board + fit-asserts)
-# renders + its fit-asserts pass at defaults, that the two negative controls
-# genuinely abort, and that the IO/PCIe/button cutouts are real voids
-# (OpenSCAD exit code unreliable for asserts -- grep stderr, per repo idiom).
-# Walls/floor/rear/vents are Task 2-3 scope, not covered here yet.
+# Verifies the mitx-2u-chassis project (Tasks 1-3: faceplate ears + IO cutout
+# + button + PCIe aperture/bracket keep-out + board + walls/floor/rear DC-in/
+# fan/#40 tongue + honeycomb vents) renders + its fit-asserts pass at
+# defaults, that the negative controls genuinely abort, and that the IO/PCIe/
+# button/vent cutouts are real voids (OpenSCAD exit code unreliable for
+# asserts -- grep stderr, per repo idiom).
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/mitx-2u-chassis"
@@ -24,6 +24,42 @@ if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "FAIL: default mitx-2u-chassis.scad errored:"; echo "$out"; fail=1
 fi
 [ -s "$tmp/default.stl" ] || { echo "FAIL: default render produced no/empty STL"; fail=1; }
+
+# Honeycomb vents (Task 3): three fields (2 side intake + 1 rear fan-flanking)
+# each self-recompute + echo HONEYCOMB_WORST_SPAN inside honeycomb.scad --
+# same idiom as tests/test_mitx_1u_chassis.sh / test_fan_grille.sh. Facet
+# count is a real-teeth proxy that the fields are actual hex-prism arrays cut
+# through the walls, not dead/solid space (pre-Task-3 baseline was ~1401
+# facets at this project's own defaults; the worst-span values below are the
+# actual self-support regression guard).
+span_lines="$(echo "$out" | grep -o 'HONEYCOMB_WORST_SPAN=[0-9.]*')"
+n_spans="$(echo "$span_lines" | grep -c . || true)"
+if [ "$n_spans" -lt 3 ]; then
+  echo "FAIL: expected 3 HONEYCOMB_WORST_SPAN echoes (2 side vents + 1 rear vent), got $n_spans:"
+  echo "$span_lines"; fail=1
+fi
+while IFS= read -r line; do
+  [ -z "$line" ] && continue
+  span="$(echo "$line" | cut -d= -f2)"
+  if ! awk -v s="$span" 'BEGIN{exit !(s <= 5.000001)}'; then
+    echo "FAIL: $line exceeds the 5mm self-support ceiling"; fail=1
+  fi
+done <<< "$span_lines"
+
+facets=0
+if [ -s "$tmp/default.stl" ]; then
+  facets=$(python3 - "$tmp/default.stl" <<'PYEOF'
+import struct, sys
+with open(sys.argv[1], "rb") as f:
+    data = f.read()
+print(struct.unpack("<I", data[80:84])[0])
+PYEOF
+)
+  if [ "$facets" -lt 2000 ]; then
+    echo "FAIL: default chassis STL has only $facets facets -- too few for 3 honeycomb vent fields (expected 2000+)"
+    fail=1
+  fi
+fi
 
 # tests/asserts.scad (default params + independent contract checks) must
 # also render clean.
@@ -92,6 +128,42 @@ if ! echo "$out" | grep -qi 'rear gusset/tongue zone'; then
   echo "$out"; fail=1
 fi
 [ -s "$tmp/neg_card_gusset.stl" ] && { echo "FAIL: lp_card_len=220 negative control produced a non-empty STL (should have aborted)"; fail=1; }
+
+# --- Task 3 negative control: fan_size=70 must abort the NEW fan-flanking-
+# vent fit-assert. fan_size=70 passes every earlier assert (known size;
+# gusset clearance is guaranteed by _rear_flank_cx()'s own construction;
+# rear-wall width 30+fan_size/2+fan_size/2=100<=108.6 still passes -- that's
+# the Task 2 assert fan_size=80 isolates; rear-wall height and teardrop
+# flat-span both still fit) but shrinks the gap between the fan's outboard
+# edge and the side wall's inner face (K-fan_size=76.6-70=6.6mm) below the
+# vent's fixed 12mm width -- isolates this one new assert.
+out="$(run "$tmp/neg_fan_vent.stl" "$mod" -D "fan_size=70")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: fan_size=70 did NOT abort -- fan-flanking-vent fit-assert broken:"
+  echo "$out"; fail=1
+fi
+if ! echo "$out" | grep -qi 'does not fit between the side wall inner face'; then
+  echo "FAIL: fan_size=70 aborted on the WRONG assert (expected 'does not fit between the side wall inner face'):"
+  echo "$out"; fail=1
+fi
+[ -s "$tmp/neg_fan_vent.stl" ] && { echo "FAIL: fan_size=70 negative control produced a non-empty STL (should have aborted)"; fail=1; }
+
+# --- Task 3 negative control: lp_card_h=72 must abort the NEW right-side-
+# vent-headroom fit-assert. lp_card_h=72 still passes the Task 1
+# standoff+board+LP-card-height fit-assert (<= _int_h()=86.11) but pushes the
+# LP-card keep-out top (_card_top_z()) high enough that the right wall's
+# above-the-card vent band shrinks below one honeycomb cell -- isolates this
+# one new assert.
+out="$(run "$tmp/neg_vent_headroom.stl" "$mod" -D "lp_card_h=72")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: lp_card_h=72 did NOT abort -- right-side-vent-headroom fit-assert broken:"
+  echo "$out"; fail=1
+fi
+if ! echo "$out" | grep -qi 'too tight for cell'; then
+  echo "FAIL: lp_card_h=72 aborted on the WRONG assert (expected 'too tight for cell'):"
+  echo "$out"; fail=1
+fi
+[ -s "$tmp/neg_vent_headroom.stl" ] && { echo "FAIL: lp_card_h=72 negative control produced a non-empty STL (should have aborted)"; fail=1; }
 
 # --- Hole-void regression: the IO cutout, PCIe slot aperture, and button
 # hole must be REAL voids through the faceplate (not just numerically-placed
@@ -184,5 +256,25 @@ probe_solid "translate([50, 8, 0.5]) cube([1.3,1.3,1.5]);" "floor material away 
 # same X/Y -- confirms the hole is cut ONLY at the floor, not also
 # (incorrectly) up at card-slot height.
 probe_solid "translate([96.5, 8, 7.5]) cube([1.3,1.3,1]);" "unexpected void at the old card-height Z near the PCIe mount hole X/Y"
+
+# --- Honeycomb vent void regression (Task 3): each of the 3 vent fields must
+# be a REAL void through the wall at a hex hole it actually draws, not just a
+# numerically-placed dead space. Probe centers are exact hex centers,
+# independently re-derived from honeycomb_vent()'s own col_pitch/row_pitch
+# math (cell=8, hc_wall=1.2 defaults) and each field's world transform
+# (verified empirically during implementation), NOT guessed -- a naive probe
+# could easily land on the solid web between hexes instead of a hole.
+# Left side wall (sx=-1, full-height band z0=6, h=76.11): hex at local
+# (col x=28.8, row y=36.5769) -> world (-109.8, 44.8, 42.5769).
+probe_empty "translate([-110.3, 44.3, 42.0769]) cube([1,1,1]);" "left side intake vent does not open through the wall"
+probe_solid "translate([-110.3, 7.5, 42.0769]) cube([1,1,1]);" "left side wall material before the vent's own Y-range unexpectedly empty"
+# Right side wall (sx=+1, LP-card-constrained band z0=73.97, h=11.14): hex at
+# local (col x=14.4, row y=4.0641) -> world (109.8, 30.4, 78.034).
+probe_empty "translate([109.3, 29.9, 77.534]) cube([1,1,1]);" "right side intake vent does not open through the wall"
+probe_solid "translate([109.3, 7.5, 77.534]) cube([1,1,1]);" "right side wall material before the vent's own Y-range unexpectedly empty"
+# Rear vent flanking the fan (local col x=7.2, row y=32.5128, rotate([-90,0,0])
+# reverses local Y onto world Z) -> world (-100.4, 226.8, 49.597).
+probe_empty "translate([-100.9, 226.3, 49.097]) cube([1,1,1]);" "rear fan-flanking vent does not open through the wall"
+probe_solid "translate([-100.9, 226.3, 3]) cube([1,1,1]);" "rear wall material below the fan-flanking vent's own Z-band unexpectedly empty"
 
 [ "$fail" -eq 0 ] && echo ok || exit 1
