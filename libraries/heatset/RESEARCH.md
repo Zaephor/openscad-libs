@@ -358,7 +358,10 @@ conservative (larger) of the two, **1.6 mm**, on the same safe-direction
 principle this library already applies via SPIROL's decreasing-multiplier
 rule: too much wall costs boss diameter, too little costs a cracked print.
 ruthex's 1.3 mm is recorded here, not discarded, so a stronger tie-breaker
-(a third manufacturer, or physical testing) can revisit it later.
+(a third manufacturer, or physical testing) can revisit it later — but see
+the correction immediately below: the "conservative direction" framing in
+this paragraph does not survive scrutiny once cross-family/hole-size scaling
+is considered.
 
 **Cross-family/cross-hole-size applicability — an unresolved gap, stated
 explicitly.** The paragraph above leaned on SPIROL's "multiplier decreases

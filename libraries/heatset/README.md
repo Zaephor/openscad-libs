@@ -158,12 +158,13 @@ value pending stronger corroboration.
 | [ruthex CAD data page](https://www.ruthex.de/en/pages/cad-daten) | corroborating (length only) | `insert_length` naming/values via per-size STEP filenames (`M2x4`, `M2.5x5.7`, `M3x5.7`, `M4x8.1`, `M5x9.5`, `M6x12.7`) — does not expose OD/hole numbers in fetchable text |
 | [insertguide.com, "Heat Set Insert Hole Size Guide"](https://insertguide.com/guides/heat-set-insert-hole-size/) | C | `pilot_dia` corroboration for all 6 sizes (community source, not a manufacturer datasheet); fills the M2/M2.5/M6 gap CNC Kitchen leaves |
 | [SPIROL, "How to Design the Proper Hole for Heat / Ultrasonic Inserts"](https://www.spirol.com/assets/files/ins-wp-how-to-design-the-proper-hole-for-heat-ultrasonic-inserts-us.pdf) | A (rule) / C (derived numbers) | the "2-3x insert diameter" boss-wall multiplier rule is `[A]` fetched+read; the per-size `boss_od` numbers derived from it (flat 2.5x midpoint) are `[C]` |
+| [Böllhoff AMTEC® precision thread inserts for plastic components catalog](https://media.boellhoff.com/files/pdf1/amtec-precision-thread-inserts-for-plastic-components-en-0200.pdf) | A (negative result) | checked for an M2 min-wall figure; the catalog's metric range starts at M2.5, so it backs no value here — recorded to show the gap was actually checked, not skipped |
 
 Full evidence log, per-source fetch notes, and the sanity-check tables
 (`pilot_dia < insert_od`, `boss_od` vs. `2x`/`2.5x insert_od`) are in
 `RESEARCH.md`.
 
-### Every `//VERIFY` value (carried forward honestly, not laundered)
+### Every `//VERIFY` value and other honestly-disclosed gaps (carried forward honestly, not laundered)
 
 - **`boss_od`** — no source found this pass gives a numeric per-size boss
   OD table. Every size's value is **derived**, not measured: SPIROL's

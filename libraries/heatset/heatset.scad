@@ -14,8 +14,7 @@
 //   [C] single-sourced / derived, not vendor-specified.
 //   //VERIFY marks a weak/single-sourced value pending stronger corroboration.
 //
-// Task 2 of this pass: (1) data table + accessor functions only. Placeholder
-// and hole-stamp roles are added by later tasks.
+// All three roles (data, placeholder, hole-stamp) are implemented below.
 
 $fn = 48;
 
@@ -48,9 +47,16 @@ function heatset_lead_in(s)       = _heatset_row(s)[5];
    from this table asserts rather than returning an invented number — M4/M5/M6
    have no consumer and no researched figure, and tests/test_heatset_lib.sh uses
    M4 as its negative control for exactly that behaviour.
+   M2 = 1.6 [A] PEM microPEM MSIA/MSIB SI-9 "Min. Wall Thickness" row — but
+   that family's insert body (3.2mm OD / 2.85mm hole) differs from the
+   IUTA/IUTB/IUTC family backing this table's other M2 columns (3.73mm OD /
+   3.23mm hole); cross-family/hole-size transfer is an open, explicitly
+   recorded gap, not confirmed. Ships as the more conservative of two
+   disagreeing manufacturer figures (PEM 1.6 vs. ruthex 1.3); see
+   RESEARCH.md "M2 min-wall (#77)".
    Row: [size, min_wall] mm. */
 function _heatset_min_wall_table() = [
-    ["M2",   1.6], // [A] PEM microPEM MSIA/MSIB SI-9 "Min. Wall Thickness" row for M2 — but that family's insert body (3.2mm OD / 2.85mm hole) differs from the IUTA/IUTB/IUTC family backing this table's other M2 columns (3.73mm OD / 3.23mm hole); cross-family/hole-size transfer is an open, explicitly recorded gap, not confirmed — ships as the more conservative of two disagreeing manufacturer figures (PEM 1.6 vs. ruthex 1.3); see RESEARCH.md "M2 min-wall (#77)"
+    ["M2",   1.6], // [A] PEM microPEM MSIA/MSIB SI-9 — see block comment above for cross-family caveat
     ["M2.5", 1.6], // [A]/[B] CNC Kitchen W=1.6 + ruthex W(min.)=1.6 agree; see RESEARCH.md "Cross-brand M2.5/M3 (Task #6)"
     ["M3",   1.6], // [A]/[B] CNC Kitchen W=1.6 + ruthex W(min.)=1.6 agree; see RESEARCH.md "Cross-brand M2.5/M3 (Task #6)"
 ];

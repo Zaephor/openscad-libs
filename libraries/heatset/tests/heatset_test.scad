@@ -44,6 +44,7 @@ assert(heatset_pilot_dia("M2") + 2*heatset_min_wall("M2") <= heatset_boss_od("M2
 // refactor too — they are regression locks, not red-first feature tests.
 assert(heatset_min_wall("M2.5") == 1.6, "M2.5 min_wall unchanged by table refactor");
 assert(heatset_min_wall("M3") == 1.6, "M3 min_wall unchanged by table refactor");
+assert(heatset_min_wall("M2") == 1.6, "M2 min_wall locked");
 
 echo("heatset_test OK");
 
