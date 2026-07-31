@@ -62,6 +62,37 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
 fi
 [ -s "$tmp/neg_board_wall.stl" ] && { echo "FAIL: board_offset=90 negative control produced a non-empty STL (should have aborted)"; fail=1; }
 
+# --- Task 2 negative control: fan_size=80 must abort the NEW rear-wall-width
+# fit-assert (abs(_fan_cx())+fan_size/2 > _clear_w()/2-wall). fan_size=80 is
+# a real fan_known_sizes() entry and passes every earlier assert (gusset
+# clearance is guaranteed by _rear_flank_cx()'s own construction; rear-wall
+# HEIGHT still fits at 80mm, _wall_top_z()=88.11) -- isolates this one assert.
+out="$(run "$tmp/neg_fan_width.stl" "$mod" -D "fan_size=80")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: fan_size=80 did NOT abort -- rear-wall-width fit-assert broken:"
+  echo "$out"; fail=1
+fi
+if ! echo "$out" | grep -qi 'exceeds the rear wall width'; then
+  echo "FAIL: fan_size=80 aborted on the WRONG assert (expected 'exceeds the rear wall width'):"
+  echo "$out"; fail=1
+fi
+[ -s "$tmp/neg_fan_width.stl" ] && { echo "FAIL: fan_size=80 negative control produced a non-empty STL (should have aborted)"; fail=1; }
+
+# --- Task 2 negative control: lp_card_len=220 must abort the NEW LP-card-vs-
+# rear-gusset-zone fit-assert (220 <= _usable_depth()=225, so the Task 1
+# rear-collision assert still PASSES -- isolates the Task 2 assert, which
+# has a tighter threshold: _tongue_y()-wall-_gusset_size()=210.6).
+out="$(run "$tmp/neg_card_gusset.stl" "$mod" -D "lp_card_len=220")"
+if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: lp_card_len=220 did NOT abort -- LP-card-vs-rear-gusset-zone fit-assert broken:"
+  echo "$out"; fail=1
+fi
+if ! echo "$out" | grep -qi 'rear gusset/tongue zone'; then
+  echo "FAIL: lp_card_len=220 aborted on the WRONG assert (expected 'rear gusset/tongue zone'):"
+  echo "$out"; fail=1
+fi
+[ -s "$tmp/neg_card_gusset.stl" ] && { echo "FAIL: lp_card_len=220 negative control produced a non-empty STL (should have aborted)"; fail=1; }
+
 # --- Hole-void regression: the IO cutout, PCIe slot aperture, and button
 # hole must be REAL voids through the faceplate (not just numerically-placed
 # dead space) -- same probe idiom as mitx-1u-chassis's own test. Positive
@@ -114,5 +145,44 @@ probe_solid "translate([115, -4, 60]) cube([2,5,2]);"  "right-of-PCIe faceplate 
 # (same X band, just outside the slot's own Z=[7,19] span) must still be
 # solid, unperforated faceplate.
 probe_solid "translate([96, -4, 25]) cube([2,5,2]);"   "faceplate above the PCIe slot unexpectedly voided (mount-hole regression)"
+
+# --- Task 2: walls/floor/rear DC-in/fan/#40 tongue + PCIe floor mount hole.
+# Numeric literals below match the default geometry: _tongue_y()=228,
+# rear wall material Y=[225.6,228]; _rear_center_z()=44.055; _fan_cx()=-62,
+# _dc_cx()=62 (fan_size=60 -> _rear_flank_cx()=_gusset_x()+_gusset_xw()/2+
+# max(60,11)/2+2 = 25+5+30+2 = 62); _pcie_slot_cx()=97.13,
+# _pcie_screw_y_lp()=8.65 (floor mount hole).
+
+# Fan bore + DC-in must be REAL voids clean through the rear wall.
+probe_empty "translate([-63, 226, 43]) cube([2,2,2]);" "fan bore does not open through the rear wall"
+probe_empty "translate([61, 226, 43]) cube([2,2,2]);"  "DC-in hole does not open through the rear wall"
+# Positive control: plain rear wall material clear of the fan/DC-in/gussets.
+probe_solid "translate([0, 226, 43]) cube([2,2,2]);"   "rear wall material between fan and DC-in unexpectedly empty"
+
+# The #40 tongue must be REAL material (not just numerically placed dead
+# space), well past the rear wall.
+probe_solid "translate([-1, 233, 5]) cube([2,2,2]);" "#40 tongue is not real material"
+# Buttress regression: the tongue's underside must be solidly supported by
+# the tray's own floor for its full engagement reach (no unsupported
+# overhang) -- rack-support's own README "Buttressing" consumer contract.
+probe_solid "translate([-0.4, 233.6, 0.1]) cube([0.8,0.8,0.8]);" "no floor/buttress under the #40 tongue -- unsupported overhang"
+
+# PCIe bracket foot mount hole (CORRECTION 2026-07-31): must be a REAL void
+# through the FLOOR (Z=[0,floor_th]) at the bracket foot's landing X/Y --
+# NOT at the Task 1 keep-out preview's floor_th+standoff_h (board/card-slot
+# height, which was tried first and confirmed empirically to leave the hole
+# floating above the floor, cutting nothing -- see mitx-2u-chassis.scad's
+# _pcie_mount_depth() comment). Probe is inset 0.4-0.6mm off the hole's own
+# 1.98mm radius/floor bounds to avoid a coincident-face non-manifold
+# artifact at the exact boundary (verified during implementation: an
+# uninset probe touching the floor's own top face returns a degenerate
+# zero-volume non-manifold result, neither cleanly empty nor solid).
+probe_empty "translate([96.5, 8, 0.4]) cube([1.3,1.3,1.2]);" "PCIe floor mount hole does not open through the floor"
+# Positive control: floor material away from the mount hole.
+probe_solid "translate([50, 8, 0.5]) cube([1.3,1.3,1.5]);" "floor material away from the PCIe mount hole unexpectedly empty"
+# Positive control: no stray void at the OLD (wrong) preview Z-datum near the
+# same X/Y -- confirms the hole is cut ONLY at the floor, not also
+# (incorrectly) up at card-slot height.
+probe_solid "translate([96.5, 8, 7.5]) cube([1.3,1.3,1]);" "unexpected void at the old card-height Z near the PCIe mount hole X/Y"
 
 [ "$fail" -eq 0 ] && echo ok || exit 1

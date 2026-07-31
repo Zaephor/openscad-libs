@@ -46,6 +46,57 @@ assert(_board_x() - wall >= -rack10_clear_width(standard)/2
     str("mitx-2u: board [", _board_x(), ",", _board_x()+_bw(),
         "] collides with a side wall (interior span +-", rack10_clear_width(standard)/2 - wall, ")"));
 
+// #40 tongue Y-extent regression: the tongue's tip must land exactly on
+// rack10_rear_post_y(standard) -- rack_support_tongue()'s own consumer
+// contract -- NOT on _usable_depth() (that fn additionally reserves
+// faceplate_th as a separate, more conservative board-depth margin; the two
+// intentionally differ, see _tongue_y()'s own comment in the main file).
+// This also locks _tongue_y() >= _usable_depth(), i.e. the board always has
+// room before the rear wall.
+assert(_tongue_y() + rack_support_engagement_depth() == rack10_rear_post_y(standard),
+    str("mitx-2u: tongue tip ", _tongue_y()+rack_support_engagement_depth(),
+        " != rear post plane ", rack10_rear_post_y(standard)));
+assert(_tongue_y() >= _usable_depth(),
+    str("mitx-2u: tongue root ", _tongue_y(), " < _usable_depth() ", _usable_depth(),
+        " -- rear wall would sit in front of the board's own depth budget"));
+
+// Fan/DC-in flank-offset regression (Task 2 finding, 2026-07-31): unlike the
+// sibling mitx-1u-chassis's flat -_clear_w()/4 idiom (which happened to
+// clear the gusset only because that project's fan_size=40 is smaller),
+// this project's own fan_size=60 default needs the generalized
+// _rear_flank_cx() derivation (gusset far edge + hole radius + margin) --
+// locks that the flank offset is actually DERIVED from the gusset geometry,
+// not a coincidental flat fraction of clear width that could silently stop
+// clearing the gusset again after an unrelated edit.
+assert(_fan_cx() == -(_gusset_x() + _gusset_xw()/2 + max(fan_size, dc_dia)/2 + _rear_flank_margin()),
+    str("mitx-2u: fan_cx ", _fan_cx(), " does not match the derived gusset-clearing offset"));
+
+// LP card keep-out must sit on the OPPOSITE side (high-X) from the fan/DC-in
+// flank zone, same "wrong side" regression shape as the IO-vs-PCIe-slot
+// check above -- the card's own X (slot centerline) is far out toward the
+// panel edge, well clear of both the fan (negative X) and DC-in (positive X,
+// but close to center) by construction; this locks that _pcie_slot_cx() is
+// clearly outside the +-_rear_flank_cx() flank band, not just numerically
+// non-overlapping by a hair.
+assert(_pcie_slot_cx() > _rear_flank_cx() + dc_dia/2,
+    str("mitx-2u: PCIe slot centerline ", _pcie_slot_cx(),
+        " expected clear of (right of) the DC-in flank zone (edge at ", _rear_flank_cx()+dc_dia/2, ")"));
+
+// Fan teardrop cap regression: at THIS project's own defaults (device_u=2,
+// fan_size=60) the rear wall is tall enough that the ideal 45deg apex
+// (r*sqrt(2) above center) actually FITS within available headroom -- unlike
+// the 1U sibling (fan_size=40, much shorter wall), the cap does not engage
+// by default here. Locks that this is still true (documents why there's no
+// "cap engaged" regression assert here, the mirror image of the 1U file's
+// own "expected the default fan_size to need the flat-cap" lock) and that
+// the flat-top span stays at exactly 0 as a result.
+assert(_fan_teardrop_apex() <= _fan_teardrop_avail(),
+    str("mitx-2u: expected the default fan_size to NOT need the flat-cap (ideal apex ",
+        _fan_teardrop_apex(), " <= available ", _fan_teardrop_avail(),
+        ") -- if this no longer holds, the flat-cap code path is untested here"));
+assert(_fan_teardrop_flat_w() == 0,
+    str("mitx-2u: expected zero flat-top span at defaults, got ", _fan_teardrop_flat_w()));
+
 // No explicit render call needed -- the include above already re-runs
 // mitx-2u-chassis.scad's own trailing mitx_2u_chassis() call (and its
 // top-level fit-asserts) at defaults.
