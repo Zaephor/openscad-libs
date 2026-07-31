@@ -106,6 +106,12 @@ io_port_clearance = 0.4;
 // fan's inner face 0.4mm INSIDE the board: it wasn't derived from the
 // library's actual fan depth.)
 fan_board_gap = 1.5;   // clearance between interior fan face and board rear edge
+// fan_pad_dia: diameter of the solid pad kept around each fan mount screw
+// where the rear-wall honeycomb would otherwise reach it. The M3 head (~5.5mm)
+// must bear on material, not on the 1.2mm hex lattice. 9mm leaves a 2.35mm
+// solid annulus around the 4.3mm clearance hole (fan_mount_hole_dia(40)).
+// Guarded in tests/asserts.scad against the lib's own hole diameter.
+fan_pad_dia = 9;       // solid bearing pad around each fan mount screw
 // fan_plenum: board-rear-edge -> rear-wall gap when fans on. Derived from
 // the library-owned fan depth (fan_default_thickness(fan_size) — NOT
 // duplicated here as a literal) plus the wall thickness (the fan mounts on
@@ -183,6 +189,37 @@ function _vent_band_z0() =
     board_z() + sbc_thickness(BOARD) + _front_conn_max_h() + io_port_clearance + 1; // 1mm above INFLATED cutout tops
 function rack_depth_eff() = rack_depth < 0 ? rack10_depth_preset(STD) : rack_depth;
 
+// Fan X centres, thermally placed rather than evenly spaced (#74).
+// The shipped layout butted the pair at -20/+20, leaving 16.5mm of the SFP
+// zone outside the fan footprint (~50% covered) on a board whose SFP+ thermal
+// is the documented failure mode.
+//   1 fan : SFP zone centre (thermal priority)
+//   2 fans: SFP zone centre + RJ45 block centre, with a deliberate gap between
+//   3+    : even spacing centred on the chassis -- the pre-#74 fallback, kept
+//           so a non-designed fan_count still yields valid geometry
+// DERIVED from the sbc rows, never typed, so a re-caliper of the board moves
+// the fans with it.
+function _fan_x_centres(fan_size = fan_size, fan_count = fan_count) =
+    let (sfp   = [for (c = sbc_connectors(BOARD)) if (c[0] == "sfp_1" || c[0] == "sfp_2") c],
+         lo    = min([for (c = sfp) board_x() + c[1][0]]),
+         hi    = max([for (c = sfp) board_x() + c[1][0] + c[2][0]]),
+         rj    = sbc_connector(BOARD, "rj45_block"),
+         c_sfp = (lo + hi) / 2,
+         c_rj  = board_x() + rj[1][0] + rj[2][0]/2)
+    fan_count == 1 ? [c_sfp]
+  : fan_count == 2 ? [c_sfp, c_rj]
+  : [for (i = [0:fan_count-1]) -fan_count*fan_size/2 + fan_size/2 + i*fan_size];
+
+// Union of the fan footprints -- the honeycomb band's X extent.
+function _fan_band_x(fan_size = fan_size, fan_count = fan_count) =
+    let (cs = _fan_x_centres(fan_size, fan_count))
+    [min(cs) - fan_size/2, max(cs) + fan_size/2];
+
+// Smallest gap between adjacent derived centres (1e9 when there is only one).
+function _fan_centre_min_sep(fan_size = fan_size, fan_count = fan_count) =
+    let (cs = _fan_x_centres(fan_size, fan_count))
+    len(cs) < 2 ? 1e9 : min([for (i = [1:len(cs)-1]) cs[i] - cs[i-1]]);
+
 // Fan must physically fit the 1U internal height when exhaust is on.
 assert(!enable_exhaust || fan_size <= int_h() + 1e-6,
     str("params: fan_size ", fan_size, " exceeds internal height ", int_h(),
@@ -206,3 +243,13 @@ assert(!enable_exhaust ||
 // fan_size must be one of the sizes the fans library actually supports.
 assert(len([for (s = fan_known_sizes()) if (s == fan_size) s]) > 0,
     str("params: fan_size ", fan_size, " not in fan_known_sizes() ", fan_known_sizes()));
+
+// Thermally-placed fans must not overlap each other.
+assert(!enable_exhaust || _fan_centre_min_sep() >= fan_size - 1e-6,
+    str("params: fan_size ", fan_size, " overlaps at the derived fan centres ",
+        "(separation ", _fan_centre_min_sep(), ") — reduce fan_size or fan_count"));
+// The vent band must stay inside the side walls.
+assert(_fan_band_x()[0] >= -(body_w()/2 - wall) - 1e-6
+    && _fan_band_x()[1] <=  (body_w()/2 - wall) + 1e-6,
+    str("params: fan band ", _fan_band_x(), " exceeds the interior width ",
+        body_w()/2 - wall));

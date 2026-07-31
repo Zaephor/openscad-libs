@@ -1,29 +1,37 @@
 #!/usr/bin/env bash
-# Verifies the rear wall's PASSIVE branch (enable_exhaust=false) is now a
-# self-supporting honeycomb vent over the fan footprint, replacing the old
-# full-width vertical-slot array (a bug: the "passive" path used to cut
-# slots across the ENTIRE body_w(), not just over where fans would sit).
+# Verifies the rear wall carries a self-supporting honeycomb vent over the fan
+# footprint in BOTH fan modes -- passive (enable_exhaust=false) and active.
+#
+# The rear wall used to differ by mode: passive got a honeycomb, active got two
+# plain round fan bores. Those bores lay on a horizontal axis through a
+# vertical wall and could not print without supports (#66), so active now cuts
+# the same honeycomb field, adding only the mount screw holes and the solid
+# bearing pads around them. This test therefore no longer discriminates the
+# modes by the PRESENCE of a rear honeycomb -- it requires one in each.
 #
 # Discriminators (all deterministic -- STL export vertex order is NOT
 # deterministic across renders, so `cmp -s` on STL bytes is a false-pass and
 # is never used here; see test_bpir4_tray_params.sh's header for the same
 # reasoning):
-#   1. Source check: tray.scad now has >=2 honeycomb_vent( call sites (the
-#      pre-existing faceplate call + the new rear-wall call). A bare
-#      `grep -q honeycomb_vent` is insufficient on its own -- the faceplate
-#      already calls it -- so this counts call sites instead.
+#   1. Source check: tray.scad has >=2 honeycomb_vent( call sites (the
+#      faceplate band + the rear wall). A bare `grep -q honeycomb_vent` is
+#      insufficient on its own -- the faceplate already calls it -- so this
+#      counts call sites instead.
 #   2. Runtime check: honeycomb_vent() echoes "HONEYCOMB_WORST_SPAN=" to
 #      stderr once per call (see libraries/honeycomb/honeycomb.scad). Render
-#      tray() and
-#      tray(enable_exhaust=false) via throwaway consumers UNDER
+#      tray() and tray(enable_exhaust=false) via throwaway consumers UNDER
 #      projects/bpir4-1u-chassis/ (a `use <parts/tray.scad>` only resolves
 #      relative to the consumer file's own directory -- see
-#      test_bpir4_tray_params.sh's render_consumer() comment) and count
-#      those echo lines: active should see exactly 1 (faceplate only),
-#      passive should see MORE than active (faceplate + the new rear vent).
-#      This deterministically proves the passive branch adds a honeycomb
-#      call, independent of any facet-count heuristic.
-#   3. Geometry-differs: passive facet count != active facet count.
+#      test_bpir4_tray_params.sh's render_consumer() comment) and count those
+#      echo lines: EACH mode must emit at least 2 (faceplate + rear wall).
+#      That proves the rear honeycomb actually RAN in both modes, rather than
+#      merely appearing in the source -- which check 1 alone cannot tell,
+#      since a call inside a dead branch still greps. Counting is kept as the
+#      mechanism precisely because it is a runtime fact, not a source fact.
+#   3. Geometry-differs: passive facet count != active facet count. Still a
+#      valid discriminator now that both modes carry a rear honeycomb --
+#      active additionally has the screw holes, the bearing pads and a deeper
+#      plenum, so the two meshes cannot coincide.
 #   4. Self-support + manifold: passive stderr must not contain a fatal
 #      ERROR, a failed assert (this is exactly how honeycomb_vent's own
 #      worst_span<=5 self-support ceiling assert would surface if the
@@ -73,14 +81,18 @@ render_consumer passive "enable_exhaust=false, fan_count=2, fan_size=40"
 facets() { grep -c 'facet normal' "$1"; }
 worst_span_count() { grep -c 'HONEYCOMB_WORST_SPAN=' "$1"; }
 
-# --- 2. Runtime honeycomb-present check. ---
+# --- 2. Runtime honeycomb-present check: BOTH modes must run >=2 honeycomb
+# calls (the faceplate band + the rear wall). ---
 active_spans="$(worst_span_count "$stl_dir/active.stderr")"
 passive_spans="$(worst_span_count "$stl_dir/passive.stderr")"
 echo "honeycomb call count: active=$active_spans passive=$passive_spans"
-if [ "$passive_spans" -le "$active_spans" ]; then
-  echo "FAIL: passive render must echo MORE HONEYCOMB_WORST_SPAN= lines than active (faceplate + rear vs faceplate only); active=$active_spans passive=$passive_spans"
-  fail=1
-fi
+for mode in active passive; do
+  n="$(worst_span_count "$stl_dir/$mode.stderr")"
+  if [ "$n" -lt 2 ]; then
+    echo "FAIL: $mode render echoed $n HONEYCOMB_WORST_SPAN= lines; expected >=2 (faceplate + rear wall) — the rear-wall honeycomb did not run in $mode mode"
+    fail=1
+  fi
+done
 
 # --- 3. Geometry-differs: passive facet count != active facet count. ---
 active_facets="$(facets "$stl_dir/active.stl")"
