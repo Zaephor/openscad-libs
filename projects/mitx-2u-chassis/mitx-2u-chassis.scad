@@ -11,6 +11,7 @@ use <rack-support/rack-support.scad>;
 use <fans/fans.scad>;
 use <honeycomb/honeycomb.scad>;
 use <pcie-bracket/pcie-bracket.scad>;
+use <connectors/connectors.scad>;   // pcie_x16 body height, for _pcie_fold_z()
 
 /* [Rack] */
 standard = "labrax";
@@ -68,6 +69,41 @@ function _pcie_slot_x1() = _pcie_slot_x0() + mobo_pcie_slot_w();
 // the slot's centerline, not board_offset directly.
 function _pcie_slot_cx() = _pcie_slot_x0() + mobo_pcie_slot_w()/2;
 
+// World Z of pcie_bracket()'s own local Z=0 fold datum -- ONE value, used by
+// the keep-out preview, the faceplate aperture and every bracket fit-assert
+// below (an earlier revision used two different Z's for the same rigid part).
+// The bracket is carried by the CARD, so its Z is set by where the card seats,
+// not by anything the chassis is free to choose:
+//   card's bottom edge  = board top + pcie_x16 body height
+//                       = floor_th+standoff_h+mobo_thickness()+11.25 [A]
+//   card's top          = that + lp_card_h
+// The bracket has to span the card it carries, and has to clear the 2U
+// ceiling, which pins the fold datum to a narrow band -- both ends are
+// asserted below rather than left as prose:
+//   lower: fold_z + bracket_height >= card top   -> fold_z >= 6.02 at defaults
+//   upper: fold_z + bracket_height <= interior   -> fold_z <= 8.91 at defaults
+// floor_th+standoff_h (8.0) sits inside that band and is the one value in the
+// model already tied to the board's own seating plane, so it is used directly.
+function _pcie_fold_z()   = floor_th + standoff_h;
+function _pcie_card_z0()  = floor_th + standoff_h + mobo_thickness()
+                            + connector_size("pcie_x16")[2];
+function _pcie_bracket_h() = pcie_bracket_size("low-profile")[0];
+
+// Faceplate aperture for the card's I/O, cut from the BRACKET's own window
+// (pcie_bracket_window(), the same accessor pcie_bracket() cuts its own
+// preview window from) -- NOT from mobo_pcie_cutout(), which models the
+// board-side edge-connector slot footprint (a fixed 12mm box at board height,
+// motherboards.scad's own //VERIFY [C] note) and has nothing to do with where
+// a card's ports land on the panel. Cutting the old one put the aperture at
+// world Z=[7,19] while the card's real I/O window sits at [25.82,69.38] --
+// zero overlap, i.e. a real card's ports blocked by solid faceplate.
+// [cx, cz, w, h] with cx/cz the window's CENTRE in the bracket's local frame.
+function _pcie_win()    = pcie_bracket_window("low-profile");
+function _pcie_ap_cx()  = _pcie_slot_cx() + _pcie_win()[0];
+function _pcie_ap_cz()  = _pcie_fold_z()  + _pcie_win()[1];
+function _pcie_ap_w()   = _pcie_win()[2];
+function _pcie_ap_h()   = _pcie_win()[3];
+
 // Power button: sits in the off-center gap on the panel's low-X side,
 // beside the IO window (board_offset shifts the board toward +X to open
 // this gap) -- same _button_x() idiom as mitx-1u-chassis.scad, centered in
@@ -109,28 +145,16 @@ function _dc_cx()  =  _rear_flank_cx();
 // of the rear gusset/tongue zone (starts at _tongue_y()-wall-_gusset_size(),
 // see the _mitx2_gusset() calls below) and vertically margined off the floor
 // and open top -- same _side_vent_y0()/_side_vent_len() idiom as
-// mitx-1u-chassis.scad's own side vent. Both walls share the same Y-range;
-// only the Z-band differs (see _side_vent_r_h() below) because the RIGHT
-// wall additionally has to clear the LP-card keep-out (Tasks 1-2's
-// lp_card_h / _pcie_slot_cx() sit close to this wall's own inner face -- see
-// the PCIe floor mount hole fit-assert above), which the LEFT wall (no PCIe
-// hardware nearby) doesn't need to worry about.
+// mitx-1u-chassis.scad's own side vent. BOTH walls get the same full band:
+// an earlier revision pinned the right wall's band entirely above the LP-card
+// keep-out to avoid "collision with the card", which a vent cannot have --
+// it is a cut THROUGH the wall and occupies no interior volume at all. Nor is
+// there an airflow objection: the card's own centreline sits 11.5mm inboard
+// of this wall's inner face, and intake drawn past a hot card helps it.
 function _side_vent_y0()      = 16;
 function _side_vent_len()     = 80;
 function _side_vent_zmargin() = 6;
-// Left wall (sx=-1): full ceiling-to-floor band (mirrors mitx-1u-chassis.scad).
 function _side_vent_h() = _wall_top_z() - 2 * _side_vent_zmargin();
-// Right wall (sx=+1): the LP card's own keep-out envelope (Tasks 1-2's
-// standoff_h+mobo_thickness()+lp_card_h fit-assert, see above) tops out at
-// this Z -- the vent band on THIS wall is pinned entirely above it so it
-// can't collide with the card regardless of the card's own (unmodeled)
-// width; a slightly tighter ceiling margin (_side_vent_r_ceil_margin(), 3mm
-// vs the left wall's 6mm) buys back some of the headroom this constraint
-// costs, while still leaving a real solid strip at the wall's own top edge.
-function _card_top_z()              = floor_th + standoff_h + mobo_thickness() + lp_card_h;
-function _side_vent_r_ceil_margin() = 3;
-function _side_vent_r_z0()          = _card_top_z();
-function _side_vent_r_h()           = _wall_top_z() - _side_vent_r_ceil_margin() - _side_vent_r_z0();
 
 // Rear vent field flanking the fan (Task 3): a flat strip of otherwise-
 // unused rear wall between the fan's own outboard edge (_fan_cx()-fan_size/2
@@ -163,24 +187,36 @@ function _fan_teardrop_apex()   = _fan_bore_r() * sqrt(2);
 function _fan_teardrop_avail()  = _wall_top_z() - _rear_center_z();
 function _fan_teardrop_flat_w() = 2 * max(0, _fan_teardrop_apex() - _fan_teardrop_avail());
 
-// PCIe bracket foot mount hole (CORRECTION 2026-07-31, see plan Global
-// Constraints): unlike the Task 1 keep-out preview (translated to
-// floor_th+standoff_h, board/card-slot height, purely for visualizing the
-// card in place), the bracket's FOOT physically needs to rest on this
-// chassis's own real floor. pcie_bracket_mount_holes() cuts a Z-axis hole
-// DOWN from its own local Z=0 by `depth` -- calling it with local Z=0 mapped
-// to world Z=floor_th (the floor slab's own TOP surface) and depth=floor_th+1
-// cuts cleanly through the floor (Z=[0,floor_th]) with a 1mm overshoot below
-// and the module's own built-in 0.02mm overshoot above. X/Y reuse the SAME
-// _pcie_slot_cx()/0 anchor as the Task 1 preview (bracket's local X=0/Y=0
-// datum -- slot centerline / back-plane-mates-panel plane -- is unaffected
-// by this Z correction; only the bracket's OWN Z-translate differs between
-// the card-visualization preview and this real floor cut). Verified
-// empirically via an intersection() probe against the floor slab (see
-// tests/test_mitx_2u_chassis.sh) -- the floor_th+standoff_h preview Z was
-// tried first and confirmed to leave the hole floating above the floor,
-// cutting nothing.
-function _pcie_mount_depth() = floor_th + 1;
+// This chassis deliberately cuts NO pcie_bracket_mount_holes(). Two
+// independent reasons, both verified rather than assumed:
+//   1. Z: the bracket's foot is at its local Z=[-thickness,0], i.e. world
+//      Z=[7.2,8.0] at _pcie_fold_z() -- it rides at card height, 5.2mm clear
+//      of the floor's top face. A Z-axis hole bored through the floor cannot
+//      fasten anything up there. (An earlier revision cut the hole at the
+//      floor while leaving the bracket at card height: two different Z's for
+//      one rigid part, with nothing closing the gap.)
+//   2. XY: the foot's screw lands at (_pcie_slot_cx(), _pcie_screw_y_lp()) =
+//      (97.13, 8.65), which is 2.14mm from structural standoff C's axis
+//      (98.65, 10.16) -- INSIDE that post's own 3.0mm radius. No screw
+//      diameter, relief or parameter separates them; the separation is
+//      invariant in board_offset (both are board-frame). Nor is this a data
+//      bug: the same 1.52mm slot-centreline-to-rear-hole spacing appears on
+//      atx and matx too, because rear-row mounting holes (y=10.16) sit in the
+//      42.6mm bracket gap ahead of the PCIe connector body by design -- see
+//      motherboards.scad's own mobo_pcie_ports() setback note ("clearing
+//      every mounting hole ... matching how a real board routes standoffs
+//      clear of the slots"). A real card is retained at the FAR end of its
+//      bracket, against a chassis rail, not at the board's rear-edge strip.
+// Card retention is therefore not modelled here; the chassis provides the
+// aperture and the keep-out. tests/asserts.scad locks the reason so this gets
+// revisited if the underlying geometry ever changes.
+function _pcie_foot_screw_xy() = [_pcie_slot_cx(), _pcie_screw_y_lp_local()];
+// _pcie_screw_y_lp() is private to pcie-bracket.scad; read the same figure off
+// its public hole table instead of re-literaling it.
+function _pcie_screw_y_lp_local() =
+    pcie_bracket_holes_xy("low-profile", "structural-mount", pcie_screw)[0][1];
+function _pcie_foot_screw_r() =
+    pcie_bracket_holes("low-profile", "structural-mount", pcie_screw)[0][3] / 2;
 
 // Fit-asserts
 assert(_bw() <= rack10_clear_width(standard) - 2*wall + 1e-6,
@@ -214,6 +250,44 @@ assert(_pcie_slot_x0() >= -rack10_panel_width(standard)/2 + 1e-6
     && _pcie_slot_x1() <= rack10_panel_width(standard)/2 - 1e-6,
     str("mitx-2u: PCIe slot cutout [", _pcie_slot_x0(), ",", _pcie_slot_x1(),
         "] exceeds panel +-", rack10_panel_width(standard)/2));
+// Card I/O aperture vs. the panel, in BOTH axes. The X guard above is about
+// the board's slot footprint; this one is about the hole actually cut, which
+// is the bracket's window and is neither the same width nor the same place.
+assert(_pcie_ap_cx() - _pcie_ap_w()/2 >= -rack10_panel_width(standard)/2 + 1e-6
+    && _pcie_ap_cx() + _pcie_ap_w()/2 <= rack10_panel_width(standard)/2 - 1e-6,
+    str("mitx-2u: PCIe card aperture [", _pcie_ap_cx()-_pcie_ap_w()/2, ",",
+        _pcie_ap_cx()+_pcie_ap_w()/2, "] exceeds panel +-", rack10_panel_width(standard)/2));
+assert(_pcie_ap_cz() - _pcie_ap_h()/2 >= 1e-6
+    && _pcie_ap_cz() + _pcie_ap_h()/2 <= rack10_device_height(device_u) - 1e-6,
+    str("mitx-2u: PCIe card aperture Z [", _pcie_ap_cz()-_pcie_ap_h()/2, ",",
+        _pcie_ap_cz()+_pcie_ap_h()/2, "] exceeds faceplate height ",
+        rack10_device_height(device_u)));
+// The card aperture must not eat into the IO window. On mini-ITX these two
+// are inherently adjacent: motherboards.scad's own ITX row models the single
+// slot flush below the io span (its documented "model limit" -- the 170mm
+// board's 13.87mm of rear edge past the io shield has to hold both the slot
+// and mounting hole C), so the web between them is only 0.0135mm at defaults
+// -- i.e. the slicer will merge the two openings into one. That is accepted
+// (both are holes; the panel keeps full material above and below), but they
+// must never actually OVERLAP: a data change that pushed the aperture into
+// the io window would silently widen the IO opening instead of erroring.
+assert(_pcie_ap_cx() - _pcie_ap_w()/2 >= _io_x1() - 1e-6,
+    str("mitx-2u: PCIe card aperture low edge ", _pcie_ap_cx()-_pcie_ap_w()/2,
+        " overlaps the IO window (high edge ", _io_x1(), ")"));
+// The REAL bracket (pcie_bracket_size("low-profile")[0] = 79.2) must clear the
+// 2U ceiling at the fold datum everything else is anchored to. The lp_card_h
+// assert above only guards the //VERIFY card envelope, which is 14.8mm shorter
+// than the bracket that carries it -- a standoff_h bump would have pushed the
+// actual bracket through the ceiling with every other assert still green.
+assert(standoff_h + _pcie_bracket_h() <= _int_h() + 1e-6,
+    str("mitx-2u: standoff+LP bracket ", standoff_h + _pcie_bracket_h(),
+        " > 2U interior ", _int_h(), " (the real 79.2mm bracket, not lp_card_h)"));
+// ...and must actually SPAN the card it carries: the card seats on top of the
+// board's PCIe connector body, so a fold datum set too low leaves the card's
+// upper ports above the bracket's own top edge (and above the aperture).
+assert(_pcie_fold_z() + _pcie_bracket_h() >= _pcie_card_z0() + lp_card_h - 1e-6,
+    str("mitx-2u: LP bracket top ", _pcie_fold_z()+_pcie_bracket_h(),
+        " does not span the card it carries (card top ", _pcie_card_z0()+lp_card_h, ")"));
 // Button hole vs. the panel's own outer bounds (both edges, since it's a hole).
 assert(_button_x() - button_dia/2 >= -rack10_panel_width(standard)/2 + 1e-6
     && _button_x() + button_dia/2 <= rack10_panel_width(standard)/2 - 1e-6,
@@ -257,30 +331,19 @@ assert(_fan_teardrop_flat_w() <= 10 + 1e-6,
 assert(lp_card_len <= _tongue_y() - wall - _gusset_size() - 1e-6,
     str("mitx-2u: LP card length ", lp_card_len, " reaches into the rear gusset/tongue zone (starts at ",
         _tongue_y()-wall-_gusset_size(), ")"));
-// PCIe floor mount hole must land within the floor slab's own interior
-// footprint (side walls' interior span in X; the header-datum's Y=0 back
-// plane + the bracket's own screw Y in Y) -- a stricter check than Task 1's
-// panel-bound assert (rack10_panel_width > rack10_clear_width, the panel
-// includes the mounting ears outside the floor's own span).
-assert(_pcie_slot_cx() - wall >= -rack10_clear_width(standard)/2 - 1e-6
-    && _pcie_slot_cx() + wall <= rack10_clear_width(standard)/2 + 1e-6,
-    str("mitx-2u: PCIe floor mount hole x=", _pcie_slot_cx(),
-        " falls outside the floor's interior span +-", rack10_clear_width(standard)/2));
+// The bracket's foot footprint must land within the floor slab's own interior
+// span -- bounded by the foot's real half-width (pcie_bracket_size()[1]/2),
+// not by `wall`, which has nothing to do with the foot's extent.
+assert(_pcie_slot_cx() - pcie_bracket_size("low-profile")[1]/2 >= -rack10_clear_width(standard)/2 - 1e-6
+    && _pcie_slot_cx() + pcie_bracket_size("low-profile")[1]/2 <= rack10_clear_width(standard)/2 + 1e-6,
+    str("mitx-2u: PCIe bracket foot at x=", _pcie_slot_cx(),
+        " overhangs the floor's interior span +-", rack10_clear_width(standard)/2));
 // Side intake vents must stay clear of the rear gusset zone (starts at
 // _tongue_y()-wall-_gusset_size(), matching the _mitx2_gusset() calls below)
 // -- same guard as mitx-1u-chassis.scad's own side vent, shared by both walls.
 assert(_side_vent_y0() + _side_vent_len() <= _tongue_y() - wall - _gusset_size() - 1e-6,
     str("mitx-2u: side intake vent [", _side_vent_y0(), ",", _side_vent_y0()+_side_vent_len(),
         "] reaches into the rear gusset zone (starts at ", _tongue_y()-wall-_gusset_size(), ")"));
-// Right-side vent's Z-band must have real headroom above the LP-card
-// keep-out envelope -- a large enough lp_card_h/heatsink_ceiling could
-// otherwise squeeze this band to zero or negative height (honeycomb_vent()
-// itself would reject a height below one hex's own flat-to-flat span, but
-// this project-level guard catches it first with a clearer message).
-assert(_side_vent_r_h() >= cell - 1e-6,
-    str("mitx-2u: right side vent headroom ", _side_vent_r_h(),
-        "mm above the LP-card keep-out (top at ", _card_top_z(),
-        ") is too tight for cell=", cell, " (reduce lp_card_h/heatsink_ceiling or cell)"));
 // Fan-flanking rear vent must fit entirely in the gap between the left side
 // wall's inner face and the fan's own outboard edge (not overlap either).
 assert(_fan_vent_cx() - _fan_vent_w()/2 >= _side_inner_x() + 1e-6
@@ -295,29 +358,23 @@ module _mitx2_faceplate() {
             cube([rack10_panel_width(standard), faceplate_th, rack10_device_height(device_u)]);
         if (ear_type == "slot") rack10_holes(standard, device_u, hole_type="slot", dia=rack10_screw_clearance("10-32"));
         else rack10_holes(standard, device_u, hole_type=ear_type);
-        // mobo_io_cutout_stamp/mobo_pcie_cutout grow +Y from the board's own
-        // local frame (rear-IO edge = local Y=0); this faceplate sits at -Y
-        // (rack10 front-of-panel convention), so mirror the stamps in Y
-        // first or the cutters never reach it (#42 hit this exact bug on
-        // the IO stamp -- verified here empirically via intersection()
-        // against this faceplate slab: with the mirror, both stamps'
-        // world-Y span fully overlaps the slab's own Y=[-faceplate_th,0]
-        // span at the outer face; without it, they don't).
+        // mobo_io_cutout_stamp grows +Y from the board's own local frame
+        // (rear-IO edge = local Y=0); this faceplate sits at -Y (rack10
+        // front-of-panel convention), so mirror the stamp in Y first or the
+        // cutter never reaches it (#42 hit this exact bug -- verified here
+        // empirically via intersection() against this faceplate slab: with
+        // the mirror, the stamp's world-Y span fully overlaps the slab's own
+        // Y=[-faceplate_th,0] span at the outer face; without it, it doesn't).
         translate([_board_x(), 0, floor_th+standoff_h])
-            mirror([0, 1, 0]) {
+            mirror([0, 1, 0])
                 mobo_io_cutout_stamp("itx", depth=faceplate_th+2);
-                // PCIe slot aperture (single slot) at the board's own slot X.
-                mobo_pcie_cutout("itx", slots=1, depth=faceplate_th+2);
-            }
-        // pcie_bracket_mount_holes() is NOT cut here: per pcie-bracket.scad's
-        // own header, it bores a Z-axis hole through the bracket's FOOT
-        // (flat in the XY plane at Z=[-thickness,0], a floor/rail
-        // fastener), not a Y-extruding faceplate through-cut like the two
-        // stamps above -- verified empirically: intersection() of that
-        // cutter (placed the same way as the stamps above) against this
-        // faceplate slab is EMPTY at every board_offset. Task 2 cuts the
-        // real hole into the floor (see CORRECTION 2026-07-31 in the plan's
-        // Global Constraints).
+        // Card I/O aperture, straight from the bracket's own window (see
+        // _pcie_win() above). Cut in world coordinates rather than through
+        // the board-frame mirror() block: the window is bracket-frame, not
+        // board-frame, and its X already tracks the slot centreline.
+        translate([_pcie_ap_cx() - _pcie_ap_w()/2, -faceplate_th-1,
+                   _pcie_ap_cz() - _pcie_ap_h()/2])
+            cube([_pcie_ap_w(), faceplate_th+2, _pcie_ap_h()]);
         // Power button in the off-center gap beside the IO window.
         translate([_button_x(), -faceplate_th-1, rack10_device_height(device_u)/2])
             rotate([-90,0,0]) cylinder(h=faceplate_th+2, d=button_dia);
@@ -386,18 +443,15 @@ module _mitx2_fan_teardrop(size, depth, max_reach) {
 // is X=width, Y=height, Z=depth (see honeycomb.scad); rotate([90,0,90]) maps
 // local (x,y,z) -> world (z,x,y) -- same idiom (and verified mapping) as
 // mitx-1u-chassis.scad's own _mitx_side_vent(). `sx` mirrors _mitx2_shell()'s
-// own side-wall loop convention (-1 = left, +1 = right); the RIGHT wall uses
-// the LP-card-constrained Z-band (_side_vent_r_z0()/_side_vent_r_h()), the
-// LEFT wall uses the full ceiling-to-floor band -- see those functions'
-// comments above for why they differ.
+// own side-wall loop convention (-1 = left, +1 = right); both walls carry the
+// same field (see _side_vent_h() above for why the right wall no longer gets
+// a card-constrained band).
 module _mitx2_side_vent(sx) {
     w2 = _clear_w() / 2;
     x_start = (sx > 0) ? w2 - wall - 1 : -w2 - 1;   // 1mm overcut past the outer face
-    z0 = (sx > 0) ? _side_vent_r_z0() : _side_vent_zmargin();
-    h  = (sx > 0) ? _side_vent_r_h()  : _side_vent_h();
-    translate([x_start, _side_vent_y0(), z0])
+    translate([x_start, _side_vent_y0(), _side_vent_zmargin()])
         rotate([90, 0, 90])
-            honeycomb_vent(_side_vent_len(), h, wall + 2, cell, hc_wall);
+            honeycomb_vent(_side_vent_len(), _side_vent_h(), wall + 2, cell, hc_wall);
 }
 
 // Rear-wall vent flanking the fan (Task 3), same rotate([-90,0,0]) idiom as
@@ -420,10 +474,10 @@ module mitx_2u_chassis() {
     % translate([_board_x(), 0, floor_th+standoff_h]) mobo_placeholder("itx");
     // LP card keep-out preview, tracked to the slot's own world centerline
     // (pcie_bracket()'s local X=0 datum), NOT board_offset directly.
-    % translate([_pcie_slot_cx(), 0, floor_th+standoff_h]) pcie_bracket("low-profile");
+    % translate([_pcie_slot_cx(), 0, _pcie_fold_z()]) pcie_bracket("low-profile");
 
-    // walls/floor + rear DC-in/fan cutouts + PCIe floor mount hole +
-    // tongue-flanking gussets.
+    // walls/floor + rear DC-in/fan cutouts + tongue-flanking gussets.
+    // No PCIe foot fastener is cut here -- see _pcie_foot_screw_xy() above.
     difference() {
         union() {
             _mitx2_shell();
@@ -444,11 +498,6 @@ module mitx_2u_chassis() {
         // design-for-print rationale.
         translate([_dc_cx(), _tongue_y() - wall - 1, _rear_center_z()])
             rotate([-90, 0, 0]) cylinder(h = wall + 2, d = dc_dia);
-        // PCIe bracket foot mount hole -- Z-axis cut into the FLOOR (see
-        // _pcie_mount_depth()'s comment above for the Z-datum this uses vs.
-        // the Task 1 keep-out preview's floor_th+standoff_h).
-        translate([_pcie_slot_cx(), 0, floor_th])
-            pcie_bracket_mount_holes("low-profile", depth=_pcie_mount_depth(), screw=pcie_screw);
         // intake honeycomb vents, both side walls (Task 3).
         for (sx = [-1, 1]) _mitx2_side_vent(sx);
         // rear honeycomb vent field flanking the fan (Task 3).

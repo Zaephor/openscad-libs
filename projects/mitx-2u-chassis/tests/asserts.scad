@@ -97,6 +97,41 @@ assert(_fan_teardrop_apex() <= _fan_teardrop_avail(),
 assert(_fan_teardrop_flat_w() == 0,
     str("mitx-2u: expected zero flat-top span at defaults, got ", _fan_teardrop_flat_w()));
 
+// The faceplate aperture must BE the bracket's own I/O window, translated --
+// not merely something that happens to fall inside the panel. Locks the
+// accessor-to-aperture chain end to end: X on the slot centreline (where the
+// card's edge connector plugs in), Z on the ONE fold datum, size straight
+// from pcie_bracket_window(). A regression that reverted to
+// mobo_pcie_cutout() (a 12mm board-slot box at Z=[7,19]) would fail all four.
+_win = pcie_bracket_window("low-profile");
+assert(_pcie_ap_cx() == _pcie_slot_cx() + _win[0],
+    str("mitx-2u: aperture X ", _pcie_ap_cx(), " is not the bracket window on the slot centreline"));
+assert(_pcie_ap_cz() == _pcie_fold_z() + _win[1],
+    str("mitx-2u: aperture Z ", _pcie_ap_cz(), " is not the bracket window at the fold datum ", _pcie_fold_z()));
+assert(_pcie_ap_w() == _win[2] && _pcie_ap_h() == _win[3],
+    str("mitx-2u: aperture size [", _pcie_ap_w(), ",", _pcie_ap_h(),
+        "] != bracket window [", _win[2], ",", _win[3], "]"));
+// ...and it must lie strictly WITHIN the bracket's own faceplate span, or the
+// panel would be cut wider than the part it is supposed to frame.
+assert(_pcie_ap_cz() - _pcie_ap_h()/2 > _pcie_fold_z()
+    && _pcie_ap_cz() + _pcie_ap_h()/2 < _pcie_fold_z() + _pcie_bracket_h(),
+    str("mitx-2u: aperture Z span escapes the bracket faceplate [", _pcie_fold_z(), ",",
+        _pcie_fold_z()+_pcie_bracket_h(), "]"));
+
+// Documented model limit, locked so it gets revisited rather than silently
+// re-introduced: the bracket foot's structural-mount screw cannot be bored
+// into this chassis's floor, because its position lands inside a board
+// standoff's own post. This asserts the conflict STILL holds -- if a data
+// change ever separates them, this fires and the foot fastener (dropped from
+// the model, see mitx-2u-chassis.scad's _pcie_foot_screw_xy() comment)
+// becomes worth adding back.
+_screw = _pcie_foot_screw_xy();
+_min_sep = min([for (h = mobo_standoff_xy("itx", "structural-mount"))
+                 norm([_board_x() + h[0] - _screw[0], h[1] - _screw[1]])]);
+assert(_min_sep < 6.0/2 + _pcie_foot_screw_r(),
+    str("mitx-2u: the PCIe foot screw now clears every standoff (min separation ", _min_sep,
+        " >= ", 6.0/2 + _pcie_foot_screw_r(), ") -- revisit adding the foot fastener back"));
+
 // No explicit render call needed -- the include above already re-runs
 // mitx-2u-chassis.scad's own trailing mitx_2u_chassis() call (and its
 // top-level fit-asserts) at defaults.

@@ -24,9 +24,6 @@ Tasks 1-3:
   overhangs.
 - **Floor + walls.** Plain rectangular boxes extruded straight up from the
   bed — no cantilever, no overhang by construction.
-- **PCIe floor mount hole.** A straight Z-axis bore down through the floor
-  slab (`pcie_bracket_mount_holes()`) — same no-overhang straight-through
-  cut as the faceplate holes, just on the floor instead of the panel.
 - **Rear `#40` tongue + buttress.** The tongue's own body is a flat
   horizontal reach with no material under it from the shell alone, so a
   buttress strip (sized to the tongue's own width, at
@@ -69,11 +66,8 @@ Tasks 1-3:
   field is oriented so the hex cell's bridge-sensitive "height" axis lands
   on the vertical (print) axis — flat-top hex cells whose only bridge (the
   top edge) is a few mm, well under the reliably-self-supporting bridging
-  ceiling (`libraries/honeycomb/honeycomb.scad`). The right side wall's
-  field sits in a Z-band pinned above the LP-card keep-out envelope
-  (`_card_top_z()`); a fit-assert keeps that band's remaining headroom
-  above the honeycomb cell size so it can't collapse to zero at aggressive
-  `lp_card_h`/`heatsink_ceiling` values. Confirmed per-field via the
+  ceiling (`libraries/honeycomb/honeycomb.scad`). Both side walls carry the
+  same full-height band. Confirmed per-field via the
   `HONEYCOMB_WORST_SPAN` check in `tests/test_mitx_2u_chassis.sh` (well
   under the bridging ceiling on all fields at default `cell`/`hc_wall`).
 

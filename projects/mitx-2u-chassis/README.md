@@ -11,7 +11,7 @@ rear wall, a rear `#40` `rack-support` tongue mate, a rear exhaust fan
 drawing air in through honeycomb intake vents on both side walls, and a
 rear DC-in barrel jack. Consumes `motherboards` (board + PCIe-slot data),
 `rack10` (rack geometry), `rack-support` (rear tongue mate),
-`pcie-bracket` (card bracket size/keep-out + floor mount-hole geometry),
+`pcie-bracket` (card bracket size/keep-out + I/O window geometry),
 `fans` (fan bore + mount holes), `honeycomb` (self-supporting vent fields).
 Units: **mm**.
 
@@ -23,8 +23,8 @@ Units: **mm**.
 cutout, power button, PCIe slot aperture), off-center board on standoffs,
 floor + side walls + rear wall, tongue-flanking corner gussets, the `#40`
 rack-support tongue with its own buttress, a rear DC-in barrel jack +
-teardropped exhaust fan bore, the PCIe bracket's floor mount hole, and
-honeycomb intake/exhaust vents. All geometry verified support-free.
+teardropped exhaust fan bore, and honeycomb intake/exhaust vents. All
+geometry verified support-free.
 
 ## Design
 
@@ -43,43 +43,58 @@ honeycomb intake/exhaust vents. All geometry verified support-free.
   never actually opened. `mobo_pcie_first_xy()` shares the SAME
   component-up local frame as `mobo_io_cutout()`/`mobo_standoff_xy()`, so
   it needs the same `_board_x()` offset, not `board_offset` alone.)
-- **IO + PCIe cutout direction.** `mobo_io_cutout_stamp()` and
-  `mobo_pcie_cutout()` both grow +Y from the board's own local Y=0 (its
-  rear/IO edge); the faceplate sits at -Y from that same plane (rack10's
-  front-of-panel convention), so both stamps are `mirror([0,1,0])`-flipped
-  before being placed in the shared board frame — otherwise the cutters
-  grow away from the faceplate and never reach it.
-- **PCIe bracket is the card's own part, not printed here.** This chassis
-  provides the **aperture** (a single-slot `mobo_pcie_cutout()` in the
-  faceplate) and the **floor mount hole** for the bracket's foot
-  (`pcie_bracket_mount_holes()`, a Z-axis cut through the floor at
-  `_pcie_slot_cx()`); the bracket itself (`pcie_bracket("low-profile")`)
-  is the inserted card's own hardware, shown here only as a `%`-preview.
-  The mount hole is cut at world Z mapped so the bracket's local Z=0 (its
-  foot's own top face) lands on the floor slab's own top surface — cutting
-  `floor_th+standoff_h` (the Task-1 keep-out preview's translate) instead
-  would leave the hole floating above the floor and cut nothing; this was
-  confirmed empirically via an `intersection()` probe against the floor
-  slab in `tests/test_mitx_2u_chassis.sh`.
-- **PCIe bracket mount hole vs. the faceplate.** `pcie_bracket_mount_holes()`
-  bores straight down through the bracket's foot (flat in the XY plane,
-  per `pcie-bracket.scad`'s own header) — not a Y-extruding faceplate
-  through-cut like the IO/PCIe-slot stamps — so it is never wrapped in the
-  faceplate's own mirror block; wrapping it there is a silent no-op
-  (verified empirically: `intersection()` against the faceplate slab is
-  empty at every `board_offset`).
+- **IO cutout direction.** `mobo_io_cutout_stamp()` grows +Y from the
+  board's own local Y=0 (its rear/IO edge); the faceplate sits at -Y from
+  that same plane (rack10's front-of-panel convention), so the stamp is
+  `mirror([0,1,0])`-flipped before being placed in the shared board frame —
+  otherwise the cutter grows away from the faceplate and never reaches it.
+- **The card aperture comes from the bracket, not the board.** The hole a
+  card's ports actually look through is cut from
+  `pcie_bracket_window("low-profile")` — the same accessor
+  `pcie_bracket()` cuts its own window from. `mobo_pcie_cutout()` is
+  **not** used: it models the board-side edge-connector slot footprint (a
+  fixed 12mm box at board height), which lands at world Z=[7,19] while the
+  card's real I/O window sits at [25.82,69.38] — zero overlap, i.e. a real
+  card's ports facing solid faceplate. `tests/test_mitx_2u_chassis.sh`
+  probes the same line of sight through both the chassis and the bracket
+  to prove they genuinely align, rather than each merely being in-bounds.
+- **One Z datum for the bracket.** `_pcie_fold_z()` is the single world Z
+  of `pcie_bracket()`'s own local Z=0 fold datum, shared by the aperture,
+  the `%`-preview and every bracket fit-assert. It is not a free choice:
+  the card seats on the board's PCIe connector body
+  (`connector_size("pcie_x16")[2]` = 11.25mm `[A]` above the board), and
+  the bracket must both span the card it carries and clear the 2U ceiling
+  — two asserts that pin the datum to a ~2.9mm band at defaults.
+- **No bracket foot fastener.** This chassis cuts no
+  `pcie_bracket_mount_holes()`. The foot rides at card height, 5.2mm clear
+  of the floor, so a floor bore cannot fasten it; and the foot's screw
+  position (97.13, 8.65) is 2.14mm from structural standoff C's axis
+  (98.65, 10.16) — **inside** that post's own 3.0mm radius, with no screw
+  diameter or parameter able to separate them. That is not a data bug: the
+  same ~1.5mm slot-centreline-to-rear-hole spacing appears on atx and matx
+  too, because rear-row mounting holes sit in the 42.6mm bracket gap ahead
+  of the connector body by design (see `motherboards.scad`'s own
+  `mobo_pcie_ports()` setback note). A real card is retained at the far end
+  of its bracket against a chassis rail, not at the board's rear-edge
+  strip; retention is left unmodelled here and the conflict is locked in
+  `tests/asserts.scad` so it gets revisited if the geometry ever changes.
 - **Off-panel + off-board guards.** Because `board_offset` moves the IO
   window, PCIe slot, and button hole together, fit-asserts check: the IO
   cutout's right edge, the PCIe slot's right edge, and both edges of the
   button hole all stay within `+-rack10_panel_width/2`; the board
   footprint itself stays clear of the side walls' interior faces (ported
-  from mitx-1u-chassis's #42 final-review finding); and the PCIe floor
-  mount hole stays within the floor slab's own interior span (stricter
-  than the panel-width bound, since the panel's ears extend past the
-  floor's own footprint) — see `tests/test_mitx_2u_chassis.sh`'s negative
-  controls.
-- **2U headroom budget.** Two independent ceiling fit-asserts share the
-  same `_int_h()` budget above the standoff+board stack:
+  from mitx-1u-chassis's #42 final-review finding); the card aperture's
+  own X and Z spans stay inside the panel; and the bracket foot's
+  footprint stays within the floor slab's interior span (bounded by the
+  foot's real half-width, and stricter than the panel-width bound since
+  the panel's ears extend past the floor) — see
+  `tests/test_mitx_2u_chassis.sh`'s negative controls.
+- **2U headroom budget.** Three independent ceiling fit-asserts share the
+  same `_int_h()` budget above the standoff+board stack. One of them uses
+  the **real** `pcie_bracket_size("low-profile")[0]` (79.2mm) rather than
+  the shorter `lp_card_h` envelope, which leaves only 0.91mm of margin at
+  defaults — a `standoff_h` bump would otherwise have pushed the actual
+  bracket through the ceiling with every other assert still green. Also:
   `heatsink_ceiling` (a heatsink standing off the board, default 55mm —
   more than double the 1U sibling's 25mm, since 2U's extra rack unit is
   spent mostly here) and `lp_card_h`/`lp_card_len` (the inserted
@@ -124,21 +139,20 @@ honeycomb intake/exhaust vents. All geometry verified support-free.
   large is well past the safe plain-hole span; the DC-in hole is left
   plain round since the barrel jack's panel-mount nut needs true
   roundness.
-- **Honeycomb vents, asymmetric Z-bands.** Intake fields on both side
-  walls (front half, clear of the rear gusset/tongue zone) and an
-  exhaust-flanking field on the rear wall (beside the fan's outboard edge,
-  clear of its mounting screws and the tongue gusset). The **left** wall
-  uses the full ceiling-to-floor band (no nearby hardware); the **right**
-  wall's band starts above the LP card's own keep-out envelope top
-  (`_card_top_z() = floor_th + standoff_h + mobo_thickness() + lp_card_h`)
-  so it can't collide with an inserted card regardless of the card's own
-  (unmodeled) width, with a slightly tighter ceiling margin than the left
-  wall to buy back some of the headroom that constraint costs. All fields
+- **Honeycomb vents.** Intake fields on both side walls (front half,
+  clear of the rear gusset/tongue zone) and an exhaust-flanking field on
+  the rear wall (beside the fan's outboard edge, clear of its mounting
+  screws and the tongue gusset). Both side walls carry the **same**
+  full-height band: an earlier revision pinned the right wall's band above
+  the LP card to avoid "collision with the card", which a vent cannot have
+  — it is a cut through the wall and occupies no interior volume — and
+  there is no airflow objection either, since the card sits 11.5mm inboard
+  of that wall and intake drawn past a hot card helps it. All fields
   are self-supporting hex-cell cuts via `honeycomb_vent()`, oriented so
   the bridge-sensitive "height" axis always lands vertical.
 - **Support-free.** Every cut and every added solid (faceplate holes, IO
-  cutout, PCIe slot aperture, button hole, walls, gussets, tongue+buttress,
-  fan teardrop, PCIe floor mount hole, honeycomb vents) is either a
+  cutout, PCIe card aperture, button hole, walls, gussets, tongue+buttress,
+  fan teardrop, honeycomb vents) is either a
   straight-through cut along a print-vertical axis or a monotonically-
   narrowing 45° prism — no unsupported overhangs anywhere. See
   [PRINTING.md](PRINTING.md).
@@ -157,7 +171,7 @@ honeycomb intake/exhaust vents. All geometry verified support-free.
 | `heatsink_ceiling` | Print | `55` | Reserved headroom above the board for a heatsink, mm — checked against `_int_h()` by a fit-assert |
 | `button_dia` | Front | `12` | Power button hole diameter, mm |
 | `board_offset` | Front | `20` | Board X-offset off panel centerline, mm — opens the low-X gap the button sits in |
-| `pcie_screw` | Front | `"6-32"` | Bracket mount-screw thread family (`pcie_known_screws()`) — sizes the PCIe floor mount hole |
+| `pcie_screw` | Front | `"6-32"` | Bracket mount-screw thread family (`pcie_known_screws()`) — no foot fastener is cut (see above); read by the standoff-conflict lock in `tests/asserts.scad` |
 | `dc_dia` | Cooling/Power | `11` | Rear DC-in barrel jack hole diameter, mm — plain round cut through the rear wall |
 | `fan_size` | Cooling/Power | `60` | Rear exhaust fan frame size, mm — must be a size `fan_known_sizes()` recognizes; drives the teardropped bore + `fan_holes()` mount pattern |
 | `cell` | Cooling/Power | `8.0` | Honeycomb cell size, mm — shared by all vent fields |
