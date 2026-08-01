@@ -93,7 +93,21 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
     r_cell = honeycomb_cell/2;
     r_pad  = fan_pad_dia/2;
     difference() {
-        union() {
+        // NOTE: _rear_openings() as a WHOLE is a cutter -- _tray_shell()
+        // subtracts it from the wall -- so everything unioned/left standing
+        // inside this module is VOID, and anything subtracted away from the
+        // cutter here is what stays SOLID once cut from the wall. This
+        // difference()'s FIRST child (_rear_honeycomb_bands()) is the base
+        // void pattern; the SECOND child (the pad-fill loop below) must be
+        // SUBTRACTED from it -- not unioned in -- so a filled cell is
+        // REMOVED from the void mask (and therefore left solid in the
+        // final wall). Unioning the fill hexes in here instead would be a
+        // no-op (they're already members of the same _honeycomb_centres()
+        // set the bands are built from, so union(A, subset_of_A) == A) and
+        // would ALSO bypass honeycomb_vent()'s own [0,width]x[0,height]
+        // boundary clip, letting an edge pad's fill hex leak past the field
+        // into un-checked wall territory (#78 review fix).
+        difference() {
             _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust);
             // Pad-fill (#78 Part A): a fastener pad is a foreign solid
             // re-added into the honeycomb field, which the field's own
