@@ -32,9 +32,11 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
 fi
 
 # Consistency: honeycomb_cell_centres() must report exactly as many centres as
-# honeycomb_vent() draws hexes (same args). Cross-check by rendering a probe
-# that reports both counts and asserting they match -- catches the accessor
-# and the draw loop silently drifting apart.
+# honeycomb_vent() computes internally (same args). Both callsites use the same
+# _honeycomb_centres() function, so their counts are identical iff neither
+# function has regressed. This probe calls both in the same render and compares
+# their reported counts -- catches the accessor and the module's grid computation
+# drifting apart.
 cat > "$tmp/consistency_probe.scad" <<'EOF'
 use <honeycomb/honeycomb.scad>;
 centres = honeycomb_cell_centres(width=40, height=15.9, cell=8, wall=1.2);
@@ -45,14 +47,39 @@ out="$(run "$tmp/consistency_probe.scad")"
 if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "consistency probe asserted:"; echo "$out"; exit 1
 fi
-centres_count="$(echo "$out" | grep -oE 'CENTRES_COUNT=[0-9]+' | grep -oE '[0-9]+')"
-worst_span="$(echo "$out" | grep -oE 'HONEYCOMB_WORST_SPAN=[0-9.]+' | head -1 | grep -oE '[0-9.]+')"
-if [ -z "$centres_count" ] || [ "$centres_count" -lt 1 ]; then
-  echo "FAIL: honeycomb_cell_centres() reported $centres_count centres (expected > 0)"; exit 1
+accessor_count="$(echo "$out" | grep 'CENTRES_COUNT=' | head -1 | sed 's/.*CENTRES_COUNT=\([0-9]*\).*/\1/')"
+module_count="$(echo "$out" | grep 'HONEYCOMB_CENTRES_COUNT=' | head -1 | sed 's/.*HONEYCOMB_CENTRES_COUNT=\([0-9]*\).*/\1/')"
+worst_span="$(echo "$out" | grep 'HONEYCOMB_WORST_SPAN=' | head -1 | sed 's/.*HONEYCOMB_WORST_SPAN=\([0-9.]*\).*/\1/')"
+if [ -z "$accessor_count" ] || [ "$accessor_count" -lt 1 ]; then
+  echo "FAIL: honeycomb_cell_centres() reported $accessor_count centres (expected > 0)"; exit 1
+fi
+if [ -z "$module_count" ] || [ "$module_count" -lt 1 ]; then
+  echo "FAIL: honeycomb_vent() reported $module_count centres (expected > 0)"; exit 1
+fi
+if [ "$accessor_count" != "$module_count" ]; then
+  echo "FAIL: accessor reported $accessor_count centres but module computed $module_count -- consistency violation"; exit 1
 fi
 if [ -z "$worst_span" ]; then
   echo "FAIL: honeycomb_vent() did not echo HONEYCOMB_WORST_SPAN for the same params"; exit 1
 fi
-echo "ok: honeycomb_cell_centres() reported $centres_count centres, honeycomb_vent() worst_span=$worst_span"
+echo "ok: accessor and module both report $accessor_count centres, worst_span=$worst_span"
+
+# Cross-test with different parameters to catch regressions across param space
+cat > "$tmp/consistency_probe_2.scad" <<'EOF'
+use <honeycomb/honeycomb.scad>;
+centres = honeycomb_cell_centres(width=30, height=20, cell=6, wall=1.0);
+echo(str("CENTRES_COUNT=", len(centres)));
+honeycomb_vent(width=30, height=20, depth=2, cell=6, wall=1.0);
+EOF
+out="$(run "$tmp/consistency_probe_2.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "consistency probe 2 asserted:"; echo "$out"; exit 1
+fi
+accessor_count_2="$(echo "$out" | grep 'CENTRES_COUNT=' | head -1 | sed 's/.*CENTRES_COUNT=\([0-9]*\).*/\1/')"
+module_count_2="$(echo "$out" | grep 'HONEYCOMB_CENTRES_COUNT=' | head -1 | sed 's/.*HONEYCOMB_CENTRES_COUNT=\([0-9]*\).*/\1/')"
+if [ "$accessor_count_2" != "$module_count_2" ]; then
+  echo "FAIL: accessor reported $accessor_count_2 centres but module computed $module_count_2 (probe 2) -- consistency violation"; exit 1
+fi
+echo "ok: probe 2 (width=30, height=20, cell=6, wall=1.0) accessor and module both report $accessor_count_2 centres"
 
 echo ok

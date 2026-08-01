@@ -127,6 +127,7 @@ module honeycomb_vent(width, height, depth, cell, wall) {
     r     = cell / 2;
     hex_h = r * sqrt(3);
     centres = _honeycomb_centres(width, height, cell, wall);
+    echo(str("HONEYCOMB_CENTRES_COUNT=", len(centres)));
 
     // Regression guard -- independent of trusting _honeycomb_hex_is_safe()'s
     // boolean. See the header comment block above for the full rationale.

@@ -33,7 +33,7 @@ global frame.
 | Module | Signature | Does |
 |---|---|---|
 | `honeycomb_vent(width, height, depth, cell, wall)` | All parameters required, no defaults | Renders hex-hole vent as a linear_extrude in local Z. Tiles flat-top hexagons in columns; asserts self-support constraint (all exposed boundary spans ≤5mm, see Geometry below). |
-| `honeycomb_cell_centres(width, height, cell, wall)` | Returns `[[x,y], ...]` — the local-frame centre of every hex `honeycomb_vent()` would draw for the same args (same self-support gate). No region/filter param; callers filter by their own overlap need. |
+| `honeycomb_cell_centres(width, height, cell, wall)` | All parameters required, no defaults | Returns `[[x,y], ...]` — the local-frame centre of every hex `honeycomb_vent()` would draw for the same args (same self-support gate). No region/filter param; callers filter by their own overlap need. |
 
 ## Parameters
 
