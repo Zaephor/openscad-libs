@@ -65,86 +65,98 @@
 // rotate([90,0,0]) so local Z lands on the assembly's vertical axis and
 // local Y -- depth -- lands on the assembly's depth axis, matching whatever
 // cube cutter it replaces).
-module honeycomb_vent(width, height, depth, cell, wall) {
-    r      = cell / 2;                  // circumradius
-    hex_h  = r * sqrt(3);               // flat-to-flat height (vertical)
-    hex_w  = 2 * r;                     // point-to-point width (horizontal) == cell
-    col_pitch = 0.75 * hex_w + wall;    // horizontal spacing between columns
-    row_pitch = hex_h + wall;           // vertical spacing within a column
+// Shared hex-grid math -- top-level functions so both honeycomb_vent() (the
+// module, below) and honeycomb_cell_centres() (the accessor) call the exact
+// same code. There is exactly one place this grid is computed; a future
+// change to any of these must be made once, and draw/report can never
+// silently disagree.
 
-    // design-for-print's bridging ceiling: <=5mm is "reliably self-
-    // supporting, minimal-to-no sag" (see reference/overhangs-supports.md).
-    max_safe_span = 5;
+// design-for-print's bridging ceiling: <=5mm is "reliably self-supporting,
+// minimal-to-no sag" (see reference/overhangs-supports.md).
+function _honeycomb_max_safe_span() = 5;
 
-    // Width of a flat-top hex's cross-section at vertical offset `dy` from
-    // its OWN center (valid for dy in [-hex_h/2, hex_h/2]): interpolates
-    // linearly from `cell` at the equator (dy=0, the side vertices) down to
-    // cell/2 at either flat edge (dy = +/-hex_h/2). This is exactly the span
-    // that would be exposed if a hex were clipped at that offset.
-    function _span_at(dy) = cell * (1 - abs(dy) / hex_h);
+// Width of a flat-top hex's cross-section at vertical offset `dy` from its
+// OWN center (valid for dy in [-hex_h/2, hex_h/2]).
+function _honeycomb_span_at(dy, cell, hex_h) = cell * (1 - abs(dy) / hex_h);
 
-    // Is it safe to draw this hex (centered at local y, before the caller's
-    // [0,height] clip)? Fully inside -> always safe (natural flat edges are
-    // already <=cell/2). Fully outside -> trivially safe (nothing drawn by
-    // the clip anyway). Straddling exactly one edge -> safe only if the
-    // exposed span at that clip point is <= max_safe_span. Straddling BOTH
-    // edges (height < hex_h) can't be resolved by omission -- reject so a
-    // misconfigured caller fails visibly rather than silently.
-    function _hex_is_safe(y) =
-        let (top = y + hex_h/2, bot = y - hex_h/2)
-        (bot >= 0 && top <= height) ? true
-        : (top <= 0 || bot >= height) ? true
-        : (bot < 0 && top > height) ? false
-        : (top > height) ? (_span_at(height - y) <= max_safe_span)
-        : (_span_at(0 - y) <= max_safe_span);
+// Is it safe to draw the hex centered at local y (before the caller's
+// [0,height] clip)? See the module-level header comment block above for the
+// full derivation.
+function _honeycomb_hex_is_safe(y, height, cell, hex_h) =
+    let (top = y + hex_h/2, bot = y - hex_h/2, max_span = _honeycomb_max_safe_span())
+    (bot >= 0 && top <= height) ? true
+    : (top <= 0 || bot >= height) ? true
+    : (bot < 0 && top > height) ? false
+    : (top > height) ? (_honeycomb_span_at(height - y, cell, hex_h) <= max_span)
+    : (_honeycomb_span_at(0 - y, cell, hex_h) <= max_span);
 
-    n_cols = ceil(width  / col_pitch) + 3;  // pad past both edges so clipped
-    n_rows = ceil(height / row_pitch) + 3;  // boundary cells look intentional
-    x0 = -col_pitch;
-    y0 = -row_pitch;
+// Real exposed clip span of the hex actually drawn at local y (0 if nothing
+// is drawn there at all -- see honeycomb_vent()'s original regression-guard
+// comment for why this is computed independently of the boolean gate above).
+function _honeycomb_drawn_span(y, height, cell, hex_h) =
+    let (top = y + hex_h/2, bot = y - hex_h/2)
+    (bot >= 0 && top <= height) ? cell/2
+  : (top <= 0 || bot >= height) ? 0
+  : (bot < 0 && top > height)   ? cell
+  : (top > height) ? _honeycomb_span_at(height - y, cell, hex_h)
+  : _honeycomb_span_at(0 - y, cell, hex_h);
 
-    // Regression guard -- independent of trusting _hex_is_safe()'s boolean.
-    // For every candidate this module ACTUALLY draws (same `_hex_is_safe(y)`
-    // gate the geometry loop below uses), compute the real exposed clip span
-    // directly via `_span_at()` rather than assuming "marked safe" means
-    // "<=max_safe_span". If `_hex_is_safe()` is ever weakened (wrong
-    // comparison, hard-coded true/false, wrong offset, etc.) this
-    // recomputation still measures the true span of what gets drawn and
-    // fails loudly here -- see tests/test_honeycomb_lib.sh, which
-    // greps the echo() below and re-verifies it numerically from the shell
-    // side too (belt and suspenders: catches both a broken assert() and a
-    // broken echo()).
-    function _drawn_span(y) =
-        let (top = y + hex_h/2, bot = y - hex_h/2)
-        (bot >= 0 && top <= height) ? cell/2               // fully inside: natural flat edge
-      : (top <= 0 || bot >= height) ? 0                     // fully outside: nothing drawn here
-      : (bot < 0 && top > height)   ? cell                  // straddles both edges: worst case
-      : (top > height) ? _span_at(height - y)               // clipped at the top edge
-      : _span_at(0 - y);                                    // clipped at the bottom edge
-
-    worst_span = max([
+// Every hex centre (local frame) that honeycomb_vent(width, height, cell,
+// wall) actually draws for these arguments -- single source of truth for
+// "which hexes exist", consumed by both the module's own union() and by
+// honeycomb_cell_centres() below.
+function _honeycomb_centres(width, height, cell, wall) =
+    let (r = cell / 2,
+         hex_h = r * sqrt(3),
+         hex_w = 2 * r,
+         col_pitch = 0.75 * hex_w + wall,
+         row_pitch = hex_h + wall,
+         n_cols = ceil(width  / col_pitch) + 3,
+         n_rows = ceil(height / row_pitch) + 3,
+         x0 = -col_pitch,
+         y0 = -row_pitch)
+    [
         for (cx = [0 : n_cols])
             for (cy = [0 : n_rows])
-                let (y = y0 + cy * row_pitch + ((cx % 2 == 0) ? 0 : row_pitch / 2))
-                if (_hex_is_safe(y)) _drawn_span(y)
-    ]);
-    echo(str("HONEYCOMB_WORST_SPAN=", worst_span, " max_safe_span=", max_safe_span));
-    assert(worst_span <= max_safe_span + 1e-6,
+                let (y = y0 + cy * row_pitch + ((cx % 2 == 0) ? 0 : row_pitch / 2),
+                     x = x0 + cx * col_pitch)
+                if (_honeycomb_hex_is_safe(y, height, cell, hex_h)) [x, y]
+    ];
+
+module honeycomb_vent(width, height, depth, cell, wall) {
+    r     = cell / 2;
+    hex_h = r * sqrt(3);
+    centres = _honeycomb_centres(width, height, cell, wall);
+
+    // Regression guard -- independent of trusting _honeycomb_hex_is_safe()'s
+    // boolean. See the header comment block above for the full rationale.
+    worst_span = max([for (c = centres) _honeycomb_drawn_span(c[1], height, cell, hex_h)]);
+    echo(str("HONEYCOMB_WORST_SPAN=", worst_span, " max_safe_span=", _honeycomb_max_safe_span()));
+    assert(worst_span <= _honeycomb_max_safe_span() + 1e-6,
         str("honeycomb boundary hex exposes span ", worst_span, "mm > max_safe_span ",
-            max_safe_span, "mm -- self-support ceiling violated"));
+            _honeycomb_max_safe_span(), "mm -- self-support ceiling violated"));
 
     linear_extrude(height = depth)
         intersection() {
             square([width, height]);
             union() {
-                for (cx = [0 : n_cols])
-                    for (cy = [0 : n_rows]) {
-                        x = x0 + cx * col_pitch;
-                        y = y0 + cy * row_pitch + ((cx % 2 == 0) ? 0 : row_pitch / 2);
-                        if (_hex_is_safe(y))
-                            translate([x, y])
-                                circle(r = r, $fn = 6);   // flat-top hex (see header note)
-                    }
+                for (c = centres)
+                    translate(c)
+                        circle(r = r, $fn = 6);   // flat-top hex (see header note)
             }
         }
 }
+
+// honeycomb_cell_centres(width, height, cell, wall) -- returns [[x,y], ...],
+// the local-frame centre of every hex honeycomb_vent() actually draws for the
+// SAME arguments (same _honeycomb_hex_is_safe() gate, same underlying
+// _honeycomb_centres() call the module itself uses -- not a re-derived
+// copy). Lets a consumer that must re-add a foreign solid into the field
+// (e.g. a fastener bearing pad) know which cells are really there, without
+// re-deriving the grid math itself -- see libraries/honeycomb/README.md's
+// "self-check does not certify embedded solids" note for why a consumer
+// cannot just trust HONEYCOMB_WORST_SPAN for this. Pure geometry-facts
+// accessor: no region/filter param -- callers do their own overlap
+// filtering (e.g. against a pad's own radius).
+function honeycomb_cell_centres(width, height, cell, wall) =
+    _honeycomb_centres(width, height, cell, wall);

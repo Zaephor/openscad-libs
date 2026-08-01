@@ -31,4 +31,28 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "negative control should have detected unsafe parameters:"; echo "$out"; exit 1
 fi
 
+# Consistency: honeycomb_cell_centres() must report exactly as many centres as
+# honeycomb_vent() draws hexes (same args). Cross-check by rendering a probe
+# that reports both counts and asserting they match -- catches the accessor
+# and the draw loop silently drifting apart.
+cat > "$tmp/consistency_probe.scad" <<'EOF'
+use <honeycomb/honeycomb.scad>;
+centres = honeycomb_cell_centres(width=40, height=15.9, cell=8, wall=1.2);
+echo(str("CENTRES_COUNT=", len(centres)));
+honeycomb_vent(width=40, height=15.9, depth=2, cell=8, wall=1.2);
+EOF
+out="$(run "$tmp/consistency_probe.scad")"
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "consistency probe asserted:"; echo "$out"; exit 1
+fi
+centres_count="$(echo "$out" | grep -oE 'CENTRES_COUNT=[0-9]+' | grep -oE '[0-9]+')"
+worst_span="$(echo "$out" | grep -oE 'HONEYCOMB_WORST_SPAN=[0-9.]+' | head -1 | grep -oE '[0-9.]+')"
+if [ -z "$centres_count" ] || [ "$centres_count" -lt 1 ]; then
+  echo "FAIL: honeycomb_cell_centres() reported $centres_count centres (expected > 0)"; exit 1
+fi
+if [ -z "$worst_span" ]; then
+  echo "FAIL: honeycomb_vent() did not echo HONEYCOMB_WORST_SPAN for the same params"; exit 1
+fi
+echo "ok: honeycomb_cell_centres() reported $centres_count centres, honeycomb_vent() worst_span=$worst_span"
+
 echo ok

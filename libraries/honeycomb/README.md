@@ -33,6 +33,7 @@ global frame.
 | Module | Signature | Does |
 |---|---|---|
 | `honeycomb_vent(width, height, depth, cell, wall)` | All parameters required, no defaults | Renders hex-hole vent as a linear_extrude in local Z. Tiles flat-top hexagons in columns; asserts self-support constraint (all exposed boundary spans ≤5mm, see Geometry below). |
+| `honeycomb_cell_centres(width, height, cell, wall)` | Returns `[[x,y], ...]` — the local-frame centre of every hex `honeycomb_vent()` would draw for the same args (same self-support gate). No region/filter param; callers filter by their own overlap need. |
 
 ## Parameters
 
@@ -75,6 +76,17 @@ This fires if any boundary-clipped hex would expose a span > 5mm, catching both
 geometry bugs and misconfigured caller parameters (e.g., extremely large cell
 with very small height). Under correct design, this should never fire; it is a
 safety catch for invalid caller input.
+
+## Embedded Solids Are Not Covered By The Self-Check
+
+`HONEYCOMB_WORST_SPAN` / the module's own assert only certify the field's OWN
+boundary-hex clip spans. They have no concept of a foreign solid re-added into
+the field afterward (e.g. a fastener bearing pad unioned back in over the
+lattice) -- that solid's own underside can still violate the 45° self-support
+ceiling even though the render passes the module's assert cleanly. A consumer
+doing this must verify that embedded solid's own overhangs separately (see
+`honeycomb_cell_centres()` above for aligning such a solid to real cell
+positions rather than guessing at the grid).
 
 ## Sources
 
