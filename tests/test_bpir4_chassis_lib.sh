@@ -54,5 +54,14 @@ for ex in true false; do
   fi
 done
 
+# Item 2 (#78 Part A): fan pads must not be unsupported. Probe: render the
+# active tray and confirm no non-manifold / assert / ERROR from the pad-fill
+# geometry, at both fan mount hole rows.
+out="$(run "$tmp/out.stl" "$proj/parts/tray.scad" -D "enable_exhaust=true")"
+echo "$out" | grep -qiE 'ERROR:|Assertion .* failed|WARNING: Object may not be a valid' \
+  && { echo "FAIL: active tray (pad-fill) render errored or non-manifold:"; echo "$out"; exit 1; }
+[ -s "$tmp/out.stl" ] || { echo "FAIL: active tray (pad-fill) produced empty STL"; exit 1; }
+echo "ok: active tray pad-fill renders manifold"
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

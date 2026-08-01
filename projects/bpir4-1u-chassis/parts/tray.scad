@@ -90,29 +90,54 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
     zc   = floor_th + int_h()/2;        // vertical center of interior clearance
     cs   = _fan_x_centres(fan_size, fan_count);  // thermally placed, see params.scad
     band = _fan_band_x(fan_size, fan_count);     // [lo, hi] union of the footprints
+    r_cell = honeycomb_cell/2;
+    r_pad  = fan_pad_dia/2;
     difference() {
-        // Honeycomb FIELD over the fan footprint -- BOTH modes -- is self-
-        // supporting by construction (honeycomb_vent asserts its own worst-
-        // case hex span against the 5mm ceiling), so the field itself needs no
-        // teardrop and no round bore. A 45deg teardrop of the old 36.8mm bore
-        // does NOT fit here: it needs r*sqrt(2)=26.02mm above zc and only
-        // 20mm is available to the lid ledge -- see README. BUT the fan mount
-        // PADS unioned back into this field below are a foreign solid the
-        // module's own self-check does not cover (see libraries/honeycomb/
-        // README.md's "Embedded Solids" note) -- their own support-safety is
-        // handled separately via the cell-fill in the pad loop below (#78).
-        // rotate([90,0,0]) maps honeycomb_vent's local frame onto the chassis:
-        // local X stays chassis X; local Y (height) becomes chassis Z (the
-        // fan_size band around zc); local Z (depth, the cut-through axis)
-        // becomes chassis -Y, punching through the rear wall -- wall+2 gives a
-        // 1mm overcut on both faces.
-        // ONE wide band spanning both fans, not one per fan: the larger open
-        // area and better passive-mode flow were preferred over closing the
-        // ~19.4mm inter-fan strip, which has no fan behind it.
-        translate([band[0], yw + 1, zc - fan_size/2])
-            rotate([90, 0, 0])
-                honeycomb_vent(band[1] - band[0], fan_size, wall + 2,
-                               honeycomb_cell, honeycomb_wall);
+        union() {
+            _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust);
+            // Pad-fill (#78 Part A): a fastener pad is a foreign solid
+            // re-added into the honeycomb field, which the field's own
+            // self-check (HONEYCOMB_WORST_SPAN) does not cover -- see
+            // libraries/honeycomb/README.md's "Embedded Solids" note. Fill
+            // the lattice cells each pad overlaps so the pad's material
+            // lands on the field's own already-safe rib/bridge geometry
+            // instead of hanging bare over open lattice.
+            //
+            // Variant chosen (of 3 measured via a render-and-measure probe,
+            // see #78 Part A task report): fill EVERY cell whose centre is
+            // within r_pad + r_cell of the pad centre (not just a
+            // lower-half or single-nearest-cell filter). Measured counts
+            // across all 8 pads (2 fans x 4 mount holes, fan_size=40): this
+            // filter gives 2-3 filled cells per pad (never 0), uniformly for
+            // both the upper AND lower mount-hole rows. A lower-half-only
+            // filter (candidate ii, `c[1] <= pad_local[1]`) was measured to
+            // give ZERO filled cells for all 4 lower-row holes (both fans)
+            // -- the nearest cell's CENTRE sits a few hundredths of a mm
+            // ABOVE the pad centre even though that cell's hex body extends
+            // well below it, so a naive centre-relative filter silently
+            // fails to fill anything under those pads. A snap-to-lattice
+            // single-nearest-cell filter (candidate iii) does fill exactly
+            // one substantially-overlapping cell per pad (measured 3.5-5mm
+            // of centre-to-centre margin under the r_pad+r_cell threshold),
+            // but leaves other cells that also overlap the pad unfilled,
+            // trading redundancy for a modest area saving. This filter (i)
+            // was picked for uniform correctness across both rows over the
+            // small extra material cost.
+            if (enable_exhaust)
+                for (cx = cs)
+                    for (p = fan_mount_holes(fan_size, "structural-mount")) {
+                        pad_local = [cx + p[0] - band[0], p[1] + fan_size/2];
+                        centres = honeycomb_cell_centres(band[1]-band[0], fan_size,
+                                                          honeycomb_cell, honeycomb_wall);
+                        fill = [for (c = centres) if (norm(c - pad_local) <= r_pad + r_cell) c];
+                        translate([band[0], yw + 1, zc - fan_size/2])
+                            rotate([90, 0, 0])
+                                for (c = fill)
+                                    translate(c)
+                                        linear_extrude(height = wall + 2)
+                                            circle(r = r_cell, $fn = 6);
+                    }
+        }
         // Active only: keep a solid bearing pad around each mount screw, so the
         // M3 head/nut seats on material rather than on the 1.2mm hex lattice.
         // Pad centres come from fan_mount_holes() (single source of truth) --
@@ -130,6 +155,31 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
         for (cx = cs)
             translate([cx, yw - wall, zc])
                 rotate([-90, 0, 0]) fan_holes(fan_size, depth = wall);
+}
+
+// Rear honeycomb field: passive mode = one band across both fans; active
+// mode split into per-fan bands in Task 4 (#78 Part B). Defined here so
+// Task 3's pad-fill code has a stable call site to union alongside.
+//
+// Honeycomb FIELD over the fan footprint -- BOTH modes -- is self-
+// supporting by construction (honeycomb_vent asserts its own worst-case hex
+// span against the 5mm ceiling), so the field itself needs no teardrop and
+// no round bore. A 45deg teardrop of the old 36.8mm bore does NOT fit here:
+// it needs r*sqrt(2)=26.02mm above zc and only 20mm is available to the lid
+// ledge -- see README.
+// rotate([90,0,0]) maps honeycomb_vent's local frame onto the chassis:
+// local X stays chassis X; local Y (height) becomes chassis Z (the
+// fan_size band around zc); local Z (depth, the cut-through axis) becomes
+// chassis -Y, punching through the rear wall -- wall+2 gives a 1mm overcut
+// on both faces.
+// ONE wide band spanning both fans, not one per fan: the larger open area
+// and better passive-mode flow were preferred over closing the ~19.4mm
+// inter-fan strip, which has no fan behind it.
+module _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust) {
+    translate([band[0], rear_wall_y(enable_exhaust) + 1, zc - fan_size/2])
+        rotate([90, 0, 0])
+            honeycomb_vent(band[1] - band[0], fan_size, wall + 2,
+                           honeycomb_cell, honeycomb_wall);
 }
 
 // IO-gap wall widths (Round 2 #62 Task 3; third wall + gap figures updated
