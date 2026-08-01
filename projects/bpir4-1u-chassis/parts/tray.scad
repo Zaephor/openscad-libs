@@ -182,7 +182,9 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
 
 // Rear honeycomb field: passive mode = one band across both fans; active
 // mode split into per-fan bands in Task 4 (#78 Part B). Defined here so
-// Task 3's pad-fill code has a stable call site to union alongside.
+// Task 3's pad-fill code (_rear_openings(), which SUBTRACTS the filled
+// cells from this module's output -- see that difference()'s comment for
+// why union would be wrong) has a stable call site to reference.
 //
 // Honeycomb FIELD over the fan footprint -- BOTH modes -- is self-
 // supporting by construction (honeycomb_vent asserts its own worst-case hex
@@ -228,12 +230,23 @@ function _rear_honeycomb_band_frame(cx, fan_size) = [cx - fan_size/2, fan_size];
 module _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust) {
     yw = rear_wall_y(enable_exhaust);
     if (enable_exhaust) {
-        // min()/max() over cs rather than index order: _fan_x_centres()
-        // (params.scad) does not guarantee its returned centres are in
-        // left-to-right (increasing-X) order, so cs[0]/cs[1] cannot be
-        // trusted as "left fan"/"right fan" -- min/max are order-
-        // independent and always pick the true low/high edges.
-        for (cx = [min(cs), max(cs)]) {
+        // Iterate ALL of cs (one band PER FAN), not just the two extremes:
+        // fan_count is a Customizer-exposed, params.scad-supported value
+        // that can be 3+ (see params.scad's "kept so a non-designed
+        // fan_count still yields valid geometry" comment). An earlier cut
+        // of this loop used `[min(cs), max(cs)]`, which is behaviorally
+        // identical to this for fan_count==2 (the union of {min,max} IS all
+        // of cs when there are only 2 elements) but for fan_count>=3
+        // silently drew a band only at the two extreme fans and dropped the
+        // honeycomb void entirely for every MIDDLE fan -- that fan still got
+        // its mount-screw holes and bearing pads (the pad-fill/screw-hole
+        // loops in _rear_openings() correctly iterate all of `cs`), so it
+        // rendered clean with no assert while measuring near-zero open area
+        // behind it: the same silent-CSG-bug class as this plan's other two
+        // Criticals. Order of `cs` doesn't matter here (unlike a "left
+        // fan"/"right fan" distinction) since every element gets its own
+        // band regardless of position.
+        for (cx = cs) {
             f = _rear_honeycomb_band_frame(cx, fan_size);
             translate([f[0], yw + 1, zc - fan_size/2])
                 rotate([90, 0, 0])
