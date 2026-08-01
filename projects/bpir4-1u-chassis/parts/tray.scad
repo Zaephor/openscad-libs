@@ -91,12 +91,16 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
     cs   = _fan_x_centres(fan_size, fan_count);  // thermally placed, see params.scad
     band = _fan_band_x(fan_size, fan_count);     // [lo, hi] union of the footprints
     difference() {
-        // Honeycomb over the fan footprint -- BOTH modes. Self-supporting by
-        // construction (honeycomb_vent asserts its own worst-case hex span
-        // against the 5mm ceiling), so the rear wall needs no teardrop and no
-        // round bore. A 45deg teardrop of the old 36.8mm bore does NOT fit
-        // here: it needs r*sqrt(2)=26.02mm above zc and only 20mm is available
-        // to the lid ledge -- see README.
+        // Honeycomb FIELD over the fan footprint -- BOTH modes -- is self-
+        // supporting by construction (honeycomb_vent asserts its own worst-
+        // case hex span against the 5mm ceiling), so the field itself needs no
+        // teardrop and no round bore. A 45deg teardrop of the old 36.8mm bore
+        // does NOT fit here: it needs r*sqrt(2)=26.02mm above zc and only
+        // 20mm is available to the lid ledge -- see README. BUT the fan mount
+        // PADS unioned back into this field below are a foreign solid the
+        // module's own self-check does not cover (see libraries/honeycomb/
+        // README.md's "Embedded Solids" note) -- their own support-safety is
+        // handled separately via the cell-fill in the pad loop below (#78).
         // rotate([90,0,0]) maps honeycomb_vent's local frame onto the chassis:
         // local X stays chassis X; local Y (height) becomes chassis Z (the
         // fan_size band around zc); local Z (depth, the cut-through axis)
