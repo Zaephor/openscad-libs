@@ -87,28 +87,36 @@ ear_hole_type = "slot";
 include <../params.scad>;
 use <fans/fans.scad>;
 use <honeycomb/honeycomb.scad>;
+use <../parts/tray.scad>;
 
 cs   = _fan_x_centres(fan_size, fan_count);
 band = _fan_band_x(fan_size, fan_count);
 zc   = floor_th + int_h()/2;
 r_cell = honeycomb_cell/2;
 r_pad  = fan_pad_dia/2;
-centres = honeycomb_cell_centres(band[1]-band[0], fan_size, honeycomb_cell, honeycomb_wall);
 
 echo(str("KEY yw ", rear_wall_y(true)));
 echo(str("KEY wall ", wall));
 
 // Same fill-selection filter _rear_openings() actually uses, for every pad
-// (both fans, all 4 structural-mount holes each) -- single source of truth,
-// not a re-derived/hardcoded coordinate.
+// (both fans, all 4 structural-mount holes each) -- single source of truth:
+// `use <../parts/tray.scad>` and call the REAL _rear_honeycomb_band_frame()
+// for the per-fan local frame, not a re-derived/hardcoded band[0] anchor.
+// (#78 Part B review fix: an earlier version of this probe hardcoded
+// band[0] for every fan, which happened to match a since-fixed production
+// bug that did the same -- self-consistent but wrong, not a real
+// alignment check. Going through the same accessor production uses is what
+// makes this probe meaningful.)
 for (cx = cs)
     for (p = fan_mount_holes(fan_size, "structural-mount")) {
-        pad_local = [cx + p[0] - band[0], p[1] + fan_size/2];
+        f = _rear_honeycomb_band_frame(cx, fan_size);
+        pad_local = [cx + p[0] - f[0], p[1] + fan_size/2];
+        centres = honeycomb_cell_centres(f[1], fan_size, honeycomb_cell, honeycomb_wall);
         fill = [for (c = centres) if (norm(c - pad_local) <= r_pad + r_cell) c];
         fill_outside = [for (c = fill) if (norm(c - pad_local) > r_pad) c];
         if (len(fill_outside) > 0) {
             fc = fill_outside[0];
-            echo(str("PROBE ", band[0] + fc[0], " ", (zc - fan_size/2) + fc[1]));
+            echo(str("PROBE ", f[0] + fc[0], " ", (zc - fan_size/2) + fc[1]));
         }
     }
 EOF

@@ -137,14 +137,23 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
             // trading redundancy for a modest area saving. This filter (i)
             // was picked for uniform correctness across both rows over the
             // small extra material cost.
+            // Anchor each pad's local frame via _rear_honeycomb_band_frame()
+            // (defined alongside _rear_honeycomb_bands() below) -- NOT
+            // band[0] -- since #78 Part B splits the active-mode field into
+            // one band per fan, each anchored at ITS OWN footprint's left
+            // edge, not the whole (pre-split) band's left edge. Re-deriving
+            // that anchor here independently is exactly how this drifted
+            // out of sync before (see that function's comment for the
+            // measured misalignment and the probe that caught it).
             if (enable_exhaust)
                 for (cx = cs)
                     for (p = fan_mount_holes(fan_size, "structural-mount")) {
-                        pad_local = [cx + p[0] - band[0], p[1] + fan_size/2];
-                        centres = honeycomb_cell_centres(band[1]-band[0], fan_size,
+                        f = _rear_honeycomb_band_frame(cx, fan_size);
+                        pad_local = [cx + p[0] - f[0], p[1] + fan_size/2];
+                        centres = honeycomb_cell_centres(f[1], fan_size,
                                                           honeycomb_cell, honeycomb_wall);
                         fill = [for (c = centres) if (norm(c - pad_local) <= r_pad + r_cell) c];
-                        translate([band[0], yw + 1, zc - fan_size/2])
+                        translate([f[0], yw + 1, zc - fan_size/2])
                             rotate([90, 0, 0])
                                 for (c = fill)
                                     translate(c)
@@ -194,6 +203,28 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
 // and bleeds pressure between the two fans -- closing it (leaving that
 // strip of wall solid) forces each fan's flow through its own dedicated
 // band instead.
+//
+// _rear_honeycomb_band_frame(cx, fan_size) -- ACTIVE-mode local honeycomb
+// frame [x0, width] for the band containing fan centre `cx`: anchored at
+// that fan's OWN footprint left edge (cx - fan_size/2), fan_size wide.
+// SINGLE SOURCE OF TRUTH for both this module (which renders the band) and
+// the pad-fill loop in _rear_openings() below (which must convert a
+// chassis-frame mount-hole position into this SAME local frame before
+// comparing it against honeycomb_cell_centres()) -- both call sites MUST
+// go through this function rather than each re-deriving/retyping the
+// anchor, or they can drift apart. That drift is exactly the review bug
+// this function fixes: the first cut of the two-band split anchored the
+// hi-edge fan's (`cx == max(cs)`) band at cx-fan_size/2, but the pad-fill
+// loop kept assuming the WHOLE (pre-split) band's left edge (`band[0]`)
+// for every fan -- since `band[0]` and `cx-fan_size/2` differ by a
+// non-integer multiple of the honeycomb column pitch (measured ~1.8mm of
+// 7.2mm on this project's actual params), the pad-fill loop's "fill" hexes
+// for the hi-edge fan landed at chassis positions that did not coincide
+// with where that fan's real hex lattice actually was -- confirmed via a
+// probe at the true, correctly-computed cell position returning an empty
+// (0% solid) result pre-fix.
+function _rear_honeycomb_band_frame(cx, fan_size) = [cx - fan_size/2, fan_size];
+
 module _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust) {
     yw = rear_wall_y(enable_exhaust);
     if (enable_exhaust) {
@@ -202,16 +233,13 @@ module _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust) {
         // left-to-right (increasing-X) order, so cs[0]/cs[1] cannot be
         // trusted as "left fan"/"right fan" -- min/max are order-
         // independent and always pick the true low/high edges.
-        lo_edge = min(cs) + fan_size/2;
-        hi_edge = max(cs) - fan_size/2;
-        translate([band[0], yw + 1, zc - fan_size/2])
-            rotate([90, 0, 0])
-                honeycomb_vent(lo_edge - band[0], fan_size, wall + 2,
-                               honeycomb_cell, honeycomb_wall);
-        translate([hi_edge, yw + 1, zc - fan_size/2])
-            rotate([90, 0, 0])
-                honeycomb_vent(band[1] - hi_edge, fan_size, wall + 2,
-                               honeycomb_cell, honeycomb_wall);
+        for (cx = [min(cs), max(cs)]) {
+            f = _rear_honeycomb_band_frame(cx, fan_size);
+            translate([f[0], yw + 1, zc - fan_size/2])
+                rotate([90, 0, 0])
+                    honeycomb_vent(f[1], fan_size, wall + 2,
+                                   honeycomb_cell, honeycomb_wall);
+        }
     } else {
         translate([band[0], yw + 1, zc - fan_size/2])
             rotate([90, 0, 0])
