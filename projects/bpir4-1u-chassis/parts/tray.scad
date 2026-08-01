@@ -186,14 +186,38 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
 // fan_size band around zc); local Z (depth, the cut-through axis) becomes
 // chassis -Y, punching through the rear wall -- wall+2 gives a 1mm overcut
 // on both faces.
-// ONE wide band spanning both fans, not one per fan: the larger open area
-// and better passive-mode flow were preferred over closing the ~19.4mm
-// inter-fan strip, which has no fan behind it.
+// Passive mode keeps ONE wide band spanning both fans -- the larger open
+// area and better passive-mode flow are preferred since there is no fan/
+// plume to protect against (#74). Active mode splits into two per-fan
+// bands (#78 Part B): the inter-fan strip sits in the exhaust plume with
+// no fan behind it, so leaving it open just recirculates already-warm air
+// and bleeds pressure between the two fans -- closing it (leaving that
+// strip of wall solid) forces each fan's flow through its own dedicated
+// band instead.
 module _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust) {
-    translate([band[0], rear_wall_y(enable_exhaust) + 1, zc - fan_size/2])
-        rotate([90, 0, 0])
-            honeycomb_vent(band[1] - band[0], fan_size, wall + 2,
-                           honeycomb_cell, honeycomb_wall);
+    yw = rear_wall_y(enable_exhaust);
+    if (enable_exhaust) {
+        // min()/max() over cs rather than index order: _fan_x_centres()
+        // (params.scad) does not guarantee its returned centres are in
+        // left-to-right (increasing-X) order, so cs[0]/cs[1] cannot be
+        // trusted as "left fan"/"right fan" -- min/max are order-
+        // independent and always pick the true low/high edges.
+        lo_edge = min(cs) + fan_size/2;
+        hi_edge = max(cs) - fan_size/2;
+        translate([band[0], yw + 1, zc - fan_size/2])
+            rotate([90, 0, 0])
+                honeycomb_vent(lo_edge - band[0], fan_size, wall + 2,
+                               honeycomb_cell, honeycomb_wall);
+        translate([hi_edge, yw + 1, zc - fan_size/2])
+            rotate([90, 0, 0])
+                honeycomb_vent(band[1] - hi_edge, fan_size, wall + 2,
+                               honeycomb_cell, honeycomb_wall);
+    } else {
+        translate([band[0], yw + 1, zc - fan_size/2])
+            rotate([90, 0, 0])
+                honeycomb_vent(band[1] - band[0], fan_size, wall + 2,
+                               honeycomb_cell, honeycomb_wall);
+    }
 }
 
 // IO-gap wall widths (Round 2 #62 Task 3; third wall + gap figures updated
