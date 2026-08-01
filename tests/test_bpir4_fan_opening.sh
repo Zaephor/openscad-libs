@@ -50,17 +50,38 @@ osc="$root/scripts/openscad.sh"
 fail=0
 
 # --- Recorded baselines: measured on the as-built geometry, then asserted as
-# a floor / a band. Both were also measured against the pre-fix bore geometry,
-# so the figures below are known to discriminate rather than merely to pass.
-# Isolated-band facet count: 4668 as built, against 2616 for the two bores.
-MIN_BAND_FACETS=3600
-# Open area over the fan band: 2450.3 mm^2 as built, against 2239.8 mm^2 for
-# the two bores over this same (now wider) band -- so the honeycomb moves MORE
-# air than the unsupported bore it replaces, because #74's split placement
-# widens the band to 99.4mm and stops the inner pads merging.
-# Both figures INCLUDE the 8 mount screw holes (8 * pi/4 * 4.3^2 = 116.2 mm^2),
-# which are genuinely open; the lattice-only comparison is 2334 vs 2127 mm^2.
-EXPECTED_OPEN_AREA=2450
+# a floor / a band. Re-measured 2026-08-01 (final #78 review) after two real
+# changes to what this probe covers: (a) #78 Part B split the active-mode
+# field into one honeycomb band PER FAN with the inter-fan strip left solid
+# (this test's isolated-band box spans BOTH fans' bands, so it now also
+# spans that solid strip), and (b) the fix-#1 correction to
+# _rear_honeycomb_bands() (iterate all of `cs`, not just `[min(cs),
+# max(cs)]`) -- behaviorally a no-op for this test's fan_count=2 fixture
+# (union of the two extremes over 2 elements IS all of `cs`), so this
+# re-measurement is driven by (a), not (b). The two figures below (facets,
+# open area) are BOTH markedly lower than the stale pre-#78-Part-B baseline
+# recorded here previously (4668 facets / 2450.3 mm^2) -- expected, since a
+# solid inter-fan strip now sits in what used to be open lattice. Round-bore
+# comparator figures (2616 facets / 2239.8 mm^2, the geometry the honeycomb
+# replaced) predate the honeycomb feature entirely and are unaffected by
+# either change; still valid as the "other side" of the discriminator.
+#
+# Isolated-band facet count: 3800 as built (two per-fan hex bands + the
+# solid inter-fan strip), against 2616 for the two round bores. Floor set
+# at their midpoint (~3208, rounded to 3200) for roughly symmetric headroom
+# on both sides (600 facets / ~19% below the real figure, 584 / ~18% above
+# the bore figure) -- comfortably discriminates a lattice from a smooth bore
+# without sitting close to either.
+MIN_BAND_FACETS=3200
+# Open area over the fan band: 1565.8 mm^2 as built, against 2239.8 mm^2 for
+# the two bores over this same band -- the honeycomb now moves LESS air than
+# the bores it replaced (opposite of the pre-#78-Part-B relationship): #78
+# Part B trades open area for closing the inter-fan recirculation gap,
+# leaving that strip of wall solid rather than open lattice. See
+# projects/bpir4-1u-chassis/README.md for the same tradeoff stated in prose.
+# This figure INCLUDES the 8 mount screw holes (8 * pi/4 * 4.3^2 = 116.2
+# mm^2), which are genuinely open.
+EXPECTED_OPEN_AREA=1565.8
 OPEN_AREA_TOL_PCT=5
 # Fraction of the full annulus volume a pad must deliver. Not 1.0: the mesh
 # is a faceted approximation of both cylinders, so the intersection is a
@@ -123,15 +144,29 @@ if [ "${#HOLES[@]}" -eq 0 ]; then
 fi
 echo "band=[$BAND0, $BAND1] centres=$CENTRES zc=$ZC wall=$WALL pad=$PAD holedia=$HOLEDIA holes=${#HOLES[@]}"
 
-# --- Render the isolated band: the tray intersected with exactly the fan
-# band's X range, the rear wall's Y slab and the fan_size Z band. Exact
-# bounds (no overcut) so the open-area arithmetic below is exact. ---
+# --- Render the isolated band: the tray intersected with a box spanning the
+# fan band's X range, the rear wall's Y slab and the fan_size Z band. #78
+# Part B split the active-mode field into one honeycomb band per fan
+# (_rear_honeycomb_band_frame()), each anchored exactly at its own fan's
+# footprint edges (cx +/- fan_size/2) -- which coincide EXACTLY with this
+# probe's outer X clip and with the fan_size Z band used below, so an exact
+# (zero-margin) box lands a hex vertex precisely tangent to the clip plane at
+# more than one place, which CGAL's exact-arithmetic booleans render as a
+# degenerate (non-manifold) coincident face -- confirmed on the real tray
+# render ("Simple: yes"), so this is a probe artifact, not a geometry defect.
+# BAND_EPS nudges the probe box outward by a hair past every tangent plane
+# (same "nudge past exact tangency" technique this project's own
+# _lid_post_corner() fillets use -- see tray.scad's `ov` constant) so the
+# clip never lands exactly on a hex vertex. The extra sliver of counted
+# volume is a thin (BAND_EPS-tall/wide) rim around the probed box, negligible
+# next to the ~2000mm^2 measured open area and the 5% tolerance below. ---
+BAND_EPS=0.05
 cat > "$band_scad" <<EOF
 use <parts/tray.scad>
 intersection() {
     tray(enable_exhaust = true, fan_count = 2, fan_size = $FS);
-    translate([$BAND0, $YW - $WALL, $ZC - $FS/2])
-        cube([$BAND1 - ($BAND0), $WALL, $FS]);
+    translate([$BAND0 - $BAND_EPS, $YW - $WALL, $ZC - $FS/2 - $BAND_EPS])
+        cube([$BAND1 - ($BAND0) + 2*$BAND_EPS, $WALL, $FS + 2*$BAND_EPS]);
 }
 EOF
 band_out="$("$osc" --export-format binstl -o "$tmp/band.stl" "$band_scad" 2>&1)"

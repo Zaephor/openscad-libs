@@ -25,9 +25,14 @@ grille rather than an open bore because the rear wall is vertical: a bore
 through it lies on a horizontal axis and leaves an unsupported near-flat arc
 at its crown, and the usual remedy does not fit here — a 45° teardrop of the
 36.8mm bore needs 26.02mm of headroom above the bore centre and the lid
-ledge leaves only 20mm. The honeycomb also moves slightly more air than the
-bores did, because the two fans are placed on their thermal targets rather
-than butted (below) and the vented area is correspondingly wider. The rear
+ledge leaves only 20mm. The per-fan band split (#78) is a deliberate
+open-area tradeoff, not a free win: closing the inter-fan strip measurably
+REDUCES open area versus the old bores rather than increasing it — the
+active-mode open area over the fan band is now 1565.8 mm²
+(`tests/test_bpir4_fan_opening.sh`), against 2239.8 mm² for the two round
+bores over that same band — traded away in exchange for closing the
+recirculation path and backing every mount screw with solid, self-supporting
+material. The rear
 exhaust fan mounts on the tray's
 interior rear-wall face (screwed in from inside the case, airflow venting out
 through the vent); `fan_plenum` auto-derives from the fan's own depth
