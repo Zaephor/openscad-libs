@@ -52,7 +52,7 @@ global frame.
 The module uses flat-top hexagons (horizontal edge at cell top/bottom, not vertex).
 A flat-top hex's cross-section span varies from `cell/2` at its flat edges (the
 intended <=5mm bridge per design-for-print) up to `cell` at the equator. The module
-**tests every boundary-straddling hex** via an internal `_hex_is_safe()` function
+**tests every boundary-straddling hex** via an internal `_honeycomb_hex_is_safe()` function
 to ensure clipping never exposes a span larger than 5mm. Hexes that would clip
 unsafely are omitted, leaving a visibly-intentional sparse column at the boundary
 edge rather than an oversize opening.

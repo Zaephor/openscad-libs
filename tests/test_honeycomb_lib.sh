@@ -37,6 +37,18 @@ fi
 # function has regressed. This probe calls both in the same render and compares
 # their reported counts -- catches the accessor and the module's grid computation
 # drifting apart.
+#
+# accessor_count extraction MUST anchor on `^ECHO: "CENTRES_COUNT=` (start of
+# the echoed string), not a bare `grep 'CENTRES_COUNT='` -- the module's OWN
+# echo is `HONEYCOMB_CENTRES_COUNT=...`, which contains "CENTRES_COUNT=" as a
+# substring, so an unanchored grep matches BOTH lines and `head -1` silently
+# picks whichever one happens to render first. That happened to be the
+# accessor here (its echo statement precedes the honeycomb_vent() call
+# below), so the bare pattern passed by coincidence of ORDER, not by
+# correctly identifying the accessor's own line -- confirmed by the final
+# reviewer, who proved it breaks (comparing the module against itself,
+# unable to ever fail) by reordering the two calls. The anchored pattern
+# below can't collide either way.
 cat > "$tmp/consistency_probe.scad" <<'EOF'
 use <honeycomb/honeycomb.scad>;
 centres = honeycomb_cell_centres(width=40, height=15.9, cell=8, wall=1.2);
@@ -47,7 +59,7 @@ out="$(run "$tmp/consistency_probe.scad")"
 if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "consistency probe asserted:"; echo "$out"; exit 1
 fi
-accessor_count="$(echo "$out" | grep 'CENTRES_COUNT=' | head -1 | sed 's/.*CENTRES_COUNT=\([0-9]*\).*/\1/')"
+accessor_count="$(echo "$out" | grep -E '^ECHO: "CENTRES_COUNT=' | head -1 | sed 's/.*CENTRES_COUNT=\([0-9]*\).*/\1/')"
 module_count="$(echo "$out" | grep 'HONEYCOMB_CENTRES_COUNT=' | head -1 | sed 's/.*HONEYCOMB_CENTRES_COUNT=\([0-9]*\).*/\1/')"
 worst_span="$(echo "$out" | grep 'HONEYCOMB_WORST_SPAN=' | head -1 | sed 's/.*HONEYCOMB_WORST_SPAN=\([0-9.]*\).*/\1/')"
 if [ -z "$accessor_count" ] || [ "$accessor_count" -lt 1 ]; then
@@ -75,7 +87,7 @@ out="$(run "$tmp/consistency_probe_2.scad")"
 if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "consistency probe 2 asserted:"; echo "$out"; exit 1
 fi
-accessor_count_2="$(echo "$out" | grep 'CENTRES_COUNT=' | head -1 | sed 's/.*CENTRES_COUNT=\([0-9]*\).*/\1/')"
+accessor_count_2="$(echo "$out" | grep -E '^ECHO: "CENTRES_COUNT=' | head -1 | sed 's/.*CENTRES_COUNT=\([0-9]*\).*/\1/')"
 module_count_2="$(echo "$out" | grep 'HONEYCOMB_CENTRES_COUNT=' | head -1 | sed 's/.*HONEYCOMB_CENTRES_COUNT=\([0-9]*\).*/\1/')"
 if [ "$accessor_count_2" != "$module_count_2" ]; then
   echo "FAIL: accessor reported $accessor_count_2 centres but module computed $module_count_2 (probe 2) -- consistency violation"; exit 1

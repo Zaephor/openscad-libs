@@ -38,7 +38,7 @@
 // -- e.g. with cell=8/wall=1.2 defaults and a real caller's band height
 // (15.9mm), the naive clip left a ~7.59mm top-row span, blowing past the
 // design-for-print <=5mm reliably-self-supporting ceiling.
-// Fix: test every boundary-straddling hex individually (`_hex_is_safe()`)
+// Fix: test every boundary-straddling hex individually (`_honeycomb_hex_is_safe()`)
 // against that same width-at-offset formula, and simply omit (don't draw)
 // any hex whose clip would expose more than `max_safe_span`. Hexes fully
 // inside the band are unaffected (their natural flat edges are already

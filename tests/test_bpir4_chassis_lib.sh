@@ -71,11 +71,20 @@ done
 # that cell and measure its solid volume fraction via the divergence theorem
 # (same technique tests/test_bpir4_fan_opening.sh's pad-annulus check uses).
 # Measured while diagnosing this exact bug: a broken (still-void) fill
-# leaves only a small CGAL degenerate-duplicate-union sliver there (~7% of
-# the probe volume); a working fill fills essentially the whole probe
-# (~99%). MIN_FILL_FRACTION is set well below the working figure and well
-# above the broken one so mesh-tessellation noise cannot cause either a
-# false pass or a false failure.
+# leaves only a small CGAL degenerate-duplicate-union sliver there
+# (~7-11% of the probe volume); a working fill measures ~75.7% solid --
+# NOT ~99%, and NOT because of any partial void. The probe cylinder below
+# has no $fn/$fa/$fs override, so at PROBE_R=1.5mm OpenSCAD's default
+# facet settings ($fa=12, $fs=2) tessellate it as a 5-sided polygon
+# (segments = max(min(360/$fa, circumference/$fs), 5), and 5 wins here) --
+# a regular pentagon inscribed in a circle of radius r covers exactly
+# (5/(2*pi))*sin(72 deg) ~= 0.7568 of the circle's area. The volume-fraction
+# denominator (`full = pi*r^2*wall`, below) assumes a true circle, so a
+# genuinely 100%-solid probe still reads ~75.7%: that gap is a low-facet-
+# count measurement artifact of the PROBE's own cylinder, not the material
+# being measured. MIN_FILL_FRACTION is set well below the true working
+# figure (~75.7%) and well above the broken one (~7-11%) so mesh-
+# tessellation noise cannot cause either a false pass or a false failure.
 MIN_FILL_FRACTION=0.5
 PROBE_R=1.5
 dims_scad="$proj/tests/_t78_pad_fill_dims.scad"

@@ -58,16 +58,20 @@ taper) but are less aesthetically common and not modeled here.
 
 | Aspect | Mechanism | Tier |
 |---|---|---|
-| Safe boundary clipping | `_hex_is_safe(y)` function tests each boundary-straddling hex's exposed span against 5mm ceiling; omits unsafe hexes. | DESIGN |
-| Regression guard | `worst_span` regression assertion re-measures every drawn hex's true exposed span and asserts it ≤ 5mm, catching bugs in `_hex_is_safe()`. | DESIGN |
+| Safe boundary clipping | `_honeycomb_hex_is_safe(y)` function tests each boundary-straddling hex's exposed span against 5mm ceiling; omits unsafe hexes. | DESIGN |
+| Regression guard | `worst_span` regression assertion re-measures every drawn hex's true exposed span and asserts it ≤ 5mm, catching bugs in `_honeycomb_hex_is_safe()`. | DESIGN |
+| Cell-centre accessor | `honeycomb_cell_centres(width, height, cell, wall)` returns every hex centre `honeycomb_vent()` actually draws for the same args (same `_honeycomb_centres()` call, same `_honeycomb_hex_is_safe()` gate) -- lets a consumer that must re-add a foreign solid into the field (e.g. a fastener bearing pad, see bpir4-1u-chassis #78) align to the real lattice instead of guessing at the grid. Pure geometry-facts accessor; no new grid math of its own. | DESIGN |
 
 **Justification:** The module's robustness to arbitrary caller-supplied heights
-(not row-pitch-aligned) is a design choice. Without the `_hex_is_safe()` check,
-a naive `intersection()` with `square([width, height])` would clip boundary hexes
-at whatever Y offset their geometric position lands, potentially exposing spans
-close to `cell` (e.g., 8mm with default parameters) and violating the 5mm
+(not row-pitch-aligned) is a design choice. Without the `_honeycomb_hex_is_safe()`
+check, a naive `intersection()` with `square([width, height])` would clip boundary
+hexes at whatever Y offset their geometric position lands, potentially exposing
+spans close to `cell` (e.g., 8mm with default parameters) and violating the 5mm
 self-support ceiling. The fix is simple: test each boundary hex and omit those
-that would clip unsafely.
+that would clip unsafely. `honeycomb_cell_centres()` exposes the same
+`_honeycomb_centres()`/gate combination as a read-only accessor rather than
+new geometry logic, so it carries no additional design tier of its own beyond
+the grid math it already reports on.
 
 ## Design Parameters (No Hardware Measurement)
 
