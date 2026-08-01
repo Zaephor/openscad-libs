@@ -48,6 +48,18 @@ holes) — supplementary reference (headless `verify-scad-geometry` output):
 Thickness is a parameter on every module (default from the table), so
 non-standard-depth fans are a parameter change.
 
+## Honeycomb-vent bore (`fan_honeycomb_vent`)
+
+For a fan mounted on a VERTICAL wall, `fan_bore()`/`fan_holes()`'s round hole
+becomes a horizontal-axis overhang at its crown -- not support-free.
+`fan_honeycomb_vent(width, height, depth, cell, hc_wall, fan_centers,
+fan_size, pad_dia, role)` cuts a self-supporting honeycomb field
+(`honeycomb/honeycomb.scad`) over the fan's footprint instead, with solid
+bearing pads + drilled holes at each fan's mount screws
+(`fan_mount_holes()`). Same corner-anchored local frame as
+`honeycomb_vent()` itself; `fan_centers` is a list of `[cx, cy]` points in
+that frame.
+
 ## Sources
 
 | Source | Tier | Backs |

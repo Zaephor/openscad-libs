@@ -28,4 +28,8 @@ assert(len(fan_mount_holes(120, "structural-mount")) == 4, "filter structural =>
 assert(len(fan_mount_holes(120, "keep-out")) == 0, "filter keep-out => 0");
 assert(len(fan_mount_holes(120, "all")) == 4, "wildcard all => 4");
 
+// fan_honeycomb_vent() (#72): pad-overlap guard must actually fire.
+// fan_hole_spacing(40) = 32, so pad_dia = 40 (> 32) must abort.
+*fan_honeycomb_vent(40, 40, 4.4, 8.0, 1.2, [[20,20]], 40, 40);
+
 echo("fans_test OK");
