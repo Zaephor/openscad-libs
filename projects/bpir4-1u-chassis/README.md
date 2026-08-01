@@ -10,18 +10,25 @@ no angled buttress). Rear exhaust fans are behind an `enable_exhaust` toggle
 exposed in the assembly customizer alongside `fan_size`/`fan_count`; the
 toggle drives geometry end-to-end via the Customizer (or
 `-D enable_exhaust=false`) — active mode is the full-depth box,
-**passive mode is a shorter box** (no fan plenum). Both modes cut the same
-self-supporting honeycomb hex field over the fan footprint; active mode adds
-the fan mount screw holes and a solid bearing pad around each one
-(`fan_pad_dia`), so an M3 head seats on material rather than on the 1.2mm
-lattice. The active opening is a honeycomb grille rather than an open bore
-because the rear wall is vertical: a bore through it lies on a horizontal
-axis and leaves an unsupported near-flat arc at its crown, and the usual
-remedy does not fit here — a 45° teardrop of the 36.8mm bore needs 26.02mm of
-headroom above the bore centre and the lid ledge leaves only 20mm. The
-honeycomb also moves slightly more air than the bores did, because the two
-fans are placed on their thermal targets rather than butted (below) and the
-vent band is correspondingly wider. The rear exhaust fan mounts on the tray's
+**passive mode is a shorter box** (no fan plenum). Both modes cut the
+same self-supporting honeycomb hex field over the fan footprint; passive
+mode keeps that field as a single band spanning both fans, while active mode
+splits it into two per-fan bands and leaves the inter-fan strip between them
+solid — that strip sits in the exhaust plume with no fan behind it, so an
+open honeycomb there would just recirculate already-warm air and bleed
+pressure between the two fans (#78). Active mode also adds the fan mount
+screw holes and a solid bearing pad around each one (`fan_pad_dia`), filling
+the honeycomb cells each pad overlaps so the pad's material lands on solid
+lattice rib rather than hanging bare over open cells, so an M3 head seats on
+material rather than on the 1.2mm lattice. The active opening is a honeycomb
+grille rather than an open bore because the rear wall is vertical: a bore
+through it lies on a horizontal axis and leaves an unsupported near-flat arc
+at its crown, and the usual remedy does not fit here — a 45° teardrop of the
+36.8mm bore needs 26.02mm of headroom above the bore centre and the lid
+ledge leaves only 20mm. The honeycomb also moves slightly more air than the
+bores did, because the two fans are placed on their thermal targets rather
+than butted (below) and the vented area is correspondingly wider. The rear
+exhaust fan mounts on the tray's
 interior rear-wall face (screwed in from inside the case, airflow venting out
 through the vent); `fan_plenum` auto-derives from the fan's own depth
 (`fan_default_thickness()`, `libraries/fans/fans.scad`) plus a clearance
