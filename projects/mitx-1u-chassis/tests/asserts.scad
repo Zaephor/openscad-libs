@@ -52,28 +52,14 @@ assert(_tongue_y() >= _usable_depth(),
     str("mitx-1u: tongue root ", _tongue_y(), " < _usable_depth() ", _usable_depth(),
         " -- rear wall would sit in front of the board's own depth budget"));
 
-// Fan-flanking rear vent (Task 3) must sit on the SAME side as the fan
-// (both negative X) -- a future _fan_cx()/_side_inner_x() sign or
-// side-wall convention change could otherwise silently place it on the
-// wrong side while still passing the main file's own (side-agnostic)
-// fit-assert.
-assert(_fan_vent_cx() < 0 && _fan_cx() < 0,
-    str("mitx-1u: fan-flanking vent x=", _fan_vent_cx(),
-        " expected on the same (negative) side as the fan x=", _fan_cx()));
-
-// Fan teardrop flat-cap regression (final-review fix, 2026-07-28): at
-// defaults the ideal 45deg apex (r*sqrt(2) above center) exceeds available
-// rear-wall headroom, so _mitx_fan_teardrop() caps it to a small flat top
-// instead of letting it punch an open notch through the wall's top edge.
-// Locks that a) the cap is actually engaged at defaults (documents why the
-// flat-top exists, not just that it's safe) and b) the resulting flat span
-// stays within the main file's own 10mm safe-bridging ceiling.
-assert(_fan_teardrop_apex() > _fan_teardrop_avail(),
-    str("mitx-1u: expected the default fan_size to need the flat-cap (ideal apex ",
-        _fan_teardrop_apex(), " > available ", _fan_teardrop_avail(),
-        ") -- if this no longer holds, the flat-cap code path is untested"));
-assert(_fan_teardrop_flat_w() > 0 && _fan_teardrop_flat_w() <= 10,
-    str("mitx-1u: fan teardrop flat-top span ", _fan_teardrop_flat_w(), "mm out of range"));
+// #72 regression lock: the fan opening must be a real honeycomb lattice
+// with solid bearing pads at every mount screw, not a round/teardrop bore.
+// tests/test_mitx_1u_chassis.sh probes fan_mount_holes(40)'s 4 corners in
+// world coordinates derived from _fan_cx()/_rear_center_z() -- lock both
+// here so a future change that shifts them fails with a clear message
+// instead of silently desyncing from those hand-picked shell probes.
+assert(_rear_center_z() == 21.83, str("mitx-1u: expected _rear_center_z()=21.83, got ", _rear_center_z()));
+assert(_fan_cx() == -55.5, str("mitx-1u: expected _fan_cx()=-55.5, got ", _fan_cx()));
 
 // Board-vs-side-wall collision guard (final-review finding, 2026-07-28):
 // the main file's off-center guard only checks the IO window/button against

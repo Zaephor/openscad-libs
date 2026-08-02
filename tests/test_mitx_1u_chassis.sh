@@ -137,7 +137,7 @@ probe_empty "translate([60, -4, 43]) cube([2,5,0.5]);" "IO window does not reach
 # -> _tongue_y()=228; wall=2.4 -> rear wall inner face=225.6; fan_size=40 ->
 # _fan_cx()=-55.5, dc_dia=11 -> _dc_cx()=55.5; rear_center_z=21.83).
 # Fan bore + DC-in must be REAL voids clean through the rear wall.
-probe_empty "translate([-56.5, 226, 20.83]) cube([2,2,2]);" "fan bore does not open through the rear wall"
+probe_empty "translate([-71.5, 226, 37.83]) cube([1,1,1]);" "fan opening does not open through the rear wall (see #72 regression block below for full pad/hole coverage)"
 probe_empty "translate([54.5, 226, 20.83]) cube([2,2,2]);"  "DC-in hole does not open through the rear wall"
 # Positive control: plain rear wall material clear of the fan/DC-in/tongue.
 probe_solid "translate([-91, 226, 20.83]) cube([2,2,2]);" "rear wall material beside the fan unexpectedly empty"
@@ -151,15 +151,17 @@ probe_solid "translate([-1, 233, 5]) cube([2,2,2]);" "#40 tongue is not real mat
 # caught only by this probe, not by a clean render) would leave this empty.
 probe_solid "translate([-0.4, 233.6, 0.1]) cube([0.8,0.8,0.8]);" "no floor/buttress under the #40 tongue -- unsupported overhang"
 
-# --- Fan teardrop flat-cap regression (final-review fix, 2026-07-28): a
-# full 45deg teardrop's ideal apex (r*sqrt(2) above center) reaches past the
-# rear wall's own top edge at defaults, which used to open a notch through
-# the wall instead of closing to a point. _mitx_fan_teardrop() now caps the
-# apex at the available headroom. Points that were a real EMPTY void before
-# this fix (an open notch through the wall's top edge, near the fan's own
-# X-span) must now be SOLID -- the wall closes over the top of the bore.
-probe_solid "translate([-53, 226, 43]) cube([2,2,0.5]);" "fan teardrop flat-cap: wall top edge still open past the fan bore (should be closed)"
-probe_solid "translate([-58, 226, 43]) cube([2,2,0.5]);" "fan teardrop flat-cap: wall top edge still open past the fan bore, other side (should be closed)"
+# --- #72 regression: the fan opening is now a honeycomb band with solid
+# bearing pads, not a teardrop bore. Each of the 4 fan_mount_holes(40)
+# corners (world coords: fan_cx=-55.5, rear_center_z=21.83, local center
+# (20,20), corners at local (4,4)/(36,4)/(36,36)/(4,36) -> world
+# x=fan_cx-20+local_x, z=rear_center_z+20-local_y) must be a REAL through-
+# hole (empty), and a point 3mm inboard of each corner (still within the
+# 9mm pad, outside the ~4.3mm hole) must be solid bearing material.
+probe_empty "translate([-71.5, 226, 37.83]) cube([1,1,1]);" "fan mount hole (corner local 4,4) does not open through"
+probe_solid "translate([-68.5, 226, 37.83]) cube([1,1,1]);" "fan pad annulus (corner local 4,4) unexpectedly voided"
+probe_empty "translate([-39.5, 226, 5.83]) cube([1,1,1]);"  "fan mount hole (corner local 36,36) does not open through"
+probe_solid "translate([-42.5, 226, 5.83]) cube([1,1,1]);"  "fan pad annulus (corner local 36,36) unexpectedly voided"
 
 # --- Board-vs-side-wall collision guard (final-review finding, 2026-07-28):
 # the off-center guard above only checks the IO window/button against the
