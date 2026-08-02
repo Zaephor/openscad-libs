@@ -129,25 +129,6 @@ if ! echo "$out" | grep -qi 'rear gusset/tongue zone'; then
 fi
 [ -s "$tmp/neg_card_gusset.stl" ] && { echo "FAIL: lp_card_len=220 negative control produced a non-empty STL (should have aborted)"; fail=1; }
 
-# --- Task 3 negative control: fan_size=70 must abort the NEW fan-flanking-
-# vent fit-assert. fan_size=70 passes every earlier assert (known size;
-# gusset clearance is guaranteed by _rear_flank_cx()'s own construction;
-# rear-wall width 30+fan_size/2+fan_size/2=100<=108.6 still passes -- that's
-# the Task 2 assert fan_size=80 isolates; rear-wall height and teardrop
-# flat-span both still fit) but shrinks the gap between the fan's outboard
-# edge and the side wall's inner face (K-fan_size=76.6-70=6.6mm) below the
-# vent's fixed 12mm width -- isolates this one new assert.
-out="$(run "$tmp/neg_fan_vent.stl" "$mod" -D "fan_size=70")"
-if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
-  echo "FAIL: fan_size=70 did NOT abort -- fan-flanking-vent fit-assert broken:"
-  echo "$out"; fail=1
-fi
-if ! echo "$out" | grep -qi 'does not fit between the side wall inner face'; then
-  echo "FAIL: fan_size=70 aborted on the WRONG assert (expected 'does not fit between the side wall inner face'):"
-  echo "$out"; fail=1
-fi
-[ -s "$tmp/neg_fan_vent.stl" ] && { echo "FAIL: fan_size=70 negative control produced a non-empty STL (should have aborted)"; fail=1; }
-
 # --- Negative control: standoff_h=7 must abort the 2U-ceiling assert against
 # the REAL bracket height (pcie_bracket_size("low-profile")[0]=79.2), not the
 # shorter //VERIFY lp_card_h envelope. standoff_h=7 passes every other assert
@@ -247,7 +228,7 @@ probe_solid "translate([96, -4, 71]) cube([2,5,2]);"   "faceplate above the PCIe
 # max(60,11)/2+2 = 25+5+30+2 = 62); _pcie_slot_cx()=97.13.
 
 # Fan bore + DC-in must be REAL voids clean through the rear wall.
-probe_empty "translate([-63, 226, 43]) cube([2,2,2]);" "fan bore does not open through the rear wall"
+probe_empty "translate([-87, 226, 69.055]) cube([1,1,1]);" "fan opening does not open through the rear wall (see #72 regression block below for full pad/hole coverage)"
 probe_empty "translate([61, 226, 43]) cube([2,2,2]);"  "DC-in hole does not open through the rear wall"
 # Positive control: plain rear wall material clear of the fan/DC-in/gussets.
 probe_solid "translate([0, 226, 43]) cube([2,2,2]);"   "rear wall material between fan and DC-in unexpectedly empty"
@@ -322,9 +303,13 @@ probe_solid "translate([-110.3, 7.5, 42.0769]) cube([1,1,1]);" "left side wall m
 # as the left probe, mirrored in X: world (109.8, 44.8, 42.5769).
 probe_empty "translate([109.3, 44.3, 42.0769]) cube([1,1,1]);" "right side intake vent does not open through the wall"
 probe_solid "translate([109.3, 7.5, 42.0769]) cube([1,1,1]);" "right side wall material before the vent's own Y-range unexpectedly empty"
-# Rear vent flanking the fan (local col x=7.2, row y=32.5128, rotate([-90,0,0])
-# reverses local Y onto world Z) -> world (-100.4, 226.8, 49.597).
-probe_empty "translate([-100.9, 226.3, 49.097]) cube([1,1,1]);" "rear fan-flanking vent does not open through the wall"
-probe_solid "translate([-100.9, 226.3, 3]) cube([1,1,1]);" "rear wall material below the fan-flanking vent's own Z-band unexpectedly empty"
+# --- #72 regression: the fan opening is now a honeycomb band with solid
+# bearing pads, not a teardrop bore. Each of the 4 fan_mount_holes(60)
+# corners must be a REAL through-hole, and a point 3mm inboard of each
+# (still within the 9mm pad, outside the ~4.3mm hole) must be solid.
+probe_empty "translate([-87, 226, 69.055]) cube([1,1,1]);" "fan mount hole (corner local 5,5) does not open through"
+probe_solid "translate([-84, 226, 69.055]) cube([1,1,1]);" "fan pad annulus (corner local 5,5) unexpectedly voided"
+probe_empty "translate([-37, 226, 19.055]) cube([1,1,1]);" "fan mount hole (corner local 55,55) does not open through"
+probe_solid "translate([-40, 226, 19.055]) cube([1,1,1]);" "fan pad annulus (corner local 55,55) unexpectedly voided"
 
 [ "$fail" -eq 0 ] && echo ok || exit 1

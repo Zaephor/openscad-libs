@@ -25,6 +25,7 @@ button_dia = 12; board_offset = 20;   // off-center X so button fits beside IO
 pcie_screw = "6-32";
 /* [Cooling / Power] */
 dc_dia = 11; fan_size = 60; cell = 8.0; hc_wall = 1.2;
+fan_pad_dia = 9;   // solid bearing pad around each fan mount screw (fans.scad fan_honeycomb_vent())
 /* [PCIe keep-out] */
 // LP card envelope reserved above/behind the slot -- no board- or
 // bracket-sourced figure exists for either dimension (pcie-bracket.scad's
@@ -155,37 +156,6 @@ function _side_vent_y0()      = 16;
 function _side_vent_len()     = 80;
 function _side_vent_zmargin() = 6;
 function _side_vent_h() = _wall_top_z() - 2 * _side_vent_zmargin();
-
-// Rear vent field flanking the fan (Task 3): a flat strip of otherwise-
-// unused rear wall between the fan's own outboard edge (_fan_cx()-fan_size/2
-// -- the SAME conservative bound the fit-assert below uses; fan_size/2=30
-// safely covers the real bore (r=fan_size*0.92/2=27.6) and the mount screws'
-// corners (hole_spacing/2 + mount_dia/2 = 25+2.15=27.15), both < 30) and the
-// near (left) side wall's inner face -- same fixed-width idiom as
-// mitx-1u-chassis.scad's own _fan_vent_w() (a literal, NOT derived from the
-// gap -- a derived width would always trivially fit by construction and the
-// fit-assert below could never actually catch a real collision). Reuses
-// _side_vent_zmargin()'s full-height band -- this side has no PCIe hardware
-// nearby (that's on the RIGHT, at _pcie_slot_cx()>0), so no LP-card
-// constraint applies here.
-function _fan_vent_x1()  = _fan_cx() - fan_size / 2;   // fan's outboard edge
-function _side_inner_x() = -_clear_w() / 2 + wall;     // left side wall inner face
-function _fan_vent_w()   = 12;
-function _fan_vent_cx()  = (_fan_vent_x1() + _side_inner_x()) / 2;
-function _fan_vent_h()   = _wall_top_z() - 2 * _side_vent_zmargin();
-
-// Fan bore teardrop geometry (mitx-1u-chassis.scad's _mitx_fan_teardrop()
-// idiom, see that file for the full "why" -- a plain 45deg teardrop's ideal
-// apex, r*sqrt(2) above center, can exceed the rear wall's own headroom to
-// its top edge; _mitx2_fan_teardrop() caps it below). At THIS project's own
-// defaults (device_u=2, fan_size=60) the cap does not actually engage --
-// _wall_top_z() is tall enough that the ideal apex fits -- but the capping
-// logic is still required generally (Global Constraints #3) since a larger
-// fan_size could push the ideal apex past headroom again.
-function _fan_bore_r()          = fan_size * 0.92 / 2;
-function _fan_teardrop_apex()   = _fan_bore_r() * sqrt(2);
-function _fan_teardrop_avail()  = _wall_top_z() - _rear_center_z();
-function _fan_teardrop_flat_w() = 2 * max(0, _fan_teardrop_apex() - _fan_teardrop_avail());
 
 // This chassis deliberately cuts NO pcie_bracket_mount_holes(). Two
 // independent reasons, both verified rather than assumed:
@@ -318,12 +288,6 @@ assert(abs(_fan_cx()) + fan_size/2 <= _clear_w()/2 - wall - 1e-6,
 // Fan must fit within the rear wall's own height.
 assert(_rear_center_z() - fan_size/2 >= -1e-6 && _rear_center_z() + fan_size/2 <= _wall_top_z() + 1e-6,
     str("mitx-2u: fan_size ", fan_size, " does not fit within rear wall height ", _wall_top_z()));
-// Fan teardrop's flattened apex must stay within the safe self-bridging
-// ceiling -- a larger fan_size (taller bore) could otherwise widen the flat
-// top past what prints clean without support.
-assert(_fan_teardrop_flat_w() <= 10 + 1e-6,
-    str("mitx-2u: fan_size ", fan_size, " teardrop flat-top span ", _fan_teardrop_flat_w(),
-        "mm exceeds the 10mm safe self-bridging ceiling -- reduce fan_size or add rear-wall headroom"));
 // LP card keep-out (Y-extent from the front plane, at the slot X) must stay
 // clear of the rear gusset/tongue zone (starts at _tongue_y()-wall-
 // _gusset_size(), matching the _mitx2_gusset() calls below) -- the card
@@ -344,14 +308,6 @@ assert(_pcie_slot_cx() - pcie_bracket_size("low-profile")[1]/2 >= -rack10_clear_
 assert(_side_vent_y0() + _side_vent_len() <= _tongue_y() - wall - _gusset_size() - 1e-6,
     str("mitx-2u: side intake vent [", _side_vent_y0(), ",", _side_vent_y0()+_side_vent_len(),
         "] reaches into the rear gusset zone (starts at ", _tongue_y()-wall-_gusset_size(), ")"));
-// Fan-flanking rear vent must fit entirely in the gap between the left side
-// wall's inner face and the fan's own outboard edge (not overlap either).
-assert(_fan_vent_cx() - _fan_vent_w()/2 >= _side_inner_x() + 1e-6
-    && _fan_vent_cx() + _fan_vent_w()/2 <= _fan_vent_x1() - 1e-6,
-    str("mitx-2u: fan-flanking vent [", _fan_vent_cx()-_fan_vent_w()/2, ",",
-        _fan_vent_cx()+_fan_vent_w()/2, "] does not fit between the side wall inner face (",
-        _side_inner_x(), ") and the fan's outboard edge (", _fan_vent_x1(), ")"));
-
 module _mitx2_faceplate() {
     difference() {
         translate([-rack10_panel_width(standard)/2, -faceplate_th, 0])
@@ -422,23 +378,6 @@ module _mitx2_gusset(x0, xw, y0, z0, size) {
                 translate([dx, p[0], p[1]]) sphere(r = 0.001, $fn = 6);
 }
 
-// Teardrop bore for the fan airflow opening through the vertical rear wall
-// -- same idiom (and Y/Z-frame convention) as mitx-1u-chassis.scad's
-// _mitx_fan_teardrop(); see that module's comment block for the full "why"
-// (fan_bore()'s plain circle has no teardrop logic; `max_reach` caps the
-// ideal 45deg apex at the available rear-wall headroom instead of letting it
-// punch through the wall's own top edge).
-module _mitx2_fan_teardrop(size, depth, max_reach) {
-    r = size * 0.92 / 2;
-    reach = min(r * sqrt(2), max_reach);
-    translate([0, 0, -1])
-        linear_extrude(height = depth + 2)
-            hull() {
-                circle(r = r);
-                translate([0, -reach]) circle(r = 0.001);
-            }
-}
-
 // Side-wall intake honeycomb vent (Task 3). honeycomb_vent()'s local frame
 // is X=width, Y=height, Z=depth (see honeycomb.scad); rotate([90,0,90]) maps
 // local (x,y,z) -> world (z,x,y) -- same idiom (and verified mapping) as
@@ -452,17 +391,6 @@ module _mitx2_side_vent(sx) {
     translate([x_start, _side_vent_y0(), _side_vent_zmargin()])
         rotate([90, 0, 90])
             honeycomb_vent(_side_vent_len(), _side_vent_h(), wall + 2, cell, hc_wall);
-}
-
-// Rear-wall vent flanking the fan (Task 3), same rotate([-90,0,0]) idiom as
-// the fan/DC-in cutters below (native Z-bore frame -> +Y through the wall) --
-// see mitx-1u-chassis.scad's _mitx_rear_fan_vent() for the full "why" on the
-// z0+height anchor (local Y reversal onto world Z).
-module _mitx2_rear_fan_vent() {
-    z0 = _rear_center_z() - _fan_vent_h() / 2;
-    translate([_fan_vent_cx() - _fan_vent_w()/2, _tongue_y() - wall - 1, z0 + _fan_vent_h()])
-        rotate([-90, 0, 0])
-            honeycomb_vent(_fan_vent_w(), _fan_vent_h(), wall + 2, cell, hc_wall);
 }
 
 module mitx_2u_chassis() {
@@ -484,13 +412,16 @@ module mitx_2u_chassis() {
             _mitx2_gusset(-_gusset_x(), _gusset_xw(), _tongue_y() - wall, floor_th, _gusset_size());
             _mitx2_gusset( _gusset_x(), _gusset_xw(), _tongue_y() - wall, floor_th, _gusset_size());
         }
-        // rear fan opening (teardropped, apex-capped) + mount holes, rotated
-        // onto +Y through the rear wall (fan modules' native frame: airflow
-        // along +Z -- rotate([-90,0,0]) maps that Z-bore onto +Y, X stays put).
-        translate([_fan_cx(), _tongue_y() - wall, _rear_center_z()])
-            rotate([-90, 0, 0]) _mitx2_fan_teardrop(fan_size, wall, _fan_teardrop_avail());
-        translate([_fan_cx(), _tongue_y() - wall, _rear_center_z()])
-            rotate([-90, 0, 0]) fan_holes(fan_size, wall);
+        // rear fan opening: honeycomb field over the fan footprint + solid
+        // bearing pads/drilled holes at the mount screws (fan_honeycomb_vent(),
+        // fans/fans.scad -- #72, same treatment as mitx-1u-chassis.scad's own
+        // rear fan opening; here the teardrop cap never actually engaged at
+        // this project's fan_size=60 default, but carried the same landmine).
+        z0 = _rear_center_z() - fan_size/2;
+        translate([_fan_cx() - fan_size/2, _tongue_y() - wall - 1, z0 + fan_size])
+            rotate([-90, 0, 0])
+                fan_honeycomb_vent(fan_size, fan_size, wall + 2, cell, hc_wall,
+                                   [[fan_size/2, fan_size/2]], fan_size, fan_pad_dia);
         // rear DC-in barrel hole, same +Y-through-the-wall orientation as
         // the faceplate's own button hole. Left plain round (not
         // teardropped): a DC barrel jack's panel-mount nut needs true
@@ -500,8 +431,6 @@ module mitx_2u_chassis() {
             rotate([-90, 0, 0]) cylinder(h = wall + 2, d = dc_dia);
         // intake honeycomb vents, both side walls (Task 3).
         for (sx = [-1, 1]) _mitx2_side_vent(sx);
-        // rear honeycomb vent field flanking the fan (Task 3).
-        _mitx2_rear_fan_vent();
     }
     // #40 rear-support tongue: root at _tongue_y() (flush with the rear
     // wall's outer face), projects further +Y into rack_support_plate()'s

@@ -82,20 +82,11 @@ assert(_pcie_slot_cx() > _rear_flank_cx() + dc_dia/2,
     str("mitx-2u: PCIe slot centerline ", _pcie_slot_cx(),
         " expected clear of (right of) the DC-in flank zone (edge at ", _rear_flank_cx()+dc_dia/2, ")"));
 
-// Fan teardrop cap regression: at THIS project's own defaults (device_u=2,
-// fan_size=60) the rear wall is tall enough that the ideal 45deg apex
-// (r*sqrt(2) above center) actually FITS within available headroom -- unlike
-// the 1U sibling (fan_size=40, much shorter wall), the cap does not engage
-// by default here. Locks that this is still true (documents why there's no
-// "cap engaged" regression assert here, the mirror image of the 1U file's
-// own "expected the default fan_size to need the flat-cap" lock) and that
-// the flat-top span stays at exactly 0 as a result.
-assert(_fan_teardrop_apex() <= _fan_teardrop_avail(),
-    str("mitx-2u: expected the default fan_size to NOT need the flat-cap (ideal apex ",
-        _fan_teardrop_apex(), " <= available ", _fan_teardrop_avail(),
-        ") -- if this no longer holds, the flat-cap code path is untested here"));
-assert(_fan_teardrop_flat_w() == 0,
-    str("mitx-2u: expected zero flat-top span at defaults, got ", _fan_teardrop_flat_w()));
+// #72 regression lock: the fan opening is a honeycomb lattice with solid
+// bearing pads now, not a teardrop bore -- lock the exact numeric geometry
+// the shell probes in tests/test_mitx_2u_chassis.sh depend on.
+assert(_fan_cx() == -62, str("mitx-2u: expected _fan_cx()=-62, got ", _fan_cx()));
+assert(_rear_center_z() == 44.055, str("mitx-2u: expected _rear_center_z()=44.055, got ", _rear_center_z()));
 
 // The faceplate aperture must BE the bracket's own I/O window, translated --
 // not merely something that happens to fall inside the panel. Locks the
