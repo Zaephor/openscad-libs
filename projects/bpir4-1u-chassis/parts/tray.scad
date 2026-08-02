@@ -90,101 +90,35 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
     zc   = floor_th + int_h()/2;        // vertical center of interior clearance
     cs   = _fan_x_centres(fan_size, fan_count);  // thermally placed, see params.scad
     band = _fan_band_x(fan_size, fan_count);     // [lo, hi] union of the footprints
-    r_cell = honeycomb_cell/2;
-    r_pad  = fan_pad_dia/2;
-    difference() {
-        // NOTE: _rear_openings() as a WHOLE is a cutter -- _tray_shell()
-        // subtracts it from the wall -- so everything unioned/left standing
-        // inside this module is VOID, and anything subtracted away from the
-        // cutter here is what stays SOLID once cut from the wall. This
-        // difference()'s FIRST child (_rear_honeycomb_bands()) is the base
-        // void pattern; the SECOND child (the pad-fill loop below) must be
-        // SUBTRACTED from it -- not unioned in -- so a filled cell is
-        // REMOVED from the void mask (and therefore left solid in the
-        // final wall). Unioning the fill hexes in here instead would be a
-        // no-op (they're already members of the same _honeycomb_centres()
-        // set the bands are built from, so union(A, subset_of_A) == A) and
-        // would ALSO bypass honeycomb_vent()'s own [0,width]x[0,height]
-        // boundary clip, letting an edge pad's fill hex leak past the field
-        // into un-checked wall territory (#78 review fix).
-        difference() {
-            _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust);
-            // Pad-fill (#78 Part A): a fastener pad is a foreign solid
-            // re-added into the honeycomb field, which the field's own
-            // self-check (HONEYCOMB_WORST_SPAN) does not cover -- see
-            // libraries/honeycomb/README.md's "Embedded Solids" note. Fill
-            // the lattice cells each pad overlaps so the pad's material
-            // lands on the field's own already-safe rib/bridge geometry
-            // instead of hanging bare over open lattice.
-            //
-            // Variant chosen (of 3 measured via a render-and-measure probe,
-            // see #78 Part A task report): fill EVERY cell whose centre is
-            // within r_pad + r_cell of the pad centre (not just a
-            // lower-half or single-nearest-cell filter). Measured counts
-            // across all 8 pads (2 fans x 4 mount holes, fan_size=40): this
-            // filter gives 2-3 filled cells per pad (never 0), uniformly for
-            // both the upper AND lower mount-hole rows. A lower-half-only
-            // filter (candidate ii, `c[1] <= pad_local[1]`) was measured to
-            // give ZERO filled cells for all 4 lower-row holes (both fans)
-            // -- the nearest cell's CENTRE sits a few hundredths of a mm
-            // ABOVE the pad centre even though that cell's hex body extends
-            // well below it, so a naive centre-relative filter silently
-            // fails to fill anything under those pads. A snap-to-lattice
-            // single-nearest-cell filter (candidate iii) does fill exactly
-            // one substantially-overlapping cell per pad (measured 3.5-5mm
-            // of centre-to-centre margin under the r_pad+r_cell threshold),
-            // but leaves other cells that also overlap the pad unfilled,
-            // trading redundancy for a modest area saving. This filter (i)
-            // was picked for uniform correctness across both rows over the
-            // small extra material cost.
-            // Anchor each pad's local frame via _rear_honeycomb_band_frame()
-            // (defined alongside _rear_honeycomb_bands() below) -- NOT
-            // band[0] -- since #78 Part B splits the active-mode field into
-            // one band per fan, each anchored at ITS OWN footprint's left
-            // edge, not the whole (pre-split) band's left edge. Re-deriving
-            // that anchor here independently is exactly how this drifted
-            // out of sync before (see that function's comment for the
-            // measured misalignment and the probe that caught it).
-            if (enable_exhaust)
-                for (cx = cs)
-                    for (p = fan_mount_holes(fan_size, "structural-mount")) {
-                        f = _rear_honeycomb_band_frame(cx, fan_size);
-                        pad_local = [cx + p[0] - f[0], p[1] + fan_size/2];
-                        centres = honeycomb_cell_centres(f[1], fan_size,
-                                                          honeycomb_cell, honeycomb_wall);
-                        fill = [for (c = centres) if (norm(c - pad_local) <= r_pad + r_cell) c];
-                        translate([f[0], yw + 1, zc - fan_size/2])
-                            rotate([90, 0, 0])
-                                for (c = fill)
-                                    translate(c)
-                                        linear_extrude(height = wall + 2)
-                                            circle(r = r_cell, $fn = 6);
-                    }
+    // Honeycomb band(s) + pad-fill + bearing pads + mount holes, all lifted
+    // into fan_honeycomb_vent() (fans/fans.scad -- #72 generalize-to-core of
+    // this project's own #66/#78 fix, shared with mitx-1u/2u-chassis).
+    // Active: one band PER FAN (via _rear_honeycomb_band_frame(), still the
+    // single source of truth for that per-fan local frame -- kept here
+    // rather than folded into the library call because
+    // tests/test_bpir4_chassis_lib.sh independently re-derives pad-fill
+    // probe locations through this SAME function; deleting it would break
+    // that test's own "call the real accessor, don't re-derive" guarantee).
+    // Passive: one band spanning the whole merged footprint, no pads/holes.
+    if (enable_exhaust) {
+        for (cx = cs) {
+            f = _rear_honeycomb_band_frame(cx, fan_size);
+            translate([f[0], yw + 1, zc - fan_size/2])
+                rotate([90, 0, 0])
+                    fan_honeycomb_vent(f[1], fan_size, wall + 2, honeycomb_cell, honeycomb_wall,
+                                       [[cx - f[0], fan_size/2]], fan_size, fan_pad_dia);
         }
-        // Active only: keep a solid bearing pad around each mount screw, so the
-        // M3 head/nut seats on material rather than on the 1.2mm hex lattice.
-        // Pad centres come from fan_mount_holes() (single source of truth) --
-        // never a retyped +/- fan_hole_spacing/2. With #74's split placement
-        // the inner screws sit 27.4mm apart, so all 8 pads stay separate
-        // (they merged only in the old butted layout).
-        if (enable_exhaust)
-            for (cx = cs)
-                for (p = fan_mount_holes(fan_size, "structural-mount"))
-                    translate([cx + p[0], yw - wall - 1, zc + p[1]])
-                        rotate([-90, 0, 0]) cylinder(h = wall + 2, d = fan_pad_dia);
+    } else {
+        translate([band[0], yw + 1, zc - fan_size/2])
+            rotate([90, 0, 0])
+                fan_honeycomb_vent(band[1] - band[0], fan_size, wall + 2, honeycomb_cell, honeycomb_wall,
+                                   [], fan_size, fan_pad_dia);
     }
-    // Active only: the mount screw holes themselves, cut through the pads.
-    if (enable_exhaust)
-        for (cx = cs)
-            translate([cx, yw - wall, zc])
-                rotate([-90, 0, 0]) fan_holes(fan_size, depth = wall);
 }
 
 // Rear honeycomb field: passive mode = one band across both fans; active
-// mode split into per-fan bands in Task 4 (#78 Part B). Defined here so
-// Task 3's pad-fill code (_rear_openings(), which SUBTRACTS the filled
-// cells from this module's output -- see that difference()'s comment for
-// why union would be wrong) has a stable call site to reference.
+// mode split into per-fan bands in Task 4 (#78 Part B). Rendered via
+// fan_honeycomb_vent() (fans/fans.scad) from _rear_openings() above.
 //
 // Honeycomb FIELD over the fan footprint -- BOTH modes -- is self-
 // supporting by construction (honeycomb_vent asserts its own worst-case hex
@@ -209,57 +143,23 @@ module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_
 // _rear_honeycomb_band_frame(cx, fan_size) -- ACTIVE-mode local honeycomb
 // frame [x0, width] for the band containing fan centre `cx`: anchored at
 // that fan's OWN footprint left edge (cx - fan_size/2), fan_size wide.
-// SINGLE SOURCE OF TRUTH for both this module (which renders the band) and
-// the pad-fill loop in _rear_openings() below (which must convert a
-// chassis-frame mount-hole position into this SAME local frame before
-// comparing it against honeycomb_cell_centres()) -- both call sites MUST
-// go through this function rather than each re-deriving/retyping the
-// anchor, or they can drift apart. That drift is exactly the review bug
-// this function fixes: the first cut of the two-band split anchored the
-// hi-edge fan's (`cx == max(cs)`) band at cx-fan_size/2, but the pad-fill
-// loop kept assuming the WHOLE (pre-split) band's left edge (`band[0]`)
-// for every fan -- since `band[0]` and `cx-fan_size/2` differ by a
-// non-integer multiple of the honeycomb column pitch (measured ~1.8mm of
-// 7.2mm on this project's actual params), the pad-fill loop's "fill" hexes
-// for the hi-edge fan landed at chassis positions that did not coincide
-// with where that fan's real hex lattice actually was -- confirmed via a
-// probe at the true, correctly-computed cell position returning an empty
-// (0% solid) result pre-fix.
+// SINGLE SOURCE OF TRUTH for the fan_honeycomb_vent() call in
+// _rear_openings() above (which renders the band) -- kept as its own
+// function (rather than folded into that call) because
+// tests/test_bpir4_chassis_lib.sh independently re-derives pad-fill probe
+// locations through this SAME function, to check the real accessor against
+// itself rather than re-deriving the anchor a second, divergent way. That
+// divergence is exactly the review bug this function fixes: an earlier cut
+// of the two-band split anchored the hi-edge fan's (`cx == max(cs)`) band
+// at cx-fan_size/2, but a separate pad-fill loop kept assuming the WHOLE
+// (pre-split) band's left edge (`band[0]`) for every fan -- since `band[0]`
+// and `cx-fan_size/2` differ by a non-integer multiple of the honeycomb
+// column pitch (measured ~1.8mm of 7.2mm on this project's actual params),
+// the pad-fill loop's "fill" hexes for the hi-edge fan landed at chassis
+// positions that did not coincide with where that fan's real hex lattice
+// actually was -- confirmed via a probe at the true, correctly-computed
+// cell position returning an empty (0% solid) result pre-fix.
 function _rear_honeycomb_band_frame(cx, fan_size) = [cx - fan_size/2, fan_size];
-
-module _rear_honeycomb_bands(cs, band, zc, fan_size, enable_exhaust) {
-    yw = rear_wall_y(enable_exhaust);
-    if (enable_exhaust) {
-        // Iterate ALL of cs (one band PER FAN), not just the two extremes:
-        // fan_count is a Customizer-exposed, params.scad-supported value
-        // that can be 3+ (see params.scad's "kept so a non-designed
-        // fan_count still yields valid geometry" comment). An earlier cut
-        // of this loop used `[min(cs), max(cs)]`, which is behaviorally
-        // identical to this for fan_count==2 (the union of {min,max} IS all
-        // of cs when there are only 2 elements) but for fan_count>=3
-        // silently drew a band only at the two extreme fans and dropped the
-        // honeycomb void entirely for every MIDDLE fan -- that fan still got
-        // its mount-screw holes and bearing pads (the pad-fill/screw-hole
-        // loops in _rear_openings() correctly iterate all of `cs`), so it
-        // rendered clean with no assert while measuring near-zero open area
-        // behind it: the same silent-CSG-bug class as this plan's other two
-        // Criticals. Order of `cs` doesn't matter here (unlike a "left
-        // fan"/"right fan" distinction) since every element gets its own
-        // band regardless of position.
-        for (cx = cs) {
-            f = _rear_honeycomb_band_frame(cx, fan_size);
-            translate([f[0], yw + 1, zc - fan_size/2])
-                rotate([90, 0, 0])
-                    honeycomb_vent(f[1], fan_size, wall + 2,
-                                   honeycomb_cell, honeycomb_wall);
-        }
-    } else {
-        translate([band[0], yw + 1, zc - fan_size/2])
-            rotate([90, 0, 0])
-                honeycomb_vent(band[1] - band[0], fan_size, wall + 2,
-                               honeycomb_cell, honeycomb_wall);
-    }
-}
 
 // IO-gap wall widths (Round 2 #62 Task 3; third wall + gap figures updated
 // Round 3 #65 -- see libraries/sbc/sbc.scad's bpir4 row, whose full front-row
