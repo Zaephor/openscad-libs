@@ -16,8 +16,8 @@ Units: **mm**.
 **Complete (#42).** A full open-top tray: front faceplate (rack ears, IO
 cutout, power button), off-center board on standoffs, floor + side walls +
 rear wall, tongue-flanking corner gussets, the `#40` rack-support tongue with
-its own buttress, a rear DC-in barrel jack + teardropped exhaust fan bore,
-and honeycomb intake/exhaust vents. All geometry verified support-free.
+its own buttress, a rear DC-in barrel jack + a honeycomb-vented exhaust fan
+opening, and honeycomb intake vents. All geometry verified support-free.
 
 ## Design
 
@@ -71,19 +71,23 @@ and honeycomb intake/exhaust vents. All geometry verified support-free.
 - **Rear DC-in + exhaust fan.** Both cut through the rear wall via
   `rotate([-90,0,0])` (native Z-bore frame → +Y through the wall), centered
   at `+-clear_width/4` so they scale with `rack10` standard and stay clear of
-  the tongue-flanking gussets (asserted). The fan bore is teardropped
-  (`_mitx_fan_teardrop()`, 45° roof) since a plain round hole that large
+  the tongue-flanking gussets (asserted). The fan opening is a self-supporting
+  honeycomb field over the fan's own footprint (`fan_honeycomb_vent()`,
+  `fans/fans.scad` — #72), with hex-cell pad-fill + a solid bearing pad and
+  drilled hole at each mount screw, since a plain round hole that large
   (36.8mm at the default 40mm fan) rotated onto a horizontal axis is well
-  past the safe plain-hole span; the DC-in hole (11mm) is left plain round
-  since it's near the "usually fine" band and the barrel jack's panel-mount
-  nut needs true roundness.
+  past the safe plain-hole span — and a 45° teardrop of that bore doesn't
+  reach a genuinely support-free angle at this project's own rear-wall
+  headroom either (#72). The DC-in hole (11mm) is left plain round since
+  it's near the "usually fine" band and the barrel jack's panel-mount nut
+  needs true roundness.
 - **Honeycomb vents.** Intake fields on both side walls (front half, clear
-  of the rear gusset/tongue zone) and an exhaust-flanking field on the rear
-  wall (beside the fan's outboard edge, clear of its mounting screws and the
-  tongue gusset) — all self-supporting hex-cell cuts via `honeycomb_vent()`,
-  oriented so the bridge-sensitive "height" axis always lands vertical.
+  of the rear gusset/tongue zone), plus the fan's own honeycomb opening
+  above — all self-supporting hex-cell cuts via `honeycomb_vent()`/
+  `fan_honeycomb_vent()`, oriented so the bridge-sensitive "height" axis
+  always lands vertical.
 - **Support-free.** Every cut and every added solid (faceplate holes, IO
-  cutout, button hole, walls, gussets, tongue+buttress, fan teardrop,
+  cutout, button hole, walls, gussets, tongue+buttress, fan opening,
   honeycomb vents) is either a straight-through cut along a print-vertical
   axis or a monotonically-narrowing 45° prism — no unsupported overhangs
   anywhere. See [PRINTING.md](PRINTING.md).
@@ -102,9 +106,9 @@ and honeycomb intake/exhaust vents. All geometry verified support-free.
 | `button_dia` | Front | `12` | Power button hole diameter, mm |
 | `board_offset` | Front | `20` | Board X-offset off panel centerline, mm — opens the low-X gap the button sits in |
 | `dc_dia` | Cooling/Power | `11` | Rear DC-in barrel jack hole diameter, mm — plain round cut through the rear wall |
-| `fan_size` | Cooling/Power | `40` | Rear exhaust fan frame size, mm — must be a size `fan_known_sizes()` recognizes; drives the teardropped bore + `fan_holes()` mount pattern |
-| `cell` | Cooling/Power | `8.0` | Honeycomb cell size, mm — shared by all three vent fields |
-| `hc_wall` | Cooling/Power | `1.2` | Honeycomb wall thickness, mm — shared by all three vent fields |
+| `fan_size` | Cooling/Power | `40` | Rear exhaust fan frame size, mm — must be a size `fan_known_sizes()` recognizes; drives the `fan_honeycomb_vent()` opening + mount pattern |
+| `cell` | Cooling/Power | `8.0` | Honeycomb cell size, mm — shared by all vent fields |
+| `hc_wall` | Cooling/Power | `1.2` | Honeycomb wall thickness, mm — shared by all vent fields |
 
 ## Build
 
