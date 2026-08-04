@@ -35,10 +35,13 @@ recirculation path and backing every mount screw with solid, self-supporting
 material. The rear
 exhaust fan mounts on the tray's
 interior rear-wall face (screwed in from inside the case, airflow venting out
-through the vent); `fan_plenum` auto-derives from the fan's own depth
-(`fan_default_thickness()`, `libraries/fans/fans.scad`) plus a clearance
-margin, so the fan can never be placed closer to the board than that margin
-allows. Intake air runs through
+through the vent); `fan_plenum` auto-derives from the installed fan's depth
+(`fan_thickness` in `params.scad`, defaulting to the `fans` library's
+size-keyed `fan_default_thickness()` when unset) plus a clearance margin, so
+the fan can never be placed closer to the board than that margin allows. The
+chassis ships configured for a 20mm-deep 40mm fan (Noctua NF-A4x20, [A]
+vendor datasheet); set `fan_thickness` to your fan's depth, or to a negative
+value to fall back to the library default. Intake air runs through
 a self-supporting honeycomb hex-vent band above the IO connector cluster
 (not side margins), for a straight cross-chassis path over the SFP/connector
 tops — no supports needed, since each hex cell's own bridge is only a few mm
@@ -98,8 +101,9 @@ re-creating a collision. `fan_plenum` (active mode) and `rear_gap` (passive
 mode) both add the protrusion on top of their existing clearance —
 `fan_board_gap` (1.5mm) and `rear_clearance` (1.6mm) respectively — so
 clearance stays strictly greater than the obstruction rather than being
-replaced by it. Overall chassis depth is 119.7mm active / 109.8mm passive
-(both grew by the same 2.3mm).
+replaced by it. Overall chassis depth is 129.7mm active / 109.8mm passive
+(both grew by the same 2.3mm for the microSD protrusion; active grew a
+further 10mm when `fan_thickness` went to 20).
 
 **Fan placement (#74):** the two fans are not evenly spaced. Their X centres
 are derived from the board's own connector rows (`_fan_x_centres()` in

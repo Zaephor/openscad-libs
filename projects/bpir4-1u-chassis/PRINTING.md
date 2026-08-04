@@ -63,7 +63,12 @@
   field (`fan_pad_dia`), so the M3 head seats on material rather than on the
   1.2 mm lattice.
   `fan_plenum` (the board-rear-edge -> rear-wall gap when fans are on) is
-  derived from the fan's own depth (`fan_default_thickness()`, the `fans`
-  library) plus a fixed clearance margin (`fan_board_gap`, `params.scad`),
-  so the plenum can never be shallower than the fan actually needs — a
-  render-time assert in `params.scad` fails loudly if it ever is.
+  derived from the installed fan's depth (`fan_thickness`, `params.scad`,
+  falling back to the `fans` library's `fan_default_thickness()` when unset)
+  plus a fixed clearance margin (`fan_board_gap`, `params.scad`), so the
+  plenum can never be shallower than the fan actually needs — a render-time
+  assert in `params.scad` fails loudly if it ever is. As shipped this targets
+  a 20mm-deep 40mm fan (Noctua NF-A4x20), giving 129.7mm exterior depth in
+  active mode. Fitting a 10mm fan instead is safe but leaves a 10mm dead
+  plenum; set `fan_thickness = 10` (or a negative value) to shorten the
+  chassis to match.
