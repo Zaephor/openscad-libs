@@ -106,6 +106,15 @@ enable_exhaust = true;
 fan_size  = 40;
 fan_count = 2;
 ear_hole_type = "slot";
+// fan_thickness (#79) must mirror the literal the entry files carry: this
+// probe's reference rear_wall_y() (KEY yw, below) comes from its OWN
+// `include <../params.scad>`, but the geometry it measures comes from
+// `use <../parts/tray.scad>` (via band_scad/probe_scads), which carries its
+// own file-scope fan_thickness=20. Without it here, this probe's reference
+// frame falls back to the library default (rear_wall_y 116.7) while the real
+// tray sits 10mm further back (126.7), and the isolated-band/annular probe
+// boxes below all land in empty space.
+fan_thickness = 20;
 include <../params.scad>;
 use <fans/fans.scad>;
 echo(str("KEY band ", _fan_band_x()[0], " ", _fan_band_x()[1]));

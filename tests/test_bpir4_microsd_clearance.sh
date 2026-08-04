@@ -12,6 +12,13 @@
 # Both checks read card_y_end from sbc_connectors(BOARD)'s microsd_1_card row
 # directly -- never a retyped 2.3/15.0/11.0 -- so this guard tracks the data,
 # not a copy of it.
+#
+# #79 update: the active-mode probe measures against _fan_thickness_eff()
+# (the fan actually declared), not fan_default_thickness(fan_size). The old
+# form took a size-keyed constant as its input, so it reported a margin
+# against an imaginary 10mm fan no matter what was installed -- the same
+# "guard whose input is a constant" defect #79 fixed in params.scad, and
+# precisely the collision class this test exists to catch.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
@@ -26,13 +33,14 @@ trap cleanup EXIT
 
 cat > "$probe" <<'EOF'
 enable_exhaust=true; fan_size=40; fan_count=2; ear_hole_type="slot";
+fan_thickness=20;
 include <params.scad>;
 use <sbc/sbc.scad>;
 use <fans/fans.scad>;
 _card = [for (c = sbc_connectors(BOARD)) if (c[0] == "microsd_1_card") c][0];
 _card_y_end = _card[1][1] + _card[2][1];
 // Active mode: card keep-out must not reach the fan's interior face.
-echo(str("ACTIVE_MARGIN=", (rear_wall_y(true) - wall - fan_default_thickness(fan_size)) - (board_y() + _card_y_end)));
+echo(str("ACTIVE_MARGIN=", (rear_wall_y(true) - wall - _fan_thickness_eff()) - (board_y() + _card_y_end)));
 // Passive mode: card keep-out must not reach the rear wall's inner face.
 echo(str("PASSIVE_MARGIN=", (rear_wall_y(false) - wall) - (board_y() + _card_y_end)));
 EOF
