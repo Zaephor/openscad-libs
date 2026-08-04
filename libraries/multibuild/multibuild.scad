@@ -65,7 +65,16 @@ function multibuild_mount_tip_flare(type)  = _multibuild_row(type)[6];
 // grid cell. Parallel accessor -- does not touch _multibuild_table()'s row schema.
 function _multibuild_footprint_table() = [
     ["snap", [[0,0]]],
-    // ["peg_click", [[0,0],[1,0]]],  // added in T3
+    // peg_click: 2-hole footprint, VERTICAL axis (Y-pair), 25mm spacing.
+    // Tier: [C]/derived for the 25mm spacing magnitude, but the AXIS choice
+    // itself is `//VERIFY` -- the only direct evidence is a visual read of
+    // the official "Hook to Tile" Common Connections diagram (stylized
+    // isometric render, not a dimensioned drawing), the same risk class as
+    // a prior visual misread (octagonal vs. round Large Hole) that mesh
+    // measurement later overturned. See RESEARCH.md "Two-hole spacing and
+    // axis" (#36 Task 2). Flip to [[0,0],[1,0]] (horizontal) as a one-line
+    // change if a stronger source later confirms it instead.
+    ["peg_click", [[0,0],[0,1]]],
 ];
 function multibuild_mount_footprint(type) =
     let (r = [for (e = _multibuild_footprint_table()) if (e[0]==type) e[1]])
@@ -113,6 +122,51 @@ function _multibuild_fixpoint_neg_throat(type) =
     let (r = _multibuild_fixpoint_row(type))
     r[4] - r[5] * (r[2] - r[1]) / r[3];
 
+/* [Data: Peg Click] — 2-hole rigid-peg mount ("peg_click"), engaging the
+   Tile's SMALL HOLE family (multibuild_small_hole_dia()/_depth(), 6.53mm),
+   NOT the Large Hole the "snap" row in _multibuild_table() mates to. Kept as
+   its OWN parallel data + module family, deliberately NOT a
+   _multibuild_table() row and NOT listed in multibuild_known_mounts() --
+   mirrors the Fix-Point precedent above. Reasoning (RESEARCH.md
+   "Geometry-model decision", #36 Task 2): the Peg Click peg is a plain rigid
+   cylinder with no arms/tip-flare, so it cannot honestly satisfy
+   _multibuild_table()'s arm_count/arm_width/tip_flare schema (built for the
+   Snap's compliant multi-arm mount) or the mount test suite's Snap-flavored
+   geometry asserts; and its hole family is the Small Hole, not the Large
+   Hole, so a _multibuild_table() row would have to duplicate
+   multibuild_small_hole_dia()/_depth() rather than read them directly
+   (single-source-of-truth violation). Peg LENGTH is deliberately NOT a
+   table constant -- see _multibuild_peg_click_peg()'s `len` parameter and
+   _multibuild_peg_click_default_len() below, mirroring the Fix-Point Rail's
+   `slide_len` precedent (a real peg/hook length is per-accessory/variable;
+   the official parts list ships 15/20/25/30mm + Double variants). */
+// Peg diameter: [C]//VERIFY -- official Thangs part name "6.25 mm Support
+// Peg" (page itself unreachable) + a tolerance-consistency argument: 6.53mm
+// Small Hole bore minus 6.25mm peg = 0.28mm diametrical clearance, matching
+// the official [A] 0.25mm design tolerance almost exactly (a peg toleranced
+// to the spec's own clearance figure is a more coherent "click" than the
+// two independently-read community pegs' looser 5-5.6mm/~1-1.5mm-clearance
+// DIY fit). NOT yet caliper-confirmed to be Peg-Click-specific. RESEARCH.md
+// "Peg diameter" (#36 Task 2).
+function multibuild_peg_click_dia() = 6.25;
+// No click-ridge/barb: two independent community sources ([B] for the
+// *shape*, plain rigid cylinder, no flared arms, no printed-in barb) and no
+// source found describes a barb/ridge. Modeled as a plain tolerance-fit
+// cylinder in _multibuild_peg_click_peg() below -- flagged `//VERIFY`, not
+// fabricated: if a future pass recovers an actual barb profile, this is the
+// value to revise. RESEARCH.md "No click-ridge/barb confirmed" (#36 Task 2).
+function _multibuild_peg_click_default_len() =
+    multibuild_small_hole_depth() + 2;
+    // [C], single search-snippet source for the "+2mm" margin specifically
+    // ("extending a peg design by 2mm... since without this adaptation, the
+    // hooks break off due to the thickness of the Multiboard" -- under-length
+    // pegs are a known failure mode against the 6.4mm tile). The underlying
+    // "must clear the full tile thickness" requirement is [A]-derived
+    // (multibuild_small_hole_depth(), a through-hole spanning the tile).
+    // A DEFAULT for fit-viz/tests ONLY when the caller doesn't pass its own
+    // `len` -- real consumer parts should pass their own per-instance
+    // peg_len (see the module-family note above), not rely on this default.
+
 /* [Data] — grid math off multibuild_grid_pitch(). */
 function multibuild_grid_count(length) = floor(length / multibuild_grid_pitch());
 function multibuild_grid_snap(length)  = round(length / multibuild_grid_pitch()) * multibuild_grid_pitch();
@@ -126,11 +180,18 @@ function multibuild_grid_points(cols, rows) =
 // Mount-feature envelope: board mount face at Z=0, feature grows -Z. For fit/viz only.
 // Sized to the tip-flare span (widest point) x engagement length (the mount
 // is deliberately longer than the hole is deep -- see Task 2 note).
-module multibuild_mount_placeholder(type) {
+// `peg_len` is consulted ONLY for the peg_click branch (its rigid peg has no
+// stored engagement length -- see "peg_click" module family below); ignored
+// (and may be left `undef`) for every _multibuild_table() type such as "snap".
+module multibuild_mount_placeholder(type, peg_len = undef) {
     p = multibuild_grid_pitch();
     for (off = multibuild_mount_footprint(type))
         translate([off[0] * p, off[1] * p, 0])
-            _multibuild_mount_placeholder_peg(type);
+            if (type == "peg_click")
+                _multibuild_peg_click_placeholder_peg(
+                    peg_len == undef ? _multibuild_peg_click_default_len() : peg_len);
+            else
+                _multibuild_mount_placeholder_peg(type);
 }
 module _multibuild_mount_placeholder_peg(type) {
     d = 2 * multibuild_mount_tip_flare(type);
@@ -149,11 +210,17 @@ module _multibuild_mount_placeholder_peg(type) {
 // deliberately taller than multibuild_hole_depth(type). Rigid static model:
 // the measured at-rest tip diameter already clears the hole waist (Task 2
 // note), so no compliant-flex simulation is needed for v1.
-module multibuild_mount(type) {
+// `peg_len` is consulted ONLY for the peg_click branch (see
+// multibuild_mount_placeholder()'s note above -- same dispatch shape).
+module multibuild_mount(type, peg_len = undef) {
     p = multibuild_grid_pitch();
     for (off = multibuild_mount_footprint(type))
         translate([off[0] * p, off[1] * p, 0])
-            _multibuild_mount_peg(type);
+            if (type == "peg_click")
+                _multibuild_peg_click_peg(
+                    peg_len == undef ? _multibuild_peg_click_default_len() : peg_len);
+            else
+                _multibuild_mount_peg(type);
 }
 module _multibuild_mount_peg(type) {
     n  = multibuild_mount_arm_count(type);
@@ -198,6 +265,36 @@ module _multibuild_mount_peg(type) {
                 }
         }
     }
+}
+
+/* [Positive/Placeholder: Peg Click] — the "peg_click" mount's own module
+   family, dispatched from multibuild_mount()/multibuild_mount_placeholder()
+   above (see their `type == "peg_click"` branch) instead of
+   _multibuild_mount_peg()/_multibuild_mount_placeholder_peg() -- a plain
+   rigid cylinder, NOT the Snap's flared-arm shape, per the "Data: Peg Click"
+   note earlier in this file. Same board-face-at-Z=0/-Z-growth datum as the
+   Snap mount above. `len` is a required per-instance parameter (peg length
+   is deliberately not a table constant -- see that note). */
+module _multibuild_peg_click_peg(len) {
+    d  = multibuild_peg_click_dia();
+    r  = d / 2;
+    // Small lead-in chamfer at the tip (insertion ergonomics / edge-break
+    // per design-for-print house rules) -- NOT the "click" mechanism itself
+    // (no barb/ridge modeled, per the "No click-ridge/barb" research note)
+    // and not a data-tier value. A straight cylinder has no overhang at any
+    // print orientation, so this is a print-quality nicety, not a
+    // support-free requirement.
+    ch = 0.3;
+    union() {
+        translate([0, 0, -len + ch])
+            cylinder(h = len - ch, r = r, $fn = 48);
+        translate([0, 0, -len])
+            cylinder(h = ch, r1 = r - ch, r2 = r, $fn = 48);
+    }
+}
+module _multibuild_peg_click_placeholder_peg(len) {
+    translate([0, 0, -len])
+        cylinder(h = len, d = multibuild_peg_click_dia(), $fn = 48);
 }
 
 /* [Geometry helper] — dovetail prism along the +X slide axis. Cross-section
