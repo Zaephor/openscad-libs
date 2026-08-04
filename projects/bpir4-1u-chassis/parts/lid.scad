@@ -5,13 +5,18 @@
 // These top-level vars are lid()'s module-param DEFAULTS (see lid() below)
 // and also feed params.scad's fan_size assert at include-time — declared
 // here + in each entry file; params.scad consumes only, never re-assigns.
-// Of the three, only enable_exhaust actually drives lid() geometry (via
-// int_depth()/_lid_post_xy()); fan_size/fan_count are accepted by lid() for
-// call-site symmetry with tray() but don't change lid geometry — see lid()'s
-// own comment below.
+// Of the four, enable_exhaust and fan_thickness actually drive lid()
+// geometry: enable_exhaust selects rear_off() and fan_thickness feeds
+// fan_plenum, and both flow into int_depth()/_lid_post_xy() and hence the
+// lid plate's ld. fan_size/fan_count are accepted by lid() for call-site
+// symmetry with tray() but don't change lid geometry — see lid()'s own
+// comment below. Note fan_thickness reaches int_depth() through THIS file's
+// own file-scope fan_plenum, not through a lid() parameter (see lid()'s
+// comment on `use`-scope isolation).
 enable_exhaust = true; // false = passive (no rear fan plenum)
 fan_size  = 40;        // must be a fan_known_sizes() value
 fan_count = 2;
+fan_thickness = 20;    // installed fan depth, mm; <0 -> fans-lib default. NF-A4x20 [A]
 
 /* [Rack Ears] */
 ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"

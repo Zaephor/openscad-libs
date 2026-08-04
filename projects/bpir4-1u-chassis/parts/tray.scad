@@ -6,6 +6,7 @@
 enable_exhaust = true; // false = passive (no rear fan plenum)
 fan_size  = 40;        // must be a fan_known_sizes() value
 fan_count = 2;
+fan_thickness = 20;    // installed fan depth, mm; <0 -> fans-lib default. NF-A4x20 [A]
 
 /* [Rack Ears] */
 ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"

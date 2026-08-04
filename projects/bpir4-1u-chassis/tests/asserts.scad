@@ -5,6 +5,7 @@
 enable_exhaust = true; // false = passive (no rear fan plenum)
 fan_size  = 40;        // must be a fan_known_sizes() value
 fan_count = 2;
+fan_thickness = 20;    // installed fan depth, mm; <0 -> fans-lib default. NF-A4x20 [A]
 ear_hole_type = "slot"; // "slot" | "10-32" | "m6" | "round"
 include <../params.scad>;
 use <rack10/rack10.scad>;
@@ -295,7 +296,7 @@ assert(_tray_rear_corner_chamfer() <= wall*(2 - sqrt(2)) + 1e-9,
 // them, which is how the microSD collision existed in the first place.
 assert(abs(_rear_media_protrusion() - 2.3) < 1e-9,
     str("bpir4: rear media protrusion ", _rear_media_protrusion(), " != 2.3 (microsd_1_card)"));
-assert(abs(fan_plenum - (fan_default_thickness(fan_size) + wall + fan_board_gap
+assert(abs(fan_plenum - (_fan_thickness_eff() + wall + fan_board_gap
                          + _rear_media_protrusion())) < 1e-9, "bpir4: fan_plenum not derived");
 assert(abs(rear_gap - (wall + rear_clearance + _rear_media_protrusion())) < 1e-9,
     "bpir4: rear_gap not derived");

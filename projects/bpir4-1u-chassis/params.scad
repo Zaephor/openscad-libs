@@ -112,13 +112,35 @@ fan_board_gap = 1.5;   // clearance between interior fan face and board rear edg
 // solid annulus around the 4.3mm clearance hole (fan_mount_hole_dia(40)).
 // Guarded in tests/asserts.scad against the lib's own hole diameter.
 fan_pad_dia = 9;       // solid bearing pad around each fan mount screw
-// fan_plenum: board-rear-edge -> rear-wall gap when fans on. Derived from
-// the library-owned fan depth (fan_default_thickness(fan_size) — NOT
-// duplicated here as a literal) plus the wall thickness (the fan mounts on
-// the wall's interior face) plus fan_board_gap, so the plenum can never
-// under-clear the board regardless of fan_size (see the depth-clearance
-// assert below, which makes any future under-clearance fail loudly).
-fan_plenum = fan_default_thickness(fan_size) + wall + fan_board_gap + _rear_media_protrusion();
+// fan_thickness: the depth (mm) of the fan ACTUALLY installed. Declared as a
+// plain top-level literal in each entry file before `include <params.scad>`
+// (like enable_exhaust/fan_size/fan_count); params.scad only consumes it and
+// must never assign it. A value < 0, or no declaration at all, falls back to
+// the library's size-keyed default via _fan_thickness_eff() below, so any
+// consumer that does not opt in is unchanged.
+//
+// This exists because fan_default_thickness(size) (libraries/fans/fans.scad)
+// is a size-keyed LOOKUP with no data-side override: the 40mm row is fixed at
+// 10mm depth. Before this parameter the chassis was hard-dimensioned for a
+// 10mm fan, and — worse — the depth-clearance assert below took that same
+// constant as its input, so it could not discriminate a deeper fan at all. A
+// 20mm fan rendered clean, sliced clean, and collided at assembly.
+//
+// Deliberately NOT a new fans-library row: 20mm is one specific product's
+// dimension (Noctua NF-A4x20, 40x40x20 [A] vendor datasheet) with exactly one
+// consumer in this repo, so it stays project-local until a second consumer
+// appears.
+function _fan_thickness_eff() =
+    is_undef(fan_thickness) || fan_thickness < 0
+        ? fan_default_thickness(fan_size)
+        : fan_thickness;
+// fan_plenum: board-rear-edge -> rear-wall gap when fans on. Derived from the
+// effective fan depth (_fan_thickness_eff() — NOT duplicated here as a
+// literal) plus the wall thickness (the fan mounts on the wall's interior
+// face) plus fan_board_gap, so the plenum can never under-clear the board
+// regardless of fan_size OR fan thickness (see the depth-clearance assert
+// below, which makes any future under-clearance fail loudly).
+fan_plenum = _fan_thickness_eff() + wall + fan_board_gap + _rear_media_protrusion();
 // rear_clearance: air gap kept between the rear wall's inner face and whatever
 // stands furthest off the board's rear edge. Was implicit in the old
 // `rear_gap = 4.0` literal (4.0 - 2.4 wall); named here so the passive mode
@@ -225,19 +247,22 @@ assert(!enable_exhaust || fan_size <= int_h() + 1e-6,
     str("params: fan_size ", fan_size, " exceeds internal height ", int_h(),
         " — reduce floor_th/lid_th or fan_size"));
 
-// Interior-mounted fan (Task 4/5) must clear the board's rear edge: the
-// fan's inner face sits at (rear_wall_y() - wall) - fan_default_thickness(
-// fan_size); that must be >= board_d() (the fan sits entirely behind the
-// board, not intruding into it). Catches any future under-clearing of
-// fan_plenum/fan_board_gap/fan_size at render time instead of silently
-// producing a colliding STL.
+// Interior-mounted fan (Task 4/5) must clear the board's rear edge: the fan's
+// inner face sits at (rear_wall_y() - wall) - _fan_thickness_eff(); that must
+// be >= board_d() (the fan sits entirely behind the board, not intruding into
+// it). Catches any future under-clearing of fan_plenum/fan_board_gap/fan_size
+// at render time instead of silently producing a colliding STL.
+// #79: the input is _fan_thickness_eff(), NOT fan_default_thickness(fan_size).
+// It used to be the latter — a size-keyed constant — which meant this guard
+// could not discriminate the fan actually installed and would pass a 20mm fan
+// that sat 6.2mm inside the board.
 assert(!enable_exhaust ||
-    (rear_wall_y() - wall) - fan_default_thickness(fan_size) >= board_d() - 1e-6,
-    str("params: interior fan (thickness ", fan_default_thickness(fan_size),
+    (rear_wall_y() - wall) - _fan_thickness_eff() >= board_d() - 1e-6,
+    str("params: interior fan (thickness ", _fan_thickness_eff(),
         "mm) intrudes into the board — fan inner face is at ",
-        (rear_wall_y() - wall) - fan_default_thickness(fan_size),
+        (rear_wall_y() - wall) - _fan_thickness_eff(),
         " but board rear edge is at ", board_d(),
-        " (gap ", (rear_wall_y() - wall) - fan_default_thickness(fan_size) - board_d(),
+        " (gap ", (rear_wall_y() - wall) - _fan_thickness_eff() - board_d(),
         "mm) — increase fan_board_gap/fan_plenum"));
 
 // fan_size must be one of the sizes the fans library actually supports.
