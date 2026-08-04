@@ -1147,8 +1147,11 @@ it does not join `_multibuild_table()`.** Reasoning:
    `_multibuild_footprint_table()` instead of changing `_multibuild_table()`
    itself). Peg Click's 2-hole footprint is already handled by that Part-A
    footprint mechanism at the *placement* level (`multibuild_mount_footprint
-   ("peg_click")` → `[[0,0],[0,1]]`, per the commented-out stub already
-   sitting in `_multibuild_footprint_table()`) — but the *per-peg* geometry
+   ("peg_click")` — the existing commented-out stub in
+   `_multibuild_footprint_table()` currently reads `[[0,0],[1,0]]`
+   (horizontal); this pass's axis finding recommends replacing it with
+   `[[0,0],[0,1]]` (vertical), see "Two-hole spacing and axis" above) — but
+   the *per-peg* geometry
    (what shape gets stamped at each of those two footprint offsets) is a
    different, rigid-cylinder shape than `_multibuild_mount_peg()` produces,
    which is the actual reason a separate table+module is needed, distinct
@@ -1175,10 +1178,11 @@ it does not join `_multibuild_table()`.** Reasoning:
 - `_multibuild_peg_click_peg()`: a straight `cylinder()`, no arm-hull
   geometry, no flare.
 - Footprint: `["peg_click", [[0,0],[0,1]]]` in the existing
-  `_multibuild_footprint_table()` (already stubbed as a comment in Task 1
-  Part A) — vertical, per the recommendation above, with the `//VERIFY`
-  caveat carried into a code comment so a future axis correction is a
-  one-line change, not an archaeology exercise.
+  `_multibuild_footprint_table()`, replacing the Task 1 Part A stub's
+  horizontal placeholder value (currently `[[0,0],[1,0]]`) with this pass's
+  vertical recommendation, with the `//VERIFY` caveat carried into a code
+  comment so a future axis correction is a one-line change, not an
+  archaeology exercise.
 - Whichever dispatch pattern Task 3 chooses (new function name vs. extending
   an existing one), it must **not** enter `multibuild_known_mounts()` /
   `_multibuild_table()` and must **not** be asserted against the Snap-
