@@ -130,17 +130,29 @@ fan_pad_dia = 9;       // solid bearing pad around each fan mount screw
 // dimension (Noctua NF-A4x20, 40x40x20 [A] vendor datasheet) with exactly one
 // consumer in this repo, so it stays project-local until a second consumer
 // appears.
-function _fan_thickness_eff() =
-    is_undef(fan_thickness) || fan_thickness < 0
-        ? fan_default_thickness(fan_size)
-        : fan_thickness;
-// fan_plenum: board-rear-edge -> rear-wall gap when fans on. Derived from the
-// effective fan depth (_fan_thickness_eff() — NOT duplicated here as a
+// ft/fs default to the file-globals so every existing no-arg call site is
+// unchanged; they exist for the same reason `ee` does on rear_off() below —
+// a `use`-scoped consumer's MODULE parameter cannot be seen by a plain
+// function call, so tray()/lid() must pass their local values through
+// explicitly for the depth path to respond to the Customizer.
+function _fan_thickness_eff(ft = fan_thickness, fs = fan_size) =
+    is_undef(ft) || ft < 0
+        ? fan_default_thickness(fs)
+        : ft;
+// fan_plenum_at(): board-rear-edge -> rear-wall gap when fans on. Derived from
+// the effective fan depth (_fan_thickness_eff() — NOT duplicated here as a
 // literal) plus the wall thickness (the fan mounts on the wall's interior
 // face) plus fan_board_gap, so the plenum can never under-clear the board
 // regardless of fan_size OR fan thickness (see the depth-clearance assert
 // below, which makes any future under-clearance fail loudly).
-fan_plenum = _fan_thickness_eff() + wall + fan_board_gap + _rear_media_protrusion();
+function fan_plenum_at(ft = fan_thickness, fs = fan_size) =
+    _fan_thickness_eff(ft, fs) + wall + fan_board_gap + _rear_media_protrusion();
+// fan_plenum: this file's own no-arg case, kept as a variable so existing
+// readers (tests/asserts.scad's derivation guard, the test probes) are
+// unchanged. Consumers that need a CALLER's thickness must call
+// fan_plenum_at(ft, fs) instead — a variable is evaluated once in its own
+// file's scope and can never respond to a module parameter.
+fan_plenum = fan_plenum_at();
 // rear_clearance: air gap kept between the rear wall's inner face and whatever
 // stands furthest off the board's rear edge. Was implicit in the old
 // `rear_gap = 4.0` literal (4.0 - 2.4 wall); named here so the passive mode
@@ -177,21 +189,32 @@ function _lid_post_od() = lid_insert_bore() + 2*heatset_min_wall(lid_insert_size
 // Body hugs the board: each side carries board_side_gap + a corner post (tangent
 // to the wall) + the wall. Ears bridge body_w -> panel_w. Must stay <= clear_w.
 function body_w()   = board_w() + 2*(board_side_gap + _lid_post_od() + wall);
-// ee defaults to the file-global enable_exhaust so every existing no-arg call
-// site (including within this file) is unchanged. The optional param exists
+// ee/ft/fs default to the file-globals so every existing no-arg call site
+// (including within this file) is unchanged. The optional params exist
 // because a `use`-scoped consumer (parts/tray.scad, parts/lid.scad) with its
-// own enable_exhaust MODULE parameter cannot make a plain function call see
-// that value -- functions only read their own file's globals, never a
-// caller's module params -- so such a consumer must pass its local
-// enable_exhaust through explicitly as `ee` for the depth path to respond to
-// the Customizer value.
-function rear_off(ee = enable_exhaust) = ee ? fan_plenum : rear_gap;
-function int_depth(ee = enable_exhaust) = board_d() + rear_off(ee); // faceplate-inner (Y=0) -> rear-wall outer face
+// own MODULE parameters cannot make a plain function call see those values
+// -- functions only read their own file's globals, never a caller's module
+// params -- so such a consumer must pass its local values through
+// explicitly for the depth path to respond to the Customizer.
+//
+// ft/fs were added after a user found that editing fan_thickness in
+// assembly.scad changed nothing while fan_count still worked: the other four
+// cooling/ear params were already threaded as module params, fan_thickness
+// was not, so tray()/lid() read parts/tray.scad's own literal and the
+// consumer's value never reached the plenum. Note `-D fan_thickness=N` DOES
+// work, because it sets the global in every file's scope at once -- which is
+// exactly why -D cannot be used to test this threading (see
+// tests/test_bpir4_lid_params.sh's Customizer-path cases).
+function rear_off(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
+    ee ? fan_plenum_at(ft, fs) : rear_gap;
+function int_depth(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
+    board_d() + rear_off(ee, ft, fs); // faceplate-inner (Y=0) -> rear-wall outer face
 // board placement in chassis frame:
 function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
-function rear_wall_y(ee = enable_exhaust) = board_y() + int_depth(ee); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
+function rear_wall_y(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
+    board_y() + int_depth(ee, ft, fs); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
 
 // Intake vent band (faceplate): starts just above the tallest ymin (front-
 // edge) connector so the band clears every port, and stays inside the wall

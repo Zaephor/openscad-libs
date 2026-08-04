@@ -27,13 +27,13 @@ show_board = true; // sbc_placeholder fit reference (not a printed part)
 show_rack  = false; // 3U rackpost reference
 
 module assembly() {
-    if (show_tray) tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type);
+    if (show_tray) tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type, fan_thickness = fan_thickness);
     if (show_board)
         translate([board_x(), board_y(), board_z()])
             % sbc_placeholder(BOARD);
     if (show_lid)
         translate([0, 0, (ext_h() - lid_th) + 30 * explode])
-            lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
+            lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, fan_thickness = fan_thickness);
     if (show_rack)
         // Rack context: chassis (1U device) centered in a 3U window (1U pad
         // above+below) — see rack10_rackpost_context() (#7 generalize-to-core).

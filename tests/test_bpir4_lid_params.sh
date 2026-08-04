@@ -116,6 +116,48 @@ else
   echo "ok: assembly box shrinks via the Customizer path (ymax $asm_true_ymax -> $asm_false_ymax)"
 fi
 
+# --- (b2) Same END-TO-END Customizer path for fan_thickness. Filed after a
+# user reported that editing fan_thickness in assembly.scad changed nothing
+# while fan_count still worked: the other four cooling/ear params were
+# threaded into tray()/lid() as module params, but fan_thickness was left a
+# file-scope literal, so the `use`d modules read parts/tray.scad's own copy
+# and the consumer's value never reached the depth path.
+#
+# Uses the same sed-the-literal method as (b) above and for the same reason:
+# `-D fan_thickness=N` injects the value into EVERY file's scope at once, so
+# it renders correctly even with the threading bug present and would be a
+# false pass. Only editing one file's literal exercises the real path.
+#
+# 20 -> 40 adds exactly 20mm of fan depth, so the chassis must get exactly
+# 20mm deeper. Asserting the EXACT delta (not merely "different") also
+# catches a partial thread that moves the tray but not the lid, or vice
+# versa, since ymax here is over the whole assembly.
+asm_ft40="$proj/_t2_asm_ft40.scad"
+consumers+=("$asm_ft40")
+sed 's/^fan_thickness = 20;/fan_thickness = 40;/' "$asm_true" > "$asm_ft40"
+if ! grep -q '^fan_thickness = 40;' "$asm_ft40"; then
+  echo "FAIL: sed did not rewrite assembly.scad's top-level fan_thickness literal -- check the source line still reads 'fan_thickness = 20;'"
+  fail=1
+fi
+
+asm_ft40_err="$("$osc" --export-format stl -o "$stl_dir/asm_ft40.stl" "$asm_ft40" 2>&1)"
+if echo "$asm_ft40_err" | grep -qiE "$fatal_re"; then
+  echo "FAIL: assembly.scad (customizer fan_thickness=40) render errored:"; echo "$asm_ft40_err"; fail=1
+fi
+
+asm_ft40_ymax="$(ymax "$stl_dir/asm_ft40.stl")"
+echo "assembly customizer fan_thickness=40: ymax=$asm_ft40_ymax (default 20 gave $asm_true_ymax)"
+
+if [ "$asm_ft40_ymax" = "$asm_true_ymax" ]; then
+  echo "FAIL: assembly ymax unchanged at $asm_ft40_ymax -- fan_thickness has NO effect via the Customizer path (not threaded into tray()/lid())"
+  fail=1
+elif ! awk -v a="$asm_ft40_ymax" -v b="$asm_true_ymax" 'BEGIN{d=a-b; exit !(d>19.999 && d<20.001)}'; then
+  echo "FAIL: assembly ymax grew by $(awk -v a="$asm_ft40_ymax" -v b="$asm_true_ymax" 'BEGIN{printf "%.3f", a-b}')mm, expected exactly 20mm (fan_thickness 20 -> 40)"
+  fail=1
+else
+  echo "ok: fan_thickness drives depth via the Customizer path (ymax $asm_true_ymax -> $asm_ft40_ymax, +20mm exactly)"
+fi
+
 # --- (c) Standalone no-regression: lid.scad and tray.scad (defaults) still
 # render manifold. Same fatal/non-manifold pattern as
 # tests/test_bpir4_corner_posts.sh / test_bpir4_tray_params.sh. ---

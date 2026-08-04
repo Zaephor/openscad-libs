@@ -51,17 +51,17 @@ module _lid_countersink() {
 // geometry does NOT consume them (int_depth() has no fan_size term, and
 // params.scad's fan_size assert already runs once at include-time regardless
 // of what's passed here); they are otherwise inert for the lid.
-module lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
+module lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, fan_thickness = fan_thickness) {
     lip = wall/2;
     lw = body_w() - 2*lip - 2*wall_gap;                    // rests on the side shelves
-    ld = int_depth(enable_exhaust) - lip - 2*wall_gap;     // rear edge on the rear shelf
+    ld = int_depth(enable_exhaust, fan_thickness, fan_size) - lip - 2*wall_gap;     // rear edge on the rear shelf
     difference() {
         translate([-lw/2, board_y() + wall_gap, 0])
             cube([lw, ld, lid_th]);
         // Countersunk screw holes over each lid post (shared via _lid_post_xy(),
         // which must be called with the SAME enable_exhaust as tray()'s posts
         // so the countersinks stay coincident with the posts they seat on).
-        for (p = _lid_post_xy(enable_exhaust))
+        for (p = _lid_post_xy(enable_exhaust, fan_thickness, fan_size))
             translate([p[0], p[1], 0]) _lid_countersink();
         // Optional lid vents over the hot zone (center band): a self-
         // supporting honeycomb hex-hole cutter (honeycomb/honeycomb.scad),
@@ -92,7 +92,7 @@ module lid(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan
         // no boundary clipping) via tests/test_bpir4_lid_honeycomb_vents.sh.
         if (lid_vents) {
             band_len = ld * 0.5;
-            cy = board_y() + int_depth(enable_exhaust)/2;
+            cy = board_y() + int_depth(enable_exhaust, fan_thickness, fan_size)/2;
             translate([-lid_vent_band_w/2, cy - band_len/2, -1])
                 honeycomb_vent(lid_vent_band_w, band_len, lid_th + 2,
                                 honeycomb_cell, honeycomb_wall);

@@ -32,9 +32,9 @@ function _tray_rear_corner_chamfer() = 1.2;
 
 // Outer shell: floor + two side walls + rear wall, with an inner ledge on the
 // wall tops so the lid drops in flush. Faceplate/fans/vents added by later modules.
-module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
+module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, fan_thickness = fan_thickness) {
     y0 = board_y();
-    dd = int_depth(enable_exhaust);
+    dd = int_depth(enable_exhaust, fan_thickness, fan_size);
     difference() {
         union() {
             // Floor.
@@ -54,7 +54,7 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
             cube([body_w() - wall, dd - lip + 1, lid_th + 1]);
         // Rear-wall openings: honeycomb hex field over the fan band, both
         // fan/passive modes (see _rear_openings()).
-        _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
+        _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, fan_thickness = fan_thickness);
         // Rear outer vertical corner chamfers (see _tray_rear_corner_chamfer()
         // above), full exterior height so the cut is a constant XY
         // cross-section extruded straight up -- vertical-axis only, no
@@ -63,7 +63,7 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
         // rear_wall_y(ee)); the two other legs run INTO the material
         // (-X,-Y for the +X corner; +X,-Y for the -X corner).
         c = _tray_rear_corner_chamfer();
-        ry = rear_wall_y(enable_exhaust);
+        ry = rear_wall_y(enable_exhaust, fan_thickness, fan_size);
         for (sx = [-1, 1])
             translate([sx*body_w()/2, ry, -1])
                 linear_extrude(height = ext_h() + 2)
@@ -86,8 +86,8 @@ module _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_cou
 // The `ee` param (params.scad) must be threaded through explicitly from this
 // module's own enable_exhaust parameter -- see params.scad's "ee defaults
 // to..." comment for why a plain no-arg call can't see it.
-module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count) {
-    yw   = rear_wall_y(enable_exhaust); // rear wall outer (rearmost) face
+module _rear_openings(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, fan_thickness = fan_thickness) {
+    yw   = rear_wall_y(enable_exhaust, fan_thickness, fan_size); // rear wall outer (rearmost) face
     zc   = floor_th + int_h()/2;        // vertical center of interior clearance
     cs   = _fan_x_centres(fan_size, fan_count);  // thermally placed, see params.scad
     band = _fan_band_x(fan_size, fan_count);     // [lo, hi] union of the footprints
@@ -319,11 +319,11 @@ module _faceplate(ear_hole_type = ear_hole_type) {
 // mirrors that same tangent logic onto the front boundary (board_y(), the
 // faceplate's inner face — see params.scad's board_y() comment) and the rear
 // wall's inner face (rear_wall_y() - wall).
-function _lid_post_xy(ee = enable_exhaust) =
+function _lid_post_xy(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
     let (od2 = _lid_post_od()/2,
          ix  = body_w()/2 - wall - od2,        // tangent to side-wall inner face
          yf  = board_y() + od2,                // front pair, tangent to the front boundary
-         yr  = rear_wall_y(ee) - wall - od2)   // rear pair, tangent to rear-wall inner face
+         yr  = rear_wall_y(ee, ft, fs) - wall - od2)   // rear pair, tangent to rear-wall inner face
     [ [-ix, yf], [ix, yf], [-ix, yr], [ix, yr] ];
 
 // Canonical corner post (local origin at the post/bore center, local +X/+Y
@@ -387,10 +387,10 @@ module _lid_post_corner() {
     }
 }
 
-module _lid_posts(enable_exhaust = enable_exhaust) {
-    for (p = _lid_post_xy(enable_exhaust)) {
+module _lid_posts(enable_exhaust = enable_exhaust, fan_thickness = fan_thickness, fan_size = fan_size) {
+    for (p = _lid_post_xy(enable_exhaust, fan_thickness, fan_size)) {
         sx = sign(p[0]);                                  // which side wall (-1 / +1)
-        sy = (p[1] < int_depth(enable_exhaust)/2) ? -1 : 1; // front boundary (-1) or rear wall (+1)
+        sy = (p[1] < int_depth(enable_exhaust, fan_thickness, fan_size)/2) ? -1 : 1; // front boundary (-1) or rear wall (+1)
         translate([p[0], p[1], floor_th])
             scale([sx, sy, 1]) _lid_post_corner();
     }
@@ -403,10 +403,10 @@ module _lid_posts(enable_exhaust = enable_exhaust) {
 // the ACTUAL OD the tray renders with, not a re-typed copy.
 function _board_standoff_od() = board_insert_bore() + 2*heatset_min_wall(board_insert_size);
 
-module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type) {
-    _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count);
+module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, ear_hole_type = ear_hole_type, fan_thickness = fan_thickness) {
+    _tray_shell(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fan_count, fan_thickness = fan_thickness);
     _faceplate(ear_hole_type = ear_hole_type);
-    _lid_posts(enable_exhaust = enable_exhaust);
+    _lid_posts(enable_exhaust = enable_exhaust, fan_thickness = fan_thickness, fan_size = fan_size);
     // Board standoff posts — only the structural-mount holes (M.2/heatsink/
     // keep-out holes are excluded; see sbc hole roles).
     translate([board_x(), board_y(), floor_th])
