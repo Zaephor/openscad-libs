@@ -920,3 +920,293 @@ source per Source above; caliper-upgradeable, #16) unless noted otherwise
 - Whether this specific 3MF's geometry is bit-for-bit identical to the
   current official multiboard.io Tile files: same residual uncertainty
   already noted in Task 1c — not independently re-verified this pass.
+
+## Peg Click (#36 Part B, Task 2)
+
+Scope: dimension the Peg Click mechanism (2-hole accessory engaging the
+Small-Hole lattice, out-of-v1-scope-flagged back in the Task 1 Checkpoint)
+and decide whether it fits `_multibuild_table()`'s existing row schema or
+needs a separate table, per the Fix-Point precedent (see "MultiBin +
+Fix-Point (#32)" above).
+
+### Sources this section
+
+- `https://docs.multibuild.io/beginner-section/core-parts-documentation` —
+  already-established `[A]` source (re-checked this pass, no new numeric
+  content found for Peg Click beyond what Task 1 already extracted): "A
+  'Peg Click' connects to two Small Holes on the MultiBoard Tiles, just like
+  a pegboard accessory," and "The 'Peg Click Hook' is the easiest way of
+  attaching a hook to a tile." No peg diameter, engagement depth, or hole
+  spacing/axis is stated anywhere on this page. `[A]` for the 2-hole
+  engagement fact; a genuine gap for every numeric value.
+- The "Multiboard Common Connections" diagram (same asset already `[A]`-cited
+  in the Task 1 "Mechanism" section above) — its "Hook to Tile" panel labels
+  the "Peg Click Hook" and shows it as a single blue L-shaped part with one
+  visible peg nub entering the tile near the top of a vertical shaft that
+  runs down behind the tile face before bending outward into the hook at the
+  bottom. `[A]` as a fetched official asset, but it is a stylized isometric
+  marketing render, not a dimensioned drawing — no numeric spacing is
+  readable, and (per the Task 1b caution below) a purely visual read of this
+  diagram family has been wrong before. **Treated as `//VERIFY`-tier
+  corroboration for the *axis* question only** (see "Two-hole spacing and
+  axis" below), not as a source for any numeric value.
+- `multiboard.io/parts-library/accessories` → redirects (301) to
+  `multibuild.io/parts/plate-accessories`, the live parts library. `[C]`:
+  reachable this pass (Task 1's "not reachable" note is now stale for this
+  specific redirect target), but the page is a client-rendered Next.js app —
+  the served HTML carries no product data (no "peg"/"click" text anywhere in
+  the fetched markup), so this route is a dead end for numeric dims despite
+  being reachable. Superseded by the Thangs findings below for the *existence*
+  of official parts, but not for numeric dims.
+- Community STL sources (`printables.com`), same tier caveat as all prior
+  STL-mesh/community sections (single or few independent sources, not
+  official multiboard.io text):
+  - "Multiboard straight peg" series by Max Majakka (Printables) — a family
+    of plain cylindrical pegs (15/25/35mm lengths) explicitly sized for
+    Multiboard's Small Holes, stated **peg diameter 5.6mm** (plus "a small
+    chamfer... for strengthening the peg" — no barb/ridge/flare feature
+    mentioned in the description). `[C]`, single author across the size
+    family (not independent replication, despite covering multiple lengths).
+  - "Multiboard Pegboard Hook Thin" by phga (Printables) — an independently-
+    authored **5mm-diameter** hook, explicitly described as a remix of an
+    **original Multiboard-authored pegboard-click model hosted on
+    thangs.com** (the phga model's own description credits "the multiboard
+    pegboard system (originally by Multiboard on thangs.com)"). `[C]`,
+    independent of Max Majakka's peg family.
+  - Two independent community authors both converge on a **plain rigid
+    cylindrical peg, no flared arms, no printed-in barb geometry**, sized
+    5-5.6mm — corroborated across ≥2 independent peers per the tier legend,
+    so the *shape* (rigid cylinder, not a compliant multi-arm mount) is
+    `[B]`; the specific *diameter* value has a 0.6mm spread between the two
+    sources and is treated as `[B]`-tier-for-the-ballpark /
+    `//VERIFY`-tier-for-the-literal-number (see recommendation below).
+- Official Multiboard/MultiBuild-authored parts, found listed on Thangs
+  (`thangs.com/designer/Multiboard` and `.../MultiBuild`) via search-index
+  snippets — **the underlying Thangs pages themselves remain not reachable**
+  (same finding as Task 1, confirmed still true this pass), so these are
+  read at `[C]`-tier from indexed titles/snippets only, not from a fully
+  fetched page:
+  - Official part named **"6.25 mm Support Peg"** (Multiboard, Thangs model
+    #973889). No description text was recoverable (page unreachable), so its
+    exact relationship to Peg Click is inferred, not confirmed — see the
+    recommendation below for how this is used.
+  - Official parts named "15 mm / 20 mm / 25 mm / 30 mm, Pegboard Click Hook"
+    and "Double Pegboard Click Hook" (Thangs models #973888, #973904,
+    #974241, #974204, #974106) — confirms the Peg Click Hook ships in
+    multiple lengths as separate official parts (consistent with a
+    fixed-diameter peg + variable-length hook arm, the same "per-part
+    variable length" pattern already used for the Fix-Point Rail's
+    `slide_len`), and that a **Double** variant exists (2 hook arms off one
+    mount, not evidence about the single-hook's own 2-hole spacing/axis).
+    Descriptions not recoverable (pages unreachable).
+  - A **".STEP Multiboard Remixing Files"** part for "Pegboard Click"
+    (Thangs #994677) exists officially, and a community "Multiboard
+    Primitive - Pegboard Click" (Thangs, `LengAwaits`, #994263) exists as a
+    bare mechanism primitive precedented exactly like the 716558
+    "MultiConnect" primitive Task 1b used for Snap — both not reachable this
+    pass, flagged for a future pass with stronger source access.
+
+### Peg geometry: rigid cylinder, not a compliant multi-arm mount
+
+**`[B]`** (2 independent community sources, both full-text read, agree on
+shape): the Peg Click peg is a **plain rigid cylindrical peg** — no flexing
+arms, no tip flare, no printed-in barb/ridge. This matches the existing `[A]`
+compatibility statement already on file ("Small Holes: Compatible with Peg
+Click Hooks, Small Threads, and **non-3D-printed pegboard accessories**" —
+see "Board hole profile" above): non-printed accessories are definitionally
+plain metal pins, not compliant snap-fit arms, so the Small-Hole-side
+mechanism family is a straight peg by design, not a scaled-down version of
+the Large-Hole Snap mechanism.
+
+**Peg diameter — recommend 6.25mm, `[C]`, not yet caliper-confirmed:**
+the two fully-read community sources give 5.6mm and 5mm (a loose, DIY-
+friendly slip fit against the `[C]`-tier 6.53mm Small Hole diameter already
+in `_multibuild_table()`-adjacent data, i.e. 0.9-1.5mm diametrical
+clearance). The official Thangs part name **"6.25 mm Support Peg"** (`[C]`,
+name-only, page unreachable) is **physically the better match**: 6.53mm bore
+minus 6.25mm peg = 0.28mm diametrical clearance, which lines up almost
+exactly with the official `[A]` 0.25mm design tolerance already documented
+above ("Print/material context") — a peg toleranced to the spec's own
+clearance figure is a more coherent explanation for a "click" (snug,
+positive-feeling seat) than the community pegs' much looser ~1-1.5mm
+clearance, which would rattle. **Recommendation: use 6.25mm as the primary
+peg diameter, tiered `[C]`** (official part name + physical-tolerance
+consistency, not a fully-read spec sheet); note the looser 5-5.6mm community
+range as a documented DIY-alternative, not a contradiction — different
+consumers reasonably choose a looser hand-insertable fit over the tighter
+official tolerance. **`//VERIFY` until a Thangs page fetch or caliper
+measurement confirms 6.25mm is actually the Peg-Click-specific part** (its
+official name doesn't itself say "Peg Click" — the relationship is inferred
+from the diameter-vs-tolerance match, not confirmed by reading its
+description).
+
+**No click-ridge/barb confirmed.** Despite the "click" name, no source this
+pass (official or community) describes or shows a barb/ridge feature on the
+peg. Recommend modeling it as a plain cylinder at a tight (tolerance-matched)
+slip fit, not a compliant/barbed retention feature — the "click" plausibly
+describes the tactile feel of a well-toleranced slip fit seating fully, not
+a distinct geometric barb. **Flagged, not fabricated**: if a future pass
+recovers an actual barb profile, this is the value to revise.
+
+### Engagement / peg length: per-part, not a single fixed value
+
+Consistent with the Fix-Point Rail's `slide_len` precedent ("a real Rail
+length is per-part/variable," see "MultiBin + Fix-Point (#32)" above): the
+official parts list ships **4 separate hook lengths (15/20/25/30mm) plus a
+Double variant** as distinct parts, confirming peg/hook length is a
+per-accessory design choice, not a single mount-geometry constant. The one
+hard constraint found: **the peg must clear the full 6.4mm tile thickness**
+(`multibuild_tile_thickness()`, already in `_multibuild_table()`-adjacent
+data) to reach the far face and hook/seat there — one community note (search
+snippet only, not a fully-read page) describes extending a peg design "by
+2mm... since without this adaptation, the hooks break off due to the
+thickness of the Multiboard," i.e. under-length pegs are a known failure
+mode against Multiboard's 6.4mm tiles (thicker than generic hardboard
+pegboard). **`[C]`, single search-snippet source** for the specific "+2mm"
+number; the underlying "must clear 6.4mm plus some hooking margin" logic
+draws on the tile-thickness value itself, which is `[C]`/`//VERIFY` (STL
+mesh, single community source — see "Tile geometry (#33)" above and
+`multibuild_small_hole_depth()`'s own tier note in `multibuild.scad`), NOT
+`[A]` — only the geometric necessity that a peg must exceed the panel
+thickness it passes through is self-evident/non-tiered.
+
+### Two-hole spacing and axis
+
+**Spacing magnitude: 25mm, `[C]`/derived, high confidence.** The Small Hole
+lattice shares the Multihole grid's exact 25mm pitch (established at `[C]`
+in "Tile geometry (#33)" above — "The Small Hole grid shares the Multihole
+grid's exact 25mm pitch and orientation, offset by very close to half a cell
+diagonally"). Since Peg Click's two engaged Small Holes are described as
+"two Small Holes... just like a pegboard accessory" with no third
+intermediate hole mentioned, the most parsimonious read is that they are
+**adjacent positions in the Small-Hole sublattice**, one 25mm apart along a
+single axis (not diagonal) — diagonal engagement has no precedent in either
+the official text or any community source found, and is ruled out as
+implausible (generic pegboard hardware, which Multiboard explicitly
+interoperates with per the "non-3D-printed pegboard accessories"
+compatibility line, is axis-aligned, never diagonal).
+
+**Axis (horizontal X vs. vertical Y): NOT resolved to a confident tier —
+`//VERIFY`.** Two competing signals, neither strong enough to call a fact:
+
+1. **Generic pegboard convention favors horizontal (same-row).** The
+   overwhelmingly common real-world "2-prong pegboard hook" design (the
+   product family Multiboard explicitly interoperates with) places both
+   prongs in the same horizontal row, resisting hook rotation under a
+   forward/downward load.
+2. **The official Common Connections diagram's "Hook to Tile" panel
+   (`[A]`-fetched asset, `//VERIFY`-tier for this specific reading) visually
+   suggests vertical (same-column) engagement** — the Peg Click Hook is
+   drawn as a single shaft running down one column of the tile, entering
+   near the top and exiting as the L-hook lower down, rather than two
+   parallel horizontal prongs. **This reading carries the same caution
+   flagged in Task 1b**: a prior visual-only read of a marketing render
+   (that render's Large Hole looked octagonal) was later **directly
+   contradicted** by mesh measurement (Task 1c: actually round). A stylized
+   isometric icon is not a dimensioned source, and this diagram is not
+   exempt from that risk.
+
+**Recommendation for Task 3 (actionable default, not a confirmed fact):**
+model the footprint as **vertical, `[[0,0],[0,1]]`** (Y-axis pair) — this
+follows the diagram (the one piece of official-asset evidence actually
+specific to Peg Click, vs. the horizontal convention which is only a
+generic-pegboard analogy, not Multiboard-specific evidence) while explicitly
+flagging axis as **the single highest-value open item for a future
+caliper/official-source upgrade** (backlog #16-style). The
+`_multibuild_footprint_table()` mechanism built in Task 1 Part A stores this
+as one swappable array entry — changing `[[0,0],[0,1]]` to `[[0,0],[1,0]]`
+if disproven is a one-line fix, not a re-architecture.
+
+### Geometry-model decision: separate peg table, NOT a `_multibuild_table()` row
+
+**Decision: Peg Click needs a separate parallel table (e.g.
+`_multibuild_peg_click_table()`) and its own peg module (e.g.
+`_multibuild_peg_click_peg()`), following the Fix-Point precedent exactly —
+it does not join `_multibuild_table()`.** Reasoning:
+
+1. **Mechanism mismatch.** `_multibuild_table()`'s row schema
+   (`arm_count`/`arm_width`/`tip_flare`) exists specifically to describe the
+   Snap's compliant multi-arm flared mount (Task 1b). The Peg Click peg is a
+   plain rigid cylinder (`[B]` above) — there are no arms to count, no arm
+   width, no tip flare. Forcing a cylinder through that schema would mean
+   faking `arm_count=1`/`tip_flare=peg_radius`, which the existing test
+   suite's mount-geometry assertions (`tip_flare>0, arm_count>0, 2*tip_flare
+   <= hole_dia`, per the Fix-Point section's own note on why Fix-Point was
+   kept separate) would technically accept but which misrepresents the part
+   — a single "arm" at 360° is not what `_multibuild_mount_peg()`'s
+   hull-per-arm geometry generator produces (it would degenerate oddly, or
+   need a special-cased branch inside a function whose whole point is one
+   shared geometry generator for the flared-arm family).
+2. **Hole-family mismatch.** `_multibuild_table()`'s only row ("snap") is
+   keyed to the **Large Hole** (22.2mm). Peg Click engages the **Small
+   Hole** (6.53mm) — a different hole family with its own accessor
+   (`multibuild_small_hole_dia()`/`multibuild_small_hole_depth()`) already
+   established in "Tile geometry (#33)". A new `_multibuild_table()` row
+   would need a `hole_dia`/`hole_depth` pair that duplicates
+   `multibuild_small_hole_dia()`/`_depth()` rather than reading them (single-
+   source-of-truth violation) — whereas a separate table can just reference
+   the existing Small Hole accessors directly.
+3. **Cardinality mismatch.** `_multibuild_table()` is a one-hole-per-`type`
+   schema by design (this is exactly why Task 1 Part A built the *parallel*
+   `_multibuild_footprint_table()` instead of changing `_multibuild_table()`
+   itself). Peg Click's 2-hole footprint is already handled by that Part-A
+   footprint mechanism at the *placement* level (`multibuild_mount_footprint
+   ("peg_click")` — the existing commented-out stub in
+   `_multibuild_footprint_table()` currently reads `[[0,0],[1,0]]`
+   (horizontal); this pass's axis finding recommends replacing it with
+   `[[0,0],[0,1]]` (vertical), see "Two-hole spacing and axis" above) — but
+   the *per-peg* geometry
+   (what shape gets stamped at each of those two footprint offsets) is a
+   different, rigid-cylinder shape than `_multibuild_mount_peg()` produces,
+   which is the actual reason a separate table+module is needed, distinct
+   from (and in addition to) the footprint question Task 1 Part A already
+   solved.
+4. **Direct precedent.** Fix-Point (#32) hit the identical fork (negative-
+   only, didn't fit the positive-mount schema) and was resolved the same
+   way: a parallel table (`_multibuild_fixpoint_table()`) plus its own
+   dispatch (`_multibuild_is_hole()`) and geometry helper
+   (`_multibuild_dovetail()`), left entirely out of
+   `multibuild_known_mounts()`/`_multibuild_table()`. Peg Click should mirror
+   this shape: a new `multibuild_known_peg_click_mounts()`-style accessor (or
+   simply hard-code the "peg_click" type, mirroring how Fix-Point's dispatch
+   works) reading its own table, with its own placeholder/positive module
+   family, kept out of the Snap-flavored mount test-suite assertions that
+   don't apply to it.
+
+**What Task 3 should build, concretely:**
+- `_multibuild_peg_click_table()` (or inline constants) with: peg diameter
+  (recommend 6.25mm, `[C]`, see above), hole diameter/depth (reference
+  `multibuild_small_hole_dia()`/`multibuild_small_hole_depth()` directly, do
+  not duplicate), peg length (per-instance parameter, not a table constant —
+  see "Engagement / peg length" above).
+- `_multibuild_peg_click_peg()`: a straight `cylinder()`, no arm-hull
+  geometry, no flare.
+- Footprint: `["peg_click", [[0,0],[0,1]]]` in the existing
+  `_multibuild_footprint_table()`, replacing the Task 1 Part A stub's
+  horizontal placeholder value (currently `[[0,0],[1,0]]`) with this pass's
+  vertical recommendation, with the `//VERIFY` caveat carried into a code
+  comment so a future axis correction is a one-line data change (tests/docs
+  would need a matching update), not an archaeology exercise.
+- Whichever dispatch pattern Task 3 chooses (new function name vs. extending
+  an existing one), it must **not** enter `multibuild_known_mounts()` /
+  `_multibuild_table()` and must **not** be asserted against the Snap-
+  flavored mount-geometry test assertions, mirroring Fix-Point's isolation.
+
+### What remains open after this pass
+
+- **Axis (horizontal vs. vertical) — `//VERIFY`**, the single biggest gap;
+  see "Two-hole spacing and axis" above for the recommended default and why
+  it's not yet a confirmed fact.
+- **Peg diameter — `[C]`/`//VERIFY`** pending either a successful Thangs
+  fetch or a physical caliper reading. Recommendation: 6.25mm, per the
+  tolerance-consistency argument above.
+- **Click-ridge/barb geometry — unresolved, not fabricated.** No source
+  found describes one; recommended default is a plain tolerance-fit cylinder
+  (see above).
+- **Peg/hook length — intentionally left per-instance**, not a single value,
+  matching the Fix-Point Rail precedent.
+- A **community "Multiboard Primitive - Pegboard Click" mesh** (Thangs,
+  `LengAwaits` #994263) and an **official ".STEP Multiboard Remixing Files"
+  Pegboard Click part** (Thangs #994677) both exist and would very likely
+  resolve the axis and diameter questions directly if fetched — both remain
+  not reachable. **Flagged for a future pass with stronger source access.**

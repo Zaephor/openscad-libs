@@ -100,10 +100,47 @@ The 50mm-CU container system. Shipped this branch:
   (backlog **#35**). No thread pitch/profile spec was recovered and the repo
   has no helical-thread-modeling utility, so no thread-modeling approach is
   decided yet.
-- **Peg-Click** — **deferred / not-yet-modeled** (backlog **#36**). Engages
-  **two** Small Holes per instance, which doesn't fit the current
-  one-hole-per-`type` accessor cardinality; it needs a 2-hole-per-instance API
-  generalization first.
+- **Peg-Click** — **modeled-in-lib** (this branch, backlog **#36**). A rigid
+  2-peg mount, one peg per Small Hole. Positive `multibuild_mount("peg_click",
+  peg_len)` + placeholder `multibuild_mount_placeholder("peg_click", peg_len)`
+  + receiving negative `multibuild_mount_holes("peg_click")` (see "Multi-hole
+  cardinality" below); `peg_len` is per-instance, not a table constant (the
+  official parts ship 15/20/25/30mm + Double variants). Deliberately its own
+  parallel module family, **not** a `_multibuild_table()` row and **not**
+  listed in `multibuild_known_mounts()` — a plain rigid cylinder with no
+  arms/tip-flare can't honestly satisfy that table's Snap-flavored schema, and
+  its hole family (Small Hole) differs from the Large Hole `"snap"` mates to.
+  See RESEARCH.md "Geometry-model decision" (#36 Task 2).
+
+### Multi-hole cardinality
+
+Some mount types occupy more than one grid cell (e.g. Peg-Click's two pegs).
+`multibuild_mount_footprint(type)` returns the grid-relative `[x,y]` offsets
+(in MU pitch units) a mount instance occupies — `[[0,0]]` for single-hole
+types like `"snap"`, `[[0,0],[0,1]]` for `"peg_click"` (vertical pair, 25mm
+pitch; the axis itself is `//VERIFY`, see RESEARCH.md "Two-hole spacing and
+axis"). Both `multibuild_mount()`/`multibuild_mount_placeholder()` (positive
+side) and `multibuild_mount_holes()` (receiving side, below) iterate this
+same accessor, so placement can't drift between the two sides of a mate.
+`multibuild_mount_fits(type, cols, rows)` checks a footprint fits within a
+`cols x rows` grid.
+
+### Receiving-hole stamp
+
+`multibuild_mount_holes(type, length=undef)` cuts the mount's receiving
+negative at EVERY offset in `multibuild_mount_footprint(type)` — the
+counterpart, on the panel/tile being mounted TO, of `multibuild_mount()`'s
+positive-side footprint loop. For single-hole `_multibuild_table()` rows
+(e.g. `"snap"`) this is a thin multi-point wrapper around the existing
+`multibuild_hole(type, length)` (whose own standalone single-hole output is
+unchanged); for `"peg_click"` it cuts the Small Hole family
+(`multibuild_small_hole_dia()`/`_depth()`) directly at each offset, since
+`multibuild_hole("peg_click")` doesn't exist as a single-hole call
+(peg_click is deliberately not a `_multibuild_table()` row). `length` is a
+no-op on the `"peg_click"` branch (its Small Hole depth always comes from
+`multibuild_small_hole_depth()`, not the `length` arg) — mirrors
+`multibuild_hole()`'s existing length-ignoring behavior for non-Fix-Point
+types.
 
 ### Inserts — project-composed, not lib-modeled
 
@@ -121,7 +158,7 @@ What mates what. **Bold** = an end this library models.
 | **Multihole** (`multibuild_tile_holes(cols, rows, "large")`) | **Snap** (`multibuild_mount("snap")`) | both sides: **yes** |
 | Multihole | Large Thread (#35) | Multihole side: **yes**; Thread: deferred |
 | Multihole | Fix-Point *board-side* screw | out of scope (official part only) |
-| **Small / pegboard hole** (`multibuild_tile_holes(cols, rows, "small")`) | Peg-Click (#36) | Small-Hole side: **yes**; Peg-Click: deferred |
+| **Small / pegboard hole** (`multibuild_tile_holes(cols, rows, "small")`) | **Peg-Click** (`multibuild_mount("peg_click", peg_len)` / `multibuild_mount_holes("peg_click")`) | both sides: **yes** |
 | Small / pegboard hole | Small Thread (#35) | Small-Hole side: **yes**; Thread: deferred |
 | Small / pegboard hole | non-printed pegboard accessories (hooks, bins, etc.) | out of scope (generic hardware, not modeled) |
 
@@ -182,11 +219,50 @@ custom project panel   (your own shape, sized to multibuild_grid_snap())
 `multibuild_tile_holes(cols, rows, which)` stamps the Multihole and/or Small
 Hole pattern into a **project's own panel** — not the official Tile.
 `which` = `"large"` (Multiholes only, for Snaps/Large Thread), `"small"`
-(Small Holes only, for Peg-Click/Small Thread once #36/#35 exist), or
-`"both"` (default). Once stamped, the panel accepts whatever connector this
-library already models the board-facing half of — Snap today; Fix-Point
-pockets/rails are themselves accessory-side (not board-side) negatives, so
-they aren't part of this stamp.
+(Small Holes only, for Peg-Click/Small Thread), or `"both"` (default). Once
+stamped, the panel accepts whatever connector this library already models
+the board-facing half of — Snap and Peg-Click today; Fix-Point pockets/rails
+are themselves accessory-side (not board-side) negatives, so they aren't
+part of this stamp.
+
+**5. Mount a Peg-Click accessory onto the board:**
+
+```
+MultiBoard Tile (holes modeled, body #33-pending)
+  → Peg-Click receiving holes   multibuild_mount_holes("peg_click")   (2 Small Holes, footprint-driven)
+  → Peg-Click pegs               multibuild_mount("peg_click", peg_len)
+  → our project part             (union the pegs onto the part body at Z=0)
+```
+
+`multibuild_mount_footprint("peg_click")` (2-hole, `[[0,0],[0,1]]`) is the
+single source of truth for BOTH sides of this mate — the pegs
+(`multibuild_mount()`) and the receiving holes (`multibuild_mount_holes()`)
+iterate the same accessor, so they can't drift out of alignment with each
+other.
+
+**Datum: `multibuild_mount_holes("peg_click")` must be translated onto a
+Small Hole sublattice position, not called at a raw Multihole grid point.**
+The footprint's 25mm pitch is correct either way, but Small Holes live on
+their own offset sublattice (`multibuild_tile_small_points(cols, rows)`,
+offset from the Multihole grid by `multibuild_small_hole_offset()` — see
+"MultiBoard Tile" above), not on `multibuild_grid_points(cols, rows)`
+itself. Calling `multibuild_mount_holes("peg_click")` untranslated at a
+Multihole grid point cuts two correctly-spaced holes in the WRONG place — on
+Multihole grid points instead of the Small Hole sublattice:
+
+```scad
+use <multibuild/multibuild.scad>;
+
+cols = 4; rows = 3;
+origin = multibuild_tile_small_points(cols, rows)[0];  // a real Small Hole position
+
+difference() {
+    translate([0, 0, -multibuild_tile_thickness()])
+        cube([cols * multibuild_grid_pitch(), rows * multibuild_grid_pitch(), multibuild_tile_thickness()]);
+    translate(origin)
+        multibuild_mount_holes("peg_click");
+}
+```
 
 ## Compose recipe — a hang-off-board container
 
@@ -223,8 +299,9 @@ project panel            your own shape (cube(), or any custom profile)
 Small-Hole sublattice (`multibuild_tile_small_points(cols, rows)`) rides
 along at the same pitch, offset by `multibuild_small_hole_offset()`. `which`
 picks `"large"` (Multiholes, for Snaps/Large Thread), `"small"` (Small
-Holes, for Peg-Click/Small Thread — connector side deferred, #36/#35), or
-`"both"` (default). The stamped panel is **not** the official Tile: no edge
+Holes, for Peg-Click/Small Thread — Peg-Click connector side modeled, #36;
+Small Thread deferred, #35), or `"both"` (default). The stamped panel is
+**not** the official Tile: no edge
 profile, flange, or inter-tile joining feature is added — only the hole
 pattern, so the panel's own footprint must be sized/centered to match
 whatever `cols`/`rows` the stamp uses (e.g. via `multibuild_grid_snap()`).

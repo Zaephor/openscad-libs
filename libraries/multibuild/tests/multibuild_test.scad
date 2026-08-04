@@ -20,6 +20,10 @@ for (t = multibuild_known_mounts()) {
 // snap is a single-hole mount -> footprint is exactly [[0,0]].
 assert(multibuild_mount_footprint("snap") == [[0,0]], "snap single-hole footprint");
 
+// peg_click: 2-hole footprint, VERTICAL axis (Y-pair) per T2's //VERIFY
+// recommendation -- see RESEARCH.md "Two-hole spacing and axis".
+assert(multibuild_mount_footprint("peg_click") == [[0,0],[0,1]], "peg_click 2-hole footprint");
+
 // grid_count: floor(length / pitch)
 assert(multibuild_grid_count(2.9 * p) == 2);
 assert(multibuild_grid_count(3.0 * p) == 3);
@@ -54,6 +58,49 @@ for (t = multibuild_known_mounts()) {
                   multibuild_hole_depth(t) + 2], center = true);
         multibuild_hole(t);
     }
+}
+
+// --- Peg Click 2-hole mount (#36 Task 3) ---
+// A plain rigid-peg mount, PARALLEL to _multibuild_table() (own module
+// family), deliberately excluded from multibuild_known_mounts() -- see
+// "Data: Peg Click" in multibuild.scad and RESEARCH.md "Geometry-model
+// decision". Must NOT leak into the Snap-flavored mount-geometry loop above.
+assert(len([for (m = multibuild_known_mounts()) if (m == "peg_click") 1]) == 0);
+// Peg diameter must clear the Small Hole it engages (slip fit, not a press
+// fit) -- mirrors the snap loop's `2*tip_flare <= hole_dia` clearance check
+// above, referencing the Small Hole accessors directly (single source of
+// truth), not a duplicated peg_click-local hole dimension.
+assert(multibuild_peg_click_dia() < multibuild_small_hole_dia());
+// Placeholder + mount render for the default per-instance length, and again
+// for an explicit longer length (e.g. a "Double" hook variant) to exercise
+// the `peg_len` parameter path.
+multibuild_mount_placeholder("peg_click");
+multibuild_mount("peg_click");
+multibuild_mount_placeholder("peg_click", 25);
+multibuild_mount("peg_click", 25);
+
+// --- Receiving-hole footprint support (#36 Task 4) ---
+// multibuild_mount_holes(type) cuts a receiving negative at EVERY offset in
+// multibuild_mount_footprint(type) -- the counterpart to multibuild_mount()'s
+// positive-side loop, sharing the same footprint accessor. Render for both a
+// _multibuild_table() row ("snap", Large Hole) and "peg_click" (Small Hole,
+// NOT in _multibuild_table()); STL bbox/hole-count/dims checks live in
+// tests/test_multibuild_lib.sh.
+for (t = multibuild_known_mounts()) {
+    difference() {
+        translate([0, 0, -multibuild_hole_depth(t) - 2])
+            cube([multibuild_hole_dia(t) + 4,
+                  multibuild_hole_dia(t) + 4,
+                  multibuild_hole_depth(t) + 2], center = true);
+        multibuild_mount_holes(t);
+    }
+}
+difference() {
+    translate([0, 0, -multibuild_small_hole_depth() - 2])
+        cube([multibuild_small_hole_dia() + 4,
+              multibuild_grid_pitch() + multibuild_small_hole_dia() + 4,
+              multibuild_small_hole_depth() + 2], center = true);
+    multibuild_mount_holes("peg_click");
 }
 
 // --- Fix-Point (Multipoint) accessory-side negatives (#32) ---
