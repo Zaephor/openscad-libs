@@ -73,7 +73,9 @@ function _multibuild_footprint_table() = [
     // a prior visual misread (octagonal vs. round Large Hole) that mesh
     // measurement later overturned. See RESEARCH.md "Two-hole spacing and
     // axis" (#36 Task 2). Flip to [[0,0],[1,0]] (horizontal) as a one-line
-    // change if a stronger source later confirms it instead.
+    // data change if a stronger source later confirms it instead (tests/docs
+    // would need a matching update -- see tests/multibuild_test.scad and
+    // tests/test_multibuild_lib.sh, which encode Y as the long axis).
     ["peg_click", [[0,0],[0,1]]],
 ];
 function multibuild_mount_footprint(type) =
@@ -160,9 +162,12 @@ function _multibuild_peg_click_default_len() =
     // [C], single search-snippet source for the "+2mm" margin specifically
     // ("extending a peg design by 2mm... since without this adaptation, the
     // hooks break off due to the thickness of the Multiboard" -- under-length
-    // pegs are a known failure mode against the 6.4mm tile). The underlying
-    // "must clear the full tile thickness" requirement is [A]-derived
-    // (multibuild_small_hole_depth(), a through-hole spanning the tile).
+    // pegs are a known failure mode against the 6.4mm tile). The tile-
+    // thickness input this reads (multibuild_small_hole_depth()) is itself
+    // [C]//VERIFY (STL mesh, single community source -- see that function's
+    // own note below), NOT [A] -- only the GEOMETRIC NECESSITY that a peg
+    // must exceed the panel it passes through is self-evident/non-tiered,
+    // not the depth value itself.
     // A DEFAULT for fit-viz/tests ONLY when the caller doesn't pass its own
     // `len` -- real consumer parts should pass their own per-instance
     // peg_len (see the module-family note above), not rely on this default.
@@ -281,9 +286,13 @@ module _multibuild_peg_click_peg(len) {
     // Small lead-in chamfer at the tip (insertion ergonomics / edge-break
     // per design-for-print house rules) -- NOT the "click" mechanism itself
     // (no barb/ridge modeled, per the "No click-ridge/barb" research note)
-    // and not a data-tier value. A straight cylinder has no overhang at any
-    // print orientation, so this is a print-quality nicety, not a
-    // support-free requirement.
+    // and not a data-tier value. Printed pegs-up or pegs-down (the tested/
+    // intended orientation), a straight cylinder has no overhang, so this is
+    // a print-quality nicety, not a support-free requirement -- it does not
+    // claim the geometry is overhang-free in every conceivable orientation
+    // (e.g. the peg's actual in-use horizontal orientation once mounted on a
+    // vertical board is a different question, out of scope for this cylinder
+    // primitive's own print orientation).
     ch = 0.3;
     union() {
         translate([0, 0, -len + ch])
@@ -380,6 +389,10 @@ module multibuild_mount_holes(type, length = undef) {
     for (off = multibuild_mount_footprint(type))
         translate([off[0] * p, off[1] * p, 0])
             if (type == "peg_click")
+                // `length` is a no-op on this branch -- the Small Hole depth
+                // always comes from multibuild_small_hole_depth(), mirroring
+                // multibuild_hole()'s existing length-ignoring behavior for
+                // non-Fix-Point types.
                 _multibuild_straight_hole_cut(multibuild_small_hole_dia(), multibuild_small_hole_depth());
             else
                 multibuild_hole(type, length);

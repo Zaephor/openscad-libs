@@ -136,7 +136,11 @@ positive-side footprint loop. For single-hole `_multibuild_table()` rows
 unchanged); for `"peg_click"` it cuts the Small Hole family
 (`multibuild_small_hole_dia()`/`_depth()`) directly at each offset, since
 `multibuild_hole("peg_click")` doesn't exist as a single-hole call
-(peg_click is deliberately not a `_multibuild_table()` row).
+(peg_click is deliberately not a `_multibuild_table()` row). `length` is a
+no-op on the `"peg_click"` branch (its Small Hole depth always comes from
+`multibuild_small_hole_depth()`, not the `length` arg) — mirrors
+`multibuild_hole()`'s existing length-ignoring behavior for non-Fix-Point
+types.
 
 ### Inserts — project-composed, not lib-modeled
 
@@ -235,6 +239,30 @@ single source of truth for BOTH sides of this mate — the pegs
 (`multibuild_mount()`) and the receiving holes (`multibuild_mount_holes()`)
 iterate the same accessor, so they can't drift out of alignment with each
 other.
+
+**Datum: `multibuild_mount_holes("peg_click")` must be translated onto a
+Small Hole sublattice position, not called at a raw Multihole grid point.**
+The footprint's 25mm pitch is correct either way, but Small Holes live on
+their own offset sublattice (`multibuild_tile_small_points(cols, rows)`,
+offset from the Multihole grid by `multibuild_small_hole_offset()` — see
+"MultiBoard Tile" above), not on `multibuild_grid_points(cols, rows)`
+itself. Calling `multibuild_mount_holes("peg_click")` untranslated at a
+Multihole grid point cuts two correctly-spaced holes in the WRONG place — on
+Multihole grid points instead of the Small Hole sublattice:
+
+```scad
+use <multibuild/multibuild.scad>;
+
+cols = 4; rows = 3;
+origin = multibuild_tile_small_points(cols, rows)[0];  // a real Small Hole position
+
+difference() {
+    translate([0, 0, -multibuild_tile_thickness()])
+        cube([cols * multibuild_grid_pitch(), rows * multibuild_grid_pitch(), multibuild_tile_thickness()]);
+    translate(origin)
+        multibuild_mount_holes("peg_click");
+}
+```
 
 ## Compose recipe — a hang-off-board container
 

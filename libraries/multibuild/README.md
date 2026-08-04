@@ -7,11 +7,13 @@ a wall/panel of square Tiles on a repeating hole grid; parts snap onto it via
 connector features that plug into the Tile's holes. This library gives you the
 grid pitch/spacing math, a modeled **positive** connector feature
 (`multibuild_mount`) and matching **negative** board-hole cutter
-(`multibuild_hole`) for the "snap" mount, the MultiBoard **Tile**
-accessory-panel hole-stamp (`multibuild_tile_holes`) for stamping the
-Multihole/Small-Hole patterns into a project's own panel, MultiBin container
-envelope/cavity accessors (`multibin_*`), and the accessory-side **Fix-Point**
-slide-on negatives (`multibuild_hole("multipoint")` / `"multipoint_rail"`).
+(`multibuild_hole`) for the "snap" mount, a second rigid **Peg Click** 2-peg
+mount (`multibuild_mount("peg_click", ...)` / `multibuild_mount_holes
+("peg_click")`), the MultiBoard **Tile** accessory-panel hole-stamp
+(`multibuild_tile_holes`) for stamping the Multihole/Small-Hole patterns
+into a project's own panel, MultiBin container envelope/cavity accessors
+(`multibin_*`), and the accessory-side **Fix-Point** slide-on negatives
+(`multibuild_hole("multipoint")` / `"multipoint_rail"`).
 Units: **mm**. See [`ECOSYSTEM.md`](ECOSYSTEM.md) for the full type/relation
 map and how the families chain together.
 
@@ -131,15 +133,20 @@ fit/interference checks before committing to the full arm geometry:
 | `multibuild_mount_arm_count(type)` | number of compliant snap arms |
 | `multibuild_mount_arm_width(type)` | tangential width of each arm, mm |
 | `multibuild_mount_tip_flare(type)` | arm-tip flare radius, mm (tip-to-tip span = `2 x` this) |
+| `multibuild_mount_footprint(type)` | grid-relative `[x, y]` offset list (MU units) a mount instance occupies — `[[0,0]]` for single-hole types, more for multi-hole types (e.g. `"peg_click"`) |
+| `multibuild_mount_fits(type, cols, rows)` | `true` if `type`'s footprint fits within a `cols x rows` grid, offsets in-range |
 
 | Module | Produces |
 |---|---|
-| `multibuild_mount_placeholder(type)` | envelope solid only (tip-flare diameter x engagement length), mount face at `Z=0`, grows `-Z` (cheap fit-check) |
-| `multibuild_mount(type)` | the real positive connector feature: central shaft + `arm_count` tapered/flared arms, mount face at `Z=0`, grows `-Z` |
-| `multibuild_hole(type)` | negative board-hole cutter (subtract from a consumer solid): a straight cylinder at `hole_dia(type)`, `Z=0` down through `hole_depth(type)` |
+| `multibuild_mount_placeholder(type, peg_len=undef)` | envelope solid only — tip-flare diameter x engagement length for `_multibuild_table()` types, peg diameter x `peg_len` for `"peg_click"` — mount face at `Z=0`, grows `-Z` (cheap fit-check) |
+| `multibuild_mount(type, peg_len=undef)` | the real positive connector feature: for `_multibuild_table()` types (e.g. `"snap"`) a central shaft + `arm_count` tapered/flared arms; for `"peg_click"` a plain rigid peg at `peg_len` length (default `multibuild_small_hole_depth()+2` when omitted) — mount face at `Z=0`, grows `-Z` |
+| `multibuild_hole(type)` | negative board-hole cutter (subtract from a consumer solid): a straight cylinder at `hole_dia(type)`, `Z=0` down through `hole_depth(type)` — `_multibuild_table()` types only |
+| `multibuild_mount_holes(type, length=undef)` | receiving negative(s) cut at EVERY offset in `multibuild_mount_footprint(type)` — multi-point counterpart to `multibuild_hole(type, length)`; for `"peg_click"` cuts the Small Hole family directly (`length` is a no-op on that branch) |
 
-Valid `type` keys (`multibuild_known_mounts()`): **`snap`** — the only mount
-type modeled in v1 (see "Which mount types this models" below).
+Valid `type` keys (`multibuild_known_mounts()`): **`snap`** — the only
+`_multibuild_table()` mount type. A second mount type, **`"peg_click"`**, is
+also modeled but deliberately kept outside this table/accessor — see the
+"Peg Click" section below and "Which mount types this models" further down.
 
 ## MultiBoard Tile — accessory-panel hole-stamp
 
@@ -215,6 +222,59 @@ notes.
 See [`ECOSYSTEM.md`](ECOSYSTEM.md) for how a stamped panel fits into the
 wider chain (Snap, Fix-Point, MultiBin), and for the still-deferred Tile
 body/edge-profile scope.
+
+## Peg Click — 2-peg rigid mount
+
+A **Peg Click** is a rigid 2-peg connector that plugs into a Tile's **Small
+Hole** family — not the Large Hole `"snap"` mates to — one peg per Small
+Hole, `multibuild_grid_pitch()` (25mm) apart. Modeled as its own parallel
+module family, deliberately **not** a `_multibuild_table()` row and **not**
+listed in `multibuild_known_mounts()`: a plain rigid cylinder with no arms/
+tip-flare can't honestly satisfy that table's Snap-flavored schema, and its
+hole family (Small Hole) differs from the Large Hole `"snap"` mates to. See
+`RESEARCH.md`'s "Geometry-model decision" (#36 Task 2).
+
+```scad
+use <multibuild/multibuild.scad>;
+
+peg_len = multibuild_small_hole_depth() + 2;  // or your own per-instance length
+cols = 4; rows = 3;
+origin = multibuild_tile_small_points(cols, rows)[0]; // a real Small Hole position
+
+// Board/Tile side: the two receiving Small Holes. Must be translated onto a
+// Small-Hole sublattice position, NOT called at a raw Multihole grid point
+// -- see ECOSYSTEM.md's "Mount a Peg-Click accessory onto the board" recipe.
+difference() {
+    translate([0, 0, -multibuild_tile_thickness()])
+        cube([cols * multibuild_grid_pitch(), rows * multibuild_grid_pitch(), multibuild_tile_thickness()]);
+    translate(origin)
+        multibuild_mount_holes("peg_click");
+}
+
+// Consumer part: the two pegs plug -Z through those holes.
+translate(origin)
+    multibuild_mount("peg_click", peg_len);
+```
+
+| Function | Returns |
+|---|---|
+| `multibuild_peg_click_dia()` | peg diameter, mm (`[C]//VERIFY`, tolerance-consistency argument — see `RESEARCH.md`) |
+| `multibuild_mount_footprint("peg_click")` | `[[0,0],[0,1]]` — vertical 2-hole footprint, 25mm pitch (the axis itself is `//VERIFY`, see `RESEARCH.md`'s "Two-hole spacing and axis") |
+
+| Module | Produces |
+|---|---|
+| `multibuild_mount_placeholder("peg_click", peg_len=undef)` | 2 envelope cylinders at `multibuild_peg_click_dia()`, `peg_len` long (default `multibuild_small_hole_depth()+2` if omitted) |
+| `multibuild_mount("peg_click", peg_len=undef)` | the 2 real pegs — plain chamfered cylinders, no arms/flare/barb |
+| `multibuild_mount_holes("peg_click")` | the 2 receiving Small Hole cuts, one per `multibuild_mount_footprint("peg_click")` offset |
+
+No click-ridge/barb is modeled despite the name — see `RESEARCH.md`'s "No
+click-ridge/barb confirmed" (#36 Task 2). `peg_len` is a required
+per-instance choice, not a table constant (the official parts ship
+15/20/25/30mm + Double variants) — see "Engagement / peg length" in
+`RESEARCH.md`.
+
+See [`ECOSYSTEM.md`](ECOSYSTEM.md) for the full Peg Click chain (including
+the receiving-hole datum caveat above) and multi-hole cardinality details.
 
 ## MultiBin containers (CU grid)
 
@@ -293,11 +353,13 @@ Fix-Points chain into a complete hang-off-board container.
 MultiBoard officially offers several distinct connector families (Snaps in
 three weight-bearing variants, Threads, Peg Click, DS Snaps — see
 `RESEARCH.md`'s "Mechanism" section for the full taxonomy). This library
-models exactly **one**: the **Regular Snap plugging into a Large Hole** — the
+models **two**: the **Regular Snap plugging into a Large Hole** — the
 symmetric, straight `-Z`-insertion variant, chosen because it's genuinely a
 clean 2-piece positive/negative pair (no third part, no angled insertion
 motion), unlike the angled Weight-Bearing Snap variants or the official
-3-part accessory chain (Tile -> Snap -> Locking Bolt -> Insert).
+3-part accessory chain (Tile -> Snap -> Locking Bolt -> Insert) — and the
+**Peg Click plugging into two Small Holes** (see the "Peg Click" section
+above), a plain rigid 2-peg connector with no arms/flex to simulate.
 
 **This is a rigid static approximation of a real compliant part.** The actual
 Snap connector is a 4-arm cantilever snap-fit — the arms flex inward to pass
@@ -363,11 +425,15 @@ This library does **not** model, and has no near-term plan to add:
   neither is a substitute for the official Tile's body.
 - **Cord channels** — MultiBoard's cable-routing features are not modeled.
 - **A vendor parts catalog** — this library does not attempt to reproduce
-  the multiboard.io parts library (Threads, Peg Click, DS Snaps, Locking
-  Bolts, Inserts). One mount type (`"snap"`) is modeled; `multibuild_known_
-  mounts()` is designed to grow if a future pass resolves the sourcing gaps
-  for another type (see `RESEARCH.md`'s Checkpoint findings for what would
-  be needed to add Threads or Peg Click).
+  the multiboard.io parts library (Threads, DS Snaps, Locking Bolts,
+  Inserts). Two mount types are modeled: `"snap"` (the only
+  `multibuild_known_mounts()` / `_multibuild_table()` entry) and
+  `"peg_click"` (its own parallel module family, deliberately kept outside
+  that table/accessor — see the "Peg Click" section above).
+  `multibuild_known_mounts()` is designed to grow if a future pass resolves
+  the sourcing gaps for another `_multibuild_table()`-shaped type (see
+  `RESEARCH.md`'s Checkpoint findings for what would be needed to add
+  Threads).
 
 ## Sources
 

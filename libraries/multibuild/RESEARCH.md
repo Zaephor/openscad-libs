@@ -1063,8 +1063,12 @@ snippet only, not a fully-read page) describes extending a peg design "by
 thickness of the Multiboard," i.e. under-length pegs are a known failure
 mode against Multiboard's 6.4mm tiles (thicker than generic hardboard
 pegboard). **`[C]`, single search-snippet source** for the specific "+2mm"
-number; the underlying "must clear 6.4mm plus some hooking margin" logic is
-`[A]`-derived (tile thickness) plus straightforward geometric necessity.
+number; the underlying "must clear 6.4mm plus some hooking margin" logic
+draws on the tile-thickness value itself, which is `[C]`/`//VERIFY` (STL
+mesh, single community source — see "Tile geometry (#33)" above and
+`multibuild_small_hole_depth()`'s own tier note in `multibuild.scad`), NOT
+`[A]` — only the geometric necessity that a peg must exceed the panel
+thickness it passes through is self-evident/non-tiered.
 
 ### Two-hole spacing and axis
 
@@ -1181,8 +1185,8 @@ it does not join `_multibuild_table()`.** Reasoning:
   `_multibuild_footprint_table()`, replacing the Task 1 Part A stub's
   horizontal placeholder value (currently `[[0,0],[1,0]]`) with this pass's
   vertical recommendation, with the `//VERIFY` caveat carried into a code
-  comment so a future axis correction is a one-line change, not an
-  archaeology exercise.
+  comment so a future axis correction is a one-line data change (tests/docs
+  would need a matching update), not an archaeology exercise.
 - Whichever dispatch pattern Task 3 chooses (new function name vs. extending
   an existing one), it must **not** enter `multibuild_known_mounts()` /
   `_multibuild_table()` and must **not** be asserted against the Snap-
