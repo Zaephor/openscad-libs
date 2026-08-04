@@ -49,13 +49,15 @@
 - Fasteners: M2.5 × 6 mm (board), M3 × 8 mm countersunk (lid), M3 (fans).
 - Fan mode: set `enable_exhaust=false` (via the OpenSCAD Customizer's
   `[Cooling]` group, or `-D enable_exhaust=false` on the command line, or
-  editing the default in `params.scad`) to print the shorter passive box if
-  the board's own heatsink+fan kit is sufficient (decide on the bench). The
-  toggle correctly drives both the tray's rear-wall geometry (both modes get
-  the honeycomb vent; the active mode adds the fan mount screw holes and the
-  solid bearing pads around them) and the lid's Y-dimension sizing (shorter body
-  when fans are off) — it works from every entry point (Customizer, `-D`,
-  or editing `params.scad`'s defaults).
+  editing the literal at the top of each entry file — assembly.scad,
+  parts/tray.scad, parts/lid.scad, tests/asserts.scad, kept in sync by
+  `tests/test_bpir4_default_literals_match.sh`) to print the shorter passive
+  box if the board's own heatsink+fan kit is sufficient (decide on the
+  bench). The toggle correctly drives both the tray's rear-wall geometry
+  (both modes get the honeycomb vent; the active mode adds the fan mount
+  screw holes and the solid bearing pads around them) and the lid's
+  Y-dimension sizing (shorter body when fans are off) — it works from every
+  entry point (Customizer, `-D`, or editing the entry-file literals).
 - Interior fan mount: the rear exhaust fan mounts on the tray's INTERIOR
   rear-wall face (screwed in from inside the case), blowing through the
   honeycomb vent cut straight through the wall — not bolted to the outside
@@ -63,12 +65,17 @@
   field (`fan_pad_dia`), so the M3 head seats on material rather than on the
   1.2 mm lattice.
   `fan_plenum` (the board-rear-edge -> rear-wall gap when fans are on) is
-  derived from the installed fan's depth (`fan_thickness`, `params.scad`,
-  falling back to the `fans` library's `fan_default_thickness()` when unset)
-  plus a fixed clearance margin (`fan_board_gap`, `params.scad`), so the
-  plenum can never be shallower than the fan actually needs — a render-time
-  assert in `params.scad` fails loudly if it ever is. As shipped this targets
-  a 20mm-deep 40mm fan (Noctua NF-A4x20), giving 129.7mm exterior depth in
-  active mode. Fitting a 10mm fan instead is safe but leaves a 10mm dead
-  plenum; set `fan_thickness = 10` (or a negative value) to shorten the
-  chassis to match.
+  derived from the installed fan's depth (`fan_thickness`, declared per
+  entry file the same way `enable_exhaust` is above — not in `params.scad`,
+  which only consumes it — falling back to the `fans` library's
+  `fan_default_thickness()` when unset) plus a fixed clearance margin
+  (`fan_board_gap`, `params.scad`), so the plenum can never be shallower
+  than the fan actually needs — a render-time assert in `params.scad` fails
+  loudly if it ever is. As shipped this targets a 20mm-deep 40mm fan (Noctua
+  NF-A4x20), giving 129.7mm exterior depth in active mode. Fitting a 10mm
+  fan instead is safe but leaves a 10mm dead plenum; change the
+  `fan_thickness = 20;` literal in all four entry files (assembly.scad,
+  parts/tray.scad, parts/lid.scad, tests/asserts.scad — kept in sync by
+  `tests/test_bpir4_default_literals_match.sh`) to `10`, or pass
+  `-D fan_thickness=10` for a one-off render, to shorten the chassis to
+  match.

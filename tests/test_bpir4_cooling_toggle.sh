@@ -6,7 +6,8 @@
 # customizer value was silently discarded -> "overwritten in params.scad"
 # warning + inert toggle. Checks: (a) no overwrite warning in either mode,
 # (b) passive (enable_exhaust=false) render is shallower than active
-# (rear_off() = fan_plenum(12) when on vs rear_gap(4) when off).
+# (rear_off() = fan_plenum(26.2) when on vs rear_gap(6.3) when off — this
+# test compares STL extents, not these numbers, so they're informational).
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"

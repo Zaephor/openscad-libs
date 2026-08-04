@@ -65,7 +65,7 @@ enable_exhaust=true; fan_size=40; fan_count=2; ear_hole_type="slot";
 fan_thickness=20;
 include <params.scad>;
 echo(str("PLENUM=", fan_plenum));
-echo(str("REAL_GAP=", (rear_wall_y(true)-wall)-fan_thickness-board_d()));
+echo(str("REAL_GAP=", (rear_wall_y(true)-wall)-_fan_thickness_eff()-board_d()));
 EOF
 
 # Probe 3 (#79): the sentinel path. fan_thickness<0 must reproduce the

@@ -256,6 +256,16 @@ assert(!enable_exhaust || fan_size <= int_h() + 1e-6,
 // It used to be the latter — a size-keyed constant — which meant this guard
 // could not discriminate the fan actually installed and would pass a 20mm fan
 // that sat 6.2mm inside the board.
+// This does NOT mean the assert would now catch such a case by measurement:
+// fan_plenum (above) derives from this SAME _fan_thickness_eff() term, so
+// substituting it into rear_wall_y() here cancels the thickness out of the
+// gap algebraically (GAP = fan_board_gap + _rear_media_protrusion(),
+// independent of fan_thickness) — the assert is thickness-invariant by
+// construction. The collision is prevented by the derivation, not caught
+// after the fact; the assert's live job is catching a future
+// re-literalisation of fan_plenum/fan_board_gap, paired with the derivation
+// drift-guard at tests/asserts.scad:299. Setting a large fan_thickness and
+// watching this NOT fire is not evidence the guard is broken.
 assert(!enable_exhaust ||
     (rear_wall_y() - wall) - _fan_thickness_eff() >= board_d() - 1e-6,
     str("params: interior fan (thickness ", _fan_thickness_eff(),
