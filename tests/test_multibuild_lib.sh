@@ -149,6 +149,65 @@ if not ok:
 sys.exit(0 if ok else 1)
 PY
 
+# --- Receiving-hole footprint support (#36 Task 4) ---
+# multibuild_mount_holes("peg_click") must cut TWO holes, one per
+# multibuild_mount_footprint("peg_click") offset, at pitch spacing, sized to
+# the SMALL Hole family (multibuild_small_hole_dia()/_depth()) -- NOT the
+# Large Hole multibuild_hole() cuts for _multibuild_table() rows. Verify via
+# STL: hole count via volume ratio against a single reference cylinder (same
+# technique as the Tile hole-stamp check below) plus a Y-bbox span check
+# (pitch + dia) proving the two holes are NOT coincident/merged.
+cat > "$tmp/get_peg_click_hole_dims.scad" <<'EOF'
+use <multibuild/multibuild.scad>;
+echo(multibuild_small_hole_dia());
+echo(multibuild_small_hole_depth());
+echo(multibuild_grid_pitch());
+EOF
+pch_dims_out="$(run "$tmp/get_peg_click_hole_dims.scad")"
+mapfile -t pch_dims < <(echo "$pch_dims_out" | grep -oE 'ECHO: [0-9]+(\.[0-9]+)?' | grep -oE '[0-9]+(\.[0-9]+)?')
+pch_dia="${pch_dims[0]}"; pch_depth="${pch_dims[1]}"; pch_pitch="${pch_dims[2]}"
+
+cat > "$tmp/mount_holes_peg_click.scad" <<'EOF'
+use <multibuild/multibuild.scad>;
+multibuild_mount_holes("peg_click");
+EOF
+"$root/scripts/openscad.sh" --export-format binstl -o "$tmp/mount_holes_peg_click.stl" "$tmp/mount_holes_peg_click.scad" 2>/dev/null
+
+python3 - "$tmp/mount_holes_peg_click.stl" "$pch_dia" "$pch_depth" "$pch_pitch" <<'PY' || { echo "peg_click receiving holes incorrect"; exit 1; }
+import struct, sys, math
+
+path, dia, depth, pitch = sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
+d = open(path, 'rb').read(); n = struct.unpack('<I', d[80:84])[0]; off = 84
+xs = []; ys = []; zs = []
+vol = 0.0
+for i in range(n):
+    tri = []
+    for v in range(3):
+        base = off + i * 50 + 12 + v * 12
+        p = struct.unpack('<3f', d[base:base + 12]); tri.append(p)
+        xs.append(p[0]); ys.append(p[1]); zs.append(p[2])
+    (x1, y1, z1), (x2, y2, z2), (x3, y3, z3) = tri
+    vol += (x1 * (y2 * z3 - y3 * z2) - y1 * (x2 * z3 - x3 * z2) + z1 * (x2 * y3 - x3 * y2)) / 6.0
+vol = abs(vol)
+xspan = max(xs) - min(xs); yspan = max(ys) - min(ys)
+
+# 2 holes, sized to the Small Hole (not the 22.2mm Large Hole) -> volume ==
+# 2x a single Small Hole cylinder; Y-span == pitch + dia (two distinct,
+# non-overlapping holes along the vertical footprint axis); X-span == dia.
+exp_vol = 2 * math.pi * (dia / 2) ** 2 * depth
+exp_y = pitch + dia
+exp_x = dia
+tol_rel = 0.03
+tol_span = 0.15  # $fn=48 faceting on a ~6.5mm cylinder
+ok = (abs(vol - exp_vol) <= tol_rel * exp_vol
+      and abs(yspan - exp_y) < tol_span
+      and abs(xspan - exp_x) < tol_span)
+if not ok:
+    sys.stderr.write("vol=%.4f (exp %.4f) xspan=%.4f (exp %.4f) yspan=%.4f (exp %.4f)\n"
+                      % (vol, exp_vol, xspan, exp_x, yspan, exp_y))
+sys.exit(0 if ok else 1)
+PY
+
 # Fit-check: for every known mount type, the positive mount's radial
 # envelope (STL bbox X/Y extent) must not exceed the negative hole's radial
 # envelope (STL bbox X/Y extent) -- i.e. the snap can physically pass

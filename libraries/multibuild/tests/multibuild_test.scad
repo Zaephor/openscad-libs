@@ -79,6 +79,30 @@ multibuild_mount("peg_click");
 multibuild_mount_placeholder("peg_click", 25);
 multibuild_mount("peg_click", 25);
 
+// --- Receiving-hole footprint support (#36 Task 4) ---
+// multibuild_mount_holes(type) cuts a receiving negative at EVERY offset in
+// multibuild_mount_footprint(type) -- the counterpart to multibuild_mount()'s
+// positive-side loop, sharing the same footprint accessor. Render for both a
+// _multibuild_table() row ("snap", Large Hole) and "peg_click" (Small Hole,
+// NOT in _multibuild_table()); STL bbox/hole-count/dims checks live in
+// tests/test_multibuild_lib.sh.
+for (t = multibuild_known_mounts()) {
+    difference() {
+        translate([0, 0, -multibuild_hole_depth(t) - 2])
+            cube([multibuild_hole_dia(t) + 4,
+                  multibuild_hole_dia(t) + 4,
+                  multibuild_hole_depth(t) + 2], center = true);
+        multibuild_mount_holes(t);
+    }
+}
+difference() {
+    translate([0, 0, -multibuild_small_hole_depth() - 2])
+        cube([multibuild_small_hole_dia() + 4,
+              multibuild_grid_pitch() + multibuild_small_hole_dia() + 4,
+              multibuild_small_hole_depth() + 2], center = true);
+    multibuild_mount_holes("peg_click");
+}
+
 // --- Fix-Point (Multipoint) accessory-side negatives (#32) ---
 // Negative-only types live in a PARALLEL hole table, never in the mount table:
 // a Fix-Point has no arms/flare, so it cannot satisfy the mount asserts above.

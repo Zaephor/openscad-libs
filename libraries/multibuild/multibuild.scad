@@ -339,6 +339,15 @@ module multibuild_fixpoint_placeholder(type) {
 // ACCESSORY-side negative ONLY -- the Fix-Point's own board-side engagement is
 // out of scope. Fit-check honesty: the slide-on mate is proven for +X clearance
 // only (see tests/test_multibuild_lib.sh), not for retention/engagement.
+// Straight-cylinder hole cutter shared by the board-hole branch below, by
+// multibuild_tile_holes(), and by multibuild_mount_holes()'s peg_click
+// branch: cut grows -Z from Z=0 (translate origin), z-fudged (-0.01/+0.02
+// past both faces) for a clean difference().
+module _multibuild_straight_hole_cut(d, h) {
+    translate([0, 0, -h - 0.01])
+        cylinder(h = h + 0.02, d = d, $fn = 48);
+}
+
 module multibuild_hole(type, length = undef) {
     if (_multibuild_is_hole(type)) {
         r = _multibuild_fixpoint_row(type);
@@ -347,11 +356,33 @@ module multibuild_hole(type, length = undef) {
         slen = (length == undef) ? r[6] : length;
         _multibuild_dovetail(neg_buried, neg_throat, neg_depth, slen, 0.5);
     } else {
-        d = multibuild_hole_dia(type);
-        h = multibuild_hole_depth(type);
-        translate([0, 0, -h - 0.01])
-            cylinder(h = h + 0.02, d = d, $fn = 48);
+        _multibuild_straight_hole_cut(multibuild_hole_dia(type), multibuild_hole_depth(type));
     }
+}
+
+/* [Negative] — multi-point receiving-hole stamp: cuts the correct board-hole
+   negative at EVERY offset in multibuild_mount_footprint(type), for use
+   inside a consumer difference() on the RECEIVING panel (the board/tile a
+   mount plugs into) -- the counterpart to multibuild_mount()'s positive-side
+   footprint loop above, sharing the same footprint accessor (single source
+   of truth for placement) and the same off[0]*p/off[1]*p grid-pitch
+   translate pattern. For single-hole types (e.g. "snap", footprint
+   [[0,0]]), this reduces to a translate-by-zero wrapper around
+   multibuild_hole(type, length), so multibuild_hole("snap")'s own
+   standalone output is unchanged -- this module is additive, not a
+   replacement. For "peg_click" (Small Hole family, NOT the Large Hole
+   multibuild_hole() cuts for _multibuild_table() rows -- see "Data: Peg
+   Click" above), each offset gets a Small Hole cut directly, since
+   multibuild_hole("peg_click") would fail (peg_click is deliberately not a
+   _multibuild_table() row). */
+module multibuild_mount_holes(type, length = undef) {
+    p = multibuild_grid_pitch();
+    for (off = multibuild_mount_footprint(type))
+        translate([off[0] * p, off[1] * p, 0])
+            if (type == "peg_click")
+                _multibuild_straight_hole_cut(multibuild_small_hole_dia(), multibuild_small_hole_depth());
+            else
+                multibuild_hole(type, length);
 }
 
 /* [Data: Tile] — MultiBoard Tile (25mm MU accessory panel). Multihole
@@ -422,18 +453,14 @@ module multibuild_tile_placeholder(cols, rows) {
    as multibuild_hole()'s board-hole cutter -- real thread deferred to #35. */
 module multibuild_tile_holes(cols, rows, which = "both") {
     if (which == "large" || which == "both") {
-        d = multibuild_large_hole_dia();
-        h = multibuild_tile_thickness();
         for (pt = multibuild_grid_points(cols, rows))
-            translate([pt[0], pt[1], -h - 0.01])
-                cylinder(h = h + 0.02, d = d, $fn = 48);
+            translate([pt[0], pt[1], 0])
+                _multibuild_straight_hole_cut(multibuild_large_hole_dia(), multibuild_tile_thickness());
     }
     if (which == "small" || which == "both") {
-        d = multibuild_small_hole_dia();
-        h = multibuild_small_hole_depth();
         for (pt = multibuild_tile_small_points(cols, rows))
-            translate([pt[0], pt[1], -h - 0.01])
-                cylinder(h = h + 0.02, d = d, $fn = 48);
+            translate([pt[0], pt[1], 0])
+                _multibuild_straight_hole_cut(multibuild_small_hole_dia(), multibuild_small_hole_depth());
     }
 }
 
