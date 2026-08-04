@@ -37,7 +37,7 @@ exhaust fan mounts on the tray's
 interior rear-wall face (screwed in from inside the case, airflow venting out
 through the vent); `fan_plenum` auto-derives from the installed fan's depth
 (`fan_thickness`, declared per entry file — assembly.scad/parts/tray.scad/
-parts/lid.scad — same as `enable_exhaust` below, defaulting to the `fans`
+parts/lid.scad/tests/asserts.scad — same as `enable_exhaust` below, defaulting to the `fans`
 library's size-keyed `fan_default_thickness()` when unset) plus a clearance margin, so
 the fan can never be placed closer to the board than that margin allows. The
 chassis ships configured for a 20mm-deep 40mm fan (Noctua NF-A4x20, [A]
@@ -75,7 +75,8 @@ The cooling/ear-hole group — `enable_exhaust` (rear fans on/off, customizer
 `/* [Cooling] */` group), `fan_size`, `fan_count`, `fan_thickness`,
 `ear_hole_type` (`"slot"` default; `"10-32"`/`"m6"`/`"round"` also
 available) — is declared per entry file (assembly.scad/parts/tray.scad/
-parts/lid.scad), not in `params.scad`; see params.scad's own comment for
+parts/lid.scad/tests/asserts.scad), not in `params.scad`; kept in sync by
+`tests/test_bpir4_default_literals_match.sh`; see params.scad's own comment for
 why. Everything else lives in `params.scad` directly: `stack_gap`,
 `lid_vents` (honeycomb hex vents over the lid's hot-zone band, on by
 default), `honeycomb_cell`/`honeycomb_wall` (hex size/spacing shared by the
