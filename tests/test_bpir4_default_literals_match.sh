@@ -2,12 +2,13 @@
 # Guards against re-introducing the defaults.scad include regression
 # (ec94126, reverted): assembly.scad/parts/tray.scad/parts/lid.scad/
 # tests/asserts.scad each hand-declare enable_exhaust/fan_size/fan_count/
-# ear_hole_type as plain top-level literals BEFORE `include <params.scad>`,
-# so OpenSCAD's Customizer GUI exposes them per entry file (Customizer only
-# lists variables declared directly in the open file, not via include/use).
-# This test doesn't render anything -- it just greps the 4 literal lines out
-# of each file and asserts they're byte-identical everywhere, so the four
-# copies can't silently drift out of sync without a human noticing.
+# ear_hole_type/fan_thickness as plain top-level literals BEFORE
+# `include <params.scad>`, so OpenSCAD's Customizer GUI exposes them per
+# entry file (Customizer only lists variables declared directly in the open
+# file, not via include/use). This test doesn't render anything -- it just
+# greps the 5 literal lines out of each file and asserts they're byte-
+# identical everywhere, so the four copies can't silently drift out of sync
+# without a human noticing.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
@@ -21,7 +22,7 @@ files=(
 
 # Each var's assignment line, stripped of any trailing comment, so the
 # literal (identifier + value) must match; explanatory comments may differ.
-vars=(enable_exhaust fan_size fan_count ear_hole_type)
+vars=(enable_exhaust fan_size fan_count ear_hole_type fan_thickness)
 
 fail=0
 
@@ -52,5 +53,5 @@ for var in "${vars[@]}"; do
   done
 done
 
-[ "$fail" -eq 0 ] && echo "ok (enable_exhaust/fan_size/fan_count/ear_hole_type literals match across ${#files[@]} files)"
+[ "$fail" -eq 0 ] && echo "ok (enable_exhaust/fan_size/fan_count/ear_hole_type/fan_thickness literals match across ${#files[@]} files)"
 exit "$fail"

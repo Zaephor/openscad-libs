@@ -71,6 +71,15 @@ enable_exhaust = true;
 fan_size  = 40;
 fan_count = 2;
 ear_hole_type = "slot";
+// fan_thickness (#79) must mirror the literal the entry files carry: this
+// consumer's reference REAR_Y (rear_wall_y(true), below) comes from its OWN
+// `include <params.scad>`, but the geometry it measures comes from
+// `use <parts/tray.scad>` (via _tray_shell()), which carries its own
+// file-scope fan_thickness=20. Without it here, this consumer's reference
+// frame falls back to the library default (rear_wall_y 116.7) while the real
+// shell sits 10mm further back (126.7), so the rear-corner checks below
+// probe the wrong Y plane entirely.
+fan_thickness = 20;
 include <params.scad>;
 use <rack10/rack10.scad>;
 use <sbc/sbc.scad>;
