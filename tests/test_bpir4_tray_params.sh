@@ -84,6 +84,15 @@ check_differs fc1 'enable_exhaust=true, fan_count=1, fan_size=40, ear_hole_type=
 # probe. Use fan_size=50 instead (a real, valid table entry).
 check_differs fs50 'enable_exhaust=true, fan_count=2, fan_size=50, ear_hole_type="slot"' fan_size
 check_differs earround 'enable_exhaust=true, fan_count=2, fan_size=40, ear_hole_type="round"' ear_hole_type
+# fan_thickness: added as a tray() PARAMETER after it was found to have no
+# effect from a consumer. It was originally a file-scope literal only, so
+# tray() -- reached via `use` -- read parts/tray.scad's own copy and a
+# consumer's value (assembly.scad's Customizer, or an edit to that file's
+# literal) never reached the depth path. The other four cooling/ear params
+# were already threaded, which is why they worked and this one silently did
+# not. Drives the rear plenum, hence ymax, so a 40mm fan must render a
+# deeper chassis than the default 20mm one.
+check_differs ft40 'enable_exhaust=true, fan_count=2, fan_size=40, fan_thickness=40, ear_hole_type="slot"' fan_thickness
 
 # --- No-regression: standalone tray.scad (defaults, no args) still renders
 # manifold: non-empty STL, no ERROR on stderr. ---
