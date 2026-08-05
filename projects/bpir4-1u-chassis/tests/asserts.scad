@@ -322,4 +322,22 @@ assert(fan_pad_dia >= _fan_hole_dia + 2*2,
         " too small to seat an M3 head on solid material around a ",
         _fan_hole_dia, "mm hole (need >= ", _fan_hole_dia + 4, ")"));
 
+// #81: nothing may descend into the board's top-side keep-outs. The tallest is
+// the stock SoC cooler (sbc's soc_cooler_1), but this reads the max over ALL
+// edge="top" rows so a future taller cooler, M.2 heatsink or HAT is guarded the
+// day it lands. Derived from sbc -- no height literal is retyped here.
+_lid_inner_z = floor_th + int_h();
+_top_side_tallest = _top_side_max_name();
+// Hard: a collision. This one must never fail.
+assert(_lid_inner_z > _top_side_max_z(),
+    str("bpir4: lid inner face ", _lid_inner_z, " collides with top-side keep-out ",
+        _top_side_tallest, " (top at ", _top_side_max_z(), ")"));
+// Advisory: keep a token gap so "just barely clears" cannot pass silently.
+// top_side_air_gap is [C] design intent, not a measured airflow requirement --
+// see params.scad for the shared-budget note.
+assert(_lid_inner_z >= _top_side_max_z() + top_side_air_gap,
+    str("bpir4: lid inner face ", _lid_inner_z, " leaves less than ", top_side_air_gap,
+        "mm above top-side keep-out ", _top_side_tallest,
+        " (top at ", _top_side_max_z(), ")"));
+
 // Render nothing (pure assert file).
