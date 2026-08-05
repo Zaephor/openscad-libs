@@ -1664,6 +1664,48 @@ to "reaches at least the edge" for rows in `_overhang_exceptions`; every
 other row keeps the strict form, and the full `sbc_known_boards()` sweep
 confirms no other board's connectors moved.
 
+### BPI-R4 #81: stock SoC cooler keep-out (`soc_cooler_1`)
+
+The library modeled nothing above this board's PCB except the M.2 / mPCIe
+sockets and their card envelopes. The stock SoC cooler — a heatsink with a
+recessed fan — is installed on the reference unit and was unmodelled, the same
+omission class as #76's inserted microSD card.
+
+| Quantity | Value | Tier | Source |
+|---|---|---|---|
+| Height above PCB top face | 16.0mm | `[B]` | caliper, physical unit |
+| Footprint width (X) | 49.3mm | `[B]` | caliper, physical unit |
+| Footprint depth (Y) | 54.5mm | `[B]` | caliper, physical unit |
+| Board-frame min corner | (73.2, 23.95) | `[B]` | anchored to `rj45_block`, see below |
+
+The heatsink is the assembly's high point: its fan is recessed into the middle
+of it, so the fan cannot rub and does not set the height. Modeled as one solid
+box — a worst-case keep-out, not an exact shape.
+
+Position is anchored to the live `rj45_block` row rather than re-typed: the
+cooler sits ~2.5mm behind that block's rear face (21.45 + 2.5 = 23.95) with its
+high-X side flush with the block's barrel-jack-side edge (64.0 + 58.5 = 122.5,
+so x_min = 122.5 − 49.3 = 73.2). The flush reading was caliper- and eye-checked
+against the physical board; the real offset is ~0.8–1.0mm, within the tolerance
+this keep-out needs, so X is `[B]` rather than a `//VERIFY` assumption.
+
+**This is an accessory on one specific unit, not an intrinsic board dimension.**
+Third-party coolers vary widely; a different cooler is a value change to this
+row, and any consumer reading it inherits that caveat.
+
+**Hole-role correction.** The two larger-diameter mounting holes — (75.85,
+27.21) @3.32mm and (117.75, 69.11) @3.31mm — were previously attributed, at
+`[C]//VERIFY`, to proximity with the FAN connector / VCORE-VPROC SoC-power
+block. They are in fact this cooler's own mounting pair, confirmed by the user
+against the installed cooler on the physical board (`[B]`). They fall inside the
+footprint above on a symmetric 41.9 × 41.9 diagonal. Their role stays
+`component-mount` — correct under either reading — and no coordinate or
+diameter changed.
+
+**Not modelled:** the fan recess, any third-party cooler, and any airflow
+clearance. Clearance above the cooler is the consumer's business; the
+bpir4-1u-chassis project carries that guard.
+
 ## Shipped modules built on this data
 
 Placeholder envelope (`sbc_placeholder`), mounting-hole/standoff stamps
