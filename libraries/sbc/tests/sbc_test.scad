@@ -142,8 +142,10 @@ _soc_cooler = [for (c = sbc_connectors("bpir4")) if (c[0] == "soc_cooler_1") c][
 assert(!is_undef(_soc_cooler), "bpir4 has soc_cooler_1");
 assert(_soc_cooler[3] == "top", "soc_cooler_1 is a top row");
 // Body is a board literal (no connectors catalog type fits a cooler) -- pinned
-// here so a silent edit to any axis has to come through this test.
-assert(_soc_cooler[2] == [49.3, 54.5, 16.0], "soc_cooler_1 body [B] caliper");
+// here so a silent edit to any axis has to come through this test. Width is
+// 49.3 (caliper, [B]) + 1.0mm low-X placement-uncertainty pad = 50.3 -- the
+// pinned X figure is the padded envelope, not the raw caliper reading.
+assert(_soc_cooler[2] == [50.3, 54.5, 16.0], "soc_cooler_1 body: caliper + low-X pad");
 // Position: z is the PCB top face (board thickness), matching every other
 // "top" row on this board; x/y are anchored to rj45_block, so this compares
 // against the live rj45_block row rather than restating 122.5 / 21.45.

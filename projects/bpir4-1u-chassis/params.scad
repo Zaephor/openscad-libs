@@ -213,6 +213,8 @@ function int_depth(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
 function board_x()  = -board_w()/2;              // centered in X
 function board_y()  = 0;                         // front edge on post face (Y=0)
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
+function rear_wall_y(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
+    board_y() + int_depth(ee, ft, fs); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
 // Top-side keep-out ceiling (#81). Mirrors _underside_max_hang() /
 // _rear_media_protrusion() above: read live from the sbc rows, never
 // re-literalled here. The tallest edge="top" row today is the stock SoC
@@ -237,8 +239,6 @@ function _top_side_max_name() =
 // or duct, a vent-band re-registration) and a possible taller FANLESS cooler
 // swap. Whoever spends it must state what they left.
 top_side_air_gap = 2.0;
-function rear_wall_y(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
-    board_y() + int_depth(ee, ft, fs); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
 
 // Intake vent band (faceplate): starts just above the tallest ymin (front-
 // edge) connector so the band clears every port, and stays inside the wall

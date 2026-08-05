@@ -235,8 +235,9 @@ function _sbc_table() = [
         // (117.75,69.11) — are the STOCK SoC COOLER's own mounting pair,
         // user-confirmed against the installed cooler on the physical board
         // ([B], #81; supersedes the earlier [C]//VERIFY "sits next to the FAN
-        // connector / VCORE-VPROC SoC-power block" proximity guess). They fall
-        // inside soc_cooler_1's footprint on a symmetric 41.9 x 41.9 diagonal.
+        // connector / VCORE-VPROC SoC-power block" proximity guess). Both
+        // holes fall inside soc_cooler_1's footprint, spaced 41.9 x 41.9 apart
+        // (the footprint is NOT centred on that diagonal -- see RESEARCH.md).
         // Role unchanged -> component-mount;
         // 3 more sit near other component clusters (U2/SW3/CN19, VCORE/VPROC,
         // CON2/CON3) ([C]//VERIFY) -> component-mount. The remaining 4 holes
@@ -462,15 +463,22 @@ function _sbc_table() = [
           // Body is a board literal rather than a connector_size() type: the
           // connectors catalog holds panel/socket bodies, not coolers (same
           // basis as the led_* rows above).
-          // Sizes [B] caliper (49.3 x 54.5 x 16.0, user's physical unit).
+          // Depth 54.5 and height 16.0 are [B] caliper (user's physical unit).
+          // Width is the caliper body (49.3, [B]) PLUS a 1.0mm placement-
+          // uncertainty pad on the low-X face -> 50.3. Do not read 50.3 as a
+          // caliper figure; it is a deliberately conservative envelope.
           // Position [B]: y anchored 2.5mm behind rj45_block's rear face
-          // (21.45 + 2.5 = 23.95); x flush with that same block's barrel-jack-
-          // side edge (64.0 + 58.5 = 122.5, so x_min = 122.5 - 49.3 = 73.2).
-          // The flush reading was caliper- and eye-checked on the physical unit
-          // (real offset ~0.8-1.0mm, inside the tolerance this model needs).
+          // (21.45 + 2.5 = 23.95); high-X side flush with that same block's
+          // barrel-jack-side edge (64.0 + 58.5 = 122.5). The flush reading was
+          // caliper- and eye-checked on the physical unit; the real offset is
+          // ~0.8-1.0mm, and the cooler's own mount-pair centre (96.8, from the
+          // two holes below) vs. a flush-box centre of 97.85 shows that error
+          // falls on the LOW-X side -- so the 1.0mm pad widens the box there
+          // (x_min = 122.5 - 50.3 = 72.2) rather than shrinking the high-X
+          // side, keeping high-X flush at 122.5.
           // Mounted on the two large-dia holes at (75.85,27.21) and
           // (117.75,69.11) -- see the hole-role comment above.
-          ["soc_cooler_1", [73.2, 23.95, 1.4], [49.3, 54.5, 16.0], "top"],
+          ["soc_cooler_1", [72.2, 23.95, 1.4], [50.3, 54.5, 16.0], "top"],
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
           // where left/right swap relative to the top-view frame this whole row
