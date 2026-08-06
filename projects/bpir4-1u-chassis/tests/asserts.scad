@@ -64,8 +64,10 @@ assert(len(_struct) > 0 && len(_struct) < len(sbc_holes_xy(BOARD, "all")),
 
 // Board standoff wall matches the same 1.6mm min-wall standard as the lid
 // posts (heatset_min_wall) — the retrofit widened the OD (was a hardcoded
-// 6.0mm sbc default / 0.8mm floor) so the M2.5 pilot bore keeps a crack-safe
-// seat. Reads the SAME _board_standoff_od() the tray renders with (imported
+// 6.0mm sbc default / 0.8mm floor) so the board insert's pilot bore keeps a
+// crack-safe seat. Both sides read board_insert_size, so this holds across the
+// #84 M2.5 -> M2 change without an edit.
+// Reads the SAME _board_standoff_od() the tray renders with (imported
 // via `use <../parts/tray.scad>` above), so shrinking that OD — e.g.
 // reverting to the 6.0mm sbc default — fails this loudly.
 assert((_board_standoff_od() - board_insert_bore())/2 >= heatset_min_wall(board_insert_size) - 1e-9,

@@ -62,7 +62,13 @@ stack_gap    = 0.45;
 wall_gap     = 0.25;  // lid-to-wall running clearance per side
 // Heat-set insert sizes (generic brand — see #6 spec, RESEARCH.md). Bores +
 // boss OD derive from the heatset lib; no local insert-dim literals.
-board_insert_size = "M2.5";   // board standoff inserts
+board_insert_size = "M2";     // board standoff inserts. M2 (not the earlier
+                              // M2.5) because the board's own mount holes are
+                              // dia 3.0: an M2 screw leaves 1.0mm of clearance
+                              // vs M2.5's 0.5mm, so standoff misalignment is
+                              // absorbed rather than fought. M3 is zero-
+                              // clearance in a 3.0mm hole and cannot thread an
+                              // M2.5 insert anyway. (#84)
 lid_insert_size   = "M3";     // lid-post inserts
 function board_insert_bore() = heatset_pilot_dia(board_insert_size); // was 3.4
 function lid_insert_bore()   = heatset_pilot_dia(lid_insert_size);   // was 4.2

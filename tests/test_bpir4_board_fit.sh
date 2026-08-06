@@ -54,5 +54,17 @@ else
   echo "ok: board-vs-tray static interference ${v} mm^3"
 fi
 
+# --- M2 board standoffs (#84) ---
+cat > "$tmp/fast.scad" <<EOS
+enable_exhaust = true; fan_size = 40; fan_count = 2; fan_thickness = 20;
+include <$proj/params.scad>;
+use <$proj/parts/tray.scad>;
+echo(str("INSERT=", board_insert_size, " BORE=", board_insert_bore(), " OD=", _board_standoff_od()));
+EOS
+out="$("$root/scripts/openscad.sh" --export-format stl -o "$tmp/fast.stl" "$tmp/fast.scad" 2>&1)"
+if ! echo "$out" | grep -q "INSERT=M2 BORE=3.23 OD=6.43"; then
+  echo "FAIL: board standoffs are not M2 (expected BORE=3.23 OD=6.43)"; echo "$out"; fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

@@ -423,7 +423,9 @@ module _lid_posts(enable_exhaust = enable_exhaust, fan_thickness = fan_thickness
 
 // Board standoff post OD. Wall-derived (was the implicit 6.0mm sbc default):
 // bore + 2x the sourced 1.6mm min wall, matching the same standard the lid
-// posts use (_lid_post_od) so the M2.5 pilot bore keeps a crack-safe seat.
+// posts use (_lid_post_od) so the board insert's pilot bore keeps a crack-safe
+// seat. Size-agnostic by construction: both terms read board_insert_size, so
+// the #84 M2.5 -> M2 change moved the OD 7.21 -> 6.43 with no edit here.
 // Single-sourced here so tests/asserts.scad (which `use`s this file) guards
 // the ACTUAL OD the tray renders with, not a re-typed copy.
 function _board_standoff_od() = board_insert_bore() + 2*heatset_min_wall(board_insert_size);
@@ -438,19 +440,23 @@ module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fa
         difference() {
             sbc_standoffs(BOARD, standoff_h, role = "structural-mount",
                 dia = _board_standoff_od(), bore = board_insert_bore());
-            // #75: heat-set lead-in at each post mouth, so an M2.5 insert starts
+            // #75: heat-set lead-in at each post mouth, so the insert starts
             // square instead of cocked. heatset_pocket() is a NEGATIVE cutter
             // (union of solid cylinders meant for a consumer difference()), so
             // it must be subtracted here, not unioned as a bare sibling. The
             // cut lands ON TOP of sbc_standoffs()' existing through-bore rather
             // than replacing it: that bore already bottoms on the floor at
-            // standoff_h (6.2mm), leaving 0.46mm of relief below the 5.74mm
-            // insert — MORE than heatset_pocket()'s own 0.4mm cavity — so the
-            // only geometry this actually removes beyond the existing bore is
-            // the 0.4mm mouth chamfer. Layering also keeps the pocket from ever
-            // being the deepest cut, which matters because standoff_h is
+            // standoff_h (6.2mm), leaving 2.2mm of relief below the 4.0mm M2
+            // insert — far MORE than heatset_pocket()'s own 0.4mm cavity — so
+            // the only geometry this actually removes beyond the existing bore
+            // is the 0.4mm mouth chamfer. Layering also keeps the pocket from
+            // ever being the deepest cut, which matters because standoff_h is
             // derived from the board's underside keep-outs and could shrink
-            // below the 6.14mm pocket depth (guarded in tests/asserts.scad).
+            // below the 4.4mm pocket depth (guarded in tests/asserts.scad).
+            // #84: these figures are the M2 ones. The margin was 0.46mm under
+            // the old M2.5 insert (5.74mm long, 6.14mm pocket); M2's shorter
+            // 4.0mm body leaves 1.8mm of post below the full pocket instead of
+            // 0.06mm. Recomputed from the heatset accessors, not carried over.
             // Positions come from the same sbc_holes() role filter sbc_standoffs()
             // is called with, so the pockets cannot drift from their posts.
             for (h = sbc_holes(BOARD, "structural-mount"))
