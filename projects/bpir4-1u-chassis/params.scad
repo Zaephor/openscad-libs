@@ -130,6 +130,26 @@ io_wall_dc_usbc_bias = 0.25;
 // feature that was already the weakest, and must be re-verified.
 io_chamfer = 1.0;
 
+// board_install_travel() (#84): how far the board must retract along +Y for
+// its front connectors to clear the faceplate's interior face, i.e. the
+// distance it travels during installation. DERIVED, never literal: the front
+// ymin connectors protrude ahead of the board's own front edge, and the
+// faceplate is faceplate_th thick, so the nose must back out of both.
+//
+// HOW THE PROTRUSION IS ENCODED -- this is not obvious and the naive reading
+// is wrong. Every bpir4 ymin row stores y = 0, so reading the protrusion as
+// -c[1][1] yields 0 for all of them and a travel of merely faceplate_th. The
+// real 2.0mm forward shift lives in sbc's _sbc_front_protrusion(board, name),
+// a board+name allowlist applied at render time by sbc_placeholder() rather
+// than baked into the rows (one source of truth for the one correction value
+// instead of ten copies). So it must be asked for by calling that function.
+// The subtraction of c[1][1] is kept so a future row that DOES encode a
+// negative y is still handled.
+function _front_conn_protrusion() =
+    max([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin")
+             _sbc_front_protrusion(BOARD, c[0]) - c[1][1]]);
+function board_install_travel() = _front_conn_protrusion() + faceplate_th;
+
 // ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
 // their defaults in each entry file (assembly.scad, parts/tray.scad,
 // parts/lid.scad) BEFORE `include <params.scad>`; params.scad only consumes

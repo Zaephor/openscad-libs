@@ -4,6 +4,16 @@
 # undetected because nothing ever intersected assembly.scad's own board
 # placeholder with tray() -- every render, every test and a colored
 # per-surface review passed while the board physically could not be installed.
+#
+# SWEEP TECHNIQUE: the exact swept volume of a linear translation is
+# minkowski(solid, segment), but minkowski on this mesh is impractically slow.
+# This uses a discrete union at STEP=0.25mm over board_install_travel().
+# LIMITATION, STATED DELIBERATELY: it can tunnel straight through any tray
+# feature thinner than 0.25mm in Y. hull() of the two endpoints would NOT be a
+# valid substitute -- the board+connectors solid is non-convex, so a hull
+# overstates the swept volume and reports collisions that cannot occur.
+# The sweep is verified to have teeth: restoring the front lid-post fillet
+# makes it report 3.2214 mm^3 instead of 0.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
@@ -175,6 +185,42 @@ if awk "BEGIN{exit !($vdeep > 0.55)}"; then
 else
   echo "FAIL: chamfer cut through to the front face (deep probe ${vdeep} mm^3 of 0.6, expected ~0.6 solid)"
   fail=1
+fi
+
+# --- swept install-motion clearance (#84) ---
+# The board must be able to REACH its seated pose, not merely occupy it. Sweep
+# the board slab along +Y over the full install travel and intersect with the
+# tray.
+cat > "$tmp/sweep.scad" <<EOS
+enable_exhaust = true; fan_size = 40; fan_count = 2; fan_thickness = 20;
+include <$proj/params.scad>;
+use <$proj/parts/tray.scad>;
+\$fn = 32;
+STEP = 0.25;
+module board_slab() {
+  cr = sbc_corner_radius(BOARD); th = sbc_thickness(BOARD);
+  translate([board_x(), board_y(), board_z()])
+    linear_extrude(th)
+      hull() for (dx = [cr, board_w()-cr], dy = [cr, board_d()-cr])
+        translate([dx, dy]) circle(r = cr);
+}
+echo(str("TRAVEL=", board_install_travel()));
+intersection() {
+  tray();
+  union() for (i = [0 : ceil(board_install_travel()/STEP)])
+    translate([0, min(i*STEP, board_install_travel()), 0]) board_slab();
+}
+EOS
+out="$("$root/scripts/openscad.sh" --export-format stl -o "$tmp/sweep.stl" "$tmp/sweep.scad" 2>&1)"
+if echo "$out" | grep -qiE "Ignoring unknown|Can't open library"; then
+  echo "FAIL: sweep has an unresolved import or unknown variable"; echo "$out"; fail=1
+fi
+echo "$out" | grep -o 'TRAVEL=[0-9.]*' | head -1
+sv="$(meshvol "$tmp/sweep.stl")"
+if awk "BEGIN{exit !($sv > 0.001)}"; then
+  echo "FAIL: board collides during installation sweep by ${sv} mm^3"; fail=1
+else
+  echo "ok: swept install clearance ${sv} mm^3"
 fi
 
 [ "$fail" -eq 0 ] && echo ok
