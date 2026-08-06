@@ -3,7 +3,15 @@
 - Printer/material: Bambu P1S, PETG.
 - Orientation: tray floor-down — the floor's flat underside sits on the bed
   and the 254 mm faceplate stands upright off the front of it; lid flat.
-- Supports: none needed for the tray — the rear-wall openings are a
+- **Optional supports — RJ45 block only.** The faceplate's RJ45 block span is
+  the one feature that benefits from supports. Printed with supports under that
+  block only, using **PLA as the interface layer**, the result was clean. Every
+  other feature on the tray and lid prints support-free and was verified to do
+  so on the same print. No other section needs supports. (The #85 lead-in
+  chamfers widen that span from 59.3 mm to 61.3 mm, but only across the 1.0 mm
+  strip nearest the interior face — the front 2.0 mm of the bridge, and its
+  height, are unchanged.)
+- Supports: none needed elsewhere on the tray — the rear-wall openings are a
   self-supporting honeycomb hex field in **both** fan modes, cut horizontally
   straight through the wall (there is no round bore: on this vertical wall a
   bore's axis would be horizontal, leaving an unsupported near-flat arc at its
@@ -19,9 +27,11 @@
   faceplate's above-IO intake vents are the same
   honeycomb pattern, and the 4
   corner lid posts are full-height square columns bonded to **both** walls
-  of their corner (fillet on the two internal post-wall junctions, chamfer
-  on the one exposed free edge; no angled buttress) — a constant
-  cross-section extruded straight up, so it prints clean without support.
+  of their corner (chamfer on the one exposed free edge; no angled buttress) —
+  a constant cross-section extruded straight up, so it prints clean without
+  support. The rear pair carries a fillet on both internal post-wall
+  junctions; the front pair carries one, because the other intruded into the
+  board's own footprint and physically blocked installation (#84).
   None needed for the lid either — its flush top/bottom faces, countersinks,
   and hot-zone vent band (same honeycomb hex pattern as the faceplate,
   toggled via `lid_vents`) are all cut straight through the lid's short
@@ -39,14 +49,17 @@
   last 1.2mm at each rear corner — the lid shelf is inboard and untouched, so
   the lid still seats; it just loses lip retention across ~1.2mm at those two
   corners.
-- Heat-set inserts: M2.5 in the board standoffs (installed top-down), M3 in the
-  lid posts. Install with a soldering iron before assembly. Both the board
+- Heat-set inserts: **M2** in the board standoffs (installed top-down), M3 in
+  the lid posts. M2, not the earlier M2.5, because the board's own mount holes
+  are 3.0 mm: an M2 screw leaves 1.0 mm of clearance in them against M2.5's
+  0.5 mm, so standoff misalignment is absorbed rather than fought (#84).
+  Install with a soldering iron before assembly. Both the board
   standoffs and the lid posts present a heat-set lead-in chamfer at the mouth
   (`heatset_pocket()`, #75), so an insert starts square instead of cocked. The
   board standoffs' bore already ran fully through the post and bottomed on the
   floor before this change, so relief below the insert's seat was already
   present -- #75 added only the lead-in, not new relief.
-- Fasteners: M2.5 × 6 mm (board), M3 × 8 mm countersunk (lid), M3 (fans).
+- Fasteners: M2 × 6 mm (board), M3 × 8 mm countersunk (lid), M3 (fans).
 - Fan mode: set `enable_exhaust=false` (via the OpenSCAD Customizer's
   `[Cooling]` group, or `-D enable_exhaust=false` on the command line, or
   editing the literal at the top of each entry file — assembly.scad,
