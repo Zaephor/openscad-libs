@@ -340,4 +340,21 @@ assert(_lid_inner_z >= _top_side_max_z() + top_side_air_gap,
         "mm above top-side keep-out ", _top_side_tallest,
         " (top at ", _top_side_max_z(), ")"));
 
+// #84: the front lid posts must clear the board's footprint in X. The square
+// column's inner face must stay outside the board edge; the fillet that used
+// to breach it (fillet "a", measured 3.2481 mm^3 of board-vs-tray overlap) is
+// gone on the front posts. Recomputed from the same accessors tray() renders
+// with -- no post position or board half-width is retyped here.
+//
+// SCOPE, STATED HONESTLY: this guards the square COLUMN only. It cannot see a
+// fillet cylinder, which is exactly the geometry that shipped the collision,
+// because _lid_post_corner() builds those inside the module rather than
+// exposing their extent. The real guard against a re-added intruding fillet is
+// tests/test_bpir4_board_fit.sh, which intersects the rendered tray with the
+// board. This assert is the cheap in-render companion to it, not a substitute.
+_front_post_inner_x = min([for (p = _lid_post_xy()) abs(p[0])]) - _lid_post_od()/2;
+assert(_front_post_inner_x >= board_w()/2 - 1e-6,
+    str("lid post inner face at ", _front_post_inner_x,
+        " intrudes past the board half-width ", board_w()/2));
+
 // Render nothing (pure assert file).

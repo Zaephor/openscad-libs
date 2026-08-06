@@ -15,10 +15,18 @@
 #       isolation (tests/render_lid_posts.scad);
 #   (d) the rendered posts are NOT plain round cylinders any more -- a
 #       filleted+chamfered square column produces a materially different
-#       (higher, since two extra fillet cylinders + chamfer cuts are added
+#       (higher, since extra fillet cylinders + chamfer cuts are added
 #       per post) facet count than the old boss+wedge geometry; this is the
 #       real-teeth proxy that (a)+(b) actually changed the printed geometry,
 #       not just prose/comments.
+# #84 update: the two FRONT posts now carry ONE fillet, not two -- the other
+# intruded 3.2481 mm^3 into the board's footprint and had to go (see
+# _lid_posts() in parts/tray.scad for the measured four-variant trade, and
+# tests/test_bpir4_board_fit.sh for the guard). The rear pair is unchanged at
+# two fillets each. (d) is a LOWER bound, so it is unaffected and stays a
+# valid "the posts are not bare cylinders" proxy; it is deliberately not
+# tightened into an exact count, which would just have to be re-tuned on every
+# cosmetic change.
 set -u
 root="$(cd "$(dirname "$0")/.." && pwd)"
 proj="$root/projects/bpir4-1u-chassis"
@@ -58,8 +66,9 @@ if [ ! -s "$tmp/lid_posts.stl" ]; then
   echo "FAIL: empty lid_posts STL"; fail=1
 fi
 
-# (d) facet-count sanity: 4 posts, each now a square column + 2 fillet
-# cylinders (minus a chamfer cut) instead of a round boss + hull()'d wedge --
+# (d) facet-count sanity: 4 posts, each now a square column + its fillet
+# cylinders (2 rear, 1 front since #84; minus a chamfer cut) instead of a
+# round boss + hull()'d wedge --
 # a materially different facet count than the old geometry (either bound
 # catches "nothing actually changed").
 facets=0

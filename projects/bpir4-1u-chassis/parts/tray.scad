@@ -353,7 +353,11 @@ function _lid_post_xy(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
 // previously-open interior space, so neither reduces the insert-bore wall
 // thickness; the chamfer is a small cut far from the bore (see report for
 // the wall-thickness-floor check).
-module _lid_post_corner() {
+// keep_fillet_a / keep_fillet_b (#84): the FRONT posts' fillets intrude into
+// the board's footprint. Which one(s) is determined by measurement, not
+// assumption -- see tests/test_bpir4_board_fit.sh. Fillet "a" is the one at
+// local (-X, +Y); fillet "b" the one at local (+X, -Y).
+module _lid_post_corner(keep_fillet_a = true, keep_fillet_b = true) {
     r  = _lid_post_od()/2;             // half the square's side (= old boss radius)
     Hb = ext_h() - lid_th - floor_th;  // post height above the floor (top at the ledge)
     fr = 1.2;    // internal (concave) post<->wall junction fillet radius (mm)
@@ -373,8 +377,10 @@ module _lid_post_corner() {
             // cylinder tangent to both faces meeting at each notch (nudged
             // by ov for a watertight union), filling the reentrant corner
             // with a smooth curve.
-            translate([-r - fr + ov,  r - fr + ov, 0]) cylinder(h = Hb, r = fr);
-            translate([ r - fr + ov, -r - fr + ov, 0]) cylinder(h = Hb, r = fr);
+            if (keep_fillet_a)
+                translate([-r - fr + ov,  r - fr + ov, 0]) cylinder(h = Hb, r = fr);
+            if (keep_fillet_b)
+                translate([ r - fr + ov, -r - fr + ov, 0]) cylinder(h = Hb, r = fr);
         }
         // Chamfer the exposed free (inner) corner at (-r,-r): cuts exactly
         // the `cl`-leg triangle off that convex corner, full height.
@@ -391,8 +397,27 @@ module _lid_posts(enable_exhaust = enable_exhaust, fan_thickness = fan_thickness
     for (p = _lid_post_xy(enable_exhaust, fan_thickness, fan_size)) {
         sx = sign(p[0]);                                  // which side wall (-1 / +1)
         sy = (p[1] < int_depth(enable_exhaust, fan_thickness, fan_size)/2) ? -1 : 1; // front boundary (-1) or rear wall (+1)
+        // FRONT posts (sy < 0) drop fillet "a" -- the one the isolate test
+        // proved intrudes into the board's footprint (#84). Fillet "b" and
+        // both REAR fillets stay: they measure 0.000 mm^3 against the board.
+        // Measured, board ∩ tray, all four variants:
+        //   keep_a=true  keep_b=true   3.2481 mm^3   (the shipped collision)
+        //   keep_a=false keep_b=true   0.0000 mm^3   <- adopted
+        //   keep_a=true  keep_b=false  3.2481 mm^3   (b contributes nothing)
+        //   keep_a=false keep_b=false  0.0000 mm^3   (no better, costs a fillet)
+        //
+        // TRADE, RECORDED DELIBERATELY: the comment above this module
+        // documents the (-r,+r)/(+r,-r) corners as "a genuine reentrant
+        // (concave, 270-degree) corner ... a real stress riser" -- which is
+        // WHY the fillets exist. Dropping fillet "a" reintroduces that riser
+        // at the post/faceplate junction on the two posts carrying lid-screw
+        // torque and faceplate/ear loads. The board physically cannot be
+        // installed otherwise; the collision wins. Only the ONE measured-
+        // guilty fillet is dropped, so each front post keeps its other
+        // junction filleted. Do not silently re-add the fillet, and do not
+        // silently delete this note.
         translate([p[0], p[1], floor_th])
-            scale([sx, sy, 1]) _lid_post_corner();
+            scale([sx, sy, 1]) _lid_post_corner(keep_fillet_a = sy > 0);
     }
 }
 
