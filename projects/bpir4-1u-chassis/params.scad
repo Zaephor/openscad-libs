@@ -117,6 +117,18 @@ function io_top_clearance_ports() = ["usb_1", "sfp_1", "sfp_2"];
 // side (1.55 -> 2.05, where the plug's overmold fouled) while leaving the
 // barrel-jack side at exactly its old 1.55mm.
 io_wall_dc_usbc_bias = 0.25;
+// io_chamfer (#85): lead-in chamfer leg on the INTERIOR face of each front
+// port opening, so the board's connectors funnel into their cutouts on
+// insertion instead of catching on a square edge. 1.0mm matches the repo's
+// edge-break nominal (#64).
+// PRINT CONSTRAINT: the faceplate prints as a VERTICAL wall, so each opening's
+// top edge is already a horizontal bridge. The funnel therefore opens sideways
+// and DOWNWARD only and never touches that top edge -- see _faceplate(). The
+// resulting faces are two vertical planes (no overhang at all) and one
+// UP-facing 45-degree ledge (an up-facing slope cannot overhang). Anything
+// that changes this to also open upward puts a 45-degree overhang on the one
+// feature that was already the weakest, and must be re-verified.
+io_chamfer = 1.0;
 
 // ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
 // their defaults in each entry file (assembly.scad, parts/tray.scad,

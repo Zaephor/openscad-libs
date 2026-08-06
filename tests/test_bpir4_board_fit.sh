@@ -11,7 +11,13 @@ fail=0
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 
 # Mesh volume via the divergence theorem over the exported triangles.
+# A genuinely empty intersection is the PASS case for several probes below, and
+# OpenSCAD writes NO output file at all for one ("Current top level object is
+# empty") -- so a missing file means zero volume, not an error. Without this
+# the empty case yields an empty string, awk gets a syntax error, and a correct
+# result is reported as a failure.
 meshvol() {
+  [ -s "$1" ] || { echo "0.0"; return; }
   python3 - "$1" <<'PY'
 import sys, numpy as np
 vs=[]
@@ -99,6 +105,76 @@ fi
 if ! echo "$out" | grep -qE 'USBC_FREE=2\.05'; then
   echo "FAIL: USB-C side free space is not 2.05mm (+0.5 over the old 1.55)"
   echo "$out"; fail=1
+fi
+
+# --- inner-edge lead-in chamfers (#85) ---
+# The chamfer is a lead-in funnel on the faceplate's INTERIOR face. The failure
+# mode worth testing is the sign error: a funnel built on the +Y side of that
+# face sits in open cavity air, removes nothing, and still renders perfectly
+# clean. So this probes the geometry directly rather than trusting the render.
+#
+# NOT DONE BY RE-RENDERING WITH io_chamfer=0, which cannot work here: params.
+# scad ASSIGNS io_chamfer, so an entry-file pre-declaration loses to it
+# (last-assignment-wins), and tray() is `use`d, so it reads its OWN file scope
+# regardless. -D would set it everywhere at once and give a false pass. The
+# probe below needs no such override.
+#
+# Two probe boxes, both just left of usb_1's opening (board-local x0=8.0,
+# k=io_port_clearance=0.4, so the nominal opening's left edge is x=7.6 and
+# everything left of it is panel material without a chamfer):
+#   near  -- y in [-0.3,-0.1], i.e. 0.1-0.3mm into the panel from the interior
+#            face. At depth d the 45-degree funnel has grown (ch - d), so at
+#            d=0.2 it reaches x=6.8; the probe sits at x in [6.9,7.4], inside
+#            the cut. MUST BE VOID.
+#   deep  -- y in [-2.9,-2.7], near the panel's FRONT face, same x/z. The
+#            funnel is only io_chamfer=1.0 deep, so it never reaches here.
+#            MUST BE SOLID -- this is what proves the near probe's emptiness is
+#            the chamfer and not a hole through the whole panel, and that the
+#            port's through-opening at the front face is untouched.
+cat > "$tmp/ch.scad" <<EOS
+enable_exhaust = true; fan_size = 40; fan_count = 2; fan_thickness = 20;
+include <$proj/params.scad>;
+use <$proj/parts/tray.scad>;
+use <sbc/sbc.scad>;
+echo(str("CHAMFER=", io_chamfer));
+PROBE = "\$PROBE";
+u = sbc_connector(BOARD, "usb_1");
+x0 = board_x() + u[1][0] - io_port_clearance - 0.7;   // 0.3mm inside the funnel's reach
+z0 = board_z() + u[1][2] + 2.6;
+y0 = PROBE == "near" ? -0.3 : -2.9;
+intersection() {
+  tray();
+  translate([x0, y0, z0]) cube([0.5, 0.2, 6]);
+}
+EOS
+sed 's/\$PROBE/near/' "$tmp/ch.scad" > "$tmp/ch_near.scad"
+out="$("$root/scripts/openscad.sh" --export-format stl -o "$tmp/ch_near.stl" "$tmp/ch_near.scad" 2>&1)"
+if ! echo "$out" | grep -q "CHAMFER=1"; then
+  echo "FAIL: io_chamfer is not 1.0"; echo "$out"; fail=1
+fi
+if echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
+  echo "FAIL: chamfer render errored"; echo "$out"; fail=1
+fi
+if echo "$out" | grep -qiE "Ignoring unknown|Can't open library"; then
+  echo "FAIL: chamfer render has an unresolved import or unknown variable"
+  echo "$out"; fail=1
+fi
+sed 's/\$PROBE/deep/' "$tmp/ch.scad" > "$tmp/ch_deep.scad"
+"$root/scripts/openscad.sh" --export-format stl -o "$tmp/ch_deep.stl" "$tmp/ch_deep.scad" 2>/dev/null
+vnear="$(meshvol "$tmp/ch_near.stl")"; vdeep="$(meshvol "$tmp/ch_deep.stl")"
+# Probe box is 0.5 x 0.2 x 6 = 0.6 mm^3.
+if awk "BEGIN{exit !($vnear < 0.01)}"; then
+  echo "ok: lead-in chamfer has opened the interior face (near probe ${vnear} mm^3 of 0.6)"
+else
+  echo "FAIL: interior face is still solid beside usb_1 (near probe ${vnear} mm^3 of 0.6)"
+  echo "      -- a funnel built at +Y cuts open cavity air and removes nothing"
+  fail=1
+fi
+if awk "BEGIN{exit !($vdeep > 0.55)}"; then
+  echo "ok: chamfer is a lead-in only -- panel still solid at the front face (deep probe ${vdeep} mm^3 of 0.6)"
+else
+  echo "FAIL: chamfer cut through to the front face (deep probe ${vdeep} mm^3 of 0.6, expected ~0.6 solid)"
+  fail=1
 fi
 
 [ "$fail" -eq 0 ] && echo ok

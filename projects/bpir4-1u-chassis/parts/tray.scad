@@ -294,6 +294,71 @@ module _faceplate(ear_hole_type = ear_hole_type) {
                     sbc_port_cutout(BOARD, n, depth = faceplate_th + 2,
                         clearance = io_port_clearance,
                         top_clearance = io_top_clearance);
+            // Lead-in funnel on the INTERIOR face of each front opening (#85),
+            // so a connector that arrives slightly off-centre is guided into
+            // its cutout instead of catching on a square edge.
+            //
+            // FRAME (the sign here is the whole trick): the panel occupies
+            // chassis Y in [-faceplate_th, 0] and board_y() is 0, so inside
+            // this translate the INTERIOR face is local y = 0 and the panel is
+            // at NEGATIVE y. The funnel must therefore be widest at y = 0 and
+            // taper to the nominal opening at y = -io_chamfer. Building it at
+            // positive y instead puts it in open cavity air, where it removes
+            // nothing and still renders perfectly clean -- guarded by the
+            // volume comparison in tests/test_bpir4_board_fit.sh.
+            //
+            // SHAPE: hull() of the opening's own clearance-inflated footprint
+            // io_chamfer deep, and that footprint grown by io_chamfer at the
+            // interior face. Both cross-sections are derived from
+            // sbc_connector(), never hand-literaled. The eps-thick slabs sit
+            // just OUTSIDE the [-ch, 0] band so the interpolated face runs the
+            // full ch of depth for ch of lateral growth -- exactly 45 degrees,
+            // not 45.6.
+            //
+            // GROWS SIDEWAYS AND DOWN, NEVER UP: the faceplate prints as a
+            // vertical wall, so each opening's top edge is already a bridge.
+            // The two X faces are vertical planes (no overhang); the bottom
+            // face is an UP-facing 45-degree ledge (cannot overhang). Adding
+            // upward growth would slope that bridge edge. See io_chamfer in
+            // params.scad.
+            //
+            // MEASURED TRADE, USER-APPROVED (#85): widening the opening at the
+            // interior face moves each top bridge's anchors io_chamfer
+            // outward, so every bridge spans 2.0mm wider -- but ONLY across
+            // the io_chamfer-deep strip nearest the interior face; the front
+            // 2.0mm of each bridge, and every ceiling height, is untouched.
+            // Facet-normal analysis of the tray STL at io_chamfer 0 vs 1.0
+            // confirms no new sloped overhang and no change in +/-45-degree
+            // facet area -- the delta is entirely the existing flat bridges
+            // getting wider, not steeper. Spans, front 2.0mm -> interior strip:
+            //   usb_1 6.5->8.5, sfp_1/sfp_2 15.3->17.3, rj45_block 59.3->61.3,
+            //   dc_power_1 10.8->12.8, usbc_pwr_1 7.5->9.5.
+            // rj45_block is the only material case (+3.4% on the span PRINTING
+            // .md documents as the one feature that benefits from supports).
+            // Accepted deliberately in favour of the full funnel; the
+            // alternative considered was capping the chamfer below each
+            // ceiling, which leaves bridges bit-for-bit identical but drops
+            // the lead-in at the top two corners.
+            //
+            // The chamfer erodes the panel between close openings, but every
+            // real gap gets its _io_gap_wall() unioned back AFTER this
+            // difference(), at full panel thickness -- so the walls are
+            // restored, not eaten. The through-opening at the panel's FRONT
+            // face is untouched, which is why this is safe to apply to the
+            // bench-verified rj45 rows too: it changes the lead-in, not the
+            // port's position or its opening size.
+            eps = 0.01;
+            translate([board_x(), board_y(), board_z()])
+                for (c = sbc_connectors(BOARD)) if (c[3] == "ymin")
+                    let (p = c[1], s = c[2], k = io_port_clearance, ch = io_chamfer)
+                    hull() {
+                        // nominal opening, ch deep into the panel
+                        translate([p[0]-k, -ch-eps, p[2]])
+                            cube([s[0]+2*k, eps, s[2]+k]);
+                        // grown by ch, at the interior face
+                        translate([p[0]-k-ch, 0, p[2]-ch])
+                            cube([s[0]+2*k+2*ch, eps, s[2]+k+ch]);
+                    }
             // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
             // hex-hole cutter across the connector cluster, from just above the
             // tallest connector to just below the ledge — straight cross-chassis
