@@ -109,6 +109,23 @@ assert(_vent_band_z0() - _inflated_cutout_top >= 1 - 1e-6,
 assert(_front_conn_max_h() <= 13.7 + 1e-6,
     str("tallest front connector ", _front_conn_max_h(),
         " unexpectedly > 13.7 (front-connector height regression?)"));
+// #85: the SECOND cutout pass (io_top_clearance, parts/tray.scad's
+// _faceplate()) raises usb_1/sfp_1/sfp_2 by a further io_top_clearance, but
+// _vent_band_z0() above derives the band start from io_port_clearance ONLY.
+// Today that is safe because the tallest front connector is rj45_block, which
+// deliberately gets NO top clearance -- so the band still clears every opening.
+// It is safe by coincidence of the data, not by construction, so it is
+// asserted: if a re-caliper makes a top-clearance port the tallest, or
+// io_top_clearance grows past the spare margin, the honeycomb vent field would
+// start cutting into that port's opening. Fix by folding io_top_clearance into
+// _vent_band_z0(), not by shrinking the rib.
+_topc_cutout_top = board_z() + sbc_thickness(BOARD) + io_port_clearance + io_top_clearance
+    + max([for (c = sbc_connectors(BOARD))
+              if (len([for (n = io_top_clearance_ports()) if (n == c[0]) n]) > 0) c[2][2]]);
+assert(_vent_band_z0() - _topc_cutout_top >= 1 - 1e-6,
+    str("vent band starts ", _vent_band_z0() - _topc_cutout_top,
+        "mm above the top-clearance-inflated cutout top (need >= 1mm) -- ",
+        "_vent_band_z0() does not account for io_top_clearance"));
 // RESOLVED (Round 2 #62 Task 2b/3): the old "0.0mm gap (merged L-shaped
 // opening)" note here was itself the bug -- a pixel-detected boundary that
 // mis-modeled usb_1 and sfp_1 as sharing an exact edge. A physical-board

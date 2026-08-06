@@ -66,5 +66,40 @@ if ! echo "$out" | grep -q "INSERT=M2 BORE=3.23 OD=6.43"; then
   echo "FAIL: board standoffs are not M2 (expected BORE=3.23 OD=6.43)"; echo "$out"; fail=1
 fi
 
+# --- IO opening clearances (#85) ---
+# usb_1 and both SFP cages need more headroom for their mating plugs; RJ45 is
+# bench-confirmed correct and must NOT move.
+cat > "$tmp/io.scad" <<EOS
+enable_exhaust = true; fan_size = 40; fan_count = 2; fan_thickness = 20;
+include <$proj/params.scad>;
+use <$proj/parts/tray.scad>;
+use <sbc/sbc.scad>;
+echo(str("TOPC=", io_top_clearance, " PORTS=", io_top_clearance_ports()));
+echo(str("WALL_DC_USBC=", _io_wall_w_dc_usbc()));
+g = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc(), io_port_clearance, io_wall_dc_usbc_bias);
+u = sbc_connector(BOARD, "usbc_pwr_1");
+echo(str("USBC_FREE=", (board_x() + u[1][0]) - g[1]));
+EOS
+out="$("$root/scripts/openscad.sh" --export-format stl -o "$tmp/io.stl" "$tmp/io.scad" 2>&1)"
+if ! echo "$out" | grep -q 'TOPC=0.5'; then
+  echo "FAIL: io_top_clearance is not 0.5"; echo "$out"; fail=1
+fi
+# rj45_block must NOT be in the list -- it is bench-verified correct and
+# loosening it would be a regression.
+if echo "$out" | grep -q 'PORTS=.*rj45'; then
+  echo "FAIL: rj45 must not receive top clearance"; echo "$out"; fail=1
+fi
+# NB: the trailing quote is load-bearing -- "WALL_DC_USBC=1" alone is a prefix
+# of the old "WALL_DC_USBC=1.5" and would pass against the unfixed geometry.
+if ! echo "$out" | grep -q 'WALL_DC_USBC=1"'; then
+  echo "FAIL: dc/usbc wall not narrowed to 1.0"; echo "$out"; fail=1
+fi
+# Wall was 1.5 centred in a 4.6mm gap => 1.55mm free on the USB-C side.
+# Target: 1.0 wall biased 0.25 toward dc_power_1 => 2.05mm free (+0.5).
+if ! echo "$out" | grep -qE 'USBC_FREE=2\.05'; then
+  echo "FAIL: USB-C side free space is not 2.05mm (+0.5 over the old 1.55)"
+  echo "$out"; fail=1
+fi
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

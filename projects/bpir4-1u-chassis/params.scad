@@ -98,6 +98,25 @@ board_side_gap   = 1.0;  // board edge -> corner-post clearance
 // _io_gap_wall_geom(), which accounts for exactly this when sizing the IO
 // gap bridge-support walls.
 io_port_clearance = 0.4;
+// io_top_clearance (#85): EXTRA upward-only clearance for ports whose mating
+// PLUG is taller than the connector body sbc models. Bench-derived from the
+// printed part: with only io_port_clearance (0.4) the USB3 stack and both SFP
+// cages fouled on insertion. Applied via sbc_port_cutout()'s top_clearance,
+// which does NOT widen X -- widening X instead (by raising io_port_clearance)
+// would trip _io_gap_wall_geom()'s asserts, since the rj45_block/dc_power_1
+// gap is only 2.2mm against a 1.0mm wall and so caps a global clearance at
+// ~0.59. Design fit-value like io_port_clearance, NOT a measured tier.
+io_top_clearance = 0.5;
+// Ports that get it. rj45_block is DELIBERATELY ABSENT -- it is bench-verified
+// to line up correctly on the printed part, and loosening it would be a
+// regression, not an improvement. A function, not a variable, so parts/
+// tray.scad's `use` of this project can actually see it.
+function io_top_clearance_ports() = ["usb_1", "sfp_1", "sfp_2"];
+// Bias for the dc_power_1<->usbc_pwr_1 gap wall, toward dc_power_1 (#85).
+// Combined with narrowing that wall 1.5 -> 1.0 this frees +0.5mm on the USB-C
+// side (1.55 -> 2.05, where the plug's overmold fouled) while leaving the
+// barrel-jack side at exactly its old 1.55mm.
+io_wall_dc_usbc_bias = 0.25;
 
 // ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
 // their defaults in each entry file (assembly.scad, parts/tray.scad,

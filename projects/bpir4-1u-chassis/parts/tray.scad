@@ -174,7 +174,12 @@ function _rear_honeycomb_band_frame(cx, fan_size) = [cx - fan_size/2, fan_size];
 // only imports functions/modules, never plain variables (see reference_
 // openscad_gotchas), so a local variable here would be invisible there.
 function _io_wall_w_usb_sfp() = 2.5;  // usb_1 <-> sfp_1 gap (3.8mm real gap, Round 3 #65)
-function _io_wall_w_dc_usbc() = 1.5;  // dc_power_1 <-> usbc_pwr_1 gap (4.6mm real gap, Round 3 #65)
+// dc_power_1 <-> usbc_pwr_1 gap (4.6mm real gap, Round 3 #65). Narrowed
+// 1.5 -> 1.0 and biased toward dc_power_1 by io_wall_dc_usbc_bias (#85): on
+// the printed part the USB-C plug's overmold fouled on this wall. 1.0 matches
+// _io_wall_w_rj45_dc()'s precedent and still gives >2 perimeters at a 0.4mm
+// nozzle. The geom assert still clears with room: 4.6 - 0.8 = 3.8 > 1.0.
+function _io_wall_w_dc_usbc() = 1.0;
 // rj45_block <-> dc_power_1 gap (2.2mm real gap, Round 3 #65 -- this named
 // wall didn't exist before the round-3 re-caliper; the block/dc figures were
 // previously unreconciled). Narrowed to 1.0mm rather than the ~half-the-gap
@@ -215,7 +220,12 @@ function _io_wall_w_rj45_dc() = 1.0;
 // sbc_faceplate_cutouts() actually applies when `_faceplate()` cuts the
 // openings, so the assert below reflects the real (post-clearance) opening
 // edges rather than the nominal body edges.
-function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance) =
+// bias (#85, default 0 = the pre-#85 centred wall, so the other two walls are
+// untouched): shifts the wall -X off the gap midpoint, freeing bias mm on the
+// +X (right-hand connector's) side and spending the same amount on the -X
+// side. Used only for dc_power_1<->usbc_pwr_1, where the USB-C overmold needs
+// the room and the barrel jack does not.
+function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance, bias = 0) =
     let (cl = sbc_connector(BOARD, name_l), cr = sbc_connector(BOARD, name_r),
          xl = cl[1][0] + cl[2][0],   // left connector's right edge (board-local)
          xr = cr[1][0],              // right connector's left edge (board-local)
@@ -224,12 +234,12 @@ function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance) =
     assert(eff_gap > w,
         str("_io_gap_wall: ", name_l, "/", name_r, " effective gap ", eff_gap,
             "mm (nominal ", gap, "mm - 2x", clearance, "mm clearance) too narrow for a ", w, "mm wall"))
-    let (xc = board_x() + (xl + xr) / 2,                                 // gap midpoint, chassis X
+    let (xc = board_x() + (xl + xr) / 2 - bias,                          // gap midpoint, chassis X, biased -X
          zt = board_z() + max(cl[1][2] + cl[2][2], cr[1][2] + cr[2][2])) // taller opening top, chassis Z
     [xc - w/2, xc + w/2, zt];
 
-module _io_gap_wall(name_l, name_r, w) {
-    g = _io_gap_wall_geom(name_l, name_r, w);
+module _io_gap_wall(name_l, name_r, w, bias = 0) {
+    g = _io_gap_wall_geom(name_l, name_r, w, io_port_clearance, bias);
     translate([g[0], -faceplate_th, 0])
         cube([g[1] - g[0], faceplate_th, g[2]]);
 }
@@ -270,6 +280,20 @@ module _faceplate(ear_hole_type = ear_hole_type) {
             translate([board_x(), board_y(), board_z()])
                 sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2,
                     clearance = io_port_clearance);
+            // Extra upward-only clearance for the ports whose mating plug is
+            // taller than the connector body sbc models (#85). Deliberately a
+            // SECOND, ADDITIVE pass rather than re-enumerating the ymin set
+            // with a top_clearance argument: overlapping subtractions union,
+            // so this can only ENLARGE an opening, never drop one. Passing
+            // top_clearance to the sbc_faceplate_cutouts() call above would
+            // apply it to rj45_block too, which is bench-verified correct and
+            // must not move; re-listing the ports to avoid that would silently
+            // seal any port that fell off the list.
+            translate([board_x(), board_y(), board_z()])
+                for (n = io_top_clearance_ports())
+                    sbc_port_cutout(BOARD, n, depth = faceplate_th + 2,
+                        clearance = io_port_clearance,
+                        top_clearance = io_top_clearance);
             // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
             // hex-hole cutter across the connector cluster, from just above the
             // tallest connector to just below the ledge — straight cross-chassis
@@ -299,7 +323,8 @@ module _faceplate(ear_hole_type = ear_hole_type) {
         // Explicit bridge-support walls in the three real IO gaps (see
         // _io_gap_wall()/_io_gap_wall_geom() above for the reasoning).
         _io_gap_wall("usb_1", "sfp_1", _io_wall_w_usb_sfp());
-        _io_gap_wall("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+        _io_gap_wall("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc(),
+                     bias = io_wall_dc_usbc_bias);
         _io_gap_wall("rj45_block", "dc_power_1", _io_wall_w_rj45_dc());
     }
 }
