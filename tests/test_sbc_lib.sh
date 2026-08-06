@@ -186,4 +186,49 @@ if ! echo "$out" | grep -qiE 'ERROR:|Assertion .* failed'; then
   echo "harness failed to catch an unknown connector name:"; echo "$out"; exit 1
 fi
 
+# --- top_clearance (#85) ---
+# top_clearance must raise a cutout's height WITHOUT widening it in X, so a
+# consumer can give a port more room for its mating plug without eating the
+# gap walls between neighbouring connectors.
+cat > "$tmp/tc.scad" <<'EOS'
+use <sbc/sbc.scad>;
+a = _sbc_cutout_inflate([0,0,0], [10,5,8], "ymin", 0.4, 0);
+b = _sbc_cutout_inflate([0,0,0], [10,5,8], "ymin", 0.4, 0.5);
+echo(str("BASE_W=", a[1][0], " BASE_H=", a[1][2]));
+echo(str("TOPC_W=", b[1][0], " TOPC_H=", b[1][2]));
+EOS
+out="$("$root/scripts/openscad.sh" --export-format stl -o "$tmp/tc.stl" "$tmp/tc.scad" 2>&1)"
+if ! echo "$out" | grep -q "BASE_W=10.8 BASE_H=8.4"; then
+  echo "baseline inflate changed (expected W=10.8 H=8.4):"; echo "$out"; exit 1
+fi
+if ! echo "$out" | grep -q "TOPC_W=10.8 TOPC_H=8.9"; then
+  echo "top_clearance must add height only (expected W=10.8 H=8.9):"; echo "$out"; exit 1
+fi
+
+# top_clearance defaults to 0 and MUST leave every pre-#85 caller's geometry
+# unchanged. Render a real board's faceplate cutouts with the default and
+# compare against an explicit top_clearance=0.
+#
+# The comparison is on the SORTED facet/vertex lines, not on the raw bytes:
+# OpenSCAD's ASCII STL facet ORDER is not reproducible -- two renders of one
+# unmodified file differ (verified: byte-diff at char 4163 of an identical
+# 10035-byte export). Sorting is order-insensitive, verified stable across
+# repeat renders of the same input, and verified to still discriminate a real
+# change (top_clearance=0.5 does not compare equal). A raw `cmp` here would be
+# a permanently-red test, not a stricter one.
+stlnorm() { grep -E 'vertex|facet normal' "$1" | tr -s ' ' | sed 's/^ *//' | LC_ALL=C sort; }
+cat > "$tmp/nc_a.scad" <<'EOS'
+use <sbc/sbc.scad>;
+sbc_faceplate_cutouts("bpir4", "ymin", depth = 5, clearance = 0.4);
+EOS
+cat > "$tmp/nc_b.scad" <<'EOS'
+use <sbc/sbc.scad>;
+sbc_faceplate_cutouts("bpir4", "ymin", depth = 5, clearance = 0.4, top_clearance = 0);
+EOS
+"$root/scripts/openscad.sh" --export-format stl -o "$tmp/nc_a.stl" "$tmp/nc_a.scad" 2>/dev/null
+"$root/scripts/openscad.sh" --export-format stl -o "$tmp/nc_b.stl" "$tmp/nc_b.scad" 2>/dev/null
+if ! cmp -s <(stlnorm "$tmp/nc_a.stl") <(stlnorm "$tmp/nc_b.stl"); then
+  echo "top_clearance default is not geometrically identical to explicit 0"; exit 1
+fi
+
 echo ok
