@@ -174,7 +174,12 @@ function _rear_honeycomb_band_frame(cx, fan_size) = [cx - fan_size/2, fan_size];
 // only imports functions/modules, never plain variables (see reference_
 // openscad_gotchas), so a local variable here would be invisible there.
 function _io_wall_w_usb_sfp() = 2.5;  // usb_1 <-> sfp_1 gap (3.8mm real gap, Round 3 #65)
-function _io_wall_w_dc_usbc() = 1.5;  // dc_power_1 <-> usbc_pwr_1 gap (4.6mm real gap, Round 3 #65)
+// dc_power_1 <-> usbc_pwr_1 gap (4.6mm real gap, Round 3 #65). Narrowed
+// 1.5 -> 1.0 and biased toward dc_power_1 by io_wall_dc_usbc_bias (#85): on
+// the printed part the USB-C plug's overmold fouled on this wall. 1.0 matches
+// _io_wall_w_rj45_dc()'s precedent and still gives >2 perimeters at a 0.4mm
+// nozzle. The geom assert still clears with room: 4.6 - 0.8 = 3.8 > 1.0.
+function _io_wall_w_dc_usbc() = 1.0;
 // rj45_block <-> dc_power_1 gap (2.2mm real gap, Round 3 #65 -- this named
 // wall didn't exist before the round-3 re-caliper; the block/dc figures were
 // previously unreconciled). Narrowed to 1.0mm rather than the ~half-the-gap
@@ -215,7 +220,12 @@ function _io_wall_w_rj45_dc() = 1.0;
 // sbc_faceplate_cutouts() actually applies when `_faceplate()` cuts the
 // openings, so the assert below reflects the real (post-clearance) opening
 // edges rather than the nominal body edges.
-function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance) =
+// bias (#85, default 0 = the pre-#85 centred wall, so the other two walls are
+// untouched): shifts the wall -X off the gap midpoint, freeing bias mm on the
+// +X (right-hand connector's) side and spending the same amount on the -X
+// side. Used only for dc_power_1<->usbc_pwr_1, where the USB-C overmold needs
+// the room and the barrel jack does not.
+function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance, bias = 0) =
     let (cl = sbc_connector(BOARD, name_l), cr = sbc_connector(BOARD, name_r),
          xl = cl[1][0] + cl[2][0],   // left connector's right edge (board-local)
          xr = cr[1][0],              // right connector's left edge (board-local)
@@ -224,12 +234,12 @@ function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance) =
     assert(eff_gap > w,
         str("_io_gap_wall: ", name_l, "/", name_r, " effective gap ", eff_gap,
             "mm (nominal ", gap, "mm - 2x", clearance, "mm clearance) too narrow for a ", w, "mm wall"))
-    let (xc = board_x() + (xl + xr) / 2,                                 // gap midpoint, chassis X
+    let (xc = board_x() + (xl + xr) / 2 - bias,                          // gap midpoint, chassis X, biased -X
          zt = board_z() + max(cl[1][2] + cl[2][2], cr[1][2] + cr[2][2])) // taller opening top, chassis Z
     [xc - w/2, xc + w/2, zt];
 
-module _io_gap_wall(name_l, name_r, w) {
-    g = _io_gap_wall_geom(name_l, name_r, w);
+module _io_gap_wall(name_l, name_r, w, bias = 0) {
+    g = _io_gap_wall_geom(name_l, name_r, w, io_port_clearance, bias);
     translate([g[0], -faceplate_th, 0])
         cube([g[1] - g[0], faceplate_th, g[2]]);
 }
@@ -270,6 +280,85 @@ module _faceplate(ear_hole_type = ear_hole_type) {
             translate([board_x(), board_y(), board_z()])
                 sbc_faceplate_cutouts(BOARD, "ymin", depth = faceplate_th + 2,
                     clearance = io_port_clearance);
+            // Extra upward-only clearance for the ports whose mating plug is
+            // taller than the connector body sbc models (#85). Deliberately a
+            // SECOND, ADDITIVE pass rather than re-enumerating the ymin set
+            // with a top_clearance argument: overlapping subtractions union,
+            // so this can only ENLARGE an opening, never drop one. Passing
+            // top_clearance to the sbc_faceplate_cutouts() call above would
+            // apply it to rj45_block too, which is bench-verified correct and
+            // must not move; re-listing the ports to avoid that would silently
+            // seal any port that fell off the list.
+            translate([board_x(), board_y(), board_z()])
+                for (n = io_top_clearance_ports())
+                    sbc_port_cutout(BOARD, n, depth = faceplate_th + 2,
+                        clearance = io_port_clearance,
+                        top_clearance = io_top_clearance);
+            // Lead-in funnel on the INTERIOR face of each front opening (#85),
+            // so a connector that arrives slightly off-centre is guided into
+            // its cutout instead of catching on a square edge.
+            //
+            // FRAME (the sign here is the whole trick): the panel occupies
+            // chassis Y in [-faceplate_th, 0] and board_y() is 0, so inside
+            // this translate the INTERIOR face is local y = 0 and the panel is
+            // at NEGATIVE y. The funnel must therefore be widest at y = 0 and
+            // taper to the nominal opening at y = -io_chamfer. Building it at
+            // positive y instead puts it in open cavity air, where it removes
+            // nothing and still renders perfectly clean -- guarded by the
+            // volume comparison in tests/test_bpir4_board_fit.sh.
+            //
+            // SHAPE: hull() of the opening's own clearance-inflated footprint
+            // io_chamfer deep, and that footprint grown by io_chamfer at the
+            // interior face. Both cross-sections are derived from
+            // sbc_connector(), never hand-literaled. The eps-thick slabs sit
+            // just OUTSIDE the [-ch, 0] band so the interpolated face runs the
+            // full ch of depth for ch of lateral growth -- exactly 45 degrees,
+            // not 45.6.
+            //
+            // GROWS SIDEWAYS AND DOWN, NEVER UP: the faceplate prints as a
+            // vertical wall, so each opening's top edge is already a bridge.
+            // The two X faces are vertical planes (no overhang); the bottom
+            // face is an UP-facing 45-degree ledge (cannot overhang). Adding
+            // upward growth would slope that bridge edge. See io_chamfer in
+            // params.scad.
+            //
+            // MEASURED TRADE, USER-APPROVED (#85): widening the opening at the
+            // interior face moves each top bridge's anchors io_chamfer
+            // outward, so every bridge spans 2.0mm wider -- but ONLY across
+            // the io_chamfer-deep strip nearest the interior face; the front
+            // 2.0mm of each bridge, and every ceiling height, is untouched.
+            // Facet-normal analysis of the tray STL at io_chamfer 0 vs 1.0
+            // confirms no new sloped overhang and no change in +/-45-degree
+            // facet area -- the delta is entirely the existing flat bridges
+            // getting wider, not steeper. Spans, front 2.0mm -> interior strip:
+            //   usb_1 6.5->8.5, sfp_1/sfp_2 15.3->17.3, rj45_block 59.3->61.3,
+            //   dc_power_1 10.8->12.8, usbc_pwr_1 7.5->9.5.
+            // rj45_block is the only material case (+3.4% on the span PRINTING
+            // .md documents as the one feature that benefits from supports).
+            // Accepted deliberately in favour of the full funnel; the
+            // alternative considered was capping the chamfer below each
+            // ceiling, which leaves bridges bit-for-bit identical but drops
+            // the lead-in at the top two corners.
+            //
+            // The chamfer erodes the panel between close openings, but every
+            // real gap gets its _io_gap_wall() unioned back AFTER this
+            // difference(), at full panel thickness -- so the walls are
+            // restored, not eaten. The through-opening at the panel's FRONT
+            // face is untouched, which is why this is safe to apply to the
+            // bench-verified rj45 rows too: it changes the lead-in, not the
+            // port's position or its opening size.
+            eps = 0.01;
+            translate([board_x(), board_y(), board_z()])
+                for (c = sbc_connectors(BOARD)) if (c[3] == "ymin")
+                    let (p = c[1], s = c[2], k = io_port_clearance, ch = io_chamfer)
+                    hull() {
+                        // nominal opening, ch deep into the panel
+                        translate([p[0]-k, -ch-eps, p[2]])
+                            cube([s[0]+2*k, eps, s[2]+k]);
+                        // grown by ch, at the interior face
+                        translate([p[0]-k-ch, 0, p[2]-ch])
+                            cube([s[0]+2*k+2*ch, eps, s[2]+k+ch]);
+                    }
             // Intake vents ABOVE the IO portholes: a self-supporting honeycomb
             // hex-hole cutter across the connector cluster, from just above the
             // tallest connector to just below the ledge — straight cross-chassis
@@ -299,7 +388,8 @@ module _faceplate(ear_hole_type = ear_hole_type) {
         // Explicit bridge-support walls in the three real IO gaps (see
         // _io_gap_wall()/_io_gap_wall_geom() above for the reasoning).
         _io_gap_wall("usb_1", "sfp_1", _io_wall_w_usb_sfp());
-        _io_gap_wall("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+        _io_gap_wall("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc(),
+                     bias = io_wall_dc_usbc_bias);
         _io_gap_wall("rj45_block", "dc_power_1", _io_wall_w_rj45_dc());
     }
 }
@@ -353,7 +443,11 @@ function _lid_post_xy(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
 // previously-open interior space, so neither reduces the insert-bore wall
 // thickness; the chamfer is a small cut far from the bore (see report for
 // the wall-thickness-floor check).
-module _lid_post_corner() {
+// keep_fillet_a / keep_fillet_b (#84): the FRONT posts' fillets intrude into
+// the board's footprint. Which one(s) is determined by measurement, not
+// assumption -- see tests/test_bpir4_board_fit.sh. Fillet "a" is the one at
+// local (-X, +Y); fillet "b" the one at local (+X, -Y).
+module _lid_post_corner(keep_fillet_a = true, keep_fillet_b = true) {
     r  = _lid_post_od()/2;             // half the square's side (= old boss radius)
     Hb = ext_h() - lid_th - floor_th;  // post height above the floor (top at the ledge)
     fr = 1.2;    // internal (concave) post<->wall junction fillet radius (mm)
@@ -373,8 +467,10 @@ module _lid_post_corner() {
             // cylinder tangent to both faces meeting at each notch (nudged
             // by ov for a watertight union), filling the reentrant corner
             // with a smooth curve.
-            translate([-r - fr + ov,  r - fr + ov, 0]) cylinder(h = Hb, r = fr);
-            translate([ r - fr + ov, -r - fr + ov, 0]) cylinder(h = Hb, r = fr);
+            if (keep_fillet_a)
+                translate([-r - fr + ov,  r - fr + ov, 0]) cylinder(h = Hb, r = fr);
+            if (keep_fillet_b)
+                translate([ r - fr + ov, -r - fr + ov, 0]) cylinder(h = Hb, r = fr);
         }
         // Chamfer the exposed free (inner) corner at (-r,-r): cuts exactly
         // the `cl`-leg triangle off that convex corner, full height.
@@ -391,14 +487,35 @@ module _lid_posts(enable_exhaust = enable_exhaust, fan_thickness = fan_thickness
     for (p = _lid_post_xy(enable_exhaust, fan_thickness, fan_size)) {
         sx = sign(p[0]);                                  // which side wall (-1 / +1)
         sy = (p[1] < int_depth(enable_exhaust, fan_thickness, fan_size)/2) ? -1 : 1; // front boundary (-1) or rear wall (+1)
+        // FRONT posts (sy < 0) drop fillet "a" -- the one the isolate test
+        // proved intrudes into the board's footprint (#84). Fillet "b" and
+        // both REAR fillets stay: they measure 0.000 mm^3 against the board.
+        // Measured, board ∩ tray, all four variants:
+        //   keep_a=true  keep_b=true   3.2481 mm^3   (the shipped collision)
+        //   keep_a=false keep_b=true   0.0000 mm^3   <- adopted
+        //   keep_a=true  keep_b=false  3.2481 mm^3   (b contributes nothing)
+        //   keep_a=false keep_b=false  0.0000 mm^3   (no better, costs a fillet)
+        //
+        // TRADE, RECORDED DELIBERATELY: the comment above this module
+        // documents the (-r,+r)/(+r,-r) corners as "a genuine reentrant
+        // (concave, 270-degree) corner ... a real stress riser" -- which is
+        // WHY the fillets exist. Dropping fillet "a" reintroduces that riser
+        // at the post/faceplate junction on the two posts carrying lid-screw
+        // torque and faceplate/ear loads. The board physically cannot be
+        // installed otherwise; the collision wins. Only the ONE measured-
+        // guilty fillet is dropped, so each front post keeps its other
+        // junction filleted. Do not silently re-add the fillet, and do not
+        // silently delete this note.
         translate([p[0], p[1], floor_th])
-            scale([sx, sy, 1]) _lid_post_corner();
+            scale([sx, sy, 1]) _lid_post_corner(keep_fillet_a = sy > 0);
     }
 }
 
 // Board standoff post OD. Wall-derived (was the implicit 6.0mm sbc default):
 // bore + 2x the sourced 1.6mm min wall, matching the same standard the lid
-// posts use (_lid_post_od) so the M2.5 pilot bore keeps a crack-safe seat.
+// posts use (_lid_post_od) so the board insert's pilot bore keeps a crack-safe
+// seat. Size-agnostic by construction: both terms read board_insert_size, so
+// the #84 M2.5 -> M2 change moved the OD 7.21 -> 6.43 with no edit here.
 // Single-sourced here so tests/asserts.scad (which `use`s this file) guards
 // the ACTUAL OD the tray renders with, not a re-typed copy.
 function _board_standoff_od() = board_insert_bore() + 2*heatset_min_wall(board_insert_size);
@@ -413,19 +530,23 @@ module tray(enable_exhaust = enable_exhaust, fan_size = fan_size, fan_count = fa
         difference() {
             sbc_standoffs(BOARD, standoff_h, role = "structural-mount",
                 dia = _board_standoff_od(), bore = board_insert_bore());
-            // #75: heat-set lead-in at each post mouth, so an M2.5 insert starts
+            // #75: heat-set lead-in at each post mouth, so the insert starts
             // square instead of cocked. heatset_pocket() is a NEGATIVE cutter
             // (union of solid cylinders meant for a consumer difference()), so
             // it must be subtracted here, not unioned as a bare sibling. The
             // cut lands ON TOP of sbc_standoffs()' existing through-bore rather
             // than replacing it: that bore already bottoms on the floor at
-            // standoff_h (6.2mm), leaving 0.46mm of relief below the 5.74mm
-            // insert — MORE than heatset_pocket()'s own 0.4mm cavity — so the
-            // only geometry this actually removes beyond the existing bore is
-            // the 0.4mm mouth chamfer. Layering also keeps the pocket from ever
-            // being the deepest cut, which matters because standoff_h is
+            // standoff_h (6.2mm), leaving 2.2mm of relief below the 4.0mm M2
+            // insert — far MORE than heatset_pocket()'s own 0.4mm cavity — so
+            // the only geometry this actually removes beyond the existing bore
+            // is the 0.4mm mouth chamfer. Layering also keeps the pocket from
+            // ever being the deepest cut, which matters because standoff_h is
             // derived from the board's underside keep-outs and could shrink
-            // below the 6.14mm pocket depth (guarded in tests/asserts.scad).
+            // below the 4.4mm pocket depth (guarded in tests/asserts.scad).
+            // #84: these figures are the M2 ones. The margin was 0.46mm under
+            // the old M2.5 insert (5.74mm long, 6.14mm pocket); M2's shorter
+            // 4.0mm body leaves 1.8mm of post below the full pocket instead of
+            // 0.06mm. Recomputed from the heatset accessors, not carried over.
             // Positions come from the same sbc_holes() role filter sbc_standoffs()
             // is called with, so the pockets cannot drift from their posts.
             for (h = sbc_holes(BOARD, "structural-mount"))

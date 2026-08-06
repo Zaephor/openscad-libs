@@ -64,8 +64,10 @@ assert(len(_struct) > 0 && len(_struct) < len(sbc_holes_xy(BOARD, "all")),
 
 // Board standoff wall matches the same 1.6mm min-wall standard as the lid
 // posts (heatset_min_wall) — the retrofit widened the OD (was a hardcoded
-// 6.0mm sbc default / 0.8mm floor) so the M2.5 pilot bore keeps a crack-safe
-// seat. Reads the SAME _board_standoff_od() the tray renders with (imported
+// 6.0mm sbc default / 0.8mm floor) so the board insert's pilot bore keeps a
+// crack-safe seat. Both sides read board_insert_size, so this holds across the
+// #84 M2.5 -> M2 change without an edit.
+// Reads the SAME _board_standoff_od() the tray renders with (imported
 // via `use <../parts/tray.scad>` above), so shrinking that OD — e.g.
 // reverting to the 6.0mm sbc default — fails this loudly.
 assert((_board_standoff_od() - board_insert_bore())/2 >= heatset_min_wall(board_insert_size) - 1e-9,
@@ -107,6 +109,23 @@ assert(_vent_band_z0() - _inflated_cutout_top >= 1 - 1e-6,
 assert(_front_conn_max_h() <= 13.7 + 1e-6,
     str("tallest front connector ", _front_conn_max_h(),
         " unexpectedly > 13.7 (front-connector height regression?)"));
+// #85: the SECOND cutout pass (io_top_clearance, parts/tray.scad's
+// _faceplate()) raises usb_1/sfp_1/sfp_2 by a further io_top_clearance, but
+// _vent_band_z0() above derives the band start from io_port_clearance ONLY.
+// Today that is safe because the tallest front connector is rj45_block, which
+// deliberately gets NO top clearance -- so the band still clears every opening.
+// It is safe by coincidence of the data, not by construction, so it is
+// asserted: if a re-caliper makes a top-clearance port the tallest, or
+// io_top_clearance grows past the spare margin, the honeycomb vent field would
+// start cutting into that port's opening. Fix by folding io_top_clearance into
+// _vent_band_z0(), not by shrinking the rib.
+_topc_cutout_top = board_z() + sbc_thickness(BOARD) + io_port_clearance + io_top_clearance
+    + max([for (c = sbc_connectors(BOARD))
+              if (len([for (n = io_top_clearance_ports()) if (n == c[0]) n]) > 0) c[2][2]]);
+assert(_vent_band_z0() - _topc_cutout_top >= 1 - 1e-6,
+    str("vent band starts ", _vent_band_z0() - _topc_cutout_top,
+        "mm above the top-clearance-inflated cutout top (need >= 1mm) -- ",
+        "_vent_band_z0() does not account for io_top_clearance"));
 // RESOLVED (Round 2 #62 Task 2b/3): the old "0.0mm gap (merged L-shaped
 // opening)" note here was itself the bug -- a pixel-detected boundary that
 // mis-modeled usb_1 and sfp_1 as sharing an exact edge. A physical-board
@@ -339,5 +358,22 @@ assert(_lid_inner_z >= _top_side_max_z() + top_side_air_gap,
     str("bpir4: lid inner face ", _lid_inner_z, " leaves less than ", top_side_air_gap,
         "mm above top-side keep-out ", _top_side_tallest,
         " (top at ", _top_side_max_z(), ")"));
+
+// #84: the front lid posts must clear the board's footprint in X. The square
+// column's inner face must stay outside the board edge; the fillet that used
+// to breach it (fillet "a", measured 3.2481 mm^3 of board-vs-tray overlap) is
+// gone on the front posts. Recomputed from the same accessors tray() renders
+// with -- no post position or board half-width is retyped here.
+//
+// SCOPE, STATED HONESTLY: this guards the square COLUMN only. It cannot see a
+// fillet cylinder, which is exactly the geometry that shipped the collision,
+// because _lid_post_corner() builds those inside the module rather than
+// exposing their extent. The real guard against a re-added intruding fillet is
+// tests/test_bpir4_board_fit.sh, which intersects the rendered tray with the
+// board. This assert is the cheap in-render companion to it, not a substitute.
+_front_post_inner_x = min([for (p = _lid_post_xy()) abs(p[0])]) - _lid_post_od()/2;
+assert(_front_post_inner_x >= board_w()/2 - 1e-6,
+    str("lid post inner face at ", _front_post_inner_x,
+        " intrudes past the board half-width ", board_w()/2));
 
 // Render nothing (pure assert file).

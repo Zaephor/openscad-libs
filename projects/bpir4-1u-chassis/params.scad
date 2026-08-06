@@ -62,7 +62,13 @@ stack_gap    = 0.45;
 wall_gap     = 0.25;  // lid-to-wall running clearance per side
 // Heat-set insert sizes (generic brand — see #6 spec, RESEARCH.md). Bores +
 // boss OD derive from the heatset lib; no local insert-dim literals.
-board_insert_size = "M2.5";   // board standoff inserts
+board_insert_size = "M2";     // board standoff inserts. M2 (not the earlier
+                              // M2.5) because the board's own mount holes are
+                              // dia 3.0: an M2 screw leaves 1.0mm of clearance
+                              // vs M2.5's 0.5mm, so standoff misalignment is
+                              // absorbed rather than fought. M3 is zero-
+                              // clearance in a 3.0mm hole and cannot thread an
+                              // M2.5 insert anyway. (#84)
 lid_insert_size   = "M3";     // lid-post inserts
 function board_insert_bore() = heatset_pilot_dia(board_insert_size); // was 3.4
 function lid_insert_bore()   = heatset_pilot_dia(lid_insert_size);   // was 4.2
@@ -92,6 +98,57 @@ board_side_gap   = 1.0;  // board edge -> corner-post clearance
 // _io_gap_wall_geom(), which accounts for exactly this when sizing the IO
 // gap bridge-support walls.
 io_port_clearance = 0.4;
+// io_top_clearance (#85): EXTRA upward-only clearance for ports whose mating
+// PLUG is taller than the connector body sbc models. Bench-derived from the
+// printed part: with only io_port_clearance (0.4) the USB3 stack and both SFP
+// cages fouled on insertion. Applied via sbc_port_cutout()'s top_clearance,
+// which does NOT widen X -- widening X instead (by raising io_port_clearance)
+// would trip _io_gap_wall_geom()'s asserts, since the rj45_block/dc_power_1
+// gap is only 2.2mm against a 1.0mm wall and so caps a global clearance at
+// ~0.59. Design fit-value like io_port_clearance, NOT a measured tier.
+io_top_clearance = 0.5;
+// Ports that get it. rj45_block is DELIBERATELY ABSENT -- it is bench-verified
+// to line up correctly on the printed part, and loosening it would be a
+// regression, not an improvement. A function, not a variable, so parts/
+// tray.scad's `use` of this project can actually see it.
+function io_top_clearance_ports() = ["usb_1", "sfp_1", "sfp_2"];
+// Bias for the dc_power_1<->usbc_pwr_1 gap wall, toward dc_power_1 (#85).
+// Combined with narrowing that wall 1.5 -> 1.0 this frees +0.5mm on the USB-C
+// side (1.55 -> 2.05, where the plug's overmold fouled) while leaving the
+// barrel-jack side at exactly its old 1.55mm.
+io_wall_dc_usbc_bias = 0.25;
+// io_chamfer (#85): lead-in chamfer leg on the INTERIOR face of each front
+// port opening, so the board's connectors funnel into their cutouts on
+// insertion instead of catching on a square edge. 1.0mm matches the repo's
+// edge-break nominal (#64).
+// PRINT CONSTRAINT: the faceplate prints as a VERTICAL wall, so each opening's
+// top edge is already a horizontal bridge. The funnel therefore opens sideways
+// and DOWNWARD only and never touches that top edge -- see _faceplate(). The
+// resulting faces are two vertical planes (no overhang at all) and one
+// UP-facing 45-degree ledge (an up-facing slope cannot overhang). Anything
+// that changes this to also open upward puts a 45-degree overhang on the one
+// feature that was already the weakest, and must be re-verified.
+io_chamfer = 1.0;
+
+// board_install_travel() (#84): how far the board must retract along +Y for
+// its front connectors to clear the faceplate's interior face, i.e. the
+// distance it travels during installation. DERIVED, never literal: the front
+// ymin connectors protrude ahead of the board's own front edge, and the
+// faceplate is faceplate_th thick, so the nose must back out of both.
+//
+// HOW THE PROTRUSION IS ENCODED -- this is not obvious and the naive reading
+// is wrong. Every bpir4 ymin row stores y = 0, so reading the protrusion as
+// -c[1][1] yields 0 for all of them and a travel of merely faceplate_th. The
+// real 2.0mm forward shift lives in sbc's _sbc_front_protrusion(board, name),
+// a board+name allowlist applied at render time by sbc_placeholder() rather
+// than baked into the rows (one source of truth for the one correction value
+// instead of ten copies). So it must be asked for by calling that function.
+// The subtraction of c[1][1] is kept so a future row that DOES encode a
+// negative y is still handled.
+function _front_conn_protrusion() =
+    max([for (c = sbc_connectors(BOARD)) if (c[3] == "ymin")
+             _sbc_front_protrusion(BOARD, c[0]) - c[1][1]]);
+function board_install_travel() = _front_conn_protrusion() + faceplate_th;
 
 // ---- cooling toggle: enable_exhaust/fan_size/fan_count are declared with
 // their defaults in each entry file (assembly.scad, parts/tray.scad,

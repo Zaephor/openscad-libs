@@ -820,11 +820,23 @@ module sbc_standoffs(b, height, role = undef, dia = -1, bore = -1) {
 //   "bottom" branches use s[2] only to locate the Z-start offset, never as
 //   a cube dimension), so both inflate the same way as the lateral case's
 //   width; Z (p[2]/s[2]) is left untouched entirely, not even upward.
-function _sbc_cutout_inflate(p, s, e, clearance) =
+// top_clearance (#85): ADDITIONAL upward-only inflation, with no X effect at
+// all. A connector's BODY is what this library models; a mating PLUG (a USB-A
+// shell, an SFP module with its bail, a USB-C overmold) needs a taller opening
+// than the socket it goes into. Asking for that headroom via `clearance`
+// instead would also grow the lateral axis and eat a consumer's
+// inter-connector gap walls (projects/bpir4-1u-chassis's _io_gap_wall() sizes
+// those against the EFFECTIVE, clearance-eroded gap, and its tightest pair has
+// only 2.2mm to give). Applies to the same axis `clearance` already grows
+// upward, so it is additive with it and inherits the same "never -Z" rule for
+// the same reason. Ignored for "top"/"bottom" edges, where Z is the extrusion
+// axis "depth" already controls and neither clearance term touches it.
+// Default 0 = byte-identical output for every pre-#85 caller.
+function _sbc_cutout_inflate(p, s, e, clearance, top_clearance = 0) =
     (e == "xmax" || e == "xmin")
-        ? [ [p[0], p[1]-clearance, p[2]], [s[0], s[1]+2*clearance, s[2]+clearance] ]
+        ? [ [p[0], p[1]-clearance, p[2]], [s[0], s[1]+2*clearance, s[2]+clearance+top_clearance] ]
     : (e == "ymax" || e == "ymin")
-        ? [ [p[0]-clearance, p[1], p[2]], [s[0]+2*clearance, s[1], s[2]+clearance] ]
+        ? [ [p[0]-clearance, p[1], p[2]], [s[0]+2*clearance, s[1], s[2]+clearance+top_clearance] ]
     : (e == "top" || e == "bottom")
         ? [ [p[0]-clearance, p[1]-clearance, p[2]], [s[0]+2*clearance, s[1]+2*clearance, s[2]] ]
     : [p, s]; // unknown edge: pass through unchanged, caught by the assert below
@@ -835,10 +847,12 @@ function _sbc_cutout_inflate(p, s, e, clearance) =
 // project can apply to widen a cutout for fit/tolerance without retuning the
 // connector body data itself — see _sbc_cutout_inflate() above for the full
 // asymmetric-inflation rule and why -Z is deliberately excluded.
-module sbc_port_cutout(b, name, depth = 20, clearance = 0) {
+// top_clearance (#85, same default/same guarantee): extra UPWARD-only room for
+// a mating plug that is taller than the socket body — see the same function.
+module sbc_port_cutout(b, name, depth = 20, clearance = 0, top_clearance = 0) {
     c = sbc_connector(b, name); p0 = c[1]; s0 = c[2]; e = c[3];
     o = SBC_OVERLAP;
-    box = _sbc_cutout_inflate(p0, s0, e, clearance); p = box[0]; s = box[1];
+    box = _sbc_cutout_inflate(p0, s0, e, clearance, top_clearance); p = box[0]; s = box[1];
     if      (e == "xmax") translate([p[0]+s[0]-o, p[1], p[2]]) cube([depth+o, s[1], s[2]]);
     else if (e == "xmin") translate([p[0]-depth,  p[1], p[2]]) cube([depth+o, s[1], s[2]]);
     else if (e == "ymax") translate([p[0], p[1]+s[1]-o, p[2]]) cube([s[0], depth+o, s[2]]);
@@ -855,10 +869,13 @@ module sbc_port_cutout(b, name, depth = 20, clearance = 0) {
 }
 
 // All connectors on an edge → the full panel for that edge (e.g. a router
-// faceplate). clearance (Task 3, #65) passes through to every sbc_port_cutout()
-// call — see that module's comment.
-module sbc_faceplate_cutouts(b, edge, depth = 20, clearance = 0) {
-    for (c = sbc_connectors(b)) if (c[3] == edge) sbc_port_cutout(b, c[0], depth, clearance);
+// faceplate). clearance (Task 3, #65) and top_clearance (#85) pass through to
+// every sbc_port_cutout() call — see that module's comment. Note this applies
+// them UNIFORMLY to the whole edge; a consumer that needs headroom on only
+// some ports (bpir4-1u-chassis does) should leave this call alone and add a
+// second, additive sbc_port_cutout() pass for those ports instead.
+module sbc_faceplate_cutouts(b, edge, depth = 20, clearance = 0, top_clearance = 0) {
+    for (c = sbc_connectors(b)) if (c[3] == edge) sbc_port_cutout(b, c[0], depth, clearance, top_clearance);
 }
 
 // Visual self-check when opened directly.

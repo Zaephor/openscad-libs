@@ -4,9 +4,13 @@ Enclosed 1U 10-inch (LabRax) rack chassis for the Banana Pi BPI-R4.
 Two printed parts: a single-body tray and a flush countersunk lid. The body
 is narrowed to hug the board (`body_w()` ≈170mm, not the full rack-clear
 width) with four support-free corner posts beside it, each bonded to
-**both** walls of its corner as a full-height square column (fillet on the
-two internal post↔wall junctions, chamfer on the one exposed free edge —
-no angled buttress). Rear exhaust fans are behind an `enable_exhaust` toggle
+**both** walls of its corner as a full-height square column (chamfer on the
+one exposed free edge — no angled buttress). The rear pair is filleted on
+both internal post↔wall junctions; the front pair on one, because the other
+intruded into the board's own footprint and physically blocked installation
+(#84). Board fit is guarded by `tests/test_bpir4_board_fit.sh`, which
+intersects the rendered tray with the board both in its seated pose and swept
+along the full installation travel. Rear exhaust fans are behind an `enable_exhaust` toggle
 exposed in the assembly customizer alongside `fan_size`/`fan_count`; the
 toggle drives geometry end-to-end via the Customizer (or
 `-D enable_exhaust=false`) — active mode is the full-depth box,
@@ -58,6 +62,16 @@ chamfer as the other rack10 faceplates (keystone-faceplate, mitx-1u). The
 tray's two rear outer vertical corners get their own, smaller 1.2mm 45-degree
 chamfer — see `PRINTING.md` for the wall-thickness reasoning and the accepted
 lid-lip trade-off at those two corners.
+
+**Front IO fit (#85):** every front opening gets `io_port_clearance` per side.
+On top of that, `usb_1` and both SFP cages get `io_top_clearance` of extra
+*upward-only* room (via `sbc`'s `top_clearance`) because their mating plug is
+taller than the socket body the library models — `rj45_block` is deliberately
+excluded, being bench-verified to line up correctly. Each opening also carries
+an `io_chamfer` lead-in funnel on the faceplate's interior face, opening
+sideways and downward only so it never touches the opening's top bridge. The
+`dc_power_1`↔`usbc_pwr_1` support wall is narrowed and biased toward the barrel
+jack to clear the USB-C plug's overmold.
 
 All hardware dimensions are pulled live from the repo libraries (`sbc`,
 `rack10`, `fans`).
