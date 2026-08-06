@@ -88,6 +88,21 @@ faceplate and lid vent bands).
 side-to-side, not front-to-back — suboptimal for this chassis's
 front-intake/rear-exhaust airflow strategy. No alternative heatsink
 orientation is available; this is a known thermal caveat, not a design defect.
+The heatsink itself is now modelled as a top-side keep-out (`soc_cooler_1`,
+see #81 below) and its clearance to the lid is enforced by an assert, so this
+note is airflow-only — it does not describe an unguarded fit risk.
+
+**Top-side clearance / stock SoC cooler (#81):** the BPI-R4 ships with a
+heatsink/cooler over the SoC, modelled as the sbc library's `soc_cooler_1`
+row (a worst-case solid box; its fan is recessed and cannot rub, so a single
+box is honest). `_top_side_max_z()` in `params.scad` reads the max over
+*every* `edge="top"` sbc row, not just this one, so a future taller cooler,
+M.2 heatsink or HAT is guarded without an edit. A hard assert forbids the
+lid from colliding with that ceiling at all, and an advisory `top_side_air_gap`
+(2.0mm) assert catches a "just barely clears" fit before it ships — as built,
+the lid inner face clears the cooler top by 16.4mm, a shared budget for any
+future lid-side geometry (a vent baffle/duct, a re-registered vent band) or a
+taller fanless cooler swap.
 
 **Underside module clearance:** The chassis sizes its internal
 floor-to-board gap to the worst-case underside component keep-out: all

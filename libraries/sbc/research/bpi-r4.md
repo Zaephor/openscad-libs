@@ -22,10 +22,17 @@ provenance, electrical/GPIO map, GPIO-usability guidance) where applicable.
   themselves) and are classified `structural-mount`, tier **[B]//VERIFY**. 12
   are classified `component-mount`: 7 sit adjacent to `M2` silkscreen text
   (M.2-socket standoffs, tier **[A]**) and 2 larger-diameter holes (~3.3mm vs
-  the other 14's 3.0mm) sit near the fan connector and the SoC's VCORE
-  power-delivery cluster respectively (tier **[C]//VERIFY**, no silkscreen
-  confirmation of "fan"/"heatsink" specifically). No single source confirms
-  which real-world case product uses which of the 4 structural holes.
+  the other 14's 3.0mm) are the stock SoC cooler's own mounting pair, tier
+  **[B]**, user-confirmed against the installed cooler on the physical board
+  (supersedes an earlier [C]//VERIFY proximity guess). No single source
+  confirms which real-world case product uses which of the 4 structural
+  holes.
+- **Top-face keep-out — stock SoC cooler (`soc_cooler_1`, #81)**: modeled as
+  one solid worst-case box, 50.3 x 54.5mm footprint x 16.0mm tall above the
+  PCB top face. Height and depth are tier **[B]** caliper; the footprint
+  width is the 49.3mm caliper body (`[B]`) plus a 1.0mm placement-uncertainty
+  pad on the low-X side (not itself a caliper figure). See
+  `libraries/sbc/RESEARCH.md`'s "BPI-R4 #81" section for the full derivation.
 - **Front-panel connector heights** (board-bottom-to-connector-top,
   caliper-measured, tier **[B]**, superseding earlier generic/placeholder
   figures): SFP cage 11.8mm (9.5mm above board-top alone — the prior 13.4mm

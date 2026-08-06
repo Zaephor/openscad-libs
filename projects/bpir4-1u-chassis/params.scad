@@ -215,6 +215,30 @@ function board_y()  = 0;                         // front edge on post face (Y=0
 function board_z()  = floor_th + standoff_h;     // board underside rests on the standoff tops
 function rear_wall_y(ee = enable_exhaust, ft = fan_thickness, fs = fan_size) =
     board_y() + int_depth(ee, ft, fs); // outer (rearmost) face of rear wall; wall occupies [rear_wall_y()-wall, rear_wall_y()]
+// Top-side keep-out ceiling (#81). Mirrors _underside_max_hang() /
+// _rear_media_protrusion() above: read live from the sbc rows, never
+// re-literalled here. The tallest edge="top" row today is the stock SoC
+// cooler (soc_cooler_1, 16.0mm above the PCB top face), but this is a max over
+// ALL top rows so a taller cooler, an M.2 heatsink or a HAT is covered without
+// an edit. Returns the chassis-frame Z of the highest top-side surface.
+function _top_side_max_z() =
+    board_z() + max([0, for (c = sbc_connectors(BOARD)) if (c[3] == "top")
+                            c[1][2] + c[2][2]]);
+// Name of the row that produced that max, "" if there are no top rows -- used
+// only to make an assert failure name the offending part instead of a number.
+function _top_side_max_name() =
+    let (top = max([0, for (c = sbc_connectors(BOARD)) if (c[3] == "top")
+                          c[1][2] + c[2][2]]),
+         hit = [for (c = sbc_connectors(BOARD))
+                    if (c[3] == "top" && abs(c[1][2] + c[2][2] - top) < 1e-9) c[0]])
+    len(hit) > 0 ? hit[0] : "";
+// Advisory clearance above the tallest top-side keep-out. [C] DESIGN INTENT,
+// NOT a measured airflow requirement -- no CFD or thermocouple data exists.
+// The free air above the cooler (lid inner face 42 - cooler top 25.6 = 16.4mm
+// as built) is a SHARED BUDGET between future lid-side geometry (a vent baffle
+// or duct, a vent-band re-registration) and a possible taller FANLESS cooler
+// swap. Whoever spends it must state what they left.
+top_side_air_gap = 2.0;
 
 // Intake vent band (faceplate): starts just above the tallest ymin (front-
 // edge) connector so the band clears every port, and stays inside the wall

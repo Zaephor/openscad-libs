@@ -231,8 +231,14 @@ function _sbc_table() = [
         // vendor assembly drawing (conservative, tiered) — see RESEARCH.md
         // "bpi-r4 hole roles". Summary: 7 holes sit 3.6-5.5mm from an `M2`
         // silkscreen TEXT (DXF-exact, [A]) -> M.2-standoff component-mount;
-        // the 2 larger-dia holes (3.32/3.31mm) sit next to the FAN connector
-        // / VCORE-VPROC SoC-power block ([C]//VERIFY) -> component-mount;
+        // the 2 larger-dia holes (3.32/3.31mm) — (75.85,27.21) and
+        // (117.75,69.11) — are the STOCK SoC COOLER's own mounting pair,
+        // user-confirmed against the installed cooler on the physical board
+        // ([B], #81; supersedes the earlier [C]//VERIFY "sits next to the FAN
+        // connector / VCORE-VPROC SoC-power block" proximity guess). Both
+        // holes fall inside soc_cooler_1's footprint, spaced 41.9 x 41.9 apart
+        // (the footprint is NOT centred on that diagonal -- see RESEARCH.md).
+        // Role unchanged -> component-mount;
         // 3 more sit near other component clusters (U2/SW3/CN19, VCORE/VPROC,
         // CON2/CON3) ([C]//VERIFY) -> component-mount. The remaining 4 holes
         // — (3.5,23.5), (144.5,23.5), (3.5,97), (144.5,97) — share the SAME
@@ -448,6 +454,31 @@ function _sbc_table() = [
           // Measured size unchanged, [B] caliper (same as the socket row
           // above).
           ["m2modem_1_card", [3.4, 100.5-14-_sbc_rot90(connector_size("m2_modem_card"))[1], 1.4], _sbc_rot90(connector_size("m2_modem_card")), "top"],
+          // Stock SoC cooler (#81) -- heatsink with a RECESSED fan, modeled as
+          // one solid worst-case box. The heatsink is the high point; the fan
+          // sits down inside it and cannot rub, so a single box is honest here.
+          // ACCESSORY, NOT A BOARD DIMENSION: this is the stock cooler on one
+          // specific unit. Third-party coolers vary wildly in height and
+          // footprint -- a swap is a value edit here, not a rename.
+          // Body is a board literal rather than a connector_size() type: the
+          // connectors catalog holds panel/socket bodies, not coolers (same
+          // basis as the led_* rows above).
+          // Depth 54.5 and height 16.0 are [B] caliper (user's physical unit).
+          // Width is the caliper body (49.3, [B]) PLUS a 1.0mm placement-
+          // uncertainty pad on the low-X face -> 50.3. Do not read 50.3 as a
+          // caliper figure; it is a deliberately conservative envelope.
+          // Position [B]: y anchored 2.5mm behind rj45_block's rear face
+          // (21.45 + 2.5 = 23.95); high-X side flush with that same block's
+          // barrel-jack-side edge (64.0 + 58.5 = 122.5). The flush reading was
+          // caliper- and eye-checked on the physical unit; the real offset is
+          // ~0.8-1.0mm, and the cooler's own mount-pair centre (96.8, from the
+          // two holes below) vs. a flush-box centre of 97.85 shows that error
+          // falls on the LOW-X side -- so the 1.0mm pad widens the box there
+          // (x_min = 122.5 - 50.3 = 72.2) rather than shrinking the high-X
+          // side, keeping high-X flush at 122.5.
+          // Mounted on the two large-dia holes at (75.85,27.21) and
+          // (117.75,69.11) -- see the hole-role comment above.
+          ["soc_cooler_1", [72.2, 23.95, 1.4], [50.3, 54.5, 16.0], "top"],
           // --- Underside ("bottom" edge, Task 2) ---
           // These 3 sockets were caliper-read on the FLIPPED (underside) board,
           // where left/right swap relative to the top-view frame this whole row

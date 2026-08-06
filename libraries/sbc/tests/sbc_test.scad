@@ -135,6 +135,35 @@ assert(_sd_card[2] == connector_size("microsd_card"), "microsd_1_card body from 
 assert(abs((_sd_card[1][1] + _sd_card[2][1]) - (sbc_size("bpir4")[1] + 2.3)) < 1e-9,
     "microsd_1_card protrudes 2.3mm past the board rear edge");
 
+// #81: stock SoC cooler keep-out. An ACCESSORY on one specific unit (heatsink
+// with a recessed fan), not an intrinsic board feature -- see sbc.scad's row
+// comment and RESEARCH.md. Modeled as one solid worst-case box.
+_soc_cooler = [for (c = sbc_connectors("bpir4")) if (c[0] == "soc_cooler_1") c][0];
+assert(!is_undef(_soc_cooler), "bpir4 has soc_cooler_1");
+assert(_soc_cooler[3] == "top", "soc_cooler_1 is a top row");
+// Body is a board literal (no connectors catalog type fits a cooler) -- pinned
+// here so a silent edit to any axis has to come through this test. Width is
+// 49.3 (caliper, [B]) + 1.0mm low-X placement-uncertainty pad = 50.3 -- the
+// pinned X figure is the padded envelope, not the raw caliper reading.
+assert(_soc_cooler[2] == [50.3, 54.5, 16.0], "soc_cooler_1 body: caliper + low-X pad");
+// Position: z is the PCB top face (board thickness), matching every other
+// "top" row on this board; x/y are anchored to rj45_block, so this compares
+// against the live rj45_block row rather than restating 122.5 / 21.45.
+_rj_block = sbc_connector("bpir4", "rj45_block");
+assert(abs(_soc_cooler[1][2] - sbc_thickness("bpir4")) < 1e-9,
+    "soc_cooler_1 z datum is the PCB top face");
+assert(abs((_soc_cooler[1][0] + _soc_cooler[2][0]) - (_rj_block[1][0] + _rj_block[2][0])) < 1e-9,
+    "soc_cooler_1 high-X side is flush with rj45_block's barrel-side edge");
+assert(abs(_soc_cooler[1][1] - ((_rj_block[1][1] + _rj_block[2][1]) + 2.5)) < 1e-9,
+    "soc_cooler_1 sits 2.5mm behind rj45_block's rear face");
+// The two large-dia holes at (75.85,27.21) and (117.75,69.11) are the cooler's
+// own mount pair (user-confirmed on the installed unit) -- so they must fall
+// inside its footprint. Guards a future edit that moves either one apart.
+for (h = [[75.85, 27.21], [117.75, 69.11]])
+    assert(h[0] >= _soc_cooler[1][0] && h[0] <= _soc_cooler[1][0] + _soc_cooler[2][0] &&
+           h[1] >= _soc_cooler[1][1] && h[1] <= _soc_cooler[1][1] + _soc_cooler[2][1],
+        str("cooler mount hole ", h, " inside soc_cooler_1 footprint"));
+
 // --- Task 5: module/card keep-out envelopes (bottom sockets + m2modem_1) ---
 for (n = ["m2modem_1_card", "mpcie_1_card", "mpcie_2_card", "m2_ssd_1_card"])
     assert(len([for (c = sbc_connectors("bpir4")) if (c[0] == n) 1]) == 1,

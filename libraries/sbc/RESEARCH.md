@@ -496,7 +496,9 @@ just the raw vertices). All 16 centers, tier **[A]**, DXF-exact (rounded to
 14 holes measure almost exactly 3.0mm dia; 2 (at `(75.85,27.21)` and
 `(117.75,69.11)`) measure ~3.3mm — real design difference (likely a slightly
 larger clearance at those two mount points, e.g. near the fan/heatsink
-mounts), not a measurement artifact — kept as read, both tiers **[A]**, no
+mounts — *superseded, see "BPI-R4 #81: stock SoC cooler keep-out
+(`soc_cooler_1`)" below: these are the cooler's own mounting pair, `[B]`*),
+not a measurement artifact — kept as read, both tiers **[A]**, no
 per-hole diameter distinction is stored in the table (the row schema has one
 `[x,y]` list, no per-hole diameter field) — flagged here rather than dropped.
 Pattern was sanity-checked by plotting outline+holes against the DXF data:
@@ -837,7 +839,9 @@ module-length spec, hence still tier [A] for the *proximity* fact but
 **//VERIFY** for that specific interpretation.
 
 **The two larger-diameter holes — visual correlation on the assembly
-drawing, tier [C]//VERIFY.** Neither large hole has *any* silkscreen TEXT
+drawing, tier [C]//VERIFY.** *Superseded — see "BPI-R4 #81: stock SoC cooler
+keep-out (`soc_cooler_1`)" below: these are the cooler's own mounting pair,
+user-confirmed, tier `[B]`.* Neither large hole has *any* silkscreen TEXT
 within 25mm in the DXF (checked against the full TOP TEXT list). Cropped
 `bpir4_assembly_p1_600.png` (TOP view, 600dpi, same calibration as the
 existing connector table: `mm_x=(px_x-60)/23.622`,
@@ -1663,6 +1667,58 @@ row, which never exercises the lateral "must touch its edge" check in
 to "reaches at least the edge" for rows in `_overhang_exceptions`; every
 other row keeps the strict form, and the full `sbc_known_boards()` sweep
 confirms no other board's connectors moved.
+
+### BPI-R4 #81: stock SoC cooler keep-out (`soc_cooler_1`)
+
+The library modeled nothing above this board's PCB except the M.2 / mPCIe
+sockets and their card envelopes. The stock SoC cooler — a heatsink with a
+recessed fan — is installed on the reference unit and was unmodelled, the same
+omission class as #76's inserted microSD card.
+
+| Quantity | Value | Tier | Source |
+|---|---|---|---|
+| Height above PCB top face | 16.0mm | `[B]` | caliper, physical unit |
+| Footprint width (X), caliper body | 49.3mm | `[B]` | caliper, physical unit |
+| Footprint width (X), modeled envelope | 50.3mm | n/a (padded) | caliper body + 1.0mm low-X placement-uncertainty pad, see below |
+| Footprint depth (Y) | 54.5mm | `[B]` | caliper, physical unit |
+| Board-frame min corner | (72.2, 23.95) | `[B]`/padded | anchored to `rj45_block`, see below |
+
+The heatsink is the assembly's high point: its fan is recessed into the middle
+of it, so the fan cannot rub and does not set the height. Modeled as one solid
+box — a worst-case keep-out, not an exact shape.
+
+Position is anchored to the live `rj45_block` row rather than re-typed: the
+cooler's high-X side is flush with that block's barrel-jack-side edge
+(64.0 + 58.5 = 122.5), and its Y sits ~2.5mm behind that block's rear face
+(21.45 + 2.5 = 23.95). The flush reading was caliper- and eye-checked against
+the physical board; the real offset is ~0.8–1.0mm. The cooler's own mount-pair
+centre — (75.85, 27.21) and (117.75, 69.11), centre x=96.8 — sits below a
+flush-box centre of x=97.85, showing that offset falls on the LOW-X side, not
+split evenly. **User decision (2026-08-05): widen the modeled box 1.0mm on the
+low-X side to cover it**, rather than shrink the high-X side off its flush
+anchor. So the caliper body stays 49.3mm `[B]`, but the modeled envelope is
+50.3mm wide with x_min = 122.5 − 50.3 = 72.2 (x_max unchanged at 122.5, still
+flush). The 50.3 figure is NOT a caliper reading — it is body + pad.
+
+**This is an accessory on one specific unit, not an intrinsic board dimension.**
+Third-party coolers vary widely; a different cooler is a value change to this
+row, and any consumer reading it inherits that caveat.
+
+**Hole-role correction.** The two larger-diameter mounting holes — (75.85,
+27.21) @3.32mm and (117.75, 69.11) @3.31mm — were previously attributed, at
+`[C]//VERIFY`, to proximity with the FAN connector / VCORE-VPROC SoC-power
+block. They are in fact this cooler's own mounting pair, confirmed by the user
+against the installed cooler on the physical board (`[B]`). Both holes fall
+inside the footprint above, spaced 41.9 × 41.9 apart — that spacing is real,
+but the footprint is NOT centred on that diagonal (box centre x=97.35/y=51.2
+after the widening above, vs. mount-pair centre x=96.8/y=48.16), so the
+diagonal corroborates only "holes inside footprint", not "footprint centred on
+holes". Their role stays `component-mount` — correct under either reading —
+and no coordinate or diameter changed.
+
+**Not modelled:** the fan recess, any third-party cooler, and any airflow
+clearance. Clearance above the cooler is the consumer's business; the
+bpir4-1u-chassis project carries that guard.
 
 ## Shipped modules built on this data
 
