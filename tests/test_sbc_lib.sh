@@ -231,4 +231,34 @@ if ! cmp -s <(stlnorm "$tmp/nc_a.stl") <(stlnorm "$tmp/nc_b.stl"); then
   echo "top_clearance default is not geometrically identical to explicit 0"; exit 1
 fi
 
+# --- usbc_pwr_1 regression fix (#87) ---
+# #65 replaced #62's correct 137.3/8.7 with 139.3/6.7 -- the 6.7 is the
+# connector's DEPTH transposed into the width slot. Three independent
+# measurements (#62 caliper, 2026-08-07 caliper, and the generic USB-C
+# datasheet width #65 explicitly discarded) agree on w=8.7.
+fail=0
+cat > "$tmp/uc87.scad" <<'EOS'
+use <sbc/sbc.scad>;
+c = sbc_connector("bpir4", "usbc_pwr_1");
+echo(str("UC_X=", c[1][0], " UC_W=", c[2][0], " UC_D=", c[2][1], " UC_H=", c[2][2]));
+echo(str("UC_RIGHT=", c[1][0] + c[2][0]));
+EOS
+out="$("$root/scripts/openscad.sh" --export-format stl -o "$tmp/uc87.stl" "$tmp/uc87.scad" 2>&1)"
+# Trailing space is load-bearing: "UC_X=137.2" alone would also prefix-match a
+# hypothetical 137.25 (see the WALL_DC_USBC prefix-grep lesson).
+if ! echo "$out" | grep -q 'UC_X=137.2 UC_W=8.7 UC_D=6.7 UC_H=3'; then
+  echo "FAIL: usbc_pwr_1 row not corrected (want x=137.2 w=8.7 d=6.7 h=3)"
+  echo "$out"; fail=1
+fi
+# Closure check against the board's own width: the user measured the right
+# wall 2.2mm in from the 148mm board edge => right edge 145.8. We adopt
+# x=137.2 (midpoint of #62's 137.3 and the derived 137.1), so the right edge
+# lands at 145.9 -- within 0.1 of the measurement.
+if ! echo "$out" | grep -q 'UC_RIGHT=145.9'; then
+  echo "FAIL: usbc_pwr_1 right edge should be 145.9"; echo "$out"; fail=1
+fi
+if [ "$fail" = 1 ]; then
+  exit 1
+fi
+
 echo ok

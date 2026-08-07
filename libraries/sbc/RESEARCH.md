@@ -1637,6 +1637,48 @@ which this same caliper pass triggered for these two rows plus `usb_1`).
 Every other row above is a `[B]` caliper replacement of a prior `[B]`
 caliper figure — value change, no tier change.
 
+### BPI-R4 `usbc_pwr_1` (#87): reverting a round-3 (#65) regression
+
+Round-3 (#65, above) re-calipered `usbc_pwr_1` (CN5 "PD20V" USB-C PD input)
+and took the new reading — `x=139.3`, body `[6.7, 6.8, 3.0]` — "at face
+value", explicitly overruling both round-2 (#62)'s caliper (`x=137.3`,
+`w=8.7`) and the generic USB-C datasheet width (~8.9) that round-2 had cross
+-checked against. That was a mistake: the round-3 reading's `w=6.7` is this
+connector's own **depth** (6.7–6.8mm across all three rounds, consistently)
+transposed into the width slot, not a new width measurement. One reading
+overruled two independent corroborating sources instead of being checked
+against them.
+
+| field | round-2 `#62` | round-3 `#65` | 2026-08-07 `#87` | verdict |
+|---|---|---|---|---|
+| x | 137.3 | 139.3 | 137.1 (derived, see below) | `#62`/`#87` agree; `#65` wrong |
+| width | 8.7 | 6.7 | 8.7 | `#62`/`#87`/datasheet (~8.9) agree; `#65` wrong (= depth, transposed) |
+| depth | 9.95 | 6.8 | 6.7 | `#65`/`#87` agree; `#62` wrong |
+| height | 3.2 | 3.0 | 3.0 | `#65`/`#87` agree; `#62` wrong |
+
+Each round independently got part of this row right: `#62`'s x/width, `#65`'s
+depth/height. `#87` is a fresh caliper reading (2026-08-07, board in hand)
+that reproduces `#62`'s width and `#65`'s depth/height, and derives x from
+the board's own right-side reference: the right wall measures 2.2mm in from
+the 148mm board edge, giving a right edge of 145.8 and, with width 8.7, a
+left edge (x) of 137.1. `x=137.2` is adopted as the midpoint of `#62`'s 137.3
+and this round's derived 137.1 — the two are 0.2mm apart, both well inside
+the connector's 0.4mm port clearance, so no consumer-visible effect follows
+from picking the midpoint over either endpoint.
+
+**Adopted row**: `x=137.2`, body `[8.7, 6.7, 3.0]`, all fields `[B]` caliper
+(three independent caliper rounds now corroborate width; depth/height
+corroborated by two of three). No tier change — this is a same-tier
+re-check, per the repo rule that changing (or in this case, re-affirming) a
+tier requires re-checking the primary source, which this pass is.
+
+**State plainly: round-3 (#65) was a regression**, introduced by treating one
+new reading as automatically superseding two corroborating prior sources
+(the round-2 caliper and the datasheet width) rather than reconciling
+against them. The lesson generalizes: a "supersedes" caliper pass should
+show its reconciliation against what it's replacing, not just assert a new
+number.
+
 ### BPI-R4 #76: inserted microSD card keep-out (`microsd_1_card`)
 
 `microsd_1` (above) models the empty **socket** — it does not capture that,
