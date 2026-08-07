@@ -72,18 +72,38 @@ done
 # 9. Repo clearance/precedent numbers cited across the skill must track
 #    params.scad, not drift from it (#86 -- 4 of 6 house-rules.md table rows
 #    went stale/dead silently, the same dead `boss_wall` param turned up
-#    uncaught in strength-physics.md and glossary.md too, and a review replay
-#    showed the FIRST version of this gate still passed a row reverted
-#    straight back to its old stale literal, because it only checked a
-#    hand-copied list of symbol NAMES against params.scad -- never what the
-#    table's own Value column says). This still can't verify a cited value is
-#    numerically correct (a grep can't evaluate OpenSCAD), so it checks two
-#    structural properties instead: every symbol the table cites by name
-#    (extracted from the table itself, not a hardcoded list, so a NEW row
-#    citing an invented name is caught the same as an old one being renamed)
-#    must exist in params.scad or heatset.scad, and the rows whose own Name
-#    column documents a derivation must still cite that derivation's function
-#    call in the Value column rather than a bare re-literalised number.
+#    uncaught in strength-physics.md and glossary.md too, a first replay
+#    showed an earlier version of this gate still passed a row reverted to
+#    its old stale literal, and a SECOND replay showed the version that fixed
+#    that still passed a plain rename -- because "exists in params.scad" was
+#    checked with a bare word grep, which is satisfied by a COMMENT mentioning
+#    the old name (params.scad:244 mentions `boss_wall` only in a comment;
+#    that comment is exactly what let a dead-row reintroduction slip past a
+#    bare-word check, which is why the standalone dead-name blocklist below
+#    used to be load-bearing). What this block still cannot do: evaluate
+#    whether a cited VALUE is numerically correct (a grep can't run OpenSCAD).
+#    So a derived row keeping its accessor call but stating the wrong number,
+#    a row citing the wrong accessor for what it claims to be, a wrong
+#    argument to a correct accessor, or outright deletion of the wall_gap /
+#    csk_head_extra / heatset_min_wall(...) rows would all still pass. Two
+#    checks, both structural, neither a value check:
+#    (a) every symbol the table cites by name (extracted from the table
+#        itself, not a hardcoded list, so a NEW row citing an invented name
+#        is caught the same way as an old one being renamed) must be
+#        DEFINED, not merely mentioned, in params.scad or heatset.scad --
+#        matched against the actual declaration shape both files use
+#        (`name = ...;` or `function name(...) = ...;`), not a bare `grep -q`
+#        that a comment can satisfy;
+#    (b) the two rows whose own Name column documents a derivation under a
+#        DIFFERENT symbol (board_insert_bore/lid_insert_bore, both citing
+#        heatset_pilot_dia()) must still cite that call in the Value column,
+#        not a bare re-literalised number. heatset_min_wall(lid_insert_size)
+#        does not get an entry here: its Name column IS the accessor call,
+#        so a same-line "does the row contain its own name" check would be
+#        tautological -- it can only fire on that row's outright deletion,
+#        which check (a) already can't see either (check (a) only walks rows
+#        that still exist). That row's deletion is accordingly NOT gated;
+#        disclosing rather than shipping a check that looks like coverage.
 pf="$root/projects/bpir4-1u-chassis/params.scad"
 hf="$root/libraries/heatset/heatset.scad"
 sp="$skill/reference/strength-physics.md"
@@ -93,13 +113,12 @@ mapfile -t hr_rows < <(grep -E '^\| `' "$hr")
 for row in "${hr_rows[@]}"; do
   sym="$(printf '%s' "$row" | sed -E 's/^\| `([^`]+)`.*/\1/')"
   base="${sym%%(*}"
-  grep -qE "\\b$base\\b" "$pf" "$hf" \
-    || { echo "house-rules.md table cites '$sym' but it is not in params.scad or heatset.scad"; fail=1; }
+  grep -qE "^[[:space:]]*(function[[:space:]]+)?${base}[[:space:]]*[=(]" "$pf" "$hf" \
+    || { echo "house-rules.md table cites '$sym' but it is not DEFINED (only mentioned, or absent) in params.scad or heatset.scad"; fail=1; }
 done
 
 for row_sym_call in 'board_insert_bore:heatset_pilot_dia(' \
-                     'lid_insert_bore:heatset_pilot_dia(' \
-                     'heatset_min_wall(lid_insert_size):heatset_min_wall(' ; do
+                     'lid_insert_bore:heatset_pilot_dia(' ; do
   rsym="${row_sym_call%%:*}"; call="${row_sym_call#*:}"
   line="$(grep -F "| \`$rsym\`" "$hr")"
   if [ -z "$line" ]; then
@@ -109,11 +128,16 @@ for row_sym_call in 'board_insert_bore:heatset_pilot_dia(' \
   fi
 done
 
-for dead in boss_wall post_wall_gap ; do
-  grep -qE "^\\| \`$dead\`" "$hr" && { echo "house-rules.md table still has a dead-param row: $dead"; fail=1; }
-done
-# strength-physics.md and glossary.md cite the same dead names in prose, not
-# table rows -- check the whole file for a backtick-quoted dead symbol.
+# Retired: the old `for dead in boss_wall post_wall_gap` blocklist. The
+# definition-shaped check above now catches both names on its own -- proven
+# by restoring a `boss_wall` row and confirming (a) still fails it, since
+# params.scad's only trace of `boss_wall` is a comment, not a definition
+# (see task-3-report.md fix round 5 for the probe). A hand-maintained list of
+# names known dead TODAY doesn't generalise to a name nobody has invented
+# yet; the structural check does.
+# strength-physics.md and glossary.md still cite dead names in PROSE, not a
+# table the definition-shaped check above walks, so they keep their own
+# direct check.
 for f in "$sp" "$gl" ; do
   for dead in boss_wall post_wall_gap ; do
     grep -qE "\`$dead\`" "$f" && { echo "$(basename "$f") still cites dead param: $dead"; fail=1; }
