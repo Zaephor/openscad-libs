@@ -60,5 +60,13 @@ for needle in \
   grep -qiE "$needle" "$tf" || { echo "tolerances-fits.md missing: $needle"; fail=1; }
 done
 
+# 8. Fastener availability + partial test prints (#86).
+hr="$skill/reference/house-rules.md"
+for needle in \
+  'Fastener availability is a design input' \
+  'Test-print the risky interfaces first' ; do
+  grep -qiE "$needle" "$hr" || { echo "house-rules.md missing: $needle"; fail=1; }
+done
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

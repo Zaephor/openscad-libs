@@ -119,6 +119,42 @@ These numbers are cited by name elsewhere in this skill rather than
 restated — see `tolerances-fits.md` for how they map onto the general fit
 bands, and `strength-physics.md` for the reasoning behind `boss_wall`.
 
+## Fastener availability is a design input
+
+**Design to fasteners actually on hand.** Confirm the size is available before
+locking it into geometry — a printed part dimensioned for a fastener nobody
+stocks is scrap, and heat-set bosses bake the choice into the print.
+
+A chassis was dimensioned around M2.5 heat-set inserts and printed before
+anyone checked; the only sizes in the drawer were M2 and M3.
+
+**Screw clearance in the MATING part's hole is a constraint too.** When the
+hole is fixed by someone else's board, it sets how much misalignment the
+assembly can absorb:
+
+- M3 through a 3.0 mm board hole is **zero** clearance — it passes, but with no
+  tolerance for standoff misalignment, and it will feel like the standoffs are
+  in the wrong place when they are not.
+- M2 through the same hole gives **1.0 mm**.
+
+**A smaller screw can be the better engineering choice** when the hole is fixed
+and the alignment is not. Do not reflexively size up.
+
+## Test-print the risky interfaces first
+
+Before committing filament and hours to a full part, **print the risky
+interface alone** — the faceplate section carrying the port cutouts, the corner
+carrying the mounting posts, the feature that mates with a purchased component.
+
+Defects cluster at interfaces with parts you did not design. On one 1U chassis
+every discovered defect — a board collision and four port-clearance problems —
+sat in two small regions of a large, slow part. A faceplate-only and a
+corner-only test print would have caught all of them for a fraction of the
+time and material.
+
+This is cheapest exactly when the part is large, slow, or expensive — which is
+also when the temptation to "just print it" is strongest.
+
 ## Cross-references
 
 - Term definitions: `glossary.md`
