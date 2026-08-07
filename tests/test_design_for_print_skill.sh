@@ -69,16 +69,21 @@ for needle in \
   grep -qiE "$needle" "$hr" || { echo "house-rules.md missing: $needle"; fail=1; }
 done
 
-# 9. Repo clearance precedent table must track params.scad, not drift from it
-#    (#86 -- 4 of 6 rows went stale/dead silently because nothing checked
-#    them against the source of truth the table claims to be). Two checks:
-#    every symbol the table cites by name must still exist in params.scad
-#    or the heatset library, and a table ROW must never cite a name that no
-#    longer exists there. This does not verify the CITED VALUES are correct
-#    (a grep can't evaluate OpenSCAD) -- only that the table isn't pointing
-#    at a symbol/param that has been renamed or deleted out from under it.
+# 9. Repo clearance/precedent numbers cited across the skill must track
+#    params.scad, not drift from it (#86 -- 4 of 6 house-rules.md table rows
+#    went stale/dead silently, and the same dead `boss_wall` param turned up
+#    uncaught in strength-physics.md and glossary.md too, because nothing
+#    checked any of them against the source of truth they cite). Two kinds
+#    of check: every symbol these pages cite by name must still exist in
+#    params.scad or the heatset library, and none of them may cite a name
+#    that no longer exists there. This does not verify the CITED VALUES are
+#    correct (a grep can't evaluate OpenSCAD) -- only that the pages aren't
+#    pointing at a symbol/param that has been renamed or deleted out from
+#    under them.
 pf="$root/projects/bpir4-1u-chassis/params.scad"
 hf="$root/libraries/heatset/heatset.scad"
+sp="$skill/reference/strength-physics.md"
+gl="$skill/reference/glossary.md"
 for sym in wall_gap board_insert_size board_insert_bore lid_insert_size \
            lid_insert_bore csk_head_extra ; do
   grep -q "$sym" "$pf" || { echo "house-rules.md table cites '$sym' but params.scad no longer has it"; fail=1; }
@@ -86,6 +91,13 @@ done
 grep -q 'heatset_min_wall' "$hf" || { echo "house-rules.md table cites heatset_min_wall but heatset.scad no longer has it"; fail=1; }
 for dead in boss_wall post_wall_gap ; do
   grep -qE "^\\| \`$dead\`" "$hr" && { echo "house-rules.md table still has a dead-param row: $dead"; fail=1; }
+done
+# strength-physics.md and glossary.md cite the same dead names in prose, not
+# table rows -- check the whole file for a backtick-quoted dead symbol.
+for f in "$sp" "$gl" ; do
+  for dead in boss_wall post_wall_gap ; do
+    grep -qE "\`$dead\`" "$f" && { echo "$(basename "$f") still cites dead param: $dead"; fail=1; }
+  done
 done
 
 [ "$fail" -eq 0 ] && echo ok
