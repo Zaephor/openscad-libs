@@ -116,7 +116,9 @@ fi
 # (135.45..136.45) with 0.35mm clear to each opening. USBC_FREE measures from
 # the wall's right edge to the connector's NOMINAL left edge (not the
 # clearance-inflated opening edge), hence 137.2 - 136.45 = 0.75.
-if ! echo "$out" | grep -qE 'USBC_FREE=0\.75'; then
+# NB: the trailing quote is load-bearing here too -- "USBC_FREE=0.75" alone
+# would also match a stray "0.751"/"0.7500" false positive.
+if ! echo "$out" | grep -qE 'USBC_FREE=0\.75"'; then
   echo "FAIL: USB-C side free space is not 0.75mm"
   echo "$out"; fail=1
 fi
