@@ -1651,7 +1651,7 @@ against them.
 
 | field | round-2 `#62` | round-3 `#65` | 2026-08-07 `#87` | verdict |
 |---|---|---|---|---|
-| x | 137.3 | 139.3 | 137.1 (derived, see below) | `#62`/`#87` agree; `#65` wrong |
+| x | 137.3 | 139.3 | 137.1 (derived, see below; adopted 137.2) | `#62`/`#87` agree; `#65` wrong |
 | width | 8.7 | 6.7 | 8.7 | `#62`/`#87`/datasheet (~8.9) agree; `#65` wrong (= depth, transposed) |
 | depth | 9.95 | 6.8 | 6.7 | `#65`/`#87` agree; `#62` wrong |
 | height | 3.2 | 3.0 | 3.0 | `#65`/`#87` agree; `#62` wrong |
