@@ -36,5 +36,19 @@ grep -q 'reference/assembly-order.md' "$skill/SKILL.md" || { echo "DFA page not 
 [ -f "$skill/reference/assembly-order.md" ] || { echo "DFA page missing"; fail=1; }
 grep -qi 'assembly.scad' "$skill/reference/assembly-order.md" || { echo "DFA page missing self-check ref"; fail=1; }
 
+# 6. The DFA page must carry runnable verification gates, not just principles.
+#    (#86 — the prose principles were already present when a 3.248mm^3
+#    uninstallable-board collision shipped; these are the techniques.)
+dfa="$skill/reference/assembly-order.md"
+for needle in \
+  'Measure interference, don.t eyeball it' \
+  'Non-printed devices are part of the assembly' \
+  'Verify the install MOTION, not just the seated pose' \
+  'intersection()' \
+  'coincident-face' \
+  'minkowski' ; do
+  grep -qiE "$needle" "$dfa" || { echo "assembly-order.md missing: $needle"; fail=1; }
+done
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

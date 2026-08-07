@@ -67,6 +67,73 @@ a proactive self-check step in the design workflow itself.
   rendering an example to catch a syntax error is routine — not an
   on-request extra.
 
+## Measure interference, don't eyeball it
+
+Rendering an assembly and looking at it is necessary but **not sufficient** — a
+visual check is only as good as the view you happened to choose. A 3.248 mm³
+collision between a board and two chassis posts survived every render, a full
+colored per-surface review, and a print, because the reviewed views were
+side-profile and the board placeholder was not shown.
+
+The gate is numeric:
+
+1. `intersection()` the two solids.
+2. Export the result and compute its **mesh volume** (divergence theorem over
+   the exported triangles).
+3. Assert it is ~0.
+
+Three traps, all of which have bitten this repo:
+
+- **Faces that legitimately touch yield exact `0.000` volume** at a single Z —
+  a coincident-face artifact, *not* interference. Document them. Do not "fix"
+  them, and do not set a tolerance so loose that a real hit hides behind them.
+- **A bounding box is not evidence.** Bbox over an intersection is dominated by
+  stray facets far from the real contact — one measurement read a "27 mm
+  collision run" that was really 1.8 mm. Volume localises; bbox does not.
+- **An empty result writes NO output file.** OpenSCAD reports
+  `Current top level object is empty.` and creates nothing. The empty
+  intersection is the **PASS** case, so a volume helper must guard for a
+  missing file or it reports success as a crash.
+
+To turn "something collides" into "*this* collides", intersect against **one
+suspect module** rather than the whole part.
+
+## Non-printed devices are part of the assembly
+
+The exploded self-check covers **every device the assembly holds** — boards,
+drives, power supplies, modules — not only the parts you print. Those are the
+components most likely to be treated as scenery.
+
+**A placeholder existing in `assembly.scad` is not the same as it being
+checked.** A chassis carried a `show_board` device placeholder for months while
+nothing ever intersected it with the tray. The reference was right there, in
+the file, the whole time.
+
+## Verify the install MOTION, not just the seated pose
+
+"Does the part have a clear path to its final position" is only answerable by
+testing the path. A clear seated pose does not prove the part can reach it.
+
+**Sweep the inserted part along its install vector and intersect the swept
+volume** with the surrounding part. Derive the travel from the geometry —
+connector protrusion, panel thickness, engagement depth — never from a picked
+number.
+
+Choosing a sweep technique is a real decision, not an implementation detail:
+
+| Technique | Verdict |
+|---|---|
+| `hull()` of the two endpoints | **WRONG** for a non-convex part — it overstates the swept volume and reports collisions that cannot occur |
+| `minkowski()` with a segment | **Exact** for linear travel, but can be impractically slow on a complex mesh |
+| Discrete union of N steps | Usual fallback; **can tunnel straight through a feature thinner than the step**. If used, state the step and what it could miss |
+
+⚠️ **A motion check is only as good as the motion.** The inverse failure is a
+no-collision test that passes *tautologically* because the choreographed motion
+was physically impossible — a rigid part modelled as retracting so that
+protrusion and wall-crossing never coincide. Verify the motion is physical
+before trusting a pass. Together these cover both directions: **no motion
+tested**, and **fictional motion tested**.
+
 ## Cross-references
 
 - Boss/gusset tie-in and load-path reasoning that assembly order interacts
