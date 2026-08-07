@@ -102,22 +102,71 @@ number for the same kind of fit. Source:
 | Name | Value | What it's for |
 |---|---|---|
 | `wall_gap` | 0.25 mm (per side) | Lid-to-wall running/slip clearance |
-| `board_insert_bore` | 3.4 mm | M2.5 heat-set insert OD (board standoffs) |
-| `lid_insert_bore` | 4.2 mm | M3 heat-set insert OD (lid posts) |
-| `boss_wall` | 3.2 mm | Lid-post wall thickness around the insert bore (post OD = `lid_insert_bore + boss_wall`) |
-| `post_wall_gap` | 1.2 mm | Printable clearance from lid-post outer edge to side-wall inner face |
+| `board_insert_bore` | `heatset_pilot_dia(board_insert_size)` = 3.23 mm (size = M2) | Board-standoff heat-set insert **pilot bore** — derived, not a literal; current size is M2 (was M2.5 / 3.4 mm) |
+| `lid_insert_bore` | `heatset_pilot_dia(lid_insert_size)` = 4.01 mm (size = M3) | Lid-post heat-set insert **pilot bore** — derived, not a literal; current size is M3 (was a hardcoded 4.2 mm) |
+| `heatset_min_wall(lid_insert_size)` | 1.6 mm (radial, size = M3) | Min wall around a heat-set insert's pilot bore (heatset library, manufacturer crack-risk floor) — lid-post OD = `lid_insert_bore()` + 2× this ≈ 7.21 mm, via `_lid_post_od()` (`projects/bpir4-1u-chassis/params.scad`) |
 | `csk_head_extra` | 2.6 mm | M3 countersink head oversize over the clearance hole (→ ~6 mm 90° CSK head) |
+
+Note: an older `post_wall_gap` (printable lid-post-to-side-wall clearance)
+no longer exists — the current design places posts **tangent** to the
+walls (flush, zero gap) instead of offset by a gap
+(`projects/bpir4-1u-chassis/parts/tray.scad`, `_lid_post_xy()`). There is no
+replacement number to cite; this table omits it rather than document a
+value nothing produces.
 
 Heat-set inserts in this repo's chassis are installed **post-print, with a
 soldering iron, before final assembly**
 (`projects/bpir4-1u-chassis/PRINTING.md`). Size bore diameter and boss wall
 thickness assuming that install method (a straight-in heated press, not a
 tapped thread) — that's what `board_insert_bore` / `lid_insert_bore` /
-`boss_wall` above already assume.
+`heatset_min_wall(lid_insert_size)` above already assume.
 
 These numbers are cited by name elsewhere in this skill rather than
 restated — see `tolerances-fits.md` for how they map onto the general fit
-bands, and `strength-physics.md` for the reasoning behind `boss_wall`.
+bands, and `strength-physics.md` for the reasoning behind boss/insert wall
+thickness.
+
+## Fastener availability is a design input
+
+**Design to fasteners actually on hand.** Confirm the size is available before
+locking it into geometry — a printed part dimensioned for a fastener nobody
+stocks is scrap, and heat-set bosses bake the choice into the print.
+
+A chassis was dimensioned around M2.5 heat-set inserts and printed before
+anyone checked; the only sizes in the drawer were M2 and M3.
+
+**Standing default: prefer M3, fall back to M2 if there is a size issue or
+clearance risk.** M3 is the more common fastener to have on hand — drop to
+M2 only when something forces it. This repo's chassis already follows that
+order: M3 for the lid posts, M2 for the board standoffs, where the board's
+own fixed hole was the size issue that justified the fallback (see below).
+
+**Screw clearance in the MATING part's hole is a constraint too.** When the
+hole is fixed by someone else's board, it sets how much misalignment the
+assembly can absorb:
+
+- M3 through a 3.0 mm board hole is **zero** clearance — it passes, but with no
+  tolerance for standoff misalignment, and it will feel like the standoffs are
+  in the wrong place when they are not.
+- M2 through the same hole gives **1.0 mm**.
+
+**A smaller screw can be the better engineering choice** when the hole is fixed
+and the alignment is not. Do not reflexively size up.
+
+## Test-print the risky interfaces first
+
+Before committing filament and hours to a full part, **print the risky
+interface alone** — the faceplate section carrying the port cutouts, the corner
+carrying the mounting posts, the feature that mates with a purchased component.
+
+Defects cluster at interfaces with parts you did not design. On one 1U chassis
+every discovered defect — a board collision and four port-clearance problems —
+sat in two small regions of a large, slow part. A faceplate-only and a
+corner-only test print would have caught all of them for a fraction of the
+time and material.
+
+This is cheapest exactly when the part is large, slow, or expensive — which is
+also when the temptation to "just print it" is strongest.
 
 ## Cross-references
 

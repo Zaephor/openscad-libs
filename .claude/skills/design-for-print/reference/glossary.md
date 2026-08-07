@@ -148,9 +148,9 @@ reinforcement fins elsewhere on the part.
   tie a boss into an adjacent wall or add a gusset** — a freestanding boss
   with no local reinforcement is a known failure mode this skill exists to
   prevent.
-- Print/physics note: boss wall thickness (`boss_wall` = 3.2 mm in this
-  repo's chassis) and fillet the boss-to-wall junction — see
-  `strength-physics.md`.
+- Print/physics note: boss wall thickness (`heatset_min_wall(lid_insert_size)`
+  = 1.6 mm radial in this repo's chassis) and fillet the boss-to-wall
+  junction — see `strength-physics.md`.
 
 ![Boss](../images/boss.png)
 

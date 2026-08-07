@@ -1,6 +1,6 @@
 ---
 name: design-for-print
-description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD in this repo) and making a printability or design-language decision — chamfer vs fillet vs bevel, avoiding supports/overhangs, sizing a press/slip/free fit or hole clearance, orienting a part for strength, or adding a boss/rib/gusset. Also the reference for what a print or CAD term means. Also for assembly order, insertion clearance, fastener access, exploded self-check.
+description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD in this repo) and making a printability or design-language decision — chamfer vs fillet vs bevel, avoiding supports/overhangs, sizing a press/slip/free fit or hole clearance, orienting a part for strength, or adding a boss/rib/gusset. Also the reference for what a print or CAD term means. Also for assembly order, insertion clearance, fastener access, exploded self-check. Also for verifying parts don't collide (interference checks, install-motion sweeps), sizing openings for a mating plug or module, and choosing a fastener size against what's on hand.
 ---
 
 # Design for 3D Print
@@ -13,6 +13,7 @@ description: Use when designing or modeling a 3D-printable part (esp. OpenSCAD i
 - **Break exposed edges (recommended):** chamfer or round external edges/corners a hand will touch — rack ears, flanges, plate corners. Nominals in `reference/house-rules.md`. Not required; skip where it fights a mating face or a functional sharp edge.
 - **Pick a fit band on purpose:** Clearances compound; measure before you design. Read `reference/tolerances-fits.md`.
 - **Design the assembly order:** inner parts first; verify with the exploded self-check. Read `reference/assembly-order.md`.
+- **Verify assembly numerically:** intersect the parts, measure the volume, assert ~0 — and sweep the install motion, not just the seated pose. Eyeballing a render is view-dependent and has missed real collisions. Read `reference/assembly-order.md`.
 
 ## House Rules
 
@@ -29,3 +30,6 @@ This repo defaults to **Bambu P1S (PETG, 0.4 mm nozzle, no supports)**. Every de
 | This repo's printer/material defaults + clearances | `reference/house-rules.md` |
 | Breaking exposed external edges/corners (recommended) | `reference/house-rules.md` |
 | Assembly order, fastener access, insertion clearance, exploded self-check | `reference/assembly-order.md` |
+| Proving parts don't collide; verifying the install motion | `reference/assembly-order.md` |
+| Sizing an opening to the mating part (plug/module) that must pass through it | `reference/tolerances-fits.md` |
+| Choosing a fastener size; test-printing risky interfaces first | `reference/house-rules.md` |
