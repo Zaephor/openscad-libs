@@ -102,7 +102,7 @@ number for the same kind of fit. Source:
 | Name | Value | What it's for |
 |---|---|---|
 | `wall_gap` | 0.25 mm (per side) | Lid-to-wall running/slip clearance |
-| `board_insert_bore` | 3.4 mm | M2.5 heat-set insert OD (board standoffs) |
+| `board_insert_bore` | `heatset_pilot_dia(board_insert_size)` = 3.23 mm (size = M2) | Board-standoff heat-set insert **pilot bore** — derived, not a literal; current size is M2 (was M2.5 / 3.4 mm) |
 | `lid_insert_bore` | 4.2 mm | M3 heat-set insert OD (lid posts) |
 | `boss_wall` | 3.2 mm | Lid-post wall thickness around the insert bore (post OD = `lid_insert_bore + boss_wall`) |
 | `post_wall_gap` | 1.2 mm | Printable clearance from lid-post outer edge to side-wall inner face |
@@ -127,6 +127,12 @@ stocks is scrap, and heat-set bosses bake the choice into the print.
 
 A chassis was dimensioned around M2.5 heat-set inserts and printed before
 anyone checked; the only sizes in the drawer were M2 and M3.
+
+**Standing default: prefer M3, fall back to M2 if there is a size issue or
+clearance risk.** M3 is the more common fastener to have on hand — drop to
+M2 only when something forces it. This repo's chassis already follows that
+order: M3 for the lid posts, M2 for the board standoffs, where the board's
+own fixed hole was the size issue that justified the fallback (see below).
 
 **Screw clearance in the MATING part's hole is a constraint too.** When the
 hole is fixed by someone else's board, it sets how much misalignment the

@@ -64,7 +64,8 @@ done
 hr="$skill/reference/house-rules.md"
 for needle in \
   'Fastener availability is a design input' \
-  'Test-print the risky interfaces first' ; do
+  'Test-print the risky interfaces first' \
+  'Standing default: prefer M3' ; do
   grep -qiE "$needle" "$hr" || { echo "house-rules.md missing: $needle"; fail=1; }
 done
 
