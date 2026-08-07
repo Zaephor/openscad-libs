@@ -109,6 +109,33 @@ Image comparing fit types (press / slip / free) and engagement strategy:
 
 ![Fit types](../images/fit-types.png)
 
+## Openings: size to the MATING part, not the modelled body
+
+When an opening exists for something to **pass through** or **plug into**, the
+envelope is the **mating part's** — not the body of the component you modelled.
+A connector's own dimensions are a **lower bound**, not the answer.
+
+This is easy to get wrong because the library data you have describes the
+socket, and the socket is not what has to fit through the hole:
+
+| Opening for | What actually has to fit |
+|---|---|
+| USB-A port | the plug's metal shell and its overmoulded grip |
+| SFP cage | the module *plus* its bail latch, which swings past the cage |
+| USB-C receptacle | the cable's overmold, far larger than the receptacle |
+| Barrel jack | the plug sleeve, which can exceed the jack's own footprint |
+
+A faceplate whose port cutouts were sized to connector bodies — with a
+tolerance clearance applied — still fouled on the real cables for three of its
+four port types. The one that fit was the one whose plug is barely larger than
+its jack.
+
+**Axis subtlety worth designing for:** a single scalar clearance that inflates
+an opening *both* laterally and vertically may be blocked by neighbouring
+features (a wall or web between two connectors) when the actual need was
+vertical only. Prefer a clearance you can apply **per-axis** over one global
+number — otherwise the fix for one port silently eats the structure beside it.
+
 ## Cross-references
 
 - Repo-precedent clearance values (`wall_gap`, insert bores):

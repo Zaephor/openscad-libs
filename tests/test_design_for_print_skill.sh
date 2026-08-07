@@ -50,5 +50,15 @@ for needle in \
   grep -qiE "$needle" "$dfa" || { echo "assembly-order.md missing: $needle"; fail=1; }
 done
 
+# 7. Opening-vs-mating-part sizing (#86 — a faceplate whose port cutouts were
+#    sized to the connector BODIES fouled on every real plug).
+tf="$skill/reference/tolerances-fits.md"
+for needle in \
+  'size to the MATING part' \
+  'lower bound' \
+  'overmold' ; do
+  grep -qiE "$needle" "$tf" || { echo "tolerances-fits.md missing: $needle"; fail=1; }
+done
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
