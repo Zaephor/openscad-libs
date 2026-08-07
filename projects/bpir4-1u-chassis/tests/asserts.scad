@@ -152,7 +152,10 @@ function _conn_x_edges(name) =
     [board_x() + c[1][0], board_x() + c[1][0] + c[2][0]];  // [left edge, right edge], chassis frame
 
 _wall_usb_sfp = _io_gap_wall_geom("usb_1", "sfp_1", _io_wall_w_usb_sfp());
-_wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+// Pass the SAME bias _faceplate() renders with (#87). Defaulting the
+// parameter here silently checked a different wall than the one built.
+_wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc(),
+                                  io_port_clearance, io_wall_dc_usbc_bias);
 _wall_rj45_dc = _io_gap_wall_geom("rj45_block", "dc_power_1", _io_wall_w_rj45_dc());
 _usb1_x = _conn_x_edges("usb_1");   _sfp1_x = _conn_x_edges("sfp_1");
 _dc_x   = _conn_x_edges("dc_power_1"); _usbc_x = _conn_x_edges("usbc_pwr_1");

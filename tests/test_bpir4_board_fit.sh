@@ -110,10 +110,14 @@ fi
 if ! echo "$out" | grep -q 'WALL_DC_USBC=1"'; then
   echo "FAIL: dc/usbc wall not narrowed to 1.0"; echo "$out"; fail=1
 fi
-# Wall was 1.5 centred in a 4.6mm gap => 1.55mm free on the USB-C side.
-# Target: 1.0 wall biased 0.25 toward dc_power_1 => 2.05mm free (+0.5).
-if ! echo "$out" | grep -qE 'USBC_FREE=2\.05'; then
-  echo "FAIL: USB-C side free space is not 2.05mm (+0.5 over the old 1.55)"
+# #87: usbc_pwr_1's position was wrong (139.3 -> 137.2), and the 0.25 bias
+# added in #85 was compensation for it. With the position corrected the bias
+# is dropped, so the 1.0mm wall sits CENTRED in the real 2.5mm gap
+# (135.45..136.45) with 0.35mm clear to each opening. USBC_FREE measures from
+# the wall's right edge to the connector's NOMINAL left edge (not the
+# clearance-inflated opening edge), hence 137.2 - 136.45 = 0.75.
+if ! echo "$out" | grep -qE 'USBC_FREE=0\.75'; then
+  echo "FAIL: USB-C side free space is not 0.75mm"
   echo "$out"; fail=1
 fi
 
