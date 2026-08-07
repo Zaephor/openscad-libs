@@ -141,18 +141,31 @@ assert(_vent_band_z0() - _topc_cutout_top >= 1 - 1e-6,
 // Round 2 #62 Task 3: IO-gap bridge-support walls. Recomputes each wall's
 // geometry via the SAME _io_gap_wall_geom() function parts/tray.scad's
 // _faceplate() renders with (single source of truth -- `use`d above), and
-// each connector's own cutout edges via sbc_connector() directly, then
-// checks: (a) the wall band [x0,x1] sits STRICTLY inside the real gap, with
-// positive clearance to both flanking connectors' cutout edges, so a
-// connector's own opening is never intruded on; (b) the wall genuinely has
-// positive width (material is actually present in the gap X-band, not a
-// degenerate/zero-width case).
+// each connector's own CUT OPENING edges (sbc_connector() body, inflated by
+// io_port_clearance -- see _conn_x_edges() below) then checks: (a) the wall
+// band [x0,x1] sits STRICTLY inside the real gap, with positive clearance to
+// both flanking connectors' cut openings, so a connector's own opening is
+// never intruded on; (b) the wall genuinely has positive width (material is
+// actually present in the gap X-band, not a degenerate/zero-width case).
+// [left edge, right edge] of the connector's CUT OPENING, chassis frame --
+// inflated by io_port_clearance per side, the SAME inflation
+// sbc_faceplate_cutouts()/_sbc_cutout_inflate() apply when _faceplate()
+// actually cuts the ymin openings (parts/tray.scad, clearance=io_port_clearance).
+// A prior version returned the raw component body edge here (no inflation),
+// which let the "intrudes into a connector opening" asserts below pass while
+// the wall was already inside the real, clearance-widened opening (#87 fix
+// round 2) -- the assert must protect the opening the build actually cuts,
+// not the smaller body sbc.scad models.
 function _conn_x_edges(name) =
     let (c = sbc_connector(BOARD, name))
-    [board_x() + c[1][0], board_x() + c[1][0] + c[2][0]];  // [left edge, right edge], chassis frame
+    [board_x() + c[1][0] - io_port_clearance,
+     board_x() + c[1][0] + c[2][0] + io_port_clearance];
 
 _wall_usb_sfp = _io_gap_wall_geom("usb_1", "sfp_1", _io_wall_w_usb_sfp());
-_wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc());
+// Pass the SAME bias _faceplate() renders with (#87). Defaulting the
+// parameter here silently checked a different wall than the one built.
+_wall_dc_usbc = _io_gap_wall_geom("dc_power_1", "usbc_pwr_1", _io_wall_w_dc_usbc(),
+                                  io_port_clearance, io_wall_dc_usbc_bias);
 _wall_rj45_dc = _io_gap_wall_geom("rj45_block", "dc_power_1", _io_wall_w_rj45_dc());
 _usb1_x = _conn_x_edges("usb_1");   _sfp1_x = _conn_x_edges("sfp_1");
 _dc_x   = _conn_x_edges("dc_power_1"); _usbc_x = _conn_x_edges("usbc_pwr_1");

@@ -174,11 +174,17 @@ function _rear_honeycomb_band_frame(cx, fan_size) = [cx - fan_size/2, fan_size];
 // only imports functions/modules, never plain variables (see reference_
 // openscad_gotchas), so a local variable here would be invisible there.
 function _io_wall_w_usb_sfp() = 2.5;  // usb_1 <-> sfp_1 gap (3.8mm real gap, Round 3 #65)
-// dc_power_1 <-> usbc_pwr_1 gap (4.6mm real gap, Round 3 #65). Narrowed
-// 1.5 -> 1.0 and biased toward dc_power_1 by io_wall_dc_usbc_bias (#85): on
-// the printed part the USB-C plug's overmold fouled on this wall. 1.0 matches
+// dc_power_1 <-> usbc_pwr_1 gap (2.5mm real gap, corrected #87 -- Round 3
+// #65's earlier "4.6mm" was computed off usbc_pwr_1's mispositioned/
+// mis-widthed row, see sbc.scad's usbc_pwr_1 comment; that reading is stale).
+// Narrowed 1.5 -> 1.0 by Round 3 #65; the io_wall_dc_usbc_bias (#85) that
+// used to bias this wall toward dc_power_1 to clear the USB-C plug's
+// overmold is zeroed by #87 -- it was compensating for the same bad
+// position, which is now correct, so the wall is centred again (see
+// params.scad's io_wall_dc_usbc_bias comment). 1.0 matches
 // _io_wall_w_rj45_dc()'s precedent and still gives >2 perimeters at a 0.4mm
-// nozzle. The geom assert still clears with room: 4.6 - 0.8 = 3.8 > 1.0.
+// nozzle. The geom assert clears, but tightly: 2.5 - 0.8 = 1.7 > 1.0 -- only
+// 0.7mm of margin, not the 2.8mm the pre-#87 4.6mm figure implied.
 function _io_wall_w_dc_usbc() = 1.0;
 // rj45_block <-> dc_power_1 gap (2.2mm real gap, Round 3 #65 -- this named
 // wall didn't exist before the round-3 re-caliper; the block/dc figures were
@@ -193,7 +199,8 @@ function _io_wall_w_rj45_dc() = 1.0;
 // IO-gap bridge-support wall geometry (Round 2 #62 Task 3; third wall +
 // clearance-aware assert added Round 3 #65): the bpir4 board has real, small
 // physical gaps between front-connector pairs -- usb_1<->sfp_1 (3.8mm),
-// dc_power_1<->usbc_pwr_1 (4.6mm), and rj45_block<->dc_power_1 (2.2mm), see
+// dc_power_1<->usbc_pwr_1 (2.5mm, corrected #87), and rj45_block<->dc_power_1
+// (2.2mm), see
 // libraries/sbc/sbc.scad's bpir4 row -- that sbc_faceplate_cutouts() already
 // cuts as separate boxes, incidentally leaving each gap band uncut. This
 // function/module pair makes that break EXPLICIT rather than relying on the
@@ -223,8 +230,12 @@ function _io_wall_w_rj45_dc() = 1.0;
 // bias (#85, default 0 = the pre-#85 centred wall, so the other two walls are
 // untouched): shifts the wall -X off the gap midpoint, freeing bias mm on the
 // +X (right-hand connector's) side and spending the same amount on the -X
-// side. Used only for dc_power_1<->usbc_pwr_1, where the USB-C overmold needs
-// the room and the barrel jack does not.
+// side. Was used for dc_power_1<->usbc_pwr_1, where the USB-C overmold needed
+// the room and the barrel jack did not -- but that was compensation for
+// usbc_pwr_1's mispositioned row (Round 3 #65), and #87 corrected the
+// position instead, so io_wall_dc_usbc_bias (params.scad) is now 0 and all
+// three call sites are effectively unbiased. Mechanism kept, not deleted --
+// see params.scad's io_wall_dc_usbc_bias comment.
 function _io_gap_wall_geom(name_l, name_r, w, clearance = io_port_clearance, bias = 0) =
     let (cl = sbc_connector(BOARD, name_l), cr = sbc_connector(BOARD, name_r),
          xl = cl[1][0] + cl[2][0],   // left connector's right edge (board-local)

@@ -293,16 +293,23 @@ reconcile — Task 1".
   `rj45`/`usb2` combo shell, `dc_power_1` (bpir4
   barrel jack), `uart_1` (bpir4 console header) — genuinely distinct part
   classes the catalog doesn't model, not gaps to fill.
-- **A peer exists but disagrees by >0.5mm on some axis (13)**, and neither
+- **A peer exists but disagrees by >0.5mm on some axis (12)**, and neither
   side is confidently right: each is either marginal single-axis noise (pi4b
   `usb3`, pizero2w `minihdmi`) or a self-flagged-weak reading on one or both
-  sides (the `micro_usb` family; bpir4 `usb_1`, `usbc_pwr_1`, `rj45_2..4`).
+  sides (the `micro_usb` family; bpir4 `usb_1`, `rj45_2..4`).
   Adjudicated as not a distinct physical part worth a new catalog type —
   left literal and `//VERIFY`-flagged for a future re-measurement pass.
 - **The sbc-side reading itself looks wrong (4)**: a chain-truncated Y-span
   in every case — pi3b/pi3bplus `usb2_2`, pi4b `rj45`, bpir4 `rj45_1`. A
   data-correction problem, not a sourcing one; flagged rather than silently
   patched.
+- **Agrees with a peer, not yet adopted (1)**: bpir4 `usbc_pwr_1` — the #87
+  re-caliper (2026-08-07) corrected this row's width/position (see
+  `sbc.scad`'s `usbc_pwr_1` comment), and its body `[8.7, 6.7, 3.0]` now
+  agrees with `usb_c`'s `[8.94, 6.90, 3.16]` within 0.24mm on every axis
+  (was in the disagree bucket above before this correction). Left literal
+  here since switching it to `connector_size()` is a `sbc.scad` code change,
+  outside this doc pass's scope.
 
 **bpir4 now sources 2 of its 10 connectors** — `sfp_1`/`sfp_2` adopt the
 `sfp` catalog type as of round-3 (#65): a physical-board re-caliper

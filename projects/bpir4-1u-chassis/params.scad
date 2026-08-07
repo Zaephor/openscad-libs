@@ -112,11 +112,18 @@ io_top_clearance = 0.5;
 // regression, not an improvement. A function, not a variable, so parts/
 // tray.scad's `use` of this project can actually see it.
 function io_top_clearance_ports() = ["usb_1", "sfp_1", "sfp_2"];
-// Bias for the dc_power_1<->usbc_pwr_1 gap wall, toward dc_power_1 (#85).
-// Combined with narrowing that wall 1.5 -> 1.0 this frees +0.5mm on the USB-C
-// side (1.55 -> 2.05, where the plug's overmold fouled) while leaving the
-// barrel-jack side at exactly its old 1.55mm.
-io_wall_dc_usbc_bias = 0.25;
+// io_wall_dc_usbc_bias (#85, zeroed by #87): offset for the
+// dc_power_1<->usbc_pwr_1 gap wall, toward dc_power_1.
+//
+// #85 set this to 0.25 to claw back space on the USB-C side. That was
+// compensation for a DATA ERROR -- usbc_pwr_1's x was 2.1mm too far right
+// (see sbc.scad's row comment). With the position corrected the bias is not
+// merely unnecessary but harmful: at 0.25 the wall would sit 0.10mm off the
+// barrel's opening edge instead of a symmetric 0.35mm either side.
+//
+// Kept as a parameter rather than deleted: the mechanism is sound and a
+// future asymmetric gap may want it.
+io_wall_dc_usbc_bias = 0;
 // io_chamfer (#85): lead-in chamfer leg on the INTERIOR face of each front
 // port opening, so the board's connectors funnel into their cutouts on
 // insertion instead of catching on a square edge. 1.0mm matches the repo's

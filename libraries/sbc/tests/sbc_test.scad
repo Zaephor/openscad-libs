@@ -471,9 +471,12 @@ assert(sbc_connector("bpir4", "sfp_2")[1][0] == 35.7,
 assert(sbc_connector("bpir4", "dc_power_1")[1][0] == 124.7
     && sbc_connector("bpir4", "dc_power_1")[2] == [10.0, 13.0, 10.3],
     "bpir4 dc_power_1 x/w/d/h caliper-revised round-3 #65");
-assert(sbc_connector("bpir4", "usbc_pwr_1")[1][0] == 139.3
-    && sbc_connector("bpir4", "usbc_pwr_1")[2] == [6.7, 6.8, 3.0],
-    "bpir4 usbc_pwr_1 x/w/d/h caliper-revised round-3 #65");
+// #87 (2026-08-07): round-3 #65's 139.3/6.7 was a regression (width/depth
+// transposed, single reading overruled two corroborating sources) -- see
+// RESEARCH.md "usbc_pwr_1 (#87)" and the sbc.scad row comment.
+assert(sbc_connector("bpir4", "usbc_pwr_1")[1][0] == 137.2
+    && sbc_connector("bpir4", "usbc_pwr_1")[2] == [8.7, 6.7, 3.0],
+    "bpir4 usbc_pwr_1 x/w/d/h caliper-revised, regression fix #87");
 
 // Gap regressions: Task 3 (faceplate bridge-support walls) places support
 // geometry into these gaps and depends on them staying real, non-zero
@@ -494,8 +497,8 @@ assert(_near(_xmin(_dc_power_1) - _xmax(_rj45_block), 2.2, 0.2),
     "bpir4 rj45_block<->dc_power_1 gap ~2.2mm (round-3 #65)");
 assert(_xmin(_dc_power_1) - _xmax(_rj45_block) > 0,
     "bpir4 rj45_block<->dc_power_1 must have a real positive gap, not share a boundary");
-assert(_near(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1), 4.6, 0.2),
-    "bpir4 dc_power_1<->usbc_pwr_1 gap ~4.6mm (round-3 #65 x-edge re-caliper)");
+assert(_near(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1), 2.5, 0.2),
+    "bpir4 dc_power_1<->usbc_pwr_1 gap ~2.5mm (regression fix #87)");
 assert(_xmin(_usbc_pwr_1) - _xmax(_dc_power_1) > 0,
     "bpir4 dc_power_1<->usbc_pwr_1 must have a real positive gap, not share a boundary");
 

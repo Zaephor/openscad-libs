@@ -70,8 +70,11 @@ taller than the socket body the library models — `rj45_block` is deliberately
 excluded, being bench-verified to line up correctly. Each opening also carries
 an `io_chamfer` lead-in funnel on the faceplate's interior face, opening
 sideways and downward only so it never touches the opening's top bridge. The
-`dc_power_1`↔`usbc_pwr_1` support wall is narrowed and biased toward the barrel
-jack to clear the USB-C plug's overmold.
+`dc_power_1`↔`usbc_pwr_1` support wall is narrowed to clear the gap between
+those two connectors (the wall used to also be biased toward the barrel jack
+to clear the USB-C plug's overmold, but that was compensating for a bad
+`usbc_pwr_1` position; #87 corrected the position, so the wall is centred
+again).
 
 All hardware dimensions are pulled live from the repo libraries (`sbc`,
 `rack10`, `fans`).
