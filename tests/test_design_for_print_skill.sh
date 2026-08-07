@@ -71,24 +71,44 @@ done
 
 # 9. Repo clearance/precedent numbers cited across the skill must track
 #    params.scad, not drift from it (#86 -- 4 of 6 house-rules.md table rows
-#    went stale/dead silently, and the same dead `boss_wall` param turned up
-#    uncaught in strength-physics.md and glossary.md too, because nothing
-#    checked any of them against the source of truth they cite). Two kinds
-#    of check: every symbol these pages cite by name must still exist in
-#    params.scad or the heatset library, and none of them may cite a name
-#    that no longer exists there. This does not verify the CITED VALUES are
-#    correct (a grep can't evaluate OpenSCAD) -- only that the pages aren't
-#    pointing at a symbol/param that has been renamed or deleted out from
-#    under them.
+#    went stale/dead silently, the same dead `boss_wall` param turned up
+#    uncaught in strength-physics.md and glossary.md too, and a review replay
+#    showed the FIRST version of this gate still passed a row reverted
+#    straight back to its old stale literal, because it only checked a
+#    hand-copied list of symbol NAMES against params.scad -- never what the
+#    table's own Value column says). This still can't verify a cited value is
+#    numerically correct (a grep can't evaluate OpenSCAD), so it checks two
+#    structural properties instead: every symbol the table cites by name
+#    (extracted from the table itself, not a hardcoded list, so a NEW row
+#    citing an invented name is caught the same as an old one being renamed)
+#    must exist in params.scad or heatset.scad, and the rows whose own Name
+#    column documents a derivation must still cite that derivation's function
+#    call in the Value column rather than a bare re-literalised number.
 pf="$root/projects/bpir4-1u-chassis/params.scad"
 hf="$root/libraries/heatset/heatset.scad"
 sp="$skill/reference/strength-physics.md"
 gl="$skill/reference/glossary.md"
-for sym in wall_gap board_insert_size board_insert_bore lid_insert_size \
-           lid_insert_bore csk_head_extra ; do
-  grep -q "$sym" "$pf" || { echo "house-rules.md table cites '$sym' but params.scad no longer has it"; fail=1; }
+
+mapfile -t hr_rows < <(grep -E '^\| `' "$hr")
+for row in "${hr_rows[@]}"; do
+  sym="$(printf '%s' "$row" | sed -E 's/^\| `([^`]+)`.*/\1/')"
+  base="${sym%%(*}"
+  grep -qE "\\b$base\\b" "$pf" "$hf" \
+    || { echo "house-rules.md table cites '$sym' but it is not in params.scad or heatset.scad"; fail=1; }
 done
-grep -q 'heatset_min_wall' "$hf" || { echo "house-rules.md table cites heatset_min_wall but heatset.scad no longer has it"; fail=1; }
+
+for row_sym_call in 'board_insert_bore:heatset_pilot_dia(' \
+                     'lid_insert_bore:heatset_pilot_dia(' \
+                     'heatset_min_wall(lid_insert_size):heatset_min_wall(' ; do
+  rsym="${row_sym_call%%:*}"; call="${row_sym_call#*:}"
+  line="$(grep -F "| \`$rsym\`" "$hr")"
+  if [ -z "$line" ]; then
+    echo "house-rules.md table missing expected derived row: $rsym"; fail=1
+  elif ! printf '%s' "$line" | grep -qF "$call"; then
+    echo "house-rules.md row '$rsym' no longer cites $call) -- looks re-literalised"; fail=1
+  fi
+done
+
 for dead in boss_wall post_wall_gap ; do
   grep -qE "^\\| \`$dead\`" "$hr" && { echo "house-rules.md table still has a dead-param row: $dead"; fail=1; }
 done
@@ -113,6 +133,14 @@ desc="$(sed -n '/^description:/,/^---$/p' "$skill/SKILL.md")"
 for needle in 'interference' 'mating' ; do
   echo "$desc" | grep -qi "$needle" || { echo "SKILL.md description missing trigger: $needle"; fail=1; }
 done
+
+# 11. assembly-order.md points at tests/test_bpir4_board_fit.sh as the worked
+#     implementation of the interference/motion techniques it describes
+#     (#86) -- gate the path so that reference cannot rot into a dangling
+#     pointer the way the precedent-table rows did above.
+bf="$root/tests/test_bpir4_board_fit.sh"
+grep -q 'test_bpir4_board_fit.sh' "$dfa" || { echo "assembly-order.md missing worked-example ref: test_bpir4_board_fit.sh"; fail=1; }
+[ -f "$bf" ] || { echo "assembly-order.md cites test_bpir4_board_fit.sh but it no longer exists"; fail=1; }
 
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"

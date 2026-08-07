@@ -128,11 +128,13 @@ or pulls out under load later.
 - This repo's precedent: `heatset_min_wall(lid_insert_size)` = 1.6 mm
   radial wall (lid-post wall thickness around the `lid_insert_bore()` =
   4.01 mm insert bore, `projects/bpir4-1u-chassis/params.scad`, see
-  `house-rules.md`) — a print-validated, working ratio (post OD =
-  `lid_insert_bore() + 2*heatset_min_wall(lid_insert_size)` ≈ 7.21 mm, boss
-  wall ≈ 0.80× the bore diameter for this repo's M3 insert). Reuse this
-  ratio for new M3 heat-set boss designs in this repo rather than picking a
-  fresh wall thickness.
+  `house-rules.md`) — a print-validated, working value (post OD =
+  `lid_insert_bore() + 2*heatset_min_wall(lid_insert_size)` ≈ 7.21 mm). For
+  a new heat-set boss, call `heatset_min_wall(size)`
+  (`libraries/heatset/heatset.scad`) for the size in use rather than reusing
+  a fixed ratio here — it's a per-size researched floor, not a fixed
+  proportion of the bore, and hardcoding a ratio would repeat the exact
+  copy-the-number mistake this page's own SSOT rule exists to prevent.
 - Always tie the boss into an adjacent wall, or add a gusset, rather than
   leaving it freestanding — see "Boss" and "Gusset" in `glossary.md` and
   the gusset-vs-shelf pattern in `overhangs-supports.md`. A freestanding

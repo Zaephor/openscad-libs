@@ -98,6 +98,11 @@ Three traps, all of which have bitten this repo:
 To turn "something collides" into "*this* collides", intersect against **one
 suspect module** rather than the whole part.
 
+**Worked example:** `tests/test_bpir4_board_fit.sh` runs this exact
+technique against a real board/tray collision — the divergence-theorem mesh
+volume helper, the empty-intersection-is-PASS file guard, and the
+coincident-face threshold are all there, not just described.
+
 ## Non-printed devices are part of the assembly
 
 The exploded self-check covers **every device the assembly holds** — boards,
@@ -133,6 +138,11 @@ was physically impossible — a rigid part modelled as retracting so that
 protrusion and wall-crossing never coincide. Verify the motion is physical
 before trusting a pass. Together these cover both directions: **no motion
 tested**, and **fictional motion tested**.
+
+**Worked example:** the same `tests/test_bpir4_board_fit.sh` also runs the
+discrete-union sweep — a stated 0.25 mm step, and the reasoning for why
+`hull()` of the two endpoints is not a valid substitute for a non-convex
+board+connectors solid.
 
 ## Cross-references
 
