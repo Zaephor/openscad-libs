@@ -103,21 +103,28 @@ number for the same kind of fit. Source:
 |---|---|---|
 | `wall_gap` | 0.25 mm (per side) | Lid-to-wall running/slip clearance |
 | `board_insert_bore` | `heatset_pilot_dia(board_insert_size)` = 3.23 mm (size = M2) | Board-standoff heat-set insert **pilot bore** — derived, not a literal; current size is M2 (was M2.5 / 3.4 mm) |
-| `lid_insert_bore` | 4.2 mm | M3 heat-set insert OD (lid posts) |
-| `boss_wall` | 3.2 mm | Lid-post wall thickness around the insert bore (post OD = `lid_insert_bore + boss_wall`) |
-| `post_wall_gap` | 1.2 mm | Printable clearance from lid-post outer edge to side-wall inner face |
+| `lid_insert_bore` | `heatset_pilot_dia(lid_insert_size)` = 4.01 mm (size = M3) | Lid-post heat-set insert **pilot bore** — derived, not a literal; current size is M3 (was a hardcoded 4.2 mm) |
+| `heatset_min_wall(lid_insert_size)` | 1.6 mm (radial, size = M3) | Min wall around a heat-set insert's pilot bore (heatset library, manufacturer crack-risk floor) — lid-post OD = `lid_insert_bore()` + 2× this ≈ 7.21 mm, via `_lid_post_od()` (`projects/bpir4-1u-chassis/params.scad`) |
 | `csk_head_extra` | 2.6 mm | M3 countersink head oversize over the clearance hole (→ ~6 mm 90° CSK head) |
+
+Note: an older `post_wall_gap` (printable lid-post-to-side-wall clearance)
+no longer exists — the current design places posts **tangent** to the
+walls (flush, zero gap) instead of offset by a gap
+(`projects/bpir4-1u-chassis/parts/tray.scad`, `_lid_post_xy()`). There is no
+replacement number to cite; this table omits it rather than document a
+value nothing produces.
 
 Heat-set inserts in this repo's chassis are installed **post-print, with a
 soldering iron, before final assembly**
 (`projects/bpir4-1u-chassis/PRINTING.md`). Size bore diameter and boss wall
 thickness assuming that install method (a straight-in heated press, not a
 tapped thread) — that's what `board_insert_bore` / `lid_insert_bore` /
-`boss_wall` above already assume.
+`heatset_min_wall(lid_insert_size)` above already assume.
 
 These numbers are cited by name elsewhere in this skill rather than
 restated — see `tolerances-fits.md` for how they map onto the general fit
-bands, and `strength-physics.md` for the reasoning behind `boss_wall`.
+bands, and `strength-physics.md` for the reasoning behind boss/insert wall
+thickness.
 
 ## Fastener availability is a design input
 
