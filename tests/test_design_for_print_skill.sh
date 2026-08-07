@@ -100,5 +100,19 @@ for f in "$sp" "$gl" ; do
   done
 done
 
+# 10. SKILL.md must index the new material AND be retrievable for it (#86).
+for needle in \
+  'Verify assembly numerically' \
+  'mating part' \
+  'install motion' ; do
+  grep -qiE "$needle" "$skill/SKILL.md" || { echo "SKILL.md missing: $needle"; fail=1; }
+done
+# The frontmatter description drives retrieval; an unindexed trigger means the
+# skill is never loaded for these questions.
+desc="$(sed -n '/^description:/,/^---$/p' "$skill/SKILL.md")"
+for needle in 'interference' 'mating' ; do
+  echo "$desc" | grep -qi "$needle" || { echo "SKILL.md description missing trigger: $needle"; fail=1; }
+done
+
 [ "$fail" -eq 0 ] && echo ok
 exit "$fail"
