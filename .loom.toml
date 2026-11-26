@@ -1,0 +1,7 @@
+# loom verify gate (loom2 gh-main lane, Zaephor/openscad-libs).
+# Mirrors the repo's own CI stage 1 (validate.yml -> make check ->
+# scripts/check.sh): conventions + headless .scad compile (echo format) —
+# ~19s in the container verify image (loom-act:openscad). The full render
+# suite (tests/run.sh) stays in GitHub CI + review: hours on 1 cpu, too
+# slow for a per-attempt pre-push gate.
+verify_cmd = "sh -c 'export HOME=/tmp TMPDIR=/tmp; exec bash scripts/check.sh'"
